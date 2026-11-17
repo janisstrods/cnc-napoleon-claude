@@ -267,11 +267,7 @@ export function Rider({ dress, head, weapon, f, pose, carbine, pennon, mouth = H
 const RIDER_SCALE = 0.9;
 const POSES = [1, 0, 2, 0] as const;
 
-/** How a sword is carried. The shared HorseSpec has no such field, so cavalry specs add it (see MountedSpec). */
-export type Carry = 'raised' | 'sloped';
-export type MountedSpec = HorseSpec & { carry?: Carry };
-
-export function MountedFigure({ spec, n, i }: { spec: MountedSpec; n: NationLook; i: number }) {
+export function MountedFigure({ spec, n, i }: { spec: HorseSpec; n: NationLook; i: number }) {
   const f = makeFig(n, i);
   const pose = POSES[i % 4];
   const coat = spec.coats[i % spec.coats.length];
