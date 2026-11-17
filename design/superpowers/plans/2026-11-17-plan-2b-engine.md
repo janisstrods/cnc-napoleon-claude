@@ -45,8 +45,8 @@
 | 0 | T1c-1 Contract: tables, setup, scenario format | `p2b-t1c` | **G0:** RR and rulings merged to `main` | `src/engine/{codes,types,expansions,units,terrain,cards,setup}.ts`, `src/scenarios/index.ts`, `src/scenarios/data/000.json`, `tests/engine/{codes,tables,setup-validation}.test.ts`, `tests/scenarios/{loader.test,helpers,manifest,checksum}.ts` (the tooling track is finished) |
 | 0 | T1c-2 Skeleton engine and test kits | `p2b-t1c` | T1c-1 reviewed | every other `src/engine/*.ts`, `tests/rules/**`, `tests/engine/{helpers.ts,rules.test.ts,soak.test.ts}`, `tests/golden/**` |
 | 0 | T1c-3a AI stub | `p2b-t1c` | T1c-2 reviewed | `src/ai/**`, `tests/ai/**` |
-| 0 | T1c-3b Game UI and art placeholders | `p2b-t1c` | T1c-3a reviewed | `src/ui/game/**`, `src/ui/kit/**`, `src/ui/App.tsx`, `src/art/{token,leader,icon,palettes,index}.ts(x)` (placeholders importing no Ancients figure file), `tests/art/{placeholder.test,helpers}.ts`, deletes `tests/art/{blocks,figures,kits}.test.ts`, `tests/ui/{battle-result,board-marks,controller-ask-ahead,controller-helpers,identity,record,rematch,terrain-tips,undo-card,generic-prompts}.ts` |
-| 0 | T1c-4 Art clean-up, terrain, screens, galleries, scripts | `p2b-t1c` | T1c-3b reviewed; **squash-merge after** | the rest of `src/art/*.ts(x)` (not `nap/`), `src/ui/terrain/**`, `src/ui/screens/**`, `src/dev/{ArtGallery,TerrainGallery,KitGallery,HistoryGallery}.tsx`, `scripts/**`, `src/ui/history/HistoryDialog.tsx` (line 23 only), `tests/ui/{screens,unit-text,clean-slate,random-battle,triumphs-screens,version}.test.ts`, `CLAUDE.md` (Status line only) |
+| 0 | T1c-3b Game UI and art placeholders | `p2b-t1c` | T1c-3a reviewed | `src/ui/game/**`, `src/ui/kit/**`, `src/ui/App.tsx`, `src/art/{token,leader,icon,palettes,index}.ts(x)` (placeholders importing no Ancients figure file), `tests/art/{placeholder.test,helpers}.ts`, deletes `tests/art/{blocks,figures,kits}.test.ts`, `tests/ui/{battle-result,board-marks,controller-ask-ahead,controller-helpers,identity,record,rematch,undo-card,generic-prompts}.ts` |
+| 0 | T1c-4 Art clean-up, terrain, screens, galleries, scripts | `p2b-t1c` | T1c-3b reviewed; **squash-merge after** | the rest of `src/art/*.ts(x)` (not `nap/`), `src/ui/terrain/**`, `src/ui/screens/**`, `src/dev/{ArtGallery,TerrainGallery,KitGallery,HistoryGallery}.tsx`, `scripts/**`, `src/ui/history/HistoryDialog.tsx` (line 23 only), `tests/ui/{screens,unit-text,clean-slate,random-battle,triumphs-screens,version,terrain-tips}.test.ts`, `CLAUDE.md` (Status line only) |
 | 1 | T2 Units and dice | A `p2b-a` | T1c merged | `src/engine/dice.ts`, `tests/rules/units-dice.test.ts` |
 | 1 | T3 Terrain and Field Works | B `p2b-b` | T1c merged | `src/engine/terrain.ts`, `tests/rules/terrain.test.ts` |
 | 1 | T4 Line of sight and range | C `p2b-c` | T1c merged | `src/engine/sight.ts`, `tests/rules/sight.test.ts` |
@@ -369,6 +369,7 @@ export interface WorksStats { into: Reductions; out: Reductions; flagIgnore: Arm
 export const TERRAIN_STATS: Readonly<Record<TerrainType, TerrainStats>>;
 export const WORKS: WorksStats;
 export const HILL_RELATION: Readonly<Record<'uphill' | 'downhill' | 'hillToHill', Reductions>>;
+export const TERRAIN_NAMES: Readonly<Record<TerrainType, string>>;   // derived: TERRAIN_STATS[t].name (kept so src/ui/terrain compiles mid-branch)
 export function terrainAt(s: Pick<GameState, 'terrain'>, h: HexId): TerrainType;
 export function isHill(s: Pick<GameState, 'terrain'>, h: HexId): boolean;
 export function worksMask(s: Pick<GameState, 'works'>, h: HexId): number;
@@ -863,7 +864,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Create: `src/ui/game/promptSpec.ts`, `tests/ui/generic-prompts.test.ts`, `tests/art/placeholder.test.ts`
 - Modify: `src/ui/game/*` (controller, prompts, uiModel, panels, GameScreen, Board, boardProps, unitText, terrainTips, objectiveText, BattleResult, TerrainTipBlock, opponent, makeOpponent), `src/ui/kit/{Dice,CardView,SectionMiniMap,BannerTrack,theme,index}.tsx/ts`, `src/ui/App.tsx` (no `GameOptions`)
 - Rewrite: `src/art/{token,leader,icon,palettes,index}.ts(x)` as placeholders that import none of the Ancients figure files (`foot`, `mounted`, `machine`, `kits`, `parts`, `camel`, `chariot`, `elephant`, `exp2-parts`, `exp3-parts`; T1c-4 deletes them); `tests/art/helpers.ts`
-- Rewrite tests: `tests/ui/{board-marks,terrain-tips,rematch,controller-helpers}.ts`; re-point as needed `tests/ui/{battle-result,controller-ask-ahead,identity,record,undo-card}.test.ts`
+- Rewrite tests: `tests/ui/{board-marks,rematch,controller-helpers}.ts`; re-point as needed `tests/ui/{battle-result,controller-ask-ahead,identity,record,undo-card}.test.ts`
 
 **Interfaces:**
 - Consumes: the engine index; `ArmGlyph` from `src/art/nap` (import only; the art track owns the module).
@@ -944,9 +945,9 @@ Expected: FAIL.
 
 - [ ] **Step 4: Run exactly these suites and the partial type check**
 
-Run: `npx vitest run tests/ui/{generic-prompts,battle-result,board-marks,controller-ask-ahead,identity,record,rematch,terrain-tips,undo-card}.test.ts tests/art/placeholder.test.ts tests/art/nap tests/ai tests/engine tests/rules tests/scenarios tests/golden tests/history`
-Expected: PASS. (`tests/ui/{screens,unit-text,clean-slate,random-battle,triumphs-screens,version}.test.ts` import `src/ui/screens`, which T1c-4 rewrites; they are not run here.)
-Run: `npx tsc --noEmit -p . 2>&1 | grep -E '^(src/(engine|ai|ui/game|ui/kit|scenarios)|src/art/(token|leader|icon|palettes|index)\.tsx?|src/ui/App\.tsx|tests/(ai|engine|rules|scenarios|golden|art/placeholder|ui/(generic-prompts|battle-result|board-marks|controller-ask-ahead|controller-helpers|identity|record|rematch|terrain-tips|undo-card)))'`
+Run: `npx vitest run tests/ui/{generic-prompts,battle-result,board-marks,controller-ask-ahead,identity,record,rematch,undo-card}.test.ts tests/art/placeholder.test.ts tests/art/nap tests/ai tests/engine tests/rules tests/scenarios tests/golden tests/history`
+Expected: PASS. (`tests/ui/{screens,unit-text,clean-slate,random-battle,triumphs-screens,version}.test.ts` import `src/ui/screens`, and `tests/ui/terrain-tips.test.ts` loads `src/ui/terrain` through `terrainTips.ts` and `TerrainTipBlock`; T1c-4 rewrites both, so they are not run here.)
+Run: `npx tsc --noEmit -p . 2>&1 | grep -E '^(src/(engine|ai|ui/game|ui/kit|scenarios)|src/art/(token|leader|icon|palettes|index)\.tsx?|src/ui/App\.tsx|tests/(ai|engine|rules|scenarios|golden|art/placeholder|ui/(generic-prompts|battle-result|board-marks|controller-ask-ahead|controller-helpers|identity|record|rematch|undo-card)))'`
 Expected: no output.
 
 - [ ] **Step 5: Commit**
@@ -967,8 +968,8 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 **Files:**
 - Delete: `src/art/{camel,chariot,elephant,exp2-parts,exp3-parts,foot,mounted,machine,kits,parts}.ts(x)` (after `grep` confirms nothing imports them), `src/ui/terrain/{ditch,sea,walls}.tsx`, `scripts/{ai-balance,ai-balance-report,ai-datagen,ai-fit,ai-review,ai-stats}.ts`
 - Rename: `src/ui/terrain/rampart.tsx` → `src/ui/terrain/fieldworks.tsx` (draws the works hexsides of `GameState.works`)
-- Modify: `src/ui/terrain/{BoardArt,TerrainIcon,base,hills,water,vegetation,objectives,index,palette,field}.ts(x)`, `src/ui/screens/{RulesReference,Menus,picker}.ts(x)`, `src/dev/{ArtGallery,TerrainGallery,KitGallery,HistoryGallery}.tsx` (not `FigureGallery.tsx`), `scripts/{ai-match,golden-record,lib}.ts`, `src/ui/history/HistoryDialog.tsx` (line 23 only: `blockColors(sc.setup[side].nation)`; `SideColors` keeps its shape, line 24 reads `edge` and `edgeShade`; the controller tells the history track), `CLAUDE.md` (Status: "the engine is the Napoleonics skeleton (Plan 2B T1c); rules land task by task")
-- Rewrite tests: `tests/ui/{screens,unit-text,clean-slate,random-battle,triumphs-screens,version}.test.ts`
+- Modify: `src/ui/terrain/{BoardArt,TerrainIcon,base,hills,water,vegetation,objectives,index,palette,field}.ts(x)` (`terrainName` from `TERRAIN_STATS`, `hexVariant` for the new rows), `src/ui/game/{terrainTips,TerrainTipBlock}.ts(x)` if the painters' API changes, `src/ui/screens/{RulesReference,Menus,picker}.ts(x)`, `src/dev/{ArtGallery,TerrainGallery,KitGallery,HistoryGallery}.tsx` (not `FigureGallery.tsx`), `scripts/{ai-match,golden-record,lib}.ts`, `src/ui/history/HistoryDialog.tsx` (line 23 only: `blockColors(sc.setup[side].nation)`; `SideColors` keeps its shape, line 24 reads `edge` and `edgeShade`; the controller tells the history track), `CLAUDE.md` (Status: "the engine is the Napoleonics skeleton (Plan 2B T1c); rules land task by task")
+- Rewrite tests: `tests/ui/{screens,unit-text,clean-slate,random-battle,triumphs-screens,version,terrain-tips}.test.ts`
 
 **Interfaces:**
 - Consumes: T1c-3b's `UnitToken`, `LeaderToken`, `blockColors`; `UNIT_STATS`, `CARD_DEFS`, `TERRAIN_STATS`, `EXPANSIONS`.
@@ -976,11 +977,11 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 - [ ] **Step 1: Rewrite the screen tests**
 
-`tests/ui/screens.test.ts` "battle picker tabs": two tabs in box order (`The Peninsula & Waterloo`, `The Spanish Army`), the hidden drill in none; the optional-rules describes go; "dev route starts every battle" re-pointed at `000`. `unit-text.test.ts`: `unitSummary` lines for `FR/LN` mention "+1 against infantry", for `BR/RI` "range 3" and "no sabre hits", for `AL/LN` "retreats 2"; the rules reference's Units tab lists all 34 rows. `clean-slate`, `random-battle`, `triumphs-screens`, `version`: re-pointed at the new screens with assertions unchanged.
+`tests/ui/screens.test.ts` "battle picker tabs": two tabs in box order (`The Peninsula & Waterloo`, `The Spanish Army`), the hidden drill in none; the optional-rules describes go; "dev route starts every battle" re-pointed at `000`. `unit-text.test.ts`: `unitSummary` lines for `FR/LN` mention "+1 against infantry", for `BR/RI` "range 3" and "no sabre hits", for `AL/LN` "retreats 2"; the rules reference's Units tab lists all 34 rows. `clean-slate`, `random-battle`, `triumphs-screens`, `version`: re-pointed at the new screens with assertions unchanged. `terrain-tips.test.ts`: one tip per terrain row (`TERRAIN_STATS[t].name` as its title; forest, town, ford, brook, sand quarry list their reductions), Field Works on a works hex, no tip for open ground or off the board; `src/ui/terrain`'s `terrainName(t)` returns `TERRAIN_STATS[t].name`.
 
 - [ ] **Step 2: Run to verify they fail**
 
-Run: `npx vitest run tests/ui/{screens,unit-text,clean-slate,random-battle,triumphs-screens,version}.test.ts`
+Run: `npx vitest run tests/ui/{screens,unit-text,clean-slate,random-battle,triumphs-screens,version,terrain-tips}.test.ts`
 Expected: FAIL.
 
 - [ ] **Step 3: Implement; delete the Ancients-only art, painters and scripts**
@@ -1429,8 +1430,7 @@ it('an attached leader goes with his unit on one order; detaching costs one orde
   // probeC [L, 'u1', 'u2'] refused (3 orders); bayonetCharge [L] refused (no detach on that card)
 });
 it('two leaders never share a hex; a leader attached to a square cannot detach (§6.2, R32)', () => {
-  // a leader attached to a BR/LN square:1 at (6,6): probeC [L] refused, probeC ['u1'] valid, probeC [L, 'u1'] valid (two orders);
-  // a second leader may not end his move on L's hex (leaderMoves excludes it)
+  // a leader attached to a BR/LN square:1 at (6,6): probeC [L] refused, probeC ['u1'] valid, probeC [L, 'u1'] valid (two orders)
 });
 it('a card that can order nothing skips to the draw (§5.2)', () => {
   // only BR/LN at (6,6) for bottom; bottom plays probeL: no orders decision; the events after cardPlayed are draw, then turnStart (top)
@@ -1736,7 +1736,8 @@ it('Fire and Hold: up to 4 infantry/artillery not adjacent to an enemy unit; +1 
   // BR/LN adjacent to FR/LN refused; BR/LN at (6,6) 2 hexes from FR/LN: fireDice 6; pieceMoves []
 });
 it('Fire and Hold: an enemy that retreated next to the unit stops its fire and melee, even once it is gone (R58)', () => {
-  // fireAndHold ordering bottom u1 BR/LN (6,6), u2 BR/LN (2,6), u3 BR/FA in range; top X FR/LN 2 blocks at (4,6):
+  // fireAndHold ordering bottom u1 BR/LN (6,6), u2 BR/LN (2,6), u3 BR/FA in range; top X FR/LN 2 blocks at (4,6); top Y FR/LN at (0,6)
+  // (distance 2 from u2, not adjacent: without R58 u2 could fire at it):
   // u1 fires, one flag: X retreats to (3,5) or (3,6) (both next to u2): battleTargets('u2') [];
   // u3 then fires at X and eliminates it: battleTargets('u2') still []
 });
