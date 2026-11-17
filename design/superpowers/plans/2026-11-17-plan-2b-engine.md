@@ -4,7 +4,7 @@
 
 **Goal:** Replace the copied Ancients engine with the Commands & Colours: Napoleonics base-game engine (RR §1–§14), keeping the AI, UI and art compiling and the game playable throughout, so that Plan 3B can load battles 001–015 and Plan 4/5 can build the real UI and AI on the new contract.
 
-**Architecture:** One contract swap (T1c, four sub-tasks on one branch, squash-merged green) replaces the type contract, the unit, terrain and card tables, the scenario format and `000.json`, and leaves a *skeleton* engine that plays `000` to a finish. The skeleton places every cross-module **hook** (a named function with a stub body) so that each later rules task fills hooks inside files it alone owns. The AI becomes a seeded random stub, the UI gains generic fallbacks for any decision, and the art draws placeholder figures by arm. Rules tasks then run test-first from the RR in parallel waves; the melee chain (T6a → T6b → T7/T8 → T9 → T10 → T12c) is serial because those tasks share `melee.ts`.
+**Architecture:** One contract swap (T1c, five sub-tasks on one branch, squash-merged green) replaces the type contract, the unit, terrain and card tables, the scenario format and `000.json`, and leaves a *skeleton* engine that plays `000` to a finish. The skeleton places every cross-module **hook** (a named function with a stub body) so that each later rules task fills hooks inside files it alone owns. The AI becomes a seeded random stub, the UI gains generic fallbacks for any decision, and the art draws placeholder figures by arm. Rules tasks then run test-first from the RR in parallel waves; the melee chain (T6a → T6b → T7/T8 → T9 → T10 → T12c) is serial because those tasks share `melee.ts`.
 
 **Tech Stack:** TypeScript 5.6, Vite 5, React 18, Vitest 2.
 
@@ -13,57 +13,72 @@
 ## Global Constraints
 
 - Never modify anything under `/Users/janisstrods/Gamemaking/cnc-ancients`.
-- Every merge into `main` leaves `npm run typecheck` clean and `npm test` green. The four T1c sub-tasks are one branch; only its squashed merge has to be green (each sub-task states its own partial check).
+- Every merge into `main` leaves `npm run typecheck` clean and `npm test` green. The five T1c sub-tasks (T1c-1, T1c-2, T1c-3a, T1c-3b, T1c-4) are one branch; only its squashed merge has to be green (each sub-task states its own partial check and the exact test files that must pass at its end).
 - The engine never branches on a nation or army name. Nation-specific numbers are `UNIT_STATS` row data (moving-fire rounding included); a rule that falls on one side names the side in scenario data (`sideRules`, `objectives`). Only `src/engine/codes.ts` and `src/engine/units.ts` contain nation codes as literals.
 - Determinism: every random draw goes through `src/engine/rng.ts` on `GameState` (`rng`, `rngCalls`); `forceDice` is the only test hook. `GameDriver.replay` reproduces a game exactly. The AI uses its own seeded `Rng` (`src/ai/rand.ts`), never `Math.random`.
-- Hidden information: a card on a square track and the two cards of a Scout draw never appear in a `GameEvent` (`squareFormed`, `cardReturned`, `scoutDrew` and `draw` carry no card id). Only `cardPlayed` and `discarded` name cards.
+- Hidden information: a card on a square track and the two cards of a Scout draw never appear in a `GameEvent` (`squareFormed`, `cardReturned`, `scoutDrew` and `draw` carry no card id). Only `cardPlayed` and `discarded` name cards. A First Strike played reactively emits `cardPlayed { side: <defender>, kind: 'firstStrike', effective: null }`; the UI never assumes `cardPlayed.side === active`.
 - localStorage only through `storageKey(name)` from `src/ui/storage.ts` (prefix `ccn-`).
 - Unit keys are `'<Nation>/<Code>'` (`'BR/LN'`), one string. Nations `FR BR PT AL SP`; codes as in `src/engine/codes.ts`; leaders are not units and have no key.
 - Rules tests are written from the RR alone, with the RR's exact values. Every file in `tests/rules/` starts with a header line `// Rules: RR §a, §b.c (design/rules-reference.md)` naming the sections it tests, and cites the ruling id beside any `[Interp]` assertion.
-- British spelling in comments, UI text and identifiers we introduce (`colour`, `manoeuvre`, `Centre` in card titles). Existing identifiers keep their spelling (`SectionName` stays `'left' | 'center' | 'right'`).
-- Contract files are frozen after T1c: `src/engine/types.ts`, `src/engine/index.ts`, `src/engine/decisions.ts`, `src/engine/legal.ts`, `src/engine/driver.ts`, `tests/rules/helpers.ts`. A task that believes it needs to change one stops and reports to the controller. (T14 may extend `tests/rules/helpers.ts`.)
+- British spelling in comments, UI text and identifiers we introduce (`colour`, `manoeuvre`, `Centre` in card titles and section labels). Existing identifiers keep their spelling (`SectionName` stays `'left' | 'center' | 'right'`); its UI label is `'Centre'`.
+- Contract files are frozen after T1c (this revision already contains the preflight amendments: layering, `retreatEnds`, `sampleOrders`, the kit's `attack`, `PlayerState.resources`): `src/engine/types.ts`, `src/engine/index.ts`, `src/engine/decisions.ts`, `src/engine/legal.ts`, `src/engine/driver.ts`, `tests/rules/helpers.ts`. A task that believes it needs to change one stops and reports to the controller. (T14 may extend `tests/rules/helpers.ts`.)
+- Every exported name is unique across `src/engine` modules: `index.ts` re-exports with `export *`, so a clash is a TS2308 error that no later task may fix by editing `index.ts`.
 - A task edits only the files in its **Files** list. Test helpers a task needs beyond the kit live in its own test file.
-- Engine layering (each module imports only modules above it): `codes, types, hex, rng, expansions, units, terrain, cards, query, setup, scenarioRules, banners, objectives, dice, sight, retreat, movement, orders, tacticRules, options, decisions, combinedArms, casualties, squares, leaders, resolve, reactions, afterMelee, fire, melee, tactics, phases, flow`; then `legal`, `driver`, `text`, `index`.
+- Engine layering (each module imports only modules above it; type-only imports are exempt): `codes, types, hex, rng, expansions, units, terrain, query, cards, setup, scenarioRules, banners, objectives, dice, sight, retreat, movement, orders, tacticRules, options, decisions, combinedArms, casualties, leaders, resolve, squares, reactions, afterMelee, fire, melee, tactics, phases, flow`; then `legal`, `driver`, `text`, `index`.
+- Parallel tracks: the map-tooling track is finished (T1c-1 owns `tests/scenarios/{checksum,manifest}.ts`). The art track (Plan 6B) owns `src/art/nap/**`, `tests/art/nap/**` and `src/dev/FigureGallery.tsx`; no Plan 2B task touches them (a horse-artillery team `<g>` is landing in `src/art/nap/token.tsx` from branch `art-ha-team`). Its Task 7 wires `src/art/nap` into `src/art/token.tsx` after T1c merges; T1c's placeholders must leave `#/gallery/figures` and `tests/art/nap/**` green. The history track owns `src/history/**`, `src/ui/history/**`, `tests/history/**`; T1c-4 makes one line edit in `HistoryDialog.tsx` and the controller tells that track.
 - Models: Sonnet implements each task; Opus reviews each task (and T1c's reviewer checks the deletion inventory).
 - Worktrees: `.worktrees/p2b-<lane>`; a lane merges `main` before starting its next task.
 - Commits are path-limited (`git add <paths>`, `git add -A <paths>` for deletions) and end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
 
 ## Review Focus
 
-1. **A decision the screen has no prompt for.** Plan 2B adds decisions the Ancients UI never had (`leaveSquare`, `combinedArms`, `elan`, `rally`, `scoutKeep`, `shortSupplyTarget`, `shortSupplyHex`, `breakthroughExtra`, `advance`). The player must never be stuck: every kind shows a prompt with a "Let the general decide" button that answers legally. Pinned by T1c-3's `generic-prompts.test.ts`.
+1. **A decision the screen has no prompt for.** Plan 2B adds decisions the Ancients UI never had (`leaveSquare`, `combinedArms`, `elan`, `rally`, `scoutKeep`, `shortSupplyTarget`, `shortSupplyHex`, `breakthroughExtra`, `advance`). The player must never be stuck: every kind shows a prompt with a "Let the general decide" button that answers legally. Pinned by T1c-3b's `generic-prompts.test.ts` (Élan and Rally offer only that button until Plan 4).
 2. **A retreat with nowhere to go.** A unit on its own baseline, boxed in by units, on an exit hex, or in square must lose 1 block per hex it cannot take and never leave the board or stall. Pinned by T6a's `retreat-flags.test.ts` (baseline, boxed-in, exit hex, square, ML 3 per flag).
 3. **Card bookkeeping under pressure.** A Scout draw that empties the deck, an Élan reshuffle while cards sit on a square track, two First Strikes in one turn: the 70 cards must stay accounted for, track cards never shuffled in, and every hand back to its size at the next card. Pinned by T11's draw-phase tests and T14's invariants.
-4. **A melee whose dice drop to 0 after it was declared** (a square formed, First Strike losses) must still count as the unit's battle and resolve with no effect; a 0-die attack must never be offered in the first place. Pinned by T6a (no 0-die declaration), T9 (square formed against 2 cavalry dice) and T12c (First Strike cuts the attacker).
+4. **A melee whose dice drop to 0 after it was declared** (a square formed, First Strike losses) must still count as the unit's battle and resolve with no effect; a 0-die attack must never be offered in the first place. Pinned by T6a (no 0-die declaration), T9 (a square formed against a 2-block BR/HC declared into a forest) and T12c (First Strike cuts a 2-block BR/HC declared into a forest to 0 dice).
 5. **A leader with no way out.** A leader whose unit dies on his baseline, behind impassable terrain, or with every retreat hex held by enemy units must leave, be eliminated or escape, and the banner count must follow RR §13.2. Pinned by T6b's `leaders.test.ts`.
 
 ## Waves, lanes and file ownership
 
 | Wave | Task | Lane (worktree) | Starts when | Owns (creates or edits) |
 |---|---|---|---|---|
-| 0 | T1c-1 Contract: tables, setup, scenario format | `p2b-t1c` | **G0:** RR and rulings merged to `main` | `src/engine/{codes,types,expansions,units,terrain,cards,setup}.ts`, `src/scenarios/index.ts`, `src/scenarios/data/000.json`, `tests/engine/{codes,tables,setup-validation}.test.ts`, `tests/scenarios/{loader.test,helpers,manifest,checksum}.ts` |
+| 0 | T1c-1 Contract: tables, setup, scenario format | `p2b-t1c` | **G0:** RR and rulings merged to `main` | `src/engine/{codes,types,expansions,units,terrain,cards,setup}.ts`, `src/scenarios/index.ts`, `src/scenarios/data/000.json`, `tests/engine/{codes,tables,setup-validation}.test.ts`, `tests/scenarios/{loader.test,helpers,manifest,checksum}.ts` (the tooling track is finished) |
 | 0 | T1c-2 Skeleton engine and test kits | `p2b-t1c` | T1c-1 reviewed | every other `src/engine/*.ts`, `tests/rules/**`, `tests/engine/{helpers.ts,rules.test.ts,soak.test.ts}`, `tests/golden/**` |
-| 0 | T1c-3 AI stub and game UI | `p2b-t1c` | T1c-2 reviewed | `src/ai/**`, `src/ui/game/**`, `src/ui/kit/**`, `tests/ai/**`, `tests/ui/**` |
-| 0 | T1c-4 Art, terrain, screens, galleries, scripts | `p2b-t1c` | T1c-3 reviewed; **squash-merge after** | `src/art/*.ts(x)` (not `nap/`), `src/ui/terrain/**`, `src/ui/screens/**`, `src/dev/**`, `scripts/**`, `tests/art/*.ts` (not `nap/`), `CLAUDE.md` (Status line only) |
+| 0 | T1c-3a AI stub | `p2b-t1c` | T1c-2 reviewed | `src/ai/**`, `tests/ai/**` |
+| 0 | T1c-3b Game UI and art placeholders | `p2b-t1c` | T1c-3a reviewed | `src/ui/game/**`, `src/ui/kit/**`, `src/ui/App.tsx`, `src/art/{token,leader,icon,palettes,index}.ts(x)` (placeholders importing no Ancients figure file), `tests/art/{placeholder.test,helpers}.ts`, deletes `tests/art/{blocks,figures,kits}.test.ts`, `tests/ui/{battle-result,board-marks,controller-ask-ahead,controller-helpers,identity,record,rematch,terrain-tips,undo-card,generic-prompts}.ts` |
+| 0 | T1c-4 Art clean-up, terrain, screens, galleries, scripts | `p2b-t1c` | T1c-3b reviewed; **squash-merge after** | the rest of `src/art/*.ts(x)` (not `nap/`), `src/ui/terrain/**`, `src/ui/screens/**`, `src/dev/{ArtGallery,TerrainGallery,KitGallery,HistoryGallery}.tsx`, `scripts/**`, `src/ui/history/HistoryDialog.tsx` (line 23 only), `tests/ui/{screens,unit-text,clean-slate,random-battle,triumphs-screens,version}.test.ts`, `CLAUDE.md` (Status line only) |
 | 1 | T2 Units and dice | A `p2b-a` | T1c merged | `src/engine/dice.ts`, `tests/rules/units-dice.test.ts` |
 | 1 | T3 Terrain and Field Works | B `p2b-b` | T1c merged | `src/engine/terrain.ts`, `tests/rules/terrain.test.ts` |
 | 1 | T4 Line of sight and range | C `p2b-c` | T1c merged | `src/engine/sight.ts`, `tests/rules/sight.test.ts` |
 | 1 | T5 Movement | D `p2b-d` | T1c merged | `src/engine/movement.ts`, `tests/rules/movement.test.ts` |
 | 1 | T11 Section cards, orders and the turn | E `p2b-e` | T1c merged | `src/engine/{cards,orders,phases,flow}.ts`, `tests/rules/orders-turn.test.ts` |
 | 1 | T13 Victory, objectives and §14 rules | F `p2b-f` | T1c merged | `src/engine/{banners,objectives,scenarioRules,setup}.ts`, `tests/rules/{objectives,scenario-rules}.test.ts` |
-| 2 | T6a Fire and melee core | A | T2, T3, T4, T13 merged | `src/engine/{fire,melee,resolve,casualties,retreat,options,query}.ts`, `phases.ts` (battle phase only), `tests/rules/{fire-melee,retreat-flags}.test.ts` |
+| 2 | T6a Fire and melee core | A | T2, T3, T4, T5, T13 merged | `src/engine/{fire,melee,resolve,casualties,retreat,options,query}.ts`, `phases.ts` (battle phase only), `tests/rules/{fire-melee,retreat-flags}.test.ts` |
 | 2 | T12a Tactic cards: orders and modifiers | B | T2, T3, T5, T11 merged | `src/engine/{cards,orders}.ts`, `tests/rules/tactic-cards.test.ts` |
-| 2 | T12b Élan, Rally, Short Supply | C | T2, T11, T13 merged | `src/engine/{tactics,tacticRules}.ts`, `tests/rules/elan-rally-supply.test.ts` |
+| 2 | T12b Élan, Rally, Short Supply | C | T2, T5, T11, T13 merged | `src/engine/{tactics,tacticRules}.ts`, `tests/rules/elan-rally-supply.test.ts` |
 | 3 | T6b Leaders | A | T6a merged | `src/engine/{leaders,retreat,options,melee,resolve}.ts`, `tests/rules/leaders.test.ts` |
 | 4 | T7 Take ground, breakthrough, bonus melee | A | T6b, T12a merged | `src/engine/{afterMelee,melee}.ts`, `tests/rules/advance.test.ts` |
 | 4 | T8 Retire and Reform | B | T6b merged; **merges after T7** | `src/engine/{reactions,retreat}.ts`, `tests/rules/retire-reform.test.ts` |
 | 5 | T9 Squares | A | T7, T8 merged | `src/engine/{squares,reactions,melee,resolve,phases}.ts`, `tests/rules/squares.test.ts` |
 | 6 | T10 Combined Arms | A | T9, T12a, T12b merged | `src/engine/{combinedArms,melee,options,sight}.ts`, `tests/rules/combined-arms.test.ts` |
-| 7 | T12c First Strike | A | T10 merged | `src/engine/{reactions,melee,dice}.ts`, `tests/rules/first-strike.test.ts` |
+| 7 | T12c First Strike | A | T10 merged | `src/engine/{reactions,melee}.ts`, `tests/rules/first-strike.test.ts` |
 | 8 | T14 Hardening | A | all merged | `tests/rules/{invariants.test,helpers}.ts`, `tests/engine/*.test.ts`, `tsconfig.scripts.json`, `package.json`, `package-lock.json`, `scripts/**`, `CLAUDE.md` |
 
-**Merge order.** T1c (squashed); wave 1: T2 first, then T3, T4, T5, T13, T11 in any order (no two share a file; T3, T4 and T5 each have one integration test whose dice value needs T2, so they rebase onto T2 and rerun the full suite before merging); wave 2 in any order (T6a, T12a, T12b share no file); T6b; T7 then T8 (T8 branches after T6b, rebases on T7 and reruns the full suite, because its take-ground test needs T7); T9; T10; T12c; T14. A parallel art track (Plan 6B Task 7) wires `src/art/nap/` into `src/art/token.tsx` after T1c merges; Plan 2B tasks after T1c never touch `src/art/**`.
+**Merge order.** T1c (squashed); wave 1: T2 first, then T3, T4, T5, T13, T11 in any order (no two share a file; T3, T4 and T5 each have one integration test whose dice value needs T2, so they rebase onto T2 and rerun the full suite before merging); wave 2 in any order (T6a, T12a, T12b share no file); T6b; T7 then T8 (T8 branches after T6b, rebases on T7 and reruns the full suite, because its take-ground test needs T7); T9; T10; T12c; T14. Plan 6B Task 7 (art wiring) may merge any time after T1c; Plan 2B tasks after T1c never touch `src/art/**`.
 
-**Hooks.** T1c-2 creates every module of the layering list with its final exported names. A function marked *stub* below has a placeholder body and is filled by the task named beside it. A task that rewrites a module keeps every call site T1c placed in it.
+**Hooks.** T1c-2 creates every module of the layering list with its final exported names. A function marked *stub* (or "→ Tn") has a placeholder body and is filled by the task named beside it. A task that rewrites a module keeps every call site T1c placed in it.
+
+**Decided details (binding for every task).**
+- `RetreatOption.path` and `LeaderRetreatOption.path` list the hexes entered, start excluded; `end` is the last of them, or the start hex when the path is empty. The events `move`, `retreat`, `retire`, `leaderRetreat` and `advance` carry the path **including** the start hex.
+- `answerError`: `{ kind: 'hex', hex: null }` is legal only for `bonusMelee` and for a `breakthroughExtra` with `required: false`, never for `shortSupplyHex`. In an `assign` answer (one entry per die) `null` is always legal for any face, arm faces of Élan and Rally included.
+- `turn.retreatEnds` records the end hex of every retreat (and retire) by a unit of the **non-active** side, whatever caused it; `cardForbidsBattle` for Fire and Hold is "a hex of `turn.retreatEnds` is adjacent to the unit", with no occupancy condition (R58).
+- The skeleton's `applyMove` calls `exitPiece` for a move to `OFF_BOARD`; the skeleton's `exitPiece` removes the piece (and a unit's attached leader) with a `removed` event and no banner; T13 adds the banners.
+- The R12 fallback (a declared moved gun cut to 1 block melees with the standing 1-block cell) belongs to T2 (`dice.ts`); T12c only tests it.
+- Setup never checks a unit's nation against its side's `SideSetup.nation` (the kit puts French units at the bottom, and mixed armies need it).
+- `giveCard` and `noFirstStrike` take and put cards only in the deck, the discard and the hands, never on a square track.
+- Tests that block a retreat with friendly units on (3,5) and (3,6) give the defender support; where that raises an `ignoreFlags` decision the outline answers `{ kind: 'ignoreFlags', count: 0 }`.
+- Every test outline that declares an attack uses the kit's `attack(d, unit, hex, o?)`, which answers a following `combinedArms` with `o.guns ?? []` and a `defend` with `o.defend ?? 'stand'`, so decisions added by later tasks never break earlier tests. Only a test whose subject is the `combinedArms` or `defend` decision answers it with `must`.
+- `tests/engine/rr-coverage.test.ts` (T14): a bare `§n` in a header covers only §1 and §14; every other section counts as covered only through its own `§n.m`.
 
 ---
 ### Task T1c-1: Contract — tables, setup and scenario format
@@ -71,7 +86,7 @@
 **Model:** Sonnet. **Lane:** `p2b-t1c` (branch `p2b-t1c` from `main` at G0).
 
 **Files:**
-- Modify: `src/engine/codes.ts` (add `UNIT_KEYS`, `RowKey`, `isRowKey`), `src/engine/expansions.ts` (rows `base`, `exp1`)
+- Modify: `src/engine/codes.ts` (add `UNIT_KEYS`, `RowKey`, `isRowKey`; add the code `'SWI'`), `src/engine/expansions.ts` (rows `base`, `exp1`)
 - Rewrite: `src/engine/types.ts`, `src/engine/units.ts`, `src/engine/terrain.ts`, `src/engine/cards.ts`, `src/engine/setup.ts`, `src/scenarios/index.ts`, `src/scenarios/data/000.json`
 - Rewrite tests: `tests/engine/codes.test.ts` (extend), `tests/engine/setup-validation.test.ts`, `tests/scenarios/loader.test.ts`, `tests/scenarios/{helpers,manifest,checksum}.ts`
 - Create: `tests/engine/tables.test.ts`
@@ -80,7 +95,7 @@
 - Consumes: `src/engine/codes.ts` (Plan 2A): `Nation, Arm, UnitCode, UnitKey, ARM_OF, CODE_NAMES, NATION_NAMES, nationOf, codeOf, isUnitKey`; `src/engine/hex.ts` (unchanged: `hexId, rowOf, colOf, onBoard, neighbours, HEX_DIRS, distance, sectionsOf, rearHexes, baselineRow, lineBetween, hasLineOfSight, sidesCrossed, directionTo`); `src/engine/rng.ts` `shuffle`, `randInt`.
 - Produces: everything below, used by every later task.
 
-**`src/engine/codes.ts` additions.** `UnitKey` stays the vocabulary type (the art track names `FR/LNC`, which has no row).
+**`src/engine/codes.ts` additions.** `UnitKey` stays the vocabulary type (the art track names `FR/LNC`, the Spanish battles `FR/SWI` and `SP/SWI`, which have no row). Add `'SWI'` to `UNIT_CODES` (after `'ML'`), `ARM_OF.SWI = 'infantry'`, `CODE_NAMES.SWI = 'Swiss Infantry'` (room for Expansion #1; no row in this plan).
 
 ```ts
 /** The unit rows of RR §2.2–§2.4, in RR order. */
@@ -115,6 +130,7 @@ export interface PlayerState {
   hand: number[];                    // card ids (index into CARD_LIST)
   squareTrack: (number | null)[];    // length 4; slot i holds the card of the square with counter i+1
   banners: number;                   // permanent banners
+  resources: Record<string, number>; // per-side counters for later expansions (Guerrilla counters); {} in the base game
 }
 
 export type CardKind =
@@ -170,7 +186,7 @@ export interface TurnState {
   mods: OrderMods;
   firstStrikes: Record<Side, number>;      // First Strikes played reactively this turn
   reshuffle: boolean; scout: boolean;      // Draw-phase effects of the card (or of the card copied)
-  retreatEnds: HexId[];                    // hexes where a unit ended a retreat this turn (Fire and Hold, R58)
+  retreatEnds: HexId[];                    // end hexes of retreats by units of the non-active side this turn (Fire and Hold, R58)
 }
 
 export type ObjectiveDef = DeepReadonly<
@@ -283,7 +299,7 @@ export type GameEvent =
 
 ```ts
 export interface ArtilleryRow { full: readonly number[]; one: readonly number[] }  // dice at distance 1..5 (index d-1): 3 or 2 blocks / 1 block
-export type MeleeRule = { kind: 'blocks'; plus: number; vsInfantry: number } | { kind: 'artillery' };
+export type MeleeRule = { kind: 'blocks'; plus: number; vsInfantry: number; movedPlus: number } | { kind: 'artillery' };  // movedPlus: added after moving (0 in the base game; Spanish −1 later)
 export type FireRule =
   | { kind: 'none' }
   | { kind: 'musket'; range: number; standing: number; moving: number; round: 'up' | 'down' }  // b+standing; ⌈b/2⌉ or ⌊b/2⌋ + moving
@@ -300,7 +316,7 @@ export function retreatDistance(st: UnitStats, flags: number): number;          
 export function matches(st: UnitStats, m: UnitMatch): boolean;
 ```
 
-Presets: `LINE = [{max:1,battle:true}]`, `LIGHT = [{max:1,battle:true},{max:2,battle:false}]`, `LIGHT_CAV = [{max:3,battle:true}]`, `HEAVY_CAV = [{max:2,battle:true}]`, `FOOT_GUNS = [{max:0,battle:true},{max:1,battle:false}]`, `HORSE_GUNS = [{max:1,battle:true},{max:2,battle:false}]`. Artillery rows (RR §2.6): `FA = { standing: { full: [4,3,2,1,1], one: [3,2,1,1,0] }, moved: null }`, `GA = { standing: { full: [5,3,2,1,1], one: [4,2,1,1,0] }, moved: null }`, `HA = { standing: { full: [3,2,1,1,0], one: [2,1,1,0,0] }, moved: { full: [3,2,1,0,0], one: [0,0,0,0,0] } }`. Every row: `name = CODE_NAMES[code]`, `expansion: 'base'`, `retreat: { first: n, then: n }`, `battleAfterMoveMinBlocks: 1` unless stated, melee `{kind:'blocks', plus, vsInfantry: 0}` unless stated, `ignoresInfantryFireHits: 0` unless stated. Musket `round` is `'up'` for every FR and BR row and `'down'` for every PT and AL row.
+Presets: `LINE = [{max:1,battle:true}]`, `LIGHT = [{max:1,battle:true},{max:2,battle:false}]`, `LIGHT_CAV = [{max:3,battle:true}]`, `HEAVY_CAV = [{max:2,battle:true}]`, `FOOT_GUNS = [{max:0,battle:true},{max:1,battle:false}]`, `HORSE_GUNS = [{max:1,battle:true},{max:2,battle:false}]`. Artillery rows (RR §2.6): `FA = { standing: { full: [4,3,2,1,1], one: [3,2,1,1,0] }, moved: null }`, `GA = { standing: { full: [5,3,2,1,1], one: [4,2,1,1,0] }, moved: null }`, `HA = { standing: { full: [3,2,1,1,0], one: [2,1,1,0,0] }, moved: { full: [3,2,1,0,0], one: [0,0,0,0,0] } }`. Every row: `name = CODE_NAMES[code]`, `expansion: 'base'`, `retreat: { first: n, then: n }`, `battleAfterMoveMinBlocks: 1` unless stated, melee `{kind:'blocks', plus, vsInfantry: 0, movedPlus: 0}` unless stated, `ignoresInfantryFireHits: 0` unless stated. Musket `round` is `'up'` for every FR and BR row and `'down'` for every PT and AL row.
 
 | Key | Blocks | Move | Melee plus | Fire (range, standing, moving) | Retreat | Flags ignored | Sabre | Tags | Other |
 |---|---|---|---|---|---|---|---|---|---|
@@ -397,7 +413,7 @@ export const NO_MODS: OrderMods;                                 // all null / f
 export function cardKind(id: number): CardKind;
 export function mirrorKind(k: CardKind): CardKind;               // swaps …L ↔ …R; others unchanged
 export function cardDice(mod: DiceMod | null, st: UnitStats): number;  // (arms absent or includes st.arm ? plus : 0) + Σ matching tags (tag ∈ st.tags && arm === st.arm)
-// skeleton bodies in T1c-2, logic in T11/T12a:
+// added by T1c-2 with skeleton bodies (T1c-1's cards.ts holds only the table and the pure helpers above), logic in T11/T12a:
 export function drawCard(s: GameState, ctx: FlowCtx, side: Side): void;
 export function effectiveCard(s: GameState, side: Side, cardId: number): { kind: CardKind | null; mirrored: boolean };
 export function cardForbidsBattle(s: GameState, op: OrderedPiece, u: Unit): boolean;   // stub false (T12a)
@@ -433,7 +449,7 @@ export function cardForbidsBattle(s: GameState, op: OrderedPiece, u: Unit): bool
 
 ```ts
 export interface SideSetup { army: string; nation: Nation; commander: string; cards: number }
-export interface UnitSetup { side: Side; key: RowKey; r: number; c: number; square?: SquareSlot }
+export interface UnitSetup { side: Side; key: RowKey; r: number; c: number; square?: SquareSlot; blocks?: number }  // blocks: starting strength (1..row blocks), which is also maxBlocks
 export interface LeaderSetup { side: Side; name: string; r: number; c: number }
 export type TerrainName = 'plain' | 'hill' | 'forest' | 'rugged' | 'town' | 'windmill' | 'fortress' | 'river' | 'fieldworks' | 'sandQuarry';
 export interface TerrainSetup { r: number; c: number; t: TerrainName; on?: 'plain' | 'hill'; sides?: HexDir[]; crossing?: 'bridge' | 'ford'; art?: string }
@@ -460,11 +476,13 @@ Rules the setup applies (each one is a test in Step 1):
 - Board: `plain` on every board hex, `void` off it. `fieldworks` → base terrain `on` (`plain` or `hill`, required) plus `works[h]` = mask of `sides` (≥1, each a `HexDir`). A works side facing off the board is allowed (005).
 - Rivers (default `'impassable'`): a `river` hex becomes `river` / `ford` / `fordNoStop` / `brook` for `impassable` / `fordable` / `fordableNoStop` / `brook`. `crossing: 'bridge'` → `bridge` under every rule. `crossing: 'ford'` → `ford` under `impassable`, `fordNoStop` under `fordable` and `fordableNoStop`, `brook` under `brook` (RR §14 table, §14.13). `crossing` on a non-river hex is an error.
 - Ids: units `u1…un` in data order, then leaders continue the same counter (`L<n+1>`…), as today.
-- `unitOverrides`: `scenario.unitStats[key] = { ...UNIT_STATS[key], ...set }`; a unit's `maxBlocks = blocks = statsOf(...).blocks`.
+- `unitOverrides`: `scenario.unitStats[key] = { ...UNIT_STATS[key], ...set }`; a unit's `maxBlocks = blocks = UnitSetup.blocks ?? statsOf(...).blocks` (Rally never exceeds it). `resources = {}` for both sides.
+- No check of a unit's nation against `SideSetup.nation` (see Decided details).
+- `setup.ts` imports only `codes, types, hex, rng, expansions, units, terrain, cards`; never `objectives`, `elites` or `query`. `src/scenarios/index.ts` imports only `../engine/setup`, `../engine/expansions`, `../engine/types` and `./texts`.
 - Deck: `CARD_LIST` ids shuffled with the seeded RNG; deal `top.cards` to top, then `bottom.cards` to bottom (one card at a time, top first). Then **squares at setup** (RR §14.12, R85): for each unit with `square: n` (data order), take a card uniformly at random (`randInt`) from its side's hand into `squareTrack[n − 1]`. `squareTrack` starts `[null, null, null, null]`.
 - `active = first`; `turn = newTurn(1)`; `lastCard` both null; `leadersAtStart` counts leaders per side.
 - Objectives resolve `[r, c]` to `HexId` with defaults: `timing 'turnStart'`, `tempHex.banners 1`, `exit.banners 1`, `leadersScore false`, `retreatOff false`, `text` `"<army> holds an objective."` / `"<army> holds the objective group."` / `"<army> {unit} exits the battlefield."`. `objState[i] = { held: false, count: 0 }`.
-- Errors (message, then `(id)`): unknown unit key; unit or leader off the board; a unit on a hex not `passableFor` its arm; two units on one hex; two leaders on one hex; a leader on an enemy unit; `square` on a non-infantry unit; a square slot used twice by one side; `fieldworks` without `on` or `sides`; an unknown `HexDir`; an unknown `rivers`; objective hexes off the board; a `tempGroup` with fewer than 2 hexes; an `exit` hex not on row 0 or 8; `killWeight.enemyArm` not an `Arm`; a `sideRules` side not a `Side`; an `impetuousCavalry` key that is not a cavalry row; an override of an unknown key; `cards < 1`; `banners < 1`.
+- Errors (message, then `(id)`): unknown unit key; unit or leader off the board; a unit on a hex not `passableFor` its arm; two units on one hex; two leaders on one hex; a leader on an enemy unit; `square` on a non-infantry unit; a square slot used twice by one side; `fieldworks` without `on` or `sides`; an unknown `HexDir`; an unknown `rivers`; objective hexes off the board; a `tempGroup` with fewer than 2 hexes; an `exit` hex not on row 0 or 8; `killWeight.enemyArm` not an `Arm`; a `sideRules` side not a `Side`; an `impetuousCavalry` key that is not a cavalry row; an override of an unknown key; `UnitSetup.blocks` outside 1..the row's blocks; `cards < 1`; `banners < 1`.
 
 **`src/scenarios/index.ts`.** `ScenarioJson = ScenarioSetup` fields plus `year: string`, `expansion?: Expansion`, `hidden?: boolean`; any other top-level field (`grid`, `notes`) is ignored. `scenarioFromJson`, `scenariosFromFiles`, `SCENARIOS`, `scenarioById`, `ScenarioInfo` keep their shapes (`setup` is a deep copy; `options` removed from `ScenarioInfo`).
 
@@ -497,7 +515,7 @@ Rules the setup applies (each one is a test in Step 1):
 const S = (k: RowKey) => UNIT_STATS[k];
 it('UNIT_KEYS are the 34 rows of RR §2, exactly the keys the 15 battles use', () => {
   expect(UNIT_KEYS).toHaveLength(34);
-  const used = new Set(readdirSync('design/data').filter((f) => /^\d{3}\.json$/.test(f))
+  const used = new Set(readdirSync('design/data').filter((f) => /^0\d\d\.json$/.test(f))   // base battles only; 1xx files are Spanish
     .flatMap((f) => JSON.parse(readFileSync(`design/data/${f}`, 'utf8')).units.map((x: { key: string }) => x.key)));
   expect([...used].sort()).toEqual([...UNIT_KEYS].sort());
   expect(isRowKey('FR/LNC')).toBe(false); expect(isUnitKey('FR/LNC')).toBe(true);
@@ -514,6 +532,10 @@ it('retreat per flag: AL/LN 2, every ML 3, others 1 (R10)', () => {
 it('flags ignored: GR, YG, CU 1; OG, GG, GHC, GA 2 (RR §10.2)', () => {
   expect(UNIT_KEYS.filter((k) => S(k).flagIgnore === 1)).toEqual(['FR/GR', 'FR/YG', 'FR/CU', 'BR/GR']);
   expect(UNIT_KEYS.filter((k) => S(k).flagIgnore === 2)).toEqual(['FR/OG', 'FR/GHC', 'FR/GA', 'BR/GG', 'BR/GHC']);
+});
+it('every base melee row has movedPlus 0; SWI is a code with no row', () => {
+  for (const k of UNIT_KEYS) { const m = S(k).melee; if (m.kind === 'blocks') expect(m.movedPlus).toBe(0); }
+  expect(ARM_OF.SWI).toBe('infantry'); expect(isUnitKey('SP/SWI')).toBe(true); expect(isRowKey('SP/SWI')).toBe(false);
 });
 it('ML and RI score no sabre hits; only FR/CU ignores an infantry fire hit', () => {
   expect(UNIT_KEYS.filter((k) => !S(k).sabreHits)).toEqual(['FR/ML', 'BR/RI', 'PT/ML', 'AL/ML']);
@@ -569,6 +591,14 @@ it('squares at setup take random cards onto the track (R85)', () => {
   expect(s.units.map((u) => u.square)).toEqual([1, 2]);
   expect(new Set([...s.deck, ...s.players.top.hand, ...s.players.bottom.hand, ...s.players.bottom.squareTrack.filter((c) => c !== null)]).size).toBe(70);
 });
+it('a starting strength below the row sets blocks and maxBlocks; resources start empty', () => {
+  const s = createGame({ ...base, units: [{ side: 'top', key: 'BR/LN', r: 1, c: 1, blocks: 2 }] }, 1);
+  expect([s.units[0].blocks, s.units[0].maxBlocks]).toEqual([2, 2]); expect(s.players.top.resources).toEqual({});
+  expect(() => createGame({ ...base, units: [{ side: 'top', key: 'BR/LN', r: 1, c: 1, blocks: 5 }] }, 1)).toThrow(/\(test\)$/);
+});
+it('no nation check: a French unit may stand with the British side', () => {
+  expect(() => createGame({ ...base, units: [{ side: 'top', key: 'FR/LN', r: 1, c: 1 }] }, 1)).not.toThrow();   // base.top.nation is 'BR'
+});
 it('unit overrides change the row for that key only', () => {
   const s = createGame({ ...base, units: [{ side: 'top', key: 'AL/LN', r: 1, c: 1 }], unitOverrides: [{ key: 'AL/LN', set: { retreat: { first: 1, then: 1 } } }] }, 1);
   expect(statsOf(s, s.units[0]).retreat.first).toBe(1); expect(UNIT_STATS['AL/LN'].retreat.first).toBe(2);
@@ -580,6 +610,8 @@ it('artillery on a sand quarry', () => expect(() => createGame(gunInQuarry, 1)).
 
 `tests/engine/codes.test.ts`: add `it('UNIT_KEYS has a row key for each nation’s units', ...)` asserting `isRowKey('AL/LN')` true, `isRowKey('SP/LN')` false.
 
+All T1c-1 tests import module files (`src/engine/setup`, `src/engine/units`, `src/engine/terrain`, `src/engine/cards`, `src/engine/codes`, `src/engine/hex`, `src/scenarios`), never the `src/engine` index, which still loads the Ancients flow modules until T1c-2.
+
 `tests/scenarios/loader.test.ts` (rewritten): 000 is hidden, base, has 5 units per side and 2 leaders; every key of `000.json` reaches the setup unchanged and as a copy (keep the existing walk test); `grid` and `notes` are ignored; an unknown expansion and a malformed file name the file and the scenario (keep the existing error-naming tests, re-pointed at the new format). `manifest.ts` and `checksum.ts`: `BattleManifest` per side `{ army, nation, commander, cards }`, `units: PerSide<Partial<Record<RowKey, number>>>`; the tally counts terrain rows, works sides and bridges.
 
 - [ ] **Step 2: Run them to verify they fail**
@@ -589,13 +621,13 @@ Expected: FAIL (`UNIT_KEYS`, `TERRAIN_STATS.ford`, `CARD_DEFS.bombard` and the n
 
 - [ ] **Step 3: Implement the contract files listed above**
 
-`createGame` validates before building. `cloneState` copies `squareTrack` and `turn.firstStrikes`, `turn.retreatEnds`.
+`createGame` validates before building. `cloneState` copies `squareTrack`, `resources`, `turn.firstStrikes` and `turn.retreatEnds`.
 
 - [ ] **Step 4: Run the tests and the partial type check**
 
 Run: `npx vitest run tests/engine/tables.test.ts tests/engine/setup-validation.test.ts tests/engine/codes.test.ts tests/scenarios/loader.test.ts`
 Expected: PASS.
-Run: `npx tsc --noEmit -p . 2>&1 | grep -E '^src/engine/(codes|types|expansions|units|terrain|setup)\.ts|^src/scenarios/'`
+Run: `npx tsc --noEmit -p . 2>&1 | grep -E '^src/engine/(codes|types|expansions|units|terrain|cards|setup)\.ts|^src/scenarios/|^tests/engine/(codes|tables|setup-validation)\.test\.ts|^tests/scenarios/'`
 Expected: no output (other modules still fail until T1c-2).
 
 - [ ] **Step 5: Commit**
@@ -615,8 +647,8 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 **Files:**
 - Delete: `src/engine/{elites,combat,attacks,held}.ts`
 - Delete: `tests/rules/{cards,close-combat,evade-leaders,exp1-elites,exp1-hwm,exp1-terrain,exp1-units,exp2-rolling-fire,exp2-terrain,exp2-units,exp3-scaffold,findings,flags-retreat,momentum,movement,ranged,turn}.test.ts`, `tests/engine/{units-fields,terrain-stats}.test.ts`
-- Create: `src/engine/{scenarioRules,dice,sight,tacticRules,combinedArms,squares,leaders,resolve,reactions,afterMelee,fire,melee,tactics}.ts`
-- Rewrite: `src/engine/{rng,query,banners,objectives,retreat,movement,orders,options,decisions,casualties,phases,flow,legal,driver,index}.ts`; `cards.ts` (the skeleton bodies of `drawCard`, `effectiveCard`)
+- Create: `src/engine/{scenarioRules,dice,sight,tacticRules,combinedArms,leaders,resolve,squares,reactions,afterMelee,fire,melee,tactics}.ts`
+- Rewrite: `src/engine/{rng,query,banners,objectives,retreat,movement,orders,options,decisions,casualties,phases,flow,legal,driver,index}.ts`; `cards.ts` (adds `drawCard`, `effectiveCard`, `cardForbidsBattle` with skeleton bodies; `cards.ts` may import `query.ts`)
 - Rewrite: `tests/rules/helpers.ts`, `tests/rules/invariants.test.ts`, `tests/engine/{helpers.ts,rules.test.ts,soak.test.ts}`, `tests/golden/{golden.test,record}.ts`
 
 **Interfaces:**
@@ -636,24 +668,24 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 | `dice.ts` | `StrikeRole = 'attack' \| 'bonus' \| 'back' \| 'firstStrike' \| 'squareFirst' \| 'escape'`, `DiceCtx { role; moved: number; declared?: boolean }`, `baseFireDice(st, blocks, distance, moved)`, `fireDice(s, u, targetHex, ctx)`, `baseMeleeDice(s, u, target, moved)`, `meleeDice(s, u, target, ctx)`, `escapeDice(s, u)`, `Scored { hits; flags; scoring: boolean[] }`, `scoreRoll(faces, kind: 'fire' \| 'melee' \| 'retireReform', by: UnitStats, target: Arm)`, `sabreKills(faces): boolean` | infantry and cavalry dice = blocks (fire range from the row, no halving), artillery from its `standing` row; scoring by arm and sabre; no type plus, card dice or cap; `terrainReduction` already called (→ T2) |
 | `sight.ts` | `lineOfSight(s, from, to, opts?: { hillBattery?: boolean; at?: PieceIndex }): boolean`, `canFireAt(s, u, targetHex, at?): boolean`, `fireTargets(s, u, at?): HexId[]`, `clearSight(s, from, to): boolean` | pieces and `blocksSight` terrain and every intermediate hill block; range = `baseFireDice(...) > 0`; not when adjacent to an enemy unit; units only (→ T4) |
 | `retreat.ts` | `retreatOptions(s, u, hexes): RetreatOption[]`, `leaderRetreatOptions(s, l): LeaderRetreatOption[]`, `retireReformOptions(s, u): RetreatOption[]` | unit: paths of retreat neighbours, full paths only if any, else the longest with losses (→ T6a); leader: `[]` (→ T6b); retire: `[]` (→ T8) |
-| `movement.ts` | `MoveTarget { hex; path: HexId[]; stops: boolean; battle: boolean; attach: string \| null }`, `moveOptions(s, u, op): readonly MoveOption[]`, `unitMoves(s, id): MoveTarget[]`, `leaderMoves(s, id): MoveTarget[]`, `applyMove(s, ctx, pieceId, target)` | own allowance only; no entering units or enemy leaders; terrain via `passableFor`/`stopsOnEntry`; exit target `OFF_BOARD` when `exitAllowedFrom` and ≥1 hex left; leader 3 (→ T5) |
-| `orders.ts` | `eligiblePieces(s, side, kind)`, `orderLimit(s, side, kind)`, `validateOrders(s, side, kind, pieces, single?)`, `autoOrders(s, side, kind): string[] \| null`, `fallbackActive(s, side, kind): boolean` | `sections` rules with counts (`'command'` = `turn.command`); every other select: 0–1 unit or lone leader anywhere; `autoOrders` null; fallback false (→ T11, T12a) |
+| `movement.ts` | `MoveTarget { hex; path: HexId[]; stops: boolean; battle: boolean; attach: string \| null }`, `moveOptions(s, u, op): readonly MoveOption[]`, `unitMoves(s, id): MoveTarget[]`, `leaderMoves(s, id): MoveTarget[]`, `canBattleAfterMove(s, u, op): boolean`, `relocate(s, u, hex): void` (moves a unit and its attached leader; no event: callers emit theirs), `applyMove(s, ctx, pieceId, target)` | own allowance only; `canBattleAfterMove` = `op.moved === 0 ? some option has battle : some option with max ≥ moved has battle && blocks ≥ battleAfterMoveMinBlocks`; no entering units or enemy leaders; terrain via `passableFor`/`stopsOnEntry`; exit target `OFF_BOARD` when `exitAllowedFrom` and ≥1 hex left; leader 3 (→ T5) |
+| `orders.ts` | `eligiblePieces(s, side, kind)`, `orderLimit(s, side, kind)`, `validateOrders(s, side, kind, pieces, single?)`, `autoOrders(s, side, kind): string[] \| null`, `fallbackActive(s, side, kind): boolean`, `newOrderedPiece(s, id, cardMods): OrderedPiece`, `sampleOrders(s, side, kind, rnd: () => number): { pieces: string[]; single?: boolean }` | `sections` rules with counts (`'command'` = `turn.command`); every other select: 0–1 unit or lone leader anywhere; `autoOrders` null; fallback false; `sampleOrders` returns a legal random answer for the card as the rules then stand (skeleton: greedy over shuffled eligible pieces, checked with `validateOrders`), refined by T11 (sections) and T12a (exact sets: Force March picks one section and orders all its infantry; Leadership lists every leader and keeps each attached unit with probability ½; La Grande Manoeuvre sometimes `single`) (→ T11, T12a) |
 | `tacticRules.ts` | `validateElan(s, side, faces, ids)`, `validateRally(s, side, faces, ids)`, `shortSupplyTargets(s, side): string[]`, `shortSupplyHexes(s, unitId): HexId[]` | stubs: `'Not available.'`, `[]` (→ T12b) |
-| `options.ts` | `Found`, `BattleTarget { hex; kind: 'fire' \| 'melee'; dice: number }`, `pieceMoves, movablePieces, battleTargets, battleReady, validateMove, validateBattle` | fire targets from `fireTargets`; melee targets = adjacent enemy units; a target only with dice ≥ 1; a piece battles once, not after a no-battle move; honours `turn.mods.noFire`/`noMelee` for `cardMods` pieces and `cardForbidsBattle` from the start (→ T6a) |
+| `options.ts` | `Found`, `BattleTarget { hex; kind: 'fire' \| 'melee'; dice: number }`, `pieceMoves, movablePieces, battleTargets, battleReady, validateMove, validateBattle`, `combinedArmsCandidates(s, unit, target): string[]` | `combinedArmsCandidates` `[]` (→ T10); fire targets from `fireTargets`; melee targets = adjacent enemy units; a target only with dice ≥ 1; a piece battles once, not after a no-battle move; honours `turn.mods.noFire`/`noMelee` for `cardMods` pieces and `cardForbidsBattle` from the start (→ T6a) |
 | `decisions.ts` | `Gen`, `ask`, `answerError` | complete: one case per `Decision` kind; list decisions check membership of `options`/`targets`/`cards` index; `assign` → `validateElan`/`validateRally`; `orders` → `validateOrders` |
-| `combinedArms.ts` | `combinedArmsCandidates(s, unit, target): string[]`, `combinedArmsStep(s, ctx, m): Gen<string[]>` | `[]`, asks nothing (→ T10) |
-| `casualties.ts` | `log, emitRoll, damage(s, ctx, u, n, reason): boolean /* eliminated */, removeUnit(s, ctx, u, reason), killLeader(s, ctx, l, reason), relocate(s, ctx, u, hex)` | `removeUnit` calls `releaseSquare`, `scoreKill`, `updateHeld`; `relocate` moves an attached leader along |
-| `squares.ts` | `SQUARE_TRACK = 4`, `SQUARE_MIN_HAND = 3`, `canFormSquare(s, target, attacker, m): boolean`, `formSquare(s, ctx, u)`, `releaseSquare(s, ctx, u)`, `leaveSquareStep(s, ctx, side): Gen`, `squareFightsFirst(s, ctx, m): Gen<'continue' \| 'stop'>` | `releaseSquare` complete (card back to hand, `cardReturned` and `squareLeft` events, `square` cleared); others false / nothing / `'continue'` (→ T9) |
+| `combinedArms.ts` | `combinedArmsStep(s, ctx, m): Gen<string[]>` | `[]`, asks nothing (→ T10) |
+| `casualties.ts` | `log, emitRoll, damage(s, ctx, u, n, reason): boolean /* eliminated */, removeUnit(s, ctx, u, reason), killLeader(s, ctx, l, reason), releaseSquare(s, ctx, u)` | `removeUnit` calls `releaseSquare`, `scoreKill`, `updateHeld`; `releaseSquare` complete (card back to the hand, `squareLeft` and `cardReturned` events, `square` cleared) |
 | `leaders.ts` | `leaderCasualtyCheck(s, ctx, u, eliminated): Gen<boolean /* killed */>`, `leaderLosesUnit(s, ctx, l): Gen`, `loneLeaderMelee(s, ctx, attacker, l, m): Gen<boolean /* vacated */>` | no check (false); a leader whose unit is lost is killed (`killLeader`); lone leaders are never melee targets yet (→ T6b) |
-| `resolve.ts` | `RollOutcome { hits; flags; bounce: boolean }`, `Applied { eliminated: boolean; left: boolean }`, `applyOutcome(s, ctx, target, o, attacker, reason): Gen<Applied>`, `flagIgnores(s, target, attacker, leaderOk): number` | hits → `leaderCasualtyCheck` → flags all accepted (`flagIgnores` 0) → `retreatDistance` → `retreatOptions` (asked when > 1) → losses → `leaderLosesUnit` on elimination; records `turn.retreatEnds` (→ T6a) |
+| `resolve.ts` | `RollOutcome { hits; flags; bounce: boolean }`, `Applied { eliminated: boolean; left: boolean }`, `applyOutcome(s, ctx, target, o, attacker, reason): Gen<Applied>`, `flagIgnores(s, target, attacker, leaderOk): number` | hits → `leaderCasualtyCheck` → flags all accepted (`flagIgnores` 0) → `retreatDistance` → `retreatOptions` (asked when > 1) → losses → `leaderLosesUnit` on elimination; records `turn.retreatEnds` for non-active units (→ T6a) |
+| `squares.ts` | `SQUARE_TRACK = 4`, `SQUARE_MIN_HAND = 3`, `canFormSquare(s, target, attacker, m): boolean`, `formSquare(s, ctx, u)`, `leaveSquareStep(s, ctx, side): Gen`, `squareFightsFirst(s, ctx, m): Gen<'continue' \| 'stop'>` | false / nothing / `'continue'` (→ T9) |
 | `reactions.ts` | `defendOptions(s, m): DefendChoice[]`, `defenderReaction(s, ctx, m): Gen<DefendChoice>`, `resolveRetireReform(s, ctx, m): Gen<HexId \| null>`, `firstStrikeRoll(s, ctx, m): Gen<'continue' \| 'stop'>` | `['stand']`, asked only when more than one option; R&R throws `'not implemented'` (unreachable); first strike `'continue'` (→ T8, T9, T12c) |
 | `afterMelee.ts` | `afterMelee(s, ctx, m, vacated): Gen<boolean /* entered the vacated hex: bonus melee allowed */>` | nothing, returns false (→ T7) |
 | `fire.ts` | `fireAttack(s, ctx, firer, targetHex): Gen` | dice, `combat` + `roll` events, `scoreRoll`, Cuirassier ignore, `applyOutcome` (→ T6a) |
 | `melee.ts` | `meleeAttack(s, ctx, attackerId, targetHex, role): Gen<boolean /* defender vacated */>` | see the sequence below (→ T6a) |
 | `tactics.ts` | `elanStep(s, ctx, side): Gen`, `rallyStep(s, ctx, side): Gen`, `shortSupplyStep(s, ctx, side): Gen` | Élan and Rally ask an `orders` decision for 0–1 piece (`cardMods` true); Short Supply does nothing (→ T12b) |
-| `phases.ts` | `newOrderedPiece(s, id, cardMods)`, `cardStep`, `movePhase`, `battlePhase` | below |
+| `phases.ts` | `cardStep`, `movePhase`, `battlePhase` | below |
 | `flow.ts` | `turnFlow, drawPhase(s, ctx), gameFlow, nextTurn, continueTurn` | below |
-| `legal.ts` | `Rand`, `greedyAssign`, `randomAnswer(s, d, rnd)` | complete for every kind: lists pick a random member; `orders` and `assign` built greedily and checked with `answerError` only, so later rules need no change here |
+| `legal.ts` | `Rand`, `greedyAssign`, `randomAnswer(s, d, rnd)` | complete for every kind: lists pick a random member; `orders` → `sampleOrders`; `assign` built greedily (candidates = own units and leaders) and checked with `answerError` only, so later rules need no change here |
 | `driver.ts` | as today | `undoFrom` walks back over `orders` and `leaveSquare` answers to the card |
 
 `melee.ts` sequence (the call sites later tasks rely on; T6a, T6b, T7, T9, T10, T12c edit this file in turn and keep them):
@@ -673,14 +705,15 @@ if (m.reaction === 'firstStrike' && (yield* firstStrikeRoll(s, ctx, m)) === 'sto
 
 `flow.ts` `turnFlow`: `turnStart` event → `turnStartObjectives` → `cardStep` → `movePhase` (skipped when nothing is ordered) → `battlePhase` → `drawPhase` → `lastCard[side] = turn.effective`, `turnsDone[side]++`, phase `done`. `drawPhase` skeleton: played card to the discard; `drawCard` once for the active side (→ T11 completes Scout, Élan, First Strike order). `drawCard`: an empty deck takes the shuffled discard (`reshuffle` event); emits `draw`. Victory is checked inside `gainBanner`; every generator returns as soon as `s.winner` is set.
 
-**`src/engine/index.ts`:** `export *` from `codes, types, expansions, hex, rng, units, terrain, cards, query, setup, scenarioRules, banners, objectives, dice, sight, retreat, movement, orders, tacticRules, options, combinedArms, squares, legal, driver, text`; named: `answerError`, `type Gen` (decisions), `newOrderedPiece` (phases), `gameFlow, turnFlow, nextTurn, continueTurn, drawPhase` (flow). Later tasks never edit it; new exports of those modules flow through `export *`.
+**`src/engine/index.ts`:** `export *` from `codes, types, expansions, hex, rng, units, terrain, query, cards, setup, scenarioRules, banners, objectives, dice, sight, retreat, movement, orders, tacticRules, options, combinedArms, squares, legal, driver, text`; named: `answerError`, `type Gen` (decisions), `gameFlow, turnFlow, nextTurn, continueTurn, drawPhase` (flow). Later tasks never edit it; new exports of those modules flow through `export *`.
 
 **Test kit `tests/rules/helpers.ts`** (signatures; frozen after this task). Top army French, bottom army British: the opposite of every real battle, so no test passes by an engine that assumes the British are on top.
 
 ```ts
 type At<T> = Omit<T, 'r' | 'c'> & { at: [number, number] };
 export type Pos = Partial<Omit<ScenarioSetup, 'top' | 'bottom' | 'units' | 'leaders' | 'terrain'>> & {
-  units?: (At<UnitSetup> & { blocks?: number })[]; leaders?: (Omit<At<LeaderSetup>, 'name'> & { name?: string })[];
+  units?: (At<Omit<UnitSetup, 'blocks'>> & { blocks?: number })[];   // kit `blocks` = strength set after the build; maxBlocks keeps the row's blocks
+  leaders?: (Omit<At<LeaderSetup>, 'name'> & { name?: string })[];
   terrain?: At<TerrainSetup>[]; cards?: number; topCards?: number; bottomCards?: number;
 };
 export const H: (r: number, c: number) => HexId;
@@ -706,8 +739,9 @@ export function passTurn(d: GameDriver, kind?: CardKind): void;  // default 'pro
 export function fromTurnStart(es: GameEvent[], side: Side): GameEvent[];
 export function miss(a: RowKey, b: RowKey): DieFace;       // the first arm symbol of ARMS matching neither unit's arm
 export interface DuelOpts { card?: CardKind; atkBlocks?: number; defBlocks?: number; atkT?: Omit<TerrainSetup, 'r' | 'c'>; defT?: Omit<TerrainSetup, 'r' | 'c'> }
-export function duel(atk: RowKey, def: RowKey, o?: DuelOpts): { attack?: number; back?: number };  // bottom atk (5,6) vs top def (4,6); card 'attackC'; every die misses; 'stand'
-export function attackOn(atk: RowKey, def: RowKey, extra?: Pos): GameDriver;  // declares the attack; returns at the defend decision or after it resolved
+export function duel(atk: RowKey, def: RowKey, o?: DuelOpts): { attack?: number; back?: number };  // bottom atk (5,6) vs top def (4,6); card 'attackC'; every die misses; uses attack() ('stand')
+export function attack(d: GameDriver, unit: string, hex: HexId, o?: { defend?: DefendChoice; guns?: string[] }): void;  // must(attack); then answers a combinedArms with select(o.guns ?? []) and a defend with o.defend ?? 'stand', each at most once
+export function attackOn(atk: RowKey, def: RowKey, extra?: Pos): GameDriver;  // declares the attack, answers a combinedArms with []; returns at the defend decision or after it resolved
 ```
 
 `tests/engine/helpers.ts`: `setupOf`/`state` re-export the rules kit with id `'test'` and seed 12345 (as today), plus `drive`, `replaceFirstCard`, `dropFirstStrike`. `tests/support/rng.ts` and `storage.ts` are unchanged (bit-identical).
@@ -754,19 +788,17 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ---
 
-### Task T1c-3: AI stub and game UI on the new contract
+### Task T1c-3a: AI stub on the new contract
 
 **Model:** Sonnet. **Lane:** `p2b-t1c`.
 
 **Files:**
-- Delete: `src/ai/{board,cardsense,dice,estimate,evaluate,goals,moves,ordering,planner,policies,sim,values,voice}.ts`, `src/ui/game/diceOrders.ts`, `tests/ai/{bots.ts,recruit-games.test.ts}`
+- Delete: `src/ai/{board,cardsense,dice,estimate,evaluate,goals,moves,ordering,planner,policies,sim,values,voice}.ts`, `tests/ai/{bots.ts,recruit-games.test.ts}`
 - Rewrite: `src/ai/index.ts`; adapt `src/ai/{client,worker,personality}.ts` only as far as needed to compile
-- Modify: `src/ui/game/*` (controller, prompts, uiModel, panels, GameScreen, Board, boardProps, unitText, terrainTips, objectiveText, BattleResult, TerrainTipBlock, opponent, makeOpponent), `src/ui/kit/{Dice,CardView,SectionMiniMap,BannerTrack,theme,index}.tsx/ts`, `src/ui/App.tsx` (no `GameOptions`), `src/art/palettes.ts` (only `BLOCK_COLORS` and `blockColors(nation: Nation): SideColors` keyed by `Nation`; T1c-4 does the rest of the file)
-- Rewrite tests: `tests/ai/{ai.test,client-memory.test,helpers,no-ai-errors}.ts`, `tests/ui/{board-marks,terrain-tips,unit-text,screens,controller-helpers}.ts`
-- Create: `tests/ui/generic-prompts.test.ts`
+- Rewrite tests: `tests/ai/{ai.test,client-memory.test,helpers,no-ai-errors}.ts`
 
 **Interfaces:**
-- Consumes: the engine index (T1c-2), especially `randomAnswer`, `answerError`, `Decision`, `GameEvent`, `UNIT_STATS`, `CARD_DEFS`, `TERRAIN_STATS`.
+- Consumes: the engine index (T1c-2): `randomAnswer`, `answerError`, `battleTargets`, `CARD_DEFS`, `Decision`, `Answer`.
 - Produces (`src/ai/index.ts`; the UI's `Opponent` interface and the worker protocol are unchanged):
 
 ```ts
@@ -782,92 +814,173 @@ export { PERSONALITIES, personalityById, personalityFor, type Personality };
 
 `chooseAnswer` stub policy with the seeded `Rng` (state kept in `mem.rngState`): `battle` → the first ordered unit (id order) with a battle target attacks a random one of its targets, else `endBattle`; `ignoreFlags` → `max`; `advance` → yes; everything else → `randomAnswer(state, decision, () => rng.next())`. An illegal answer or a throw falls back to `randomAnswer` and counts `mem.fallbacks` (as today). It never reads the opponent's hand, track or the deck.
 
-UI rules:
-- `prompts.tsx`: specific prompts for `playCard`, `orders`, `move`, `battle`, `defend` (one button per `options` entry: Stand / Retire and Reform / Form square / First Strike), `ignoreFlags`, `retreat`, `leaderRetreat`, `advance` (Advance / Stay), `breakthroughExtra` and `bonusMelee` (hex highlights plus Decline unless `required`). Every other kind gets the generic prompt: a title from a `DECISION_TITLES: Record<Decision['kind'], string>` table, generic choosers (yes/no buttons for `leaveSquare`; hex highlights for `options: HexId[]`; unit-hex highlights for `options: string[]`; buttons for `scoutKeep` naming the two card titles), and on **every** prompt of the human's a "Let the general decide" button that calls `controller.autoAnswer()`.
-- `controller.ts`: a log line for every event kind; an event kind without its own wording logs `"<kind>"` generically; combat descriptions by `RollPurpose`; no card-loss notice. `uiModel.ts` highlights from `battleTargets` (`kind 'fire' | 'melee'`) and the hit chance `1/6` per die for fire, `2/6` against infantry.
-- `kit/Dice.tsx`: placeholder glyphs for the five faces (`ALL_DIE_FACES = DIE_FACES`); `CardView` groups `section | tactic`; `unitText.ts` builds lines from `UNIT_STATS` (blocks, move options, melee and fire rules, retreat, flags ignored, sabres).
-- Difficulty, records and medals are unchanged; the battle briefing's optional-rules switch and its tests are removed (no battle offers options).
+- [ ] **Step 1: Write the failing tests**
 
-- [ ] **Step 1: Write the failing test** `tests/ui/generic-prompts.test.ts`
+`tests/ai/ai.test.ts` keeps "never consumes dice forced by the test hook", "does not use hidden information: same decision whatever the opponent holds and the dice will be" and "AiClient falls back to in-thread decisions when Web Workers are unavailable", re-pointed at `000`, and adds:
 
 ```ts
-const SAMPLES: Decision[] = [/* one literal per Decision kind, ids from a built 000 state */];
-it('every decision kind has a prompt with a title and the general's button', () => {
-  expect(new Set(SAMPLES.map((d) => d.kind)).size).toBe(18);
-  for (const d of SAMPLES) { const p = promptFor(state, d, 'bottom'); expect(p.title.length).toBeGreaterThan(0); expect(p.buttons.some((b) => b.action === 'auto')).toBe(true); }
+it('the stub attacks when it can', () => {
+  const s = build({ units: [{ side: 'bottom', key: 'BR/LN', at: [5, 6] }, { side: 'top', key: 'FR/LN', at: [4, 6] }] });
+  const d = toBattle(s, 'attackC', ['u1']);
+  expect(chooseAnswer(d.state, d.pending!, { side: 'bottom', difficulty: 'tribune', personality: PERSONALITIES[0], seed: 1 }, newMemory()).answer).toEqual({ kind: 'attack', unit: 'u1', target: H(4, 6) });
 });
-it('autoAnswer alone plays the drill battle to a finish for the human', async () => { /* SeededOpponent + controller.autoAnswer loop; winner set */ });
+it('the stub plays both sides of the drill battle to a finish with no fallback', () => { /* 2 seeds; winner set; fallbacks 0 for both memories */ });
 ```
 
-`tests/ai/ai.test.ts` keeps "never consumes dice forced by the test hook", "does not use hidden information: same decision whatever the opponent holds" and "AiClient falls back to in-thread decisions", on `000`; adds "the stub attacks when it can": a `battle` decision with one ordered unit adjacent to an enemy → `{ kind: 'attack' }`. `client-memory.test.ts` keeps the worker-handling and fallback-counting tests.
+`client-memory.test.ts` keeps "AiClient worker handling" (both tests) and "an AI answer replaced by the fallback"; the card-keeping tests go.
 
-- [ ] **Step 2: Run to verify it fails**
+- [ ] **Step 2: Run to verify they fail**
 
-Run: `npx vitest run tests/ui/generic-prompts.test.ts tests/ai`
-Expected: FAIL.
+Run: `npx vitest run tests/ai`
+Expected: FAIL (the Ancients AI imports deleted engine modules).
 
-- [ ] **Step 3: Implement the AI stub and adapt the game UI**
+- [ ] **Step 3: Implement the stub; delete the Ancients AI**
 
 - [ ] **Step 4: Run the suites and the partial type check**
 
-Run: `npx vitest run tests/ai tests/ui tests/engine tests/rules`
+Run: `npx vitest run tests/ai tests/engine tests/rules tests/scenarios tests/golden`
 Expected: PASS.
-Run: `npx tsc --noEmit -p . 2>&1 | grep -E '^(src/(engine|ai|ui/game|ui/kit|scenarios)|tests/(ai|ui|engine|rules))/'`
+Run: `npx tsc --noEmit -p . 2>&1 | grep -E '^(src/(engine|ai|scenarios)|tests/(ai|engine|rules|scenarios|golden|support))/'`
 Expected: no output.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add -A src/ai src/ui/game src/ui/kit tests/ai tests/ui
-git commit -m "feat(ai,ui): random AI stub and generic decision prompts on the new contract
+git add -A src/ai tests/ai
+git commit -m "feat(ai): seeded random AI stub on the new engine contract
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task T1c-4: Art placeholders, terrain painters, screens, galleries and scripts; squash-merge
+### Task T1c-3b: Game UI and art placeholders on the new contract
 
 **Model:** Sonnet. **Lane:** `p2b-t1c`.
 
 **Files:**
-- Delete: `src/art/{camel,chariot,elephant,exp2-parts,exp3-parts}.tsx`, `src/ui/terrain/{ditch,sea,walls}.tsx`, `tests/art/{blocks,figures,kits}.test.ts`, `scripts/{ai-balance,ai-balance-report,ai-datagen,ai-fit,ai-review,ai-stats}.ts`
-- Rename: `src/ui/terrain/rampart.tsx` → `src/ui/terrain/fieldworks.tsx` (draws the works hexsides of `GameState.works`)
-- Modify: `src/art/{token,leader,icon,palettes,kits,parts,foot,mounted,machine,index}.ts(x)` (not `src/art/nap/**`), `src/ui/history/HistoryDialog.tsx` (line 23 only: `blockColors(sc.setup[side].nation)`; tell the controller, since the history track owns that folder), `src/ui/terrain/{BoardArt,TerrainIcon,base,hills,water,vegetation,objectives,index,palette,field}.ts(x)`, `src/ui/screens/{RulesReference,Menus,picker}.ts(x)`, `src/dev/{ArtGallery,TerrainGallery,KitGallery,HistoryGallery}.tsx`, `scripts/{ai-match,golden-record,lib}.ts`, `tests/art/helpers.ts`, `CLAUDE.md` (Status: "the engine is the Napoleonics skeleton (Plan 2B T1c); rules land task by task")
-- Create: `tests/art/placeholder.test.ts`
+- Delete: `src/ui/game/diceOrders.ts`, `tests/art/{blocks,figures,kits}.test.ts`
+- Create: `src/ui/game/promptSpec.ts`, `tests/ui/generic-prompts.test.ts`, `tests/art/placeholder.test.ts`
+- Modify: `src/ui/game/*` (controller, prompts, uiModel, panels, GameScreen, Board, boardProps, unitText, terrainTips, objectiveText, BattleResult, TerrainTipBlock, opponent, makeOpponent), `src/ui/kit/{Dice,CardView,SectionMiniMap,BannerTrack,theme,index}.tsx/ts`, `src/ui/App.tsx` (no `GameOptions`)
+- Rewrite: `src/art/{token,leader,icon,palettes,index}.ts(x)` as placeholders that import none of the Ancients figure files (`foot`, `mounted`, `machine`, `kits`, `parts`, `camel`, `chariot`, `elephant`, `exp2-parts`, `exp3-parts`; T1c-4 deletes them); `tests/art/helpers.ts`
+- Rewrite tests: `tests/ui/{board-marks,terrain-tips,rematch,controller-helpers}.ts`; re-point as needed `tests/ui/{battle-result,controller-ask-ahead,identity,record,undo-card}.test.ts`
 
 **Interfaces:**
-- Produces (`src/art/token.tsx`; Plan 6B Task 7 replaces the bodies):
+- Consumes: the engine index; `ArmGlyph` from `src/art/nap` (import only; the art track owns the module).
+- Produces:
 
 ```ts
+// src/ui/game/promptSpec.ts — the pure description of the human's prompt for any decision
+export interface PromptAction { key: string; label: string; answer: Answer | 'auto' }
+export interface PromptSpec { title: string; text: string; actions: PromptAction[]; hexes: HexId[] }
+export const DECISION_TITLES: Readonly<Record<Decision['kind'], string>>;
+export function promptSpec(s: GameState, d: Decision): PromptSpec;
+// src/art/token.tsx — placeholders; Plan 6B Task 7 replaces the bodies
 export type Kind = 'foot' | 'mounted' | 'machine';
-export function figureKind(k: UnitKey): Kind;            // by ARM_OF[codeOf(k)]: infantry foot, cavalry mounted, artillery machine
+export function figureKind(k: UnitKey): Kind;            // by ARM_OF[codeOf(k)]
 export interface UnitTokenProps { unitKey: UnitKey; nation: Nation; blocks: number; maxBlocks: number; facing: 'left' | 'right'; dimmed?: boolean }
-export function UnitToken(p: UnitTokenProps): JSX.Element;   // any UnitKey renders (a key with no row draws the placeholder of its arm)
-export function UnitIcon(p: { unitKey: UnitKey; size: number }): JSX.Element;
+export function UnitToken(p: UnitTokenProps): JSX.Element;   // any UnitKey renders: one simple figure per block (a primitive silhouette per Kind), the nation's base edge
+export function UnitIcon(p: { unitKey: UnitKey; size: number }): JSX.Element;   // the arm glyph (ArmGlyph)
+// src/art/leader.tsx
+export const LEADER_ATTACH_OFFSET: { x: number; y: number };   // { x: 29, y: -28 }, as the art track's frame
+export interface LeaderTokenProps { name: string; nation: Nation; attached: boolean; dimmed?: boolean }
+export function LeaderToken(p: LeaderTokenProps): JSX.Element;  // a disc in the nation's colour with a name ribbon
+// src/art/palettes.ts
+export interface SideColors { /* the existing shape: edge, edgeShade, edgeLight, cloth, … unchanged */ }
+export const BLOCK_COLORS: Readonly<Record<Nation, SideColors>>;   // FR blue, BR red, PT and AL brown, SP yellow
+export function blockColors(nation: Nation): SideColors;
+export const BASE_TOP: string;
 ```
 
-Palettes are keyed by `Nation` (`paletteFor(nation)`): FR blue, BR red, PT and AL brown, SP yellow, reusing one Ancients look's palette structure with those colours. The leader token takes `nation` instead of `look`/`blocks`. Terrain painters keep towns (town, windmill, fortress share the town painter), hills, water (river, ford, fordNoStop, brook, bridge), forests; rugged uses the hill painter darkened; sand quarry a pale patch. `RulesReference` renders its units tab from `UNIT_STATS`, cards from `CARD_DEFS`, terrain from `TERRAIN_STATS` until Plan 6. `picker.ts` tabs come from `EXPANSIONS` (2 tabs, both empty while `000` is the only battle). `scripts/ai-match.ts` plays the AI stub against itself on `000` (no `tests/ai/bots.ts`).
+UI rules:
+- `promptSpec` covers all 18 kinds: `title` from `DECISION_TITLES`; every spec ends with `{ key: 'auto', label: 'Let the general decide', answer: 'auto' }`. Its other actions: `leaveSquare` → `yes`/`no`; `advance` → `yes` (Advance) / `no` (Stay); `defend` → one action per `options` entry, key = the choice (Stand / Retire and Reform / Form square / First Strike); `scoutKeep` → `keep0`/`keep1`, labels the two cards' titles; `breakthroughExtra` and `bonusMelee` → `decline` unless `required`, and `hexes` = the options/targets; `shortSupplyHex` → `hexes`; `shortSupplyTarget` and `combinedArms` → `hexes` of the listed units, plus `none` (`select []`) for `combinedArms`; `elan` and `rally` → **only** `auto` until Plan 4. Every non-`auto` action's answer is legal (`answerError` null).
+- `prompts.tsx` `gamePrompt(c)` renders the spec: one button per action (`key` = action key; `auto` calls `controller.autoAnswer()`); the bespoke choosers stay for `playCard`, `orders`, `move`, `battle`, `retreat`, `leaderRetreat`, `ignoreFlags` (board clicks and highlights as today), with the spec's title and the `auto` button added. `SECTION_LABEL.center` is `'Centre'`.
+- `controller.ts`: a log line for every event kind; an event kind without its own wording logs `"<kind>"` generically; combat descriptions by `RollPurpose`; no card-loss notice; `cardPlayed.side` may be the non-active side (a reactive First Strike). `uiModel.ts` highlights from `battleTargets` (`kind 'fire' | 'melee'`), hit chance `1/6` per die for fire, `2/6` against infantry.
+- `kit/Dice.tsx`: placeholder glyphs for the five faces (`ALL_DIE_FACES = DIE_FACES`); `CardView` groups `section | tactic`; `unitText.ts` builds lines from `UNIT_STATS` (blocks, move options, melee and fire rules, retreat, flags ignored, sabres); `theme.ts` reads `blockColors(nation).cloth`.
+- `Board.tsx` keeps calling the terrain painters through their current entry point; T1c-4 adapts the painters behind it. Difficulty, records and medals are unchanged; the briefing's optional-rules switch goes (no battle offers options).
 
-- [ ] **Step 1: Write the failing test** `tests/art/placeholder.test.ts`
+- [ ] **Step 1: Write the failing tests**
+
+`tests/ui/generic-prompts.test.ts`:
 
 ```ts
-it('every unit row draws a token with one figure per block and no NaN', () => {
+const s = createGame(scenarioById('000').setup, 1);
+const SAMPLES: Decision[] = [/* one literal per Decision kind, with ids and hexes valid in `s` */];
+it('every decision kind has a titled prompt with the general\'s button', () => {
+  expect(new Set(SAMPLES.map((d) => d.kind)).size).toBe(18);
+  for (const d of SAMPLES) { const p = promptSpec(s, d); expect(p.title.length).toBeGreaterThan(0); expect(p.actions.at(-1)).toEqual({ key: 'auto', label: 'Let the general decide', answer: 'auto' }); }
+});
+it('every other action is a legal answer', () => {
+  for (const d of SAMPLES) for (const a of promptSpec(s, d).actions) if (a.answer !== 'auto') expect(answerError(s, d, a.answer)).toBeNull();
+});
+it('Élan and Rally offer only the general until Plan 4; Scout names its two cards', () => {
+  expect(promptSpec(s, elan).actions.map((a) => a.key)).toEqual(['auto']); expect(promptSpec(s, rally).actions.map((a) => a.key)).toEqual(['auto']);
+  expect(promptSpec(s, scout).actions.map((a) => a.label).slice(0, 2)).toEqual([CARD_DEFS[cardKind(scout.cards[0])].title, CARD_DEFS[cardKind(scout.cards[1])].title]);
+});
+it('autoAnswer alone plays the drill battle to a finish for the human', async () => { /* SeededOpponent from controller-helpers + controller.autoAnswer() loop: view.over, a winner */ });
+```
+
+`tests/art/placeholder.test.ts`:
+
+```ts
+it('every unit row draws a token, at full and at 1 block, with no NaN; any UnitKey renders', () => {
   for (const k of UNIT_KEYS) for (const b of [UNIT_STATS[k].blocks, 1]) {
-    const svg = renderToStaticMarkup(createElement(UnitToken, { unitKey: k, nation: nationOf(k), blocks: b, maxBlocks: UNIT_STATS[k].blocks, facing: 'left' }));
-    expect(svg).not.toContain('NaN');
+    expect(renderToStaticMarkup(createElement(UnitToken, { unitKey: k, nation: nationOf(k), blocks: b, maxBlocks: UNIT_STATS[k].blocks, facing: 'left' }))).not.toContain('NaN');
   }
+  expect(renderToStaticMarkup(createElement(UnitToken, { unitKey: 'FR/LNC', nation: 'FR', blocks: 4, maxBlocks: 4, facing: 'right' }))).not.toContain('NaN');
 });
 it('placeholder figures follow the arm', () => {
   expect(figureKind('BR/RI')).toBe('foot'); expect(figureKind('FR/CU')).toBe('mounted'); expect(figureKind('FR/HA')).toBe('machine'); expect(figureKind('FR/LNC')).toBe('mounted');
 });
+it('block colours by nation keep the side-colour shape', () => { for (const n of NATIONS) expect(Object.keys(blockColors(n)).sort()).toEqual(Object.keys(blockColors('FR')).sort()); });
 ```
 
-`tests/ui/screens.test.ts` "battle picker tabs": two tabs in box order, the hidden drill in none; "dev route starts every battle" re-pointed at `000`.
+- [ ] **Step 2: Run to verify they fail**
 
-- [ ] **Step 2: Run to verify it fails**
+Run: `npx vitest run tests/ui/generic-prompts.test.ts tests/art/placeholder.test.ts`
+Expected: FAIL.
 
-Run: `npx vitest run tests/art/placeholder.test.ts`
+- [ ] **Step 3: Implement the game UI and the art placeholders**
+
+- [ ] **Step 4: Run exactly these suites and the partial type check**
+
+Run: `npx vitest run tests/ui/{generic-prompts,battle-result,board-marks,controller-ask-ahead,identity,record,rematch,terrain-tips,undo-card}.test.ts tests/art/placeholder.test.ts tests/art/nap tests/ai tests/engine tests/rules tests/scenarios tests/golden tests/history`
+Expected: PASS. (`tests/ui/{screens,unit-text,clean-slate,random-battle,triumphs-screens,version}.test.ts` import `src/ui/screens`, which T1c-4 rewrites; they are not run here.)
+Run: `npx tsc --noEmit -p . 2>&1 | grep -E '^(src/(engine|ai|ui/game|ui/kit|scenarios)|src/art/(token|leader|icon|palettes|index)\.tsx?|src/ui/App\.tsx|tests/(ai|engine|rules|scenarios|golden|art/placeholder|ui/(generic-prompts|battle-result|board-marks|controller-ask-ahead|controller-helpers|identity|record|rematch|terrain-tips|undo-card)))'`
+Expected: no output.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add -A src/ui/game src/ui/kit src/ui/App.tsx src/art/token.tsx src/art/leader.tsx src/art/icon.tsx src/art/palettes.ts src/art/index.ts tests/ui tests/art/placeholder.test.ts tests/art/helpers.ts tests/art/blocks.test.ts tests/art/figures.test.ts tests/art/kits.test.ts
+git commit -m "feat(ui,art): generic decision prompts and placeholder figures on the new contract
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task T1c-4: Art clean-up, terrain painters, screens, galleries and scripts; squash-merge
+
+**Model:** Sonnet. **Lane:** `p2b-t1c`.
+
+**Files:**
+- Delete: `src/art/{camel,chariot,elephant,exp2-parts,exp3-parts,foot,mounted,machine,kits,parts}.ts(x)` (after `grep` confirms nothing imports them), `src/ui/terrain/{ditch,sea,walls}.tsx`, `scripts/{ai-balance,ai-balance-report,ai-datagen,ai-fit,ai-review,ai-stats}.ts`
+- Rename: `src/ui/terrain/rampart.tsx` → `src/ui/terrain/fieldworks.tsx` (draws the works hexsides of `GameState.works`)
+- Modify: `src/ui/terrain/{BoardArt,TerrainIcon,base,hills,water,vegetation,objectives,index,palette,field}.ts(x)`, `src/ui/screens/{RulesReference,Menus,picker}.ts(x)`, `src/dev/{ArtGallery,TerrainGallery,KitGallery,HistoryGallery}.tsx` (not `FigureGallery.tsx`), `scripts/{ai-match,golden-record,lib}.ts`, `src/ui/history/HistoryDialog.tsx` (line 23 only: `blockColors(sc.setup[side].nation)`; `SideColors` keeps its shape, line 24 reads `edge` and `edgeShade`; the controller tells the history track), `CLAUDE.md` (Status: "the engine is the Napoleonics skeleton (Plan 2B T1c); rules land task by task")
+- Rewrite tests: `tests/ui/{screens,unit-text,clean-slate,random-battle,triumphs-screens,version}.test.ts`
+
+**Interfaces:**
+- Consumes: T1c-3b's `UnitToken`, `LeaderToken`, `blockColors`; `UNIT_STATS`, `CARD_DEFS`, `TERRAIN_STATS`, `EXPANSIONS`.
+- Produces: terrain painters for towns (town, windmill, fortress share the town painter), hills, water (river, ford, fordNoStop, brook, bridge), forests; rugged as a darkened hill; sand quarry a pale patch; Field Works hexsides. `RulesReference` renders units from `UNIT_STATS`, cards from `CARD_DEFS`, terrain from `TERRAIN_STATS` until Plan 6. `picker.ts` tabs from `EXPANSIONS` (2 tabs, both empty while `000` is the only battle). `ArtGallery` shows the placeholder token of every `UNIT_KEYS` row and a leader per nation. `scripts/ai-match.ts` plays the AI stub against itself on `000`.
+
+- [ ] **Step 1: Rewrite the screen tests**
+
+`tests/ui/screens.test.ts` "battle picker tabs": two tabs in box order (`The Peninsula & Waterloo`, `The Spanish Army`), the hidden drill in none; the optional-rules describes go; "dev route starts every battle" re-pointed at `000`. `unit-text.test.ts`: `unitSummary` lines for `FR/LN` mention "+1 against infantry", for `BR/RI` "range 3" and "no sabre hits", for `AL/LN` "retreats 2"; the rules reference's Units tab lists all 34 rows. `clean-slate`, `random-battle`, `triumphs-screens`, `version`: re-pointed at the new screens with assertions unchanged.
+
+- [ ] **Step 2: Run to verify they fail**
+
+Run: `npx vitest run tests/ui/{screens,unit-text,clean-slate,random-battle,triumphs-screens,version}.test.ts`
 Expected: FAIL.
 
 - [ ] **Step 3: Implement; delete the Ancients-only art, painters and scripts**
@@ -875,14 +988,14 @@ Expected: FAIL.
 - [ ] **Step 4: Run every check**
 
 Run: `npm run typecheck && npm test`
-Expected: clean; all green (the T1c test files plus every kept suite, `tests/art/nap/**` and `tests/history/**` untouched and green).
+Expected: clean; all green (`tests/art/nap/**` and `tests/history/**` untouched and green).
 Then start the `dev` launch config; with `localStorage.setItem('ccn-muted','1')` set first, load `#/`, `#/gallery/art`, `#/gallery/terrain`, `#/gallery/kit`, `#/gallery/history`, `#/gallery/figures` and `#/play/000/bottom/tribune`; play two turns with "Let the general decide" and confirm no console errors. Record what each page shows in the report.
 
 - [ ] **Step 5: Commit, review, squash-merge**
 
 ```bash
-git add -A src/art/*.ts src/art/*.tsx src/ui/terrain src/ui/screens src/dev scripts tests/art/*.ts CLAUDE.md
-git commit -m "feat(art,ui): placeholder figures by arm, Napoleonic terrain painters and screens on the new contract
+git add -A src/art/*.ts src/art/*.tsx src/ui/terrain src/ui/screens src/dev/ArtGallery.tsx src/dev/TerrainGallery.tsx src/dev/KitGallery.tsx src/dev/HistoryGallery.tsx scripts src/ui/history/HistoryDialog.tsx tests/ui CLAUDE.md
+git commit -m "feat(art,ui): Napoleonic terrain painters and screens; Ancients art and scripts removed
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
@@ -905,7 +1018,7 @@ After the Opus review of the whole branch (deletion inventory against `plan2-pre
 - Produces (bodies of the T1c-2 signatures in `dice.ts`):
   - `baseFireDice(st, blocks, distance, moved): number` — musket: `distance > range` → 0; `moved === 0` → `blocks + standing`; `moved ≥ 1` → `⌈blocks/2⌉` (`round 'up'`) or `⌊blocks/2⌋` (`'down'`) `+ moving`, and 0 stays 0 (R5, R15, R73: 2 hexes under Force March use the moving value). Artillery: `distance > range` → 0; row = `moved === 0 ? standing : moved === 1 ? moved : null` (null → 0); value `row[blocks ≥ 2 ? 'full' : 'one'][distance − 1]`. Cavalry: 0.
   - `fireDice(s, u, targetHex, ctx)` — RR §3.2 in order: base (0 → return 0, no card creates the shot); `+ cardDice(turn.mods.fire, st)` only when `ctx.role === 'attack'`, `u.side === s.active` and `turn.ordered[u.id]?.cardMods`; cap 1 when `u.square`; `+ terrainReduction(s, u, 'fire', u.hex, targetHex)`; floor 0.
-  - `baseMeleeDice(s, u, target, moved)` — `blocks` rule: `u.blocks + plus + (target is a Unit with arm infantry ? vsInfantry : 0)` (a lone leader never gets `vsInfantry`, [Interp R2]); artillery: `baseFireDice(st, u.blocks, 1, moved)`.
+  - `baseMeleeDice(s, u, target, moved)` — `blocks` rule: `u.blocks + plus + (target is a Unit with arm infantry ? vsInfantry : 0) + (moved > 0 ? movedPlus : 0)` (a lone leader never gets `vsInfantry`, [Interp R2]); artillery: `baseFireDice(st, u.blocks, 1, moved)`.
   - `meleeDice(s, u, target, ctx)` — base (for `ctx.declared` and a moved artillery cell of 0, use the standing 1-block cell, R12); card dice when `ctx.role === 'attack'`, or `'bonus'` with `turn.mods.bonusMelee`, under the same ordered/active test, and 0 when `turn.mods.lostInTown` and `TERRAIN_STATS[...].cancelsCavalryCharge` holds for `u.hex` or the target's hex; cap 1 when `u.square`, or when `u` is cavalry and the target is a unit in square (R31); terrain (none for `'escape'`); floor 0.
   - `escapeDice(s, u)` = `meleeDice(s, u, <a leader>, { role: 'escape', moved: 0 })`: type bonus and square cap, no terrain, no cards (RR §3.3).
   - `scoreRoll(faces, kind, by, target)` — fire: `face === target` hits; melee: `face === target` or (`'sabre'` and `by.sabreHits`); retireReform: only `'cavalry'` hits; flags counted for fire and melee, 0 for retireReform; `scoring[i]` marks hit faces. `sabreKills(faces)` = any `'sabre'`.
@@ -963,7 +1076,7 @@ it('Bayonet Charge: guard infantry +1 (§12.2)', () => { /* BR/GG 5 blocks vs FR
 it('squares roll at most 1 die; cavalry against a square at most 1, cards included (§3.2 step 4, R31)', () => {
   // top FR/LT square:1 at (4,6); bottom BR/LN at (6,6), BR/HC at (5,6)
   // fireDice(top square at (6,6)) → 1; meleeDice(top square vs BR/HC) → 1; meleeDice(BR/HC vs square) → 1;
-  // after play('cavalryCharge', ['u?' BR/HC]) still 1; meleeDice(BR/LN at (5,5) vs square) → 4
+  // after play('cavalryCharge', ['u3']) (u3 = the BR/HC) still 1; meleeDice(BR/LN at (5,5) vs square) → 4
 });
 it('no card creates a shot from 0 base dice (R15)', () => {
   // PT/LN 1 block, Force March (the only infantry), moves 1 hex: fireDice at distance 2 → 0
@@ -1178,12 +1291,14 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Create: `tests/rules/movement.test.ts` (header `// Rules: RR §6.2, §7.1, §7.2 (design/rules-reference.md)`)
 
 **Interfaces:**
-- Consumes: `statsOf`, `LEADER_MOVE`, `passableFor`, `stopsOnEntry`, `noBattleAfterEntering`, `exitAllowedFrom`, `turn.mods.move`, `OrderedPiece`.
+- Consumes: `statsOf`, `LEADER_MOVE`, `passableFor`, `stopsOnEntry`, `noBattleAfterEntering`, `exitAllowedFrom`, `exitPiece`, `updateHeld`, `turn.mods.move`, `OrderedPiece`.
 - Produces:
-  - `moveOptions(s, u, op)` — `!op.cardMods` or `turn.mods.move === null` → the row's `move`; `MoveMod` → its `options` when `matches(st, only)` (or no `only`), else the row's; `'forceMarch'` → `[{max:2,battle:true}]` for a unit tagged `light`, `grenadier`, `guard`, or with an attached leader when it starts its move, else `[{max:1,battle:true},{max:2,battle:false}]` (RR §12.2, R73). `turn.mods.noMove && op.cardMods` → `[{max:0,battle:true}]`.
-  - `unitMoves(s, id)` — breadth-first over steps ≤ the largest `max`; a step may not enter a hex with any unit, or an enemy leader, or a hex not `passableFor`; entering a lone friendly leader's hex is allowed only for a unit without a leader and ends the move there (`attach`); a unit with a leader may neither enter nor pass it (R80); `stopsOnEntry` ends the move; `battle` = the shortest path's length `d` satisfies `d === 0 || (some option with max ≥ d and battle) && (d === 0 || u.blocks ≥ battleAfterMoveMinBlocks)`, and false after entering a hex with `noBattleAfterEntering`; `OFF_BOARD` when `exitAllowedFrom(s, u, hex)` and one more step fits and the move was not stopped. A unit with `op.moveDone` or `op.attachedThisTurn` has no moves.
-  - `leaderMoves(s, id)` — up to `LEADER_MOVE` (or `MoveMod.leader` with `cardMods`); passes through friendly units and lone friendly leaders; may not end on a friendly leader; may end on a friendly unit without a leader (attaches, stops); never enters an enemy unit's or enemy leader's hex; terrain stops and impassable apply (RR §7.2).
-  - `applyMove(s, ctx, pieceId, target)` — relocate (an attached leader moves with his unit), emit `move`; set `op.moved = path.length − 1`, `moveDone`, `stopEntered` (stop terrain, works crossing or a lone friendly leader's hex), `noBattle`; a leader ending on a friendly unit attaches (`attach` event) and sets that unit's `attachedThisTurn` if it is ordered (it is not ordered by this); `OFF_BOARD` → `exitPiece`; then `updateHeld`.
+  - `moveOptions(s, u, op)` — `!op.cardMods` or `turn.mods.move === null` → the row's `move`; `MoveMod` → its `options` when `matches(st, only)` (or no `only`), else the row's; `'forceMarch'` → `[{max:2,battle:true}]` for a unit tagged `light`, `grenadier`, `guard`, or with an attached leader when it starts its move, else `[{max:1,battle:true},{max:2,battle:false}]` (RR §12.2, R73). `turn.mods.noMove && op.cardMods`, or the unit is in square (`u.square`), → `[{max:0,battle:true}]` (R33).
+  - `canBattleAfterMove(s, u, op)` — `op.moved === 0`: some option of `moveOptions` has `battle: true` (so an unmoved La Grande Manoeuvre unit, options `[{4, no battle}]`, may not battle, R62); `op.moved ≥ 1`: some option with `max ≥ moved` and `battle`, and `u.blocks ≥ battleAfterMoveMinBlocks`; and never with `op.noBattle`. T6a's `battleTargets` uses it.
+  - `unitMoves(s, id)` — breadth-first over steps ≤ the largest `max`; a step may not enter a hex with any unit, or an enemy leader, or a hex not `passableFor`; entering a lone friendly leader's hex is allowed only for a unit without a leader and ends the move there (`attach`); a unit with a leader may neither enter nor pass it (R80); `stopsOnEntry` ends the move; `battle` = `canBattleAfterMove` with `moved` = the path's length `d` (the same rule), and false after entering a hex with `noBattleAfterEntering`; `OFF_BOARD` when `exitAllowedFrom(s, u, hex)` and one more step fits and the move was not stopped. A piece moves at most once per turn: a unit with `op.moveDone` or `op.attachedThisTurn`, or a leader with `op.moveDone`, has no moves (RR §7.2).
+  - `leaderMoves(s, id)` — none for a leader attached to a unit in square (R32); otherwise up to `LEADER_MOVE` (or `MoveMod.leader` with `cardMods`); passes through friendly units and lone friendly leaders; may not end on a friendly leader; may end on a friendly unit without a leader (attaches, stops); never enters an enemy unit's or enemy leader's hex; terrain stops and impassable apply (RR §7.2).
+  - `relocate(s, u, hex)` — moves the unit and its attached leader; no event (callers emit `move`, `retreat`, `advance`, `shortSupply`).
+  - `applyMove(s, ctx, pieceId, target)` — `relocate` (or move the leader), emit `move`; set `op.moved = path.length − 1`, `moveDone`, `stopEntered` (stop terrain, works crossing or a lone friendly leader's hex), `noBattle`; a leader ending on a friendly unit attaches (`attach` event) and sets that unit's `attachedThisTurn` if it is ordered (it is not ordered by this); `OFF_BOARD` → `exitPiece`; then `updateHeld`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1224,6 +1339,9 @@ it('a leader who joins a unit stops it moving; attaching does not order it (§6.
   // BR/LN stays unordered after he joins (turn.ordered has no entry for it)
 });
 it('nobody leaves the board without an exit objective (§7.2)', () => { /* top unit on row 0: no OFF_BOARD target */ });
+it('each piece moves at most once per turn (§7.2)', () => { /* probeC ordering BR/LC: after it moves (6,6)→(5,6), pieceMoves('u1') equals [] while it still has allowance */ });
+it('a square cannot move, and its attached leader cannot move alone (R32, R33)', () => { /* bottom BR/LN square:1 at (6,6) with a leader, ordered: pieceMoves for both [] */ });
+it('an unmoved La Grande Manoeuvre unit may not battle (R62)', () => { /* grandManoeuvre ordering BR/LN at (5,6) next to FR/LN: canBattleAfterMove false; its target list from pieceMoves has battle false everywhere */ });
 it('card movement (§12.2, [Interp R57] does not apply: cards order these units)', () => {
   // bayonetCharge BR/LN: (4,6) battle true; bayonetCharge BR/LT: (4,6) battle true;
   // forceMarch (the only infantry) BR/GR: (4,6) true; BR/LN without a leader: (5,6) true, (4,6) false; BR/LN with a leader: (4,6) true;
@@ -1267,9 +1385,10 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Create: `tests/rules/orders-turn.test.ts` (header `// Rules: RR §1, §5.1–§5.3, §6.1, §6.2, §12.1, §12.4, §12.5 (design/rules-reference.md)`)
 
 **Interfaces:**
-- Consumes: `sectionsOf`, `CARD_DEFS`, `mirrorKind`, `turn.command`, `squareTrack`, `attachedLeader`.
+- Consumes: `sectionsOf`, `CARD_DEFS`, `mirrorKind`, `turn.command`, `squareTrack`, `attachedLeader`, `newOrderedPiece` (now in `orders.ts`).
 - Produces:
-  - `validateOrders(s, side, kind, pieces)` for `sections`: each id is an own unit or own leader, no duplicates; a unit id orders the unit **with** its attached leader (one order); a leader id while attached is a **detach** order (one order; his unit is then ordered only if its id is listed too, a second order); detaching only when `def.detach` (or a copied card's), never from a unit in square (R32); each piece must lie in a section with orders left — the assignment of pieces to sections is a matching (a dotted-line piece may take either section's order), and the total per section ≤ its count (`'command'` = `turn.command`). Fewer pieces than allowed is fine; the rest are lost.
+  - `validateOrders(s, side, kind, pieces)` for `sections`: each id is an own unit or own leader, no duplicates; a unit id orders the unit **with** its attached leader (one order); a leader id while attached is a **detach** order (one order; his unit is then ordered only if its id is listed too, a second order); detaching only when `def.detach` (or a copied card's), never from a unit in square: a leader attached to a unit in square may be listed only together with that unit (one order each, two in all), and he can move only after the square has left (T9's `leaveSquareStep`; T5's `leaderMoves` gives him nothing while it is a square) (R32); each piece must lie in a section with orders left — the assignment of pieces to sections is a matching (a dotted-line piece may take either section's order), and the total per section ≤ its count (`'command'` = `turn.command`). Fewer pieces than allowed is fine; the rest are lost.
+  - `sampleOrders(s, side, kind, rnd)` for `sections`: shuffle the eligible pieces and add each one that keeps `validateOrders` null (detaching with probability ¼ where allowed), so `randomAnswer` explores detaching.
   - `effectiveCard(s, side, cardId)`: `counterAttack` → `lastCard[other(side)]` (null → `{ kind: null }`), mirrored by `mirrorKind`; that card's `def` drives everything; `lastCard` stores effective kinds, so a copy of a copy resolves (R56).
   - `drawPhase(s, ctx)`: the played card (or nothing, for a Counter-Attack with nothing to copy, which is still the card played) to the discard; if `turn.reshuffle`: discard + deck shuffled into the deck (`reshuffle` event; square tracks untouched); then each other side draws `turn.firstStrikes[side]` cards first (R78); then the active side draws 1, or, with `turn.scout`, draws 2 (an empty deck between the draws takes the shuffled discard, Scout included), emits `scoutDrew` (no ids), asks `scoutKeep { cards }`, keeps the chosen card and discards the other (`discarded` event with its id).
   - `phases.ts`: when `eligiblePieces` is empty the `orders` decision is not asked and phases 2–4 are skipped (RR §5.2 step 1); otherwise it is asked and `[]` is a legal answer.
@@ -1310,7 +1429,8 @@ it('an attached leader goes with his unit on one order; detaching costs one orde
   // probeC [L, 'u1', 'u2'] refused (3 orders); bayonetCharge [L] refused (no detach on that card)
 });
 it('two leaders never share a hex; a leader attached to a square cannot detach (§6.2, R32)', () => {
-  // a leader attached to a BR/LN square:1 at (6,6): probeC [L] refused, probeC ['u1'] valid
+  // a leader attached to a BR/LN square:1 at (6,6): probeC [L] refused, probeC ['u1'] valid, probeC [L, 'u1'] valid (two orders);
+  // a second leader may not end his move on L's hex (leaderMoves excludes it)
 });
 it('a card that can order nothing skips to the draw (§5.2)', () => {
   // only BR/LN at (6,6) for bottom; bottom plays probeL: no orders decision; the events after cardPlayed are draw, then turnStart (top)
@@ -1418,6 +1538,7 @@ it('exit: retreats never carry a unit off; elimination on the hex gives only the
   // top FR/LN 2 blocks on (0,4), 1 flag → 1 block, still on (0,4); later eliminated there → players.bottom.banners 1
 });
 it('killWeight: first enemy infantry 1, each later one 2; other arms 1 (§13.4, R65)', () => {
+  // (every attack through the kit's attack(), so a later Retire and Reform offer on FR/HC is answered 'stand')
   // killWeight bottom, enemyArm infantry, first 1, later 2: top FR/LN eliminated → bottom 1; second → 3; top FR/HC eliminated → 4; bottom units killed give top 1 each
 });
 it('one event is applied fully before the check ([Interp R64])', () => {
@@ -1477,12 +1598,12 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Create: `tests/rules/fire-melee.test.ts` (header `// Rules: RR §3.1, §8.1, §8.2, §9.1–§9.3 (design/rules-reference.md)`), `tests/rules/retreat-flags.test.ts` (header `// Rules: RR §1, §10.1, §10.2 (design/rules-reference.md)`)
 
 **Interfaces:**
-- Consumes: T2 `fireDice`, `meleeDice`, `scoreRoll`; T3 `worksFlagIgnore`; T4 `fireTargets`; T13 `sideRuleFlagIgnores`, `scoreKill`, `updateHeld`; `cardForbidsBattle` (stub until T12a); hooks of `melee.ts`.
+- Consumes: T2 `fireDice`, `meleeDice`, `scoreRoll`; T3 `worksFlagIgnore`; T4 `fireTargets`; T5 `canBattleAfterMove`, `relocate`; T13 `sideRuleFlagIgnores`, `scoreKill`, `updateHeld`; `cardForbidsBattle` (stub until T12a); hooks of `melee.ts`.
 - Produces:
-  - `battleTargets(s, id)`: an ordered unit with `!op.battled`, `!op.noBattle`, and allowed to battle after its move (`moveOptions`/`battleAfterMoveMinBlocks`, as T5's `battle` flag), and `!cardForbidsBattle`: fire targets (`fireTargets`, unless `mods.noFire && op.cardMods`) with `fireDice ≥ 1`; melee targets = adjacent enemy units (unless `mods.noMelee && op.cardMods`) with `meleeDice ≥ 1` (R15). `validateBattle` refuses any other target with `'That unit cannot battle there.'`.
+  - `battleTargets(s, id)`: an ordered unit with `!op.battled` and `canBattleAfterMove(s, u, op)` (T5), and `!cardForbidsBattle`: fire targets (`fireTargets`, unless `mods.noFire && op.cardMods`) with `fireDice ≥ 1`; melee targets = adjacent enemy units (unless `mods.noMelee && op.cardMods`) with `meleeDice ≥ 1` (R15). `validateBattle` refuses any other target with `'That unit cannot battle there.'`.
   - `fireAttack`: `combat` (purpose `fire`) and `roll` events; hits by arm, minus `ignoresInfantryFireHits` when the firer is infantry; `applyOutcome`; `op.battled = true`. No battle back (RR §8.2).
   - `meleeAttack` (attacker's part and battle back; keep every hook call): `combat` purpose `melee` (or `bonus`), roll, `applyOutcome`; defender vacated (eliminated or left) → `afterMelee`; otherwise, if it has ≥ 1 block and the attacker is in place: battle back with `meleeDice(role 'back')`, purpose `battleBack`, `applyOutcome` against the attacker (no battle back after a battle back, a retire, a First Strike or a square that fought first: those paths return earlier) (RR §9.2–§9.3).
-  - `applyOutcome(s, ctx, target, o, attacker, reason)`: remove `o.hits` blocks (excess lost); leader check (hook); eliminated → `removeUnit` and the leader hook, flags ignored; else, `flags` event; unless `o.bounce`, when `flagIgnores > 0` ask `ignoreFlags { flags, max: min(flags, flagIgnores) }`; accepted flags → `retreatDistance`; `target.square` → lose 1 block per hex (no movement); else `retreatOptions(s, target, dist)`, asked when more than one, walked (`retreat` event, `relocate`, `updateHeld`), losses for hexes short; a loss from a failed retreat triggers the leader check unless one was made for this roll; push the end hex onto `turn.retreatEnds`.
+  - `applyOutcome(s, ctx, target, o, attacker, reason)`: remove `o.hits` blocks (excess lost); leader check (hook); eliminated → `removeUnit` and the leader hook, flags ignored; else, `flags` event; unless `o.bounce`, when `flagIgnores > 0` ask `ignoreFlags { flags, max: min(flags, flagIgnores) }`; accepted flags → `retreatDistance`; `target.square` → lose 1 block per hex (no movement); else `retreatOptions(s, target, dist)`, asked when more than one, walked (`retreat` event, `relocate`, `updateHeld`), losses for hexes short; a loss from a failed retreat triggers the leader check unless one was made for this roll; when the target belongs to the non-active side, push its end hex onto `turn.retreatEnds` (Decided details).
   - `flagIgnores(s, target, attacker, leaderOk)` = (attached leader and `leaderOk` ? 1 : 0) + (`supportCount ≥ 2` and not in square ? 1 : 0) + `worksFlagIgnore(s, target, attacker.hex)` + `statsOf(target).flagIgnore` + `sideRuleFlagIgnores(s, target)` (R23).
   - `retreatOptions(s, u, hexes)`: every path of `hexes` steps, each to a retreat neighbour (`rearHexes`), never into a unit, an enemy leader, an impassable hex or off the board; a unit without a leader may end early on a lone friendly leader (attach, losses 0); one with a leader may pass a lone friendly leader but not end there (R75); if any path is full length, only full-length paths; else the longest, `losses = hexes − length` (R74). Ascending by end hex.
 
@@ -1493,7 +1614,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```ts
 const fire = (key: RowKey, target: RowKey, faces: DieFace[], extra: Pos = {}) => {
   const d = toBattle(build({ ...extra, units: [{ side: 'bottom', key, at: [6, 6] }, { side: 'top', key: target, at: [4, 6] }, ...(extra.units ?? [])] }), 'attackC', ['u1']);
-  forceDice(faces); must(d, { kind: 'attack', unit: 'u1', target: H(4, 6) }); return d;
+  forceDice(faces); attack(d, 'u1', H(4, 6)); return d;
 };
 it('fire: the matching arm symbol hits; sabres never do (§3.1, §8.2)', () => {
   const d = fire('BR/LN', 'FR/LN', ['infantry', 'sabre', 'cavalry', 'artillery', 'infantry']);
@@ -1511,7 +1632,7 @@ it('melee and battle back: FR/LN battles back with +1 against infantry (§9.3, R
 it('battle back takes no card dice (§9.3)', () => { expect(duel('BR/HC', 'FR/LN', { card: 'cavalryCharge' })).toEqual({ attack: 5, back: 4 }); });
 it('a guns unit battles back with its range-1 dice', () => { expect(duel('BR/LN', 'FR/FA')).toEqual({ attack: 4, back: 4 }); });
 it('a defender that failed a retreat and lost a block still battles back (R38)', () => {
-  // top FR/LN at (4,6), top units on (3,5) and (3,6); the attack rolls 1 flag and misses: FR/LN 3 blocks, battles back with 4 dice
+  // top FR/LN at (4,6), top units on (3,5) and (3,6); the attack rolls 1 flag and misses; answer ignoreFlags count 0: FR/LN 3 blocks, battles back with 4 dice
 });
 it('no battle back by a defender that retreated or was eliminated (§9.3)', () => { /* one flag, a free hex: retreat event, no battleBack combat */ });
 it('a defender attacked by several units battles back against each (§9.3)', () => { /* two bottom units attack (4,6) in turn: two battleBack combats */ });
@@ -1519,6 +1640,8 @@ it('no attack is offered with 0 dice (R15)', () => {
   // BR/LC 1 block at (5,6), FR/LN in a town at (4,6): battleTargets [] and the attack answer is refused
 });
 it('a gun that moved, a light unit that moved 2, a unit that entered a forest may not melee (§9.1)', () => { /* battleTargets [] in each case */ });
+it('a La Grande Manoeuvre unit that did not move may not battle (R62)', () => { /* grandManoeuvre ordering BR/LN at (5,6) next to FR/LN, endMoves: battleTargets('u1') [] */ });
+it('Fire and Hold bookkeeping: only retreats of the non-active side are recorded (R58)', () => { /* a bottom attacker retreats from a battle back: turn.retreatEnds []; a top defender retreats to (3,5): [H(3,5)] */ });
 ```
 
 `retreat-flags.test.ts`:
@@ -1532,7 +1655,7 @@ it('retreat neighbours: the two own-side hexes, fewer at an edge, none on the ba
 });
 it('per-flag distance: 1, AL/LN 2, ML 3 (§10.1, R10)', () => { /* one flag at a top AL/LN: retreat options of length 2; FR/ML: 3; two flags at FR/LN: 2 */ });
 it('a blocked hex costs a block; the full distance must be taken when any path allows it (R74)', () => {
-  // FR/LN at (4,6) with top units on (3,5) and (3,6), 1 flag: 3 blocks left, still on (4,6)
+  // FR/LN at (4,6) with top units on (3,5) and (3,6) (they support it: answer ignoreFlags count 0), 1 flag: 3 blocks left, still on (4,6)
   // FR/ML at (4,6) with a top unit on (3,5), 1 flag: every option has losses 0 and path[0] === H(3,6)
   // FR/ML at (4,6) with top units on (2,5), (2,6), (2,7) (row 2 closed), 1 flag: options end on row 3 with losses 2
 });
@@ -1591,7 +1714,8 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
   - `validateOrders` for `kinds` (≤ `max` own units matching; with `notAdjacentToEnemy`, none adjacent to an enemy unit), `sectionAll` (the pieces are exactly the matching units of one section, a dotted-line unit counting in both), `leaders` (every own leader; a listed unit must have an attached leader that is listed, meaning he stays attached; a leader whose unit is not listed detaches), `grandManoeuvre` (≤ `max` units or leaders, none in square; with `single`, exactly one unit, which may be a square).
   - `fallbackActive(s, side, kind)` = `kinds`, `sectionAll` or `leaders` with no matching piece of the side **on the board** (ineligible ones count, [Interp R57]); then exactly one unit (never a lone leader) of the player's choice, `cardMods` false.
   - `autoOrders(s, side, 'coldSteel')` = every own unit adjacent to an enemy unit when the card is played (lone leaders excluded) (R61); `null` for other kinds.
-  - `cardForbidsBattle(s, op, u)`: Fire and Hold and a hex of `turn.retreatEnds` adjacent to `u` holds an enemy unit that retreated there → true (R58); Cold Steel and `u` no longer adjacent to an enemy unit → true (R61).
+  - `cardForbidsBattle(s, op, u)`: Fire and Hold and some hex of `turn.retreatEnds` is adjacent to `u` → true, whether or not the unit that retreated is still there (R58; `retreatEnds` holds only non-active retreats); Cold Steel and `u` no longer adjacent to an enemy unit → true (R61).
+  - `sampleOrders` for every tactic select: `kinds` (up to `max` random matching units, all not adjacent where required), `sectionAll` (a random section that has matching units; all of them), `leaders` (every leader; each attached unit kept with probability ½), `grandManoeuvre` (`single` with probability ¼, else up to 4 non-square pieces), and the fallback (one random unit) when `fallbackActive`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1611,8 +1735,10 @@ it('Cavalry Charge: up to 4 cavalry and/or horse artillery; bonus lost into or o
 it('Fire and Hold: up to 4 infantry/artillery not adjacent to an enemy unit; +1 fire; no move (R58)', () => {
   // BR/LN adjacent to FR/LN refused; BR/LN at (6,6) 2 hexes from FR/LN: fireDice 6; pieceMoves []
 });
-it('Fire and Hold: an enemy that retreated next to the unit stops its fire and melee (R58)', () => {
-  // two bottom units ordered; the first fires at a top unit that retreats onto a hex adjacent to the second; battleTargets(second) []
+it('Fire and Hold: an enemy that retreated next to the unit stops its fire and melee, even once it is gone (R58)', () => {
+  // fireAndHold ordering bottom u1 BR/LN (6,6), u2 BR/LN (2,6), u3 BR/FA in range; top X FR/LN 2 blocks at (4,6):
+  // u1 fires, one flag: X retreats to (3,5) or (3,6) (both next to u2): battleTargets('u2') [];
+  // u3 then fires at X and eliminates it: battleTargets('u2') still []
 });
 it('Fire and Hold with every infantry and gun adjacent orders nothing: no fallback ([Interp R57])', () => { /* orders ['u1'] refused; [] valid */ });
 it('Force March: all infantry of one section (§12.2)', () => {
@@ -1622,12 +1748,21 @@ it('Give Them the Cold Steel orders every unit adjacent to an enemy unit, no mov
   // bottom BR/LN at (5,6) next to FR/LN (4,6), BR/LT at (6,2), lone bottom leader at (5,7): no orders decision; ordered ['u1'];
   // pieceMoves(u1) []; meleeDice(u1 vs FR/LN) 5
 });
+it('Cold Steel: a unit no longer adjacent when its turn comes cannot battle (R61)', () => {
+  // bottom u1 BR/LN (5,6) and u2 BR/LN (5,5), both next to top FR/LN 1 block at (4,6) only: u1 eliminates it and declines the advance:
+  // battleTargets('u2') []
+});
 it('Leadership orders every leader and the units they stay with: +1 in each battle (R20)', () => {
   // bottom leader attached to BR/LN at (5,6), lone bottom leader at (6,2): pieces must list both leaders; [L1, L2, 'u1'] valid; meleeDice(u1) 5;
   // [L1, L2] valid: L1 detaches, u1 not ordered; with no leaders: 1 unit, cardMods false
 });
 it('La Grande Manoeuvre: up to 4 units or leaders, not squares, 4 hexes no battle; or 1 unit under its own rules (R62)', () => {
   // a square refused in the group; ['u_square'] with single: true valid; single unit BR/LN: moves 1 and may battle (cardMods false)
+});
+it('a copied card\'s fallback works as the original\'s (R57)', () => { /* top played bayonetCharge; bottom has no infantry: its counterAttack orders 1 unit with cardMods false */ });
+it('randomAnswer gives a legal orders answer for every card kind (sampleOrders)', () => {
+  // for each CardKind with an orders decision, on a 000 state and on a state with no infantry, no artillery and no leaders:
+  // giveCard, play it, then 20 randomAnswer(d.state, d.pending, rnd) orders answers each pass answerError
 });
 it('card dice never apply on the opponent\'s turn (§12.2)', () => { /* the unit ordered by Leadership battles back on the next turn with its plain dice */ });
 ```
@@ -1664,7 +1799,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Create: `tests/rules/elan-rally-supply.test.ts` (header `// Rules: RR §12.2, §12.4, §12.5 (design/rules-reference.md)`)
 
 **Interfaces:**
-- Consumes: `turn.command`, `rollDice`, `newOrderedPiece`, `relocate`, `updateHeld`, `sectionsOf`, `baselineRow`, `passableFor`, T11's draw phase (reads `turn.reshuffle`).
+- Consumes: `turn.command`, `rollDice`, `newOrderedPiece` (`orders.ts`), `relocate` (`movement.ts`), `updateHeld`, `sectionsOf`, `baselineRow`, `passableFor`, T11's draw phase (reads `turn.reshuffle`).
 - Produces:
   - `elanStep`: roll `turn.command` dice (`roll` purpose `elan`); ask `elan { faces }` unless every face is a sabre; `validateElan(s, side, faces, ids)`: one entry per face; an arm face may take an own unit of that arm (HA is artillery), a flag any own unit or leader (a flag-ordered attached leader detaches), a sabre `null`; no piece twice; `null` always allowed. Ordered pieces get `cardMods` true (Élan's +1, R53).
   - `rallyStep`: roll `turn.command` dice (`rally`); ask `rally { faces }` when some arm face matches an under-strength own unit; `validateRally`: arm faces on own units of that arm, each unit's `blocks + count ≤ maxBlocks`; flags and sabres `null`. Apply: `rallied` events; every unit that gained a block is ordered with `cardMods` false (R54). A rallied square is ordered and goes through `leaveSquareStep` like any other.
@@ -1677,6 +1812,7 @@ it('Élan: dice = Command; each arm symbol orders a unit of that arm, a flag any
   // bottom BR/LN (5,6) next to FR/LN, BR/HC, BR/HA, a lone leader; cards 5 → 5 dice; forceDice(['infantry','cavalry','artillery','flag','sabre']);
   // assign ['u1','u2','u3', <leader>, null] valid; ['u2', …] for the infantry face refused; meleeDice(u1 vs FR/LN) 5
 });
+it('an Élan flag that orders an attached leader detaches him (§6.2, R53)', () => { /* the flag face assigned to the leader attached to u1: turn.ordered has the leader and not u1; the leader may move off alone */ });
 it('Élan reshuffles at the end of the turn (R53)', () => { /* after the turn: discard holds no card; the Élan id is in the deck or a hand */ });
 it('Rally: arm symbols return blocks to under-strength units of that arm anywhere, never above the start (R54)', () => {
   // BR/LN 2 of 4 blocks far from any leader, BR/HC full: forceDice(['infantry','infantry','infantry','flag','sabre']);
@@ -1687,6 +1823,8 @@ it('Short Supply: any unit not in square, placed by its owner on its own baselin
   // choose FR/LN: pending shortSupplyHex for side top with options = vacant row-0 hexes c 4–8; answer (0,6): FR/LN on (0,6) with its leader, shortSupply event;
   // with row 0 c 4–8 all held: options are row 1 c 4–7; with those held too: no question, it stays
 });
+it('Short Supply: a unit on a dotted-line hex may use either section (R55)', () => { /* top FR/LN at (4,4) (top centre and right): options = vacant row-0 hexes of both sections, c 0–8 */ });
+it('a rallied square is ordered like any rallied unit (§9.5, [Interp R33])', () => { /* bottom BR/LN square:1 with 3 of 4 blocks rallied: turn.ordered has it; T9 tests that it may then come out */ });
 it('Short Supply orders no unit (§12.2)', () => { /* no ordered event, no move or battle decision after it */ });
 it('Counter-Attack copying Élan or Rally uses the copier\'s Command; copying Élan also reshuffles (§12.5, R56)', () => { /* bottom hand 4 + 1 → 5 dice; reshuffle event at the draw */ });
 ```
@@ -1753,12 +1891,13 @@ it('a second enemy hex means a second roll; a third eliminates him (R24)', () =>
   // bottom units on (3,5),(3,6),(2,5),(2,6),(2,7),(1,4),(1,5),(1,6),(1,7): two escape rolls of misses, then leaderKilled, bottom banners 2
 });
 it('he may pass a lone enemy leader with no roll; he may choose an escape even with a free path (R24, R25)', () => { /* the leader's unit eliminated on (4,6); a lone bottom leader on (3,5): an option passes (3,5) to row 2 with escapes []; a BR/LN on (3,6): an option through (3,6) with escapes ['<its id>'] exists alongside the free one */ });
+it('fire that takes blocks from a unit with a leader triggers the 2-dice check (§8.2, §11.1)', () => { /* BR/LN at (6,6) fires at top FR/LN with a leader: 1 infantry hit → one leaderCheck roll of 2 dice */ });
 it('one check per roll; a failed retreat after a survived check makes no second check (R18)', () => {
-  // FR/LN 2 blocks with a leader, (3,5) and (3,6) held by top units: ['infantry','flag', misses…] → 1 hit, check (2 dice, no sabres), then the flag
+  // FR/LN 2 blocks with a leader, (3,5) and (3,6) held by top units (answer ignoreFlags count 0): ['infantry','flag', misses…] → 1 hit, check (2 dice, no sabres), then the flag
   // cannot be taken: eliminated; exactly one leaderCheck roll; then leaderRetreat from (4,6)
 });
 it('a loss from a failed retreat alone triggers the check: 2 dice if it survives, 1 if eliminated (R18)', () => {
-  // (3,5) and (3,6) held by top units; the attack rolls 1 flag and no hit: FR/LN 3 blocks with a leader → 2 blocks, one leaderCheck roll of 2 dice;
+  // (3,5) and (3,6) held by top units (answer ignoreFlags count 0); the attack rolls 1 flag and no hit: FR/LN 3 blocks with a leader → 2 blocks, one leaderCheck roll of 2 dice;
   // FR/LN 1 block with a leader → eliminated by the retreat, one leaderCheck roll of 1 die
 });
 it('a leader killed in the check gives no flag-ignore (R18)', () => { /* 1 hit + 1 flag, both sabres in the check: no ignoreFlags decision */ });
@@ -1805,7 +1944,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 **Interfaces:**
 - Consumes: `impetuous` (T13), `stopsOnEntry`, `noBattleAfterEntering`, `op.stopEntered`, `turn.mods.bonusMelee` (T2's `meleeDice` with role `bonus`).
 - Produces:
-  - `afterMelee(s, ctx, m, vacated)` (only for the active side's attacker, never after fire, a battle back or First Strike): no advance for artillery, a square, or a unit with `op.stopEntered` this turn; brook entry counts as a stop, fordNoStop does not ([Interp R35], R83). Infantry: ask `advance { how: 'takeGround' }`; yes → move in (`advance` event, `relocate`, `updateHeld`). Cavalry: ask `advance { how: 'breakthrough' }` (forced, not asked, when `impetuous`); after entering, unless the vacated hex stopped movement, ask `breakthroughExtra { options: enterable vacant neighbours of the vacated hex, the original hex included, required: false }`; impetuous → `options` = enterable vacant neighbours in the row next toward the enemy baseline, not the original hex, `required: true`, asked only with 2 options, taken with 1, none with 0 (R82). Returns true when the cavalry entered the vacated hex and `m.role === 'attack'`.
+  - `afterMelee(s, ctx, m, vacated)` (only for the active side's attacker, never after fire, a battle back or First Strike): no advance for artillery, a square, or a unit with `op.stopEntered` this turn; brook entry counts as a stop, fordNoStop does not ([Interp R35], R83). Infantry: ask `advance { how: 'takeGround' }`; yes → move in (`advance` event, `relocate`, `updateHeld`). Cavalry: ask `advance { how: 'breakthrough' }` (forced, not asked, when `impetuous`); after entering, unless `stopsOnEntry(s, from, vacated)` (stop terrain or a works crossing on that step), ask `breakthroughExtra { options: enterable vacant neighbours of the vacated hex, the original hex included, required: false }`; impetuous → `options` = enterable vacant neighbours in the row next toward the enemy baseline, not the original hex, `required: true`, asked only with 2 options, taken with 1, none with 0 (R82). Returns true when the cavalry entered the vacated hex and `m.role === 'attack'`. Advancing uses `relocate` from `movement.ts`.
   - `melee.ts`: after `afterMelee` returns true and `!op.bonusMeleeDone`, unless the unit now stands on a hex with `noBattleAfterEntering`: ask `bonusMelee { targets: adjacent enemy units and lone leaders with meleeDice(role 'bonus') ≥ 1 }`; a target → `op.bonusMeleeDone = true`, `meleeAttack(..., 'bonus')`. After a successful bonus melee, `afterMelee` offers (impetuous: forces) the move into the vacated hex only: no extra hex, no further bonus (R36, R37).
 
 - [ ] **Step 1: Write the failing tests**
@@ -1813,7 +1952,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```ts
 const win = (atk: RowKey, extra: Pos = {}, card: CardKind = 'attackC') => {
   const d = toBattle(build({ ...extra, units: [{ side: 'bottom', key: atk, at: [5, 6] }, { side: 'top', key: 'FR/LN', at: [4, 6], blocks: 1 }, ...(extra.units ?? [])] }), card, ['u1']);
-  forceDice(n('infantry', 4)); must(d, { kind: 'attack', unit: 'u1', target: H(4, 6) }); return d;   // BR/LN and BR/HC both roll 4: no forced die left over
+  forceDice(n('infantry', 4)); attack(d, 'u1', H(4, 6)); return d;   // 4 dice for BR/LN and plain BR/HC; a card that adds dice rolls the rest at random, which only matters for later rolls
 };
 it('infantry may take ground into the vacated hex (§9.7, R35)', () => { const d = win('BR/LN'); expect(d.pending).toMatchObject({ kind: 'advance', how: 'takeGround', hex: H(4, 6) }); must(d, { kind: 'yesno', yes: true }); expect(u(d, 'u1')!.hex).toBe(H(4, 6)); });
 it('no advance after fire, by guns, by a battle back (§9.7)', () => { /* BR/LN fire eliminating FR/LN: no advance decision (pending battle); BR/FA meleeing FR/LN 1 block: none; a top FR/LN whose battle back eliminates the bottom attacker: none */ });
@@ -1842,6 +1981,8 @@ it('impetuous: the bonus melee stays optional; after it succeeds the unit must e
   // attacking and eliminating it instead: the unit stands on (2,5) with no advance decision and no breakthroughExtra
 });
 it('take ground after a lone leader retreated or was killed (§11.4)', () => { /* bottom BR/LN attacks a lone top leader; he retreats: advance offered */ });
+it('take ground after a destroyed unit\'s leader has retreated (§11.2)', () => { /* top FR/LN 1 block with a leader eliminated; the check misses; he retreats; then advance { how: 'takeGround', hex: H(4,6) } */ });
+it('a square ordered to attack never takes ground (§9.7)', () => { /* bottom BR/LN square:1 at (5,6) eliminates FR/LN 1 block at (4,6) (square melee 1 die, forced 'infantry'): no advance decision */ });
 ```
 
 - [ ] **Step 2: Run to verify they fail**
@@ -1891,6 +2032,7 @@ it('the path is exactly 2 own-side steps; units, enemy leaders, impassable hexes
   // top FR/HC at (4,6): ends on row 2; units on (3,5) and (3,6): not offered; a forest on (3,5): still offered; FR/HC at (1,6): not offered (edge)
 });
 it('1 hex onto a lone friendly leader for a leaderless cavalry unit (R34)', () => { /* lone top leader on (3,5): an option ending there with attach */ });
+it('a cavalry unit with a leader may retire through a lone friendly leader but not end on him (R34)', () => { /* top FR/HC with a leader, a lone top leader on (3,5): options pass (3,5) to row 2, none ends on (3,5) */ });
 it('only cavalry symbols hit; then it retires and does not battle back (R34)', () => {
   // choose retireReform; forceDice(['cavalry','sabre','flag','infantry']): FR/HC 3 blocks, a retire event of 2 hexes, no battleBack combat
 });
@@ -1933,14 +2075,14 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Create: `tests/rules/squares.test.ts` (header `// Rules: RR §5.3, §6.2, §6.3, §9.5, §10.3 (design/rules-reference.md)`)
 
 **Interfaces:**
-- Consumes: `worksForbidSquare` (T3), `TERRAIN_STATS[t].squareAllowed`, `enemyCavalryAdjacent`, `randInt`, `releaseSquare` (T1c-2).
+- Consumes: `worksForbidSquare` (T3), `TERRAIN_STATS[t].squareAllowed`, `enemyCavalryAdjacent`, `randInt`, `releaseSquare` (`casualties.ts`, T1c-2), `applyOutcome` (`resolve.ts`, above `squares.ts` in the layering).
 - Produces:
   - `canFormSquare(s, target, attacker, m)`: target infantry, not in square; attacker cavalry; `m.role` `attack` or `bonus` (never a battle back); `hand.length ≥ SQUARE_MIN_HAND` (3) for the defender (a); its terrain `squareAllowed` (b); `!worksForbidSquare(s, target, attacker.hex)` (c); a free track slot (g). Conditions (d) battle back, (e) and (f) First Strike are enforced by the role check here and by the single `defend` decision (T12c adds `'firstStrike'` as an alternative, never alongside a formed square).
   - `defendOptions`: adds `'formSquare'` when `canFormSquare`.
   - `formSquare(s, ctx, u)`: lowest free slot; a hand card chosen with `randInt` goes to `squareTrack[slot − 1]`; `u.square = slot`; `squareFormed { id, slot }` (no card id) (R27).
   - `squareFightsFirst(s, ctx, m)`: when the defender is an infantry unit in square and the attacker is cavalry on the attacker's turn (not a battle back; the attacker is not the square): the square rolls first (`squareFirst`, `meleeDice` role `squareFirst`: capped 1, terrain after); its flags are bounce flags (`o.bounce`, never ignorable); if the cavalry is eliminated or left its hex → `'stop'` (Combined Arms artillery dice not rolled, still spent); else `'continue'`, and `melee.ts` skips the square's battle back.
   - `leaveSquareStep(s, ctx, side)` (called after the orders): each ordered own unit in square, in id order: enemy cavalry adjacent → `op.stayInSquare = true`; else ask `leaveSquare`; yes → `releaseSquare` (card back to the hand, `squareLeft`, `cardReturned`); `turn.command` unchanged ([Interp R28]); coming out is not movement.
-  - A unit in square: no moves (`moveOptions` → 0 hexes through `op.stayInSquare` or `u.square`), no take ground or breakthrough (already T7), fires only with no enemy unit adjacent (T4), retreat losses (T6a).
+  - A unit in square: no moves and its leader cannot move alone (T5's `moveOptions`/`leaderMoves` already handle `u.square`), no take ground or breakthrough (T7), fires only with no enemy unit adjacent (T4), retreat losses (T6a).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1978,6 +2120,7 @@ it('ordered, a square may come out only with no enemy cavalry adjacent; then it 
   // FR/HC adjacent: no question, op.stayInSquare, pieceMoves [] all turn even after the cavalry leaves
 });
 it('a leader attached to a square cannot detach; after it comes out he may, with another order (R32)', () => { /* probeC [L, 'u1']: the square comes out (yes), then L may move */ });
+it('a rallied square may come out under §6.3 ([Interp R33])', () => { /* bottom BR/LN square:1, 3 of 4 blocks, no cavalry adjacent: rally gives it a block, then leaveSquare is asked; yes → squareLeft */ });
 it('La Grande Manoeuvre\'s group order cannot include a square; its single option can (R62)', () => { /* grandManoeuvre ordering a BR/LN square:1 with single: true asks leaveSquare; the group answer listing it is refused */ });
 it('Fire and Hold: a square with no enemy cavalry adjacent comes out and fires standing +1; one that stays fires 1 die (R58)', () => { /* bottom BR/LN square:1 at (6,6), FR/LN at (4,6): fireAndHold ['u1'] → leaveSquare yes → fireDice 6; no → fireDice 1 */ });
 it('a unit forced out by a cavalry melee may form square against that cavalry\'s bonus melee (R26)', () => {
@@ -2022,7 +2165,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 **Interfaces:**
 - Consumes: `clearSight` (T4), `fireDice`/`meleeDice` with role `attack` (cards per unit), `scoreRoll`, the square-first `'stop'` path (T9).
 - Produces:
-  - `combinedArmsCandidates(s, unit, target)`: `target` is an enemy **unit** (never a lone leader, R76); own ordered artillery with `!op.battled`, allowed to battle after its move, in range with a dice cell > 0 (R15), and either adjacent to the target, or not adjacent to any enemy unit and with `clearSight` (no hill battery, [Interp R39]); an artillery unit adjacent to another enemy unit qualifies only when it is adjacent to the target.
+  - `combinedArmsCandidates(s, unit, target)` (in `options.ts`, so `battleTargets` can use it): `target` is an enemy **unit** (never a lone leader, R76); own ordered artillery with `!op.battled`, allowed to battle after its move, in range with a dice cell > 0 (R15), and either adjacent to the target, or not adjacent to any enemy unit and with `clearSight` (no hill battery, [Interp R39]); an artillery unit adjacent to another enemy unit qualifies only when it is adjacent to the target.
   - `combinedArmsStep(s, ctx, m)`: on the active turn, for `m.role` `attack` or `bonus`, ask `combinedArms { unit, target, options }` when candidates exist; `select { ids }` ⊆ options; every chosen gun is `battled` at once (spent even if its dice are lost, R4, [Interp R40]).
   - `melee.ts`: the attacker's roll is the melee unit's dice (recounted for its current blocks) plus each gun's dice (`meleeDice` at distance 1 when adjacent, else `fireDice`; its own card dice and its own terrain); one `roll` with `from[]`; one `combat` event with `artillery: [{ id, dice }]`; hits and flags applied together; artillery sabres score only if the melee unit's row has `sabreHits` (R17, R41); a roll including a square's die against cavalry: every flag bounces (R30). Lost when a square fighting first or a First Strike stops the melee (the hooks return `'stop'` before the roll). Against Retire and Reform the gun dice are rolled with the attacker's, only cavalry symbols (R40).
   - `battleTargets`/`validateBattle`: a melee target whose own dice are 0 is offered when some candidate gun would roll ≥ 1 (R15).
@@ -2084,15 +2227,14 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 **Model:** Sonnet. **Lane:** A.
 
 **Files:**
-- Modify: `src/engine/{reactions,melee,dice}.ts`
+- Modify: `src/engine/{reactions,melee}.ts`
 - Create: `tests/rules/first-strike.test.ts` (header `// Rules: RR §9.2, §12.3, §12.4 (design/rules-reference.md)`)
 
 **Interfaces:**
-- Consumes: T11's draw order (`turn.firstStrikes`), T9's square options, T10's lost-dice path, `meleeDice` with `declared: true` (R12).
+- Consumes: T11's draw order (`turn.firstStrikes`), T9's square options, T10's lost-dice path, T2's `meleeDice` with `declared: true` (the R12 fallback lives in T2).
 - Produces:
   - `defendOptions`: adds `'firstStrike'` when the defender is a unit (never a lone leader), its owner holds a First Strike card, and `m.role` is `attack` or `bonus` (never a battle back). One choice per melee (R77).
-  - `firstStrikeRoll(s, ctx, m)`: the First Strike card goes from the defender's hand to the discard (`turn.firstStrikes[defender]++`); the defender rolls its normal dice (`role 'firstStrike'`: terrain, no cards), purpose `firstStrike`, aimed at the melee unit; if the attacker is eliminated or left its hex → `'stop'` (gun dice lost); else `'continue'`, the attacker's dice are recounted for its current blocks (`declared: true`) and the defender does not battle back. A cavalry attacker cannot Retire and Reform from that roll; an infantry attacker cannot form square against it (neither option exists for an attacker).
-  - `dice.ts`: the R12 fallback for a declared moved gun cut to 1 block (2 dice at range 1).
+  - `firstStrikeRoll(s, ctx, m)`: the First Strike card goes from the defender's hand to the discard (`turn.firstStrikes[defender]++`; event `cardPlayed { side: defender, card, kind: 'firstStrike', effective: null }`; `lastCard` untouched, since Counter-Attack copies only Phase 1 cards, R56); the defender rolls its normal dice (`role 'firstStrike'`: terrain, no cards), purpose `firstStrike`, aimed at the melee unit; if the attacker is eliminated or left its hex → `'stop'` (gun dice lost); else `'continue'`, the attacker's dice are recounted for its current blocks (`declared: true`) and the defender does not battle back. A cavalry attacker cannot Retire and Reform from that roll; an infantry attacker cannot form square against it (neither option exists for an attacker).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -2112,6 +2254,11 @@ it('a horse battery that moved, declared a melee and was cut to 1 block still me
 it('a square ordered to attack cavalry: the cavalry may play First Strike with at most 1 die (§9.5)', () => { /* bottom BR/LN square:1 attacks top FR/HC holding it: options include firstStrike; the firstStrike roll has 1 die */ });
 it('two First Strikes in one turn: both replacements drawn before the active player draws (R78)', () => { /* draw events top, top, bottom */ });
 it('played as a turn card it orders nothing (R63)', () => { /* top plays firstStrike: no orders decision; normal draw */ });
+it('First Strike losses can leave a declared attacker in place with 0 dice: the attack still counts (R15)', () => {
+  // BR/HC 2 blocks attacks FR/LN in a forest: declared with 3 − 2 = 1 die; the First Strike takes 1 block (no flag):
+  // a melee combat event with dice 0, no hits, op.battled true
+});
+it('a reactive First Strike is not what Counter-Attack copies (R56)', () => { /* top played probeL on its turn, then First Strike against bottom's attack: lastCard.top is still 'probeL', so a later bottom Counter-Attack copies probeL (as probeR) */ });
 ```
 
 - [ ] **Step 2: Run to verify they fail**
@@ -2129,7 +2276,7 @@ Expected: PASS; full suite green.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/engine/{reactions,melee,dice}.ts tests/rules/first-strike.test.ts
+git add src/engine/{reactions,melee}.ts tests/rules/first-strike.test.ts
 git commit -m "feat(engine): First Strike (RR §12.3)
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
