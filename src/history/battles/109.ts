@@ -112,7 +112,7 @@ const history: BattleHistory = {
       },
       {
         title: 'Cuesta stays put',
-        caption: "The French fall back before dusk, and Victor leaves the Cerro de Cascajal at 3 a.m. Cuesta does not counter-attack, and Oman thinks he was probably right.",
+        caption: "The French fall back by dusk, and Victor leaves the Cerro de Cascajal at 3 a.m. Cuesta does not counter-attack, and Oman thinks he was probably right.",
         at: {
           leval: [380, 390],
           poles: [420, 455],
@@ -132,13 +132,13 @@ const history: BattleHistory = {
     result: "Allied success on the Spanish flank; Leval's division shattered",
     losses: "Leval 1,007 (nearly a quarter) and 17 guns; Campbell 236; Spaniards near the Pajar perhaps 150–180 (Oman's estimate). Cuesta reported 1,201 for his whole army.",
     text: [
-      "Oman praised the few Spanish battalions, the cavalry and the guns that fought, but regretted that an army unable to manoeuvre could not exploit the repulse. On 4 August Zayas and Albuquerque left Talavera, and Cuesta fell back on Oropesa as Wellesley crossed the Tagus (005).",
+      "Oman praised the few Spanish battalions, the cavalry and the guns that fought, but regretted that an army unable to manoeuvre could not exploit the repulse. Cuesta left Talavera for Oropesa on the night of 3 August, Zayas and Albuquerque following at noon on the 4th, as Wellesley crossed the Tagus (005).",
       "On the night of 12–13 August Cuesta, never fully recovered from injuries received at Medellín, suffered a paralytic stroke and resigned; Eguía took over the Army of Estremadura. Areizaga, who fought at Alcañiz and María (107, 108), later took command of the Junta's largest army and lost at Ocaña.",
     ],
   },
   sources: [
-    'Charles Oman, A History of the Peninsular War, vol. 2 (1903), section XVI, ch. 7, pp. 527–54; Cuesta’s stroke and resignation, p. 605',
-    'W. F. P. Napier, History of the War in the Peninsula, vol. 2, Book VIII, ch. 2 (Talavera)',
+    'Charles Oman, A History of the Peninsular War, vol. 2 (1903), section XVI, chs. 6–7, pp. 507–56; Cuesta’s stroke and resignation, p. 605',
+    'W. F. P. Napier, History of the War in the Peninsula, vol. 2 (1829), Book IX, ch. 2 (Talavera)',
   ],
 };
 

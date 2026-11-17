@@ -107,7 +107,6 @@ const history: BattleHistory = {
         arrows: [
           { side: 'bottom', points: [[540, 390], [532, 350], [526, 322]] },
           { side: 'bottom', points: [[760, 370], [752, 345], [745, 322]] },
-          { side: 'bottom', points: [[245, 535], [238, 505], [232, 475]] },
         ],
       },
       {
@@ -134,7 +133,7 @@ const history: BattleHistory = {
   outcome: {
     winner: 'bottom',
     result: 'French victory; Blake driven off the field',
-    losses: 'Spanish about 1,000 killed, thousands wounded and nearly all their guns (Oman). Suchet gave 700–800; Napier says 1,000.',
+    losses: 'Spanish about 1,000 killed, thousands wounded and nearly all their guns (Oman). Suchet gave 700–800; Napier says nearly 1,000.',
     text: [
       "Blake's men left in good order and rejoined Areizaga at Botorrita. Suchet's attempts next day to turn both flanks failed, and Blake retired on Belchite. There, on 18 June, an exploding caisson set off a panic and the army scattered, losing its remaining guns and magazines.",
       "Of 25,000 men on the rolls on 1 June, not 10,000 were usable a month later (Oman). Suchet, now master of the plains of Aragon, took Caspe on 23 June. Oman blames Blake for fighting at María with two-thirds of his army.",
@@ -142,7 +141,7 @@ const history: BattleHistory = {
   },
   sources: [
     'Charles Oman, A History of the Peninsular War, vol. 2 (1903), section XV, ch. 3: María at pp. 423–8, Belchite pp. 429–30',
-    'W. F. P. Napier, History of the War in the Peninsula, vol. 2, Book VII, ch. 3 (the battles of María and Belchite)',
+    'W. F. P. Napier, History of the War in the Peninsula, vol. 2 (1829), Book VIII, ch. 3, pp. 329–32 (María and Belchite)',
   ],
 };
 
