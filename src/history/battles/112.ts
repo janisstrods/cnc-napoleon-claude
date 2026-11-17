@@ -10,8 +10,8 @@ const history: BattleHistory = {
   context: {
     war: 'Peninsular War, 1807–1814',
     text: [
-      "The Central Junta's autumn plan for Madrid rested on Areizaga's army, which came out of the Sierra Morena in early November. He halted for days near Aranjuez, then marched and countermarched while Soult gathered the French corps. After the cavalry action of 18 November (111) he reached Ocaña with the head of his column.",
-      "His trains were still far behind and his men too tired to march on, so he offered battle on the open plateau. Soult and King Joseph, though outnumbered in infantry, chose to attack at once rather than wait for Victor, who was still some miles off, and risk Areizaga slipping away.",
+      "The Central Junta's autumn plan for Madrid rested on Areizaga's army, which came out of the Sierra Morena in early November. He halted for three days at La Guardia (Napier says Dos Barrios), then marched and countermarched while Soult gathered the French corps. After the cavalry action of 18 November (111) his column reached Ocaña, on the 18th by Oman's account and on the morning of the 19th by Napier's.",
+      "His trains were still far behind and his men too tired to march on, so he offered battle on the open plateau. Soult and King Joseph, though outnumbered in infantry, chose to attack at once rather than wait for Victor, who was nearly twenty miles off (Oman), and risk Areizaga slipping away. Oman puts Zayas on the Spanish left; Napier puts him on the right.",
     ],
   },
   sides: {
@@ -50,7 +50,7 @@ const history: BattleHistory = {
       { id: 'werle', side: 'bottom', kind: 'infantry', label: 'Werlé (Poles)', w: 90, h: 28 },
       { id: 'leval', side: 'bottom', kind: 'infantry', label: 'Leval (Germans)', w: 90, h: 28 },
       { id: 'girard', side: 'bottom', kind: 'infantry', label: 'Girard (5th Corps)', w: 100, h: 28 },
-      { id: 'cav', side: 'bottom', kind: 'heavycavalry', label: 'French cavalry', w: 110 },
+      { id: 'cav', side: 'bottom', kind: 'heavycavalry', label: "Sebastiani's cavalry", w: 110 },
       { id: 'senarmont', side: 'bottom', kind: 'artillery', label: "Senarmont's guns", w: 50 },
       { id: 'dessolles', side: 'bottom', kind: 'infantry', label: 'Dessolles', w: 100, h: 28 },
       { id: 'guard', side: 'bottom', kind: 'guard', label: "King's Guard", w: 80 },
@@ -97,32 +97,32 @@ const history: BattleHistory = {
       },
       {
         title: 'Cavalry roll up the right',
-        caption: "The French horse come out of the olive groves and ground behind the Poles and Germans, scatter Freire's cavalry, and charge the flanks of Lacy's, Castejón's and Giron's divisions. The Spanish right dissolves; thousands surrender.",
+        caption: "The massed French horse, hidden by olive groves and folds of ground, burst on Freire's cavalry and send it flying, then wheel in on the exposed flanks of Lacy, Castejón and Giron. The Spanish right dissolves, and thousands surrender.",
         at: {
-          cav: [150, 280],
+          cav: [190, 300],
         },
         broken: ['freire', 'lacy', 'castejon', 'giron', 'second'],
         arrows: [
-          { side: 'bottom', points: [[150, 430], [130, 340], [110, 270]] },
-          { side: 'bottom', points: [[150, 270], [270, 215], [390, 190]] },
+          { side: 'bottom', points: [[190, 440], [190, 370], [190, 320]] },
+          { side: 'bottom', points: [[230, 285], [320, 240], [390, 200]] },
           { side: 'top', points: [[90, 230], [60, 130], [40, 40]], style: 'rout' },
         ],
       },
       {
         title: 'Ocaña falls',
-        caption: "As the right collapses, Dessolles and the King's Guard cross the ravine and take Ocaña, pushing back Vigodet and Copons. Areizaga leaves the field; Zayas's division covers the retreat towards Dos Barrios, and the pursuit lasts until nightfall.",
+        caption: "As the right collapses, Dessolles and the King's Guard cross the ravine and take Ocaña, pushing back Vigodet and the troops beside him. Areizaga leaves the field; Zayas's division covers the retreat towards Dos Barrios, and the pursuit lasts until nightfall.",
         at: {
           dessolles: [730, 160],
-          guard: [790, 235],
-          girard: [470, 310],
-          zayas: [860, 275],
+          guard: [820, 250],
+          girard: [470, 345],
+          zayas: [900, 300],
           senarmont: [650, 300],
           vigodet: [600, 110],
         },
         broken: ['vigodet'],
         arrows: [
           { side: 'bottom', points: [[700, 420], [720, 300], [730, 190]] },
-          { side: 'top', points: [[830, 270], [620, 210], [430, 100]], style: 'retreat' },
+          { side: 'top', points: [[860, 300], [640, 270], [430, 140]], style: 'retreat' },
         ],
       },
     ],
@@ -132,13 +132,13 @@ const history: BattleHistory = {
     result: 'Decisive French victory; the Spanish army destroyed',
     losses: "Spaniards about 4,000 killed and wounded, 14,000 prisoners and 50 of 60 guns (Oman); Napier has 5,000, 26,000 captive and 45 guns. French about 90 officers and 1,900 men (Oman); Napier gives 1,700.",
     text: [
-      "Oman judged Areizaga's generalship the worst rashness and vacillation of the war, and noted that he watched the battle from the church tower. When the army was rallied in the passes only about 21,000 foot and 3,000 horse remained. It was the Junta's main field army.",
+      "Oman judged Areizaga worse for rashness and vacillation than any other Spanish general of the war, and noted that he watched the battle from the church tower. When the army was rallied in the passes only about 21,000 foot and 3,000 horse remained. It was the Junta's main field army.",
       "The Central Junta never recovered. Soult and Joseph invaded Andalusia in January 1810; the Junta, on 29 January, handed power to a Regency at Cádiz, and Joseph entered Seville on 1 February. Del Parque's northern army had already been beaten at Alba de Tormes on 28 November (Oman).",
     ],
   },
   sources: [
     'Charles Oman, A History of the Peninsular War, vol. 3 (Oxford, 1908; Internet Archive scan), section XVII, ch. 4, pp. 90–97 (Ocaña; order of the Spanish line, pp. 91–93; losses, pp. 95–96); appendix VI, pp. 530–31; Alba de Tormes, pp. 98–101; section XVIII, ch. 1, p. 103, ch. 3, pp. 141–43',
-    "W. F. P. Napier, History of the War in the Peninsula, vol. 3 (1831), Book IX [as headed in that volume], ch. V, pp. 78–85 (battle of Ocaña; strengths, p. 80; losses, p. 84)",
+    "W. F. P. Napier, History of the War in the Peninsula, vol. 3 (1831), Book IX, ch. V, pp. 78–85 (battle of Ocaña; strengths, p. 80; losses, p. 84)",
   ],
 };
 

@@ -10,7 +10,7 @@ const history: BattleHistory = {
   context: {
     war: 'Peninsular War, 1807–1814',
     text: [
-      "After Talavera the Spanish Central Junta planned a double offensive for the autumn. Areizaga's army was to march on Madrid from La Mancha, while Del Parque's Army of the Left, gathered at Ciudad Rodrigo, was to clear León and Old Castile. Wellington refused to lend Portuguese troops to the northern thrust.",
+      "After Talavera the Spanish Central Junta planned a converging offensive for the autumn. Areizaga's army was to march on Madrid from La Mancha, while Del Parque's Army of the Left, gathered at Ciudad Rodrigo, was to clear León and Old Castile. Wellington refused to lend Portuguese troops to the northern thrust.",
       "Del Parque moved up to Tamames on 5 October with his Galician divisions. Marchand, who held Salamanca with the 6th Corps now that Ney had left Spain, marched out on 17 October and found the Spaniards drawn up on the heights above the village.",
     ],
   },
@@ -19,7 +19,7 @@ const history: BattleHistory = {
       name: 'Spanish Army of the Left',
       commanders: ['Duque del Parque (commanding)', 'Martín de la Carrera (vanguard)', 'Losada and Belveder (divisions)', 'Prince of Anglona (cavalry)'],
       strength: 'About 20,000 foot, 1,000–1,500 horse, 18 guns (Oman); Napier gives 1,000 horse',
-      forces: "Raw Galician divisions on a hill, Belveder's reserve behind La Carrera, Anglona's weak cavalry on the left. Ballesteros's Asturians had not yet come up.",
+      forces: "Largely raw (Oman) Galician divisions on a hill, Belveder's reserve behind La Carrera, Anglona's weak cavalry on the left. Ballesteros's Asturians had not yet come up.",
     },
     bottom: {
       name: 'French 6th Corps',
@@ -88,7 +88,7 @@ const history: BattleHistory = {
           belveder: [590, 115],
           anglona: [890, 150],
         },
-        broken: ['anglona'],
+        broken: ['anglona', 'cguns'],
         arrows: [
           { side: 'bottom', points: [[780, 450], [770, 380], [720, 320]] },
           { side: 'top', points: [[860, 250], [890, 190], [905, 120]], style: 'rout' },
@@ -96,12 +96,12 @@ const history: BattleHistory = {
       },
       {
         title: "Marcognet's brigade is repulsed",
-        caption: "Marcognet's two regiments halt part-way up the steep slope under the fire of two batteries and Losada's line, then recoil in disorder. Losada's men and the light troops from Tamames pursue them to the foot of the hill. The 25th Léger do not press home.",
+        caption: "Marcognet's two regiments stall on the steep slope under two batteries and Losada's infantry, then fall back in confusion. Losada's men and the skirmishers from Tamames chase them down to the plain. The 25th Léger never press their attack.",
         at: {
           marcognet: [350, 345],
           lt25: [110, 450],
           losada: [270, 255],
-          village: [455, 420],
+          village: [400, 400],
           labassee: [500, 480],
         },
         broken: ['marcognet'],
@@ -121,7 +121,7 @@ const history: BattleHistory = {
           lt25: [120, 530],
           labassee: [630, 515],
           fguns: [720, 575],
-          village: [455, 370],
+          village: [400, 385],
           losada: [250, 225],
         },
         arrows: [
@@ -136,13 +136,13 @@ const history: BattleHistory = {
     result: 'Spanish victory; the 6th Corps repulsed',
     losses: "French 1,300–1,400 (Marchand reported 1,300), including General Lorcet wounded; Spaniards 713 killed and wounded (Oman). The 76th lost its eagle.",
     text: [
-      "Oman called it the first general action since Bailén in which the Spaniards won clearly, and gave much of the credit to the ground, to Del Parque's seven-to-four superiority and to Ney's absence. Napier credited the recovery of the left to La Carrera, Mendizábal and the duke.",
+      "Oman called it the first general action since Bailén that the Spaniards clearly won. Despite their seven-to-four superiority and strong ground, he thought it did the Galicians real credit, and blamed the French defeat on Marchand's scattered attacks in Ney's absence. Napier credited the recovery of the left to La Carrera, Mendizábal and the duke.",
       "Marchand fell back to Salamanca on 19 October and abandoned it a few days later. Del Parque, joined by Ballesteros, entered it on about 24–25 October, then withdrew to the hills. He was caught and beaten at Alba de Tormes at the end of November, after Ocaña (111, 112) had wrecked the southern army.",
     ],
   },
   sources: [
     'Charles Oman, A History of the Peninsular War, vol. 3 (Oxford, 1908; Internet Archive scan), section XVII, ch. 4, pp. 75–81 (Tamames; losses, p. 79 and appendix IV, p. 528); Alba de Tormes, pp. 98–101',
-    "W. F. P. Napier, History of the War in the Peninsula, vol. 3 (1831), Book IX [as headed in that volume], ch. IV, pp. 64–66 (Tamames); ch. VI, pp. 86–89 (Alba de Tormes)",
+    "W. F. P. Napier, History of the War in the Peninsula, vol. 3 (1831), Book IX, ch. IV, pp. 64–66 (Tamames); ch. VI, pp. 86–89 (Alba de Tormes)",
   ],
 };
 
