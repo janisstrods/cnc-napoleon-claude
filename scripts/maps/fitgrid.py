@@ -95,7 +95,7 @@ def main():
     ap.add_argument("--each", action="store_true", help="also fit each map separately")
     ap.add_argument("-v", "--verbose", action="store_true")
     a = ap.parse_args()
-    paths = [m if os.path.exists(m) else os.path.join(MAPS, m + ".jpg") for m in a.maps]
+    paths = [m if os.path.exists(m) else hg.map_path(m) for m in a.maps]
     Rs = [ridge(p) for p in paths]
     if a.each:
         for p, R in zip(paths, Rs):

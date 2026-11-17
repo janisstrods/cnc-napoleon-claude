@@ -121,3 +121,12 @@ def test_duplicate_works_side():
     d = base()
     d["terrain"].append({"r": 5, "c": 5, "t": "fieldworks", "on": "plain", "sides": ["E", "E"]})
     assert any("duplicate works side" in x for x in problems(d))
+
+
+def test_swi_accepted_as_infantry_code():
+    import expected as ex
+    e = ex.expected("101")
+    d = {"units": [{"r": 0, "c": 0, "side": "top", "key": "SP/SWI"}, {"r": 0, "c": 1, "side": "bottom", "key": "FR/SWI"}]}
+    ps = check.check(d, e)
+    assert not any("not allowed" in p or "unknown" in p for p in ps)
+    assert "count top SP/SWI: data 1, survey 2" in ps

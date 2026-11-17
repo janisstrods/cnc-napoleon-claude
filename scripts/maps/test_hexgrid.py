@@ -34,3 +34,9 @@ def test_side_midpoint_halfway():
             (ax, ay), (bx, by) = hg.side_segment(r, c, d, GRID)
             assert abs((ax + bx) / 2 - (cx + nx) / 2) < 1e-6
             assert abs((ay + by) / 2 - (cy + ny) / 2) < 1e-6
+
+
+def test_map_path_104_is_png():
+    assert hg.map_path("104").endswith("/104.png")
+    assert hg.map_path("101").endswith("/101.jpg")
+    assert hg.map_path("015").endswith("/015.jpg")
