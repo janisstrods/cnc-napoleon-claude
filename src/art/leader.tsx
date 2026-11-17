@@ -1,11 +1,14 @@
 // Placeholder leader tokens: a disc in the nation's colour with a name ribbon (a lone leader) or without (one attached to a
-// unit). Plan 6B Task 7 replaces the body with the Napoleonic art (src/art/nap); the props stay.
+// unit). Art nations are drawn by NapLeaderToken; this placeholder remains for the rest (SP).
 import { memo } from 'react';
 import type { Nation } from '../engine/codes';
 import { blockColors } from './palettes';
+import { NAP_LEADER_ATTACH_OFFSET, NapLeaderToken, ART_NATIONS, type ArtNation } from './nap';
 
-/** Where an attached leader's medallion sits relative to its unit's hex centre (as the art track's frame). */
-export const LEADER_ATTACH_OFFSET: { x: number; y: number } = { x: 29, y: -28 };
+const isArtNation = (n: Nation): n is ArtNation => (ART_NATIONS as readonly string[]).includes(n);
+
+/** Where an attached leader's medallion sits relative to its unit's hex centre: the Napoleonic art's offset (the left end of the badge). */
+export const LEADER_ATTACH_OFFSET: { x: number; y: number } = NAP_LEADER_ATTACH_OFFSET;
 
 export interface LeaderTokenProps {
   name: string;
@@ -17,6 +20,10 @@ export interface LeaderTokenProps {
 const OUTLINE = '#1d140e';
 
 function LeaderTokenImpl({ name, nation, attached, dimmed }: LeaderTokenProps) {
+  if (isArtNation(nation)) {
+    const el = <NapLeaderToken nation={nation} facing="right" attached={attached} name={name} showName={!attached} />;
+    return dimmed ? <g opacity={0.55}>{el}</g> : el;
+  }
   const side = blockColors(nation);
   const r = attached ? 12 : 20;
   const width = Math.max(40, Math.min(92, 7 * name.length + 12));

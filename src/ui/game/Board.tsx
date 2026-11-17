@@ -94,8 +94,8 @@ const UnitLayer = memo(function UnitLayer(p: {
               if (p.onLeaderClick?.(l.id)) e.stopPropagation();
             }}
           >
-            {hl && <circle r={attached ? 15 : 30} fill={HL_STYLE[hl].fill} stroke={HL_STYLE[hl].stroke} strokeWidth={2.5} strokeDasharray={HL_STYLE[hl].dash} />}
-            {p.orderedIds.has(l.id) && <circle r={attached ? 16 : 31} className="ordered-ring" />}
+            {hl && <circle r={attached ? 12.5 : 30} fill={HL_STYLE[hl].fill} stroke={HL_STYLE[hl].stroke} strokeWidth={2.5} strokeDasharray={HL_STYLE[hl].dash} />}
+            {p.orderedIds.has(l.id) && <circle r={attached ? 13.5 : 31} className="ordered-ring" />}
             <LeaderToken {...leaderTokenProps(state, l, attached)} name={l.name || 'Leader'} />
           </g>
         );
@@ -232,7 +232,7 @@ export function Board(p: BoardProps) {
             <circle
               cx={cx}
               cy={cy}
-              r={attached ? 15 : 26}
+              r={attached ? 12.5 : 26}
               clipPath={`url(#lc-${l.id})`}
               className="leader-hit"
               onClick={(e) => {

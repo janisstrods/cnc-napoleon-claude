@@ -43,7 +43,7 @@ Slow opt-in AI matches: `npx vite-node scripts/ai-match.ts -- --a tribune --b re
 
 - Battles: only the hidden drill battle `000` for now (Napoleonic battles return in Plan 6), data in
   `src/scenarios/data/<id>.json`, briefing texts in `src/scenarios/texts.ts` (empty).
-- Dev-only routes: `#/play/<scenario>/<top|bottom>/<recruit|tribune|consul>[/<seed>]` (e.g. `#/play/000/top/tribune`) and `#/gallery/art|terrain|kit|history|figures`.
+- Dev-only routes: `#/play/<scenario>/<top|bottom>/<recruit|tribune|consul>[/<seed>]` (e.g. `#/play/000/top/tribune`) and `#/gallery/art|terrain|kit|history|figures`; the figures gallery is `#/gallery/figures[/infantry|cavalry|artillery|leaders|board|single/<KEY>|<KEY,KEY>]` (keys written with `-`, e.g. `FR-LN`).
 - In dev, `window.__ccn` is the GameController. `__ccn.autoAnswer()` plays a random legal move for the human, and `__ccn.setSpeed(4)` speeds up animations.
 - Browser tests must be silent: before playing on a dev-server origin, run `localStorage.setItem('ccn-muted','1'); location.reload()`
   (the flag is per origin, so each port needs it).
@@ -54,8 +54,8 @@ Slow opt-in AI matches: `npx vite-node scripts/ai-match.ts -- --a tribune --b re
 - `src/scenarios/catalogue.ts`: `CATALOGUE` of every battle (base 001–015, Expansion #1 101–118) with name, date and box, transcribed or not; histories are checked against it.
 - One table per kind of thing: `UNIT_STATS` (`src/engine/units.ts`), `ELITES` (`elites.ts`), `TERRAIN_STATS` (`terrain.ts`)
   and `EXPANSIONS` (`expansions.ts`). A new unit type, elite or terrain is a row there, and the compiler then asks for its
-  art (`FIGURE_KIND` and the slot tables in `src/art/token.tsx`; device, shield and helmet renderers in `src/art/parts.tsx`
-  and `exp2/exp3-parts.tsx`). A new expansion is an `EXPANSIONS` row plus its battle files; briefing texts of every battle are one table in `src/scenarios/texts.ts`.
+  art (see the art notes below). A new expansion is an `EXPANSIONS` row plus its battle files; briefing texts of every battle are one table in `src/scenarios/texts.ts`.
+- Art: the Napoleonic miniatures are in `src/art/nap/`. Data is in `keys.ts` (`ART_KEYS`), `nations.ts` and `specs/`; the drawing code never tests nations or codes. A new unit key needs an `ART_KEYS` entry, a spec, and a decision in `tests/art/nap/wiring.test.ts` (art, or `PLACEHOLDER_OK` with a reason). The public tokens (`src/art/token.tsx`, `leader.tsx`, `icon.tsx`) delegate to it for art keys and art nations; the placeholder art remains for keys without art (SP). The hash pin is `tests/art/nap/looks.test.ts`: after a deliberate art change, re-pin with the hash it prints and say so in the commit. An attached leader sits at `NAP_LEADER_ATTACH_OFFSET` (the left end of the badge).
 - Battle rules are data: the scenario JSON → `ScenarioSetup` (`src/engine/setup.ts`) → `GameState.scenario` (readonly,
   shared by `cloneState`). Play state lives in `GameState.special` (copied). A rule that falls on one side names it in the
   data; it never goes by army name.

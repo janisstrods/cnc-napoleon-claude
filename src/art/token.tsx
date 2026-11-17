@@ -4,7 +4,7 @@
 // attached leader (LEADER_ATTACH_OFFSET).
 import { memo } from 'react';
 import { ARM_OF, codeOf, type Nation, type UnitKey } from '../engine/codes';
-import { ArmGlyph } from './nap';
+import { ArmGlyph, NapUnitToken, isArtKey } from './nap';
 import { BASE_TOP, blockColors, type SideColors } from './palettes';
 import { darken } from './color';
 
@@ -77,6 +77,7 @@ function Figure({ kind, side }: { kind: Kind; side: SideColors }) {
 }
 
 function UnitTokenImpl({ unitKey, nation, blocks, maxBlocks, facing, dimmed }: UnitTokenProps) {
+  if (isArtKey(unitKey)) return <NapUnitToken unitKey={unitKey} blocks={blocks} maxBlocks={maxBlocks} facing={facing} dimmed={dimmed} />;
   const side = blockColors(nation);
   const kind = figureKind(unitKey);
   const slots = SLOTS[kind];
