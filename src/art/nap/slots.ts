@@ -31,7 +31,7 @@ const FULL: Record<Formation, readonly [Slot, Slot, Slot, Slot]> = {
   // gun: piece k of a unit stands in slot (max - 1 - k), so at 3 blocks (its strength in play) the gun stands front centre,
   // broadside and whole, with its layer crouched behind the trail; the linstock man stands back by the breech, clear of the
   // recoil, and the rammer out at the muzzle, turned to face it. A fourth block (not in play) adds the man with the cartridge
-  // bag behind the trail. A horse-artillery stand's horse holder takes the empty rear corner behind the layer (HOLDER_SLOT).
+  // bag behind the trail. A horse-artillery stand's horse holder takes the layer's place by the trail (HOLDER_SLOT).
   gun: [{ x: -9, y: 6, s: 0.9 }, { x: 9, y: 7, s: 0.95 }, { x: 30, y: 11, s: 0.92, face: -1 }, { x: 2, y: 19, s: 1.1 }],
 };
 const SINGLE: Record<Formation, Slot> = {
@@ -42,11 +42,12 @@ const SINGLE: Record<Formation, Slot> = {
 };
 
 /**
- * Where a horse-artillery stand's horse holder stands (a mounted gunner, not a block piece: he stays at every strength), at the
- * rear of the base on the side away from the enemy, his horse turned away from the guns so that its head shows clear of the
- * crew. Mirrored with the facing like every slot.
+ * Where a horse-artillery stand's horse holder stands (a mounted gunner, not a block piece: he stays at every strength): by the
+ * trail on the side away from the enemy, in the layer's place (a horse-artillery gun has no layer), his horse turned away
+ * from the guns. Nothing drawn after him covers the horse or his torso (tests/art/nap/artillery.test.ts). Mirrored with the
+ * facing like every slot.
  */
-export const HOLDER_SLOT: Slot = { x: -22, y: 4, s: 0.7, face: -1 };
+export const HOLDER_SLOT: Slot = { x: -25, y: 10, s: 0.75, face: -1 };
 
 function table(f: Formation): Record<1 | 2 | 3 | 4, readonly Slot[]> {
   const full = FULL[f];
@@ -88,15 +89,18 @@ export const ICON_BOX: Record<FigureSpec['drawing'], Rect> = {
   gun: [-38, 2, -33, 17],
 };
 
-/** Which measured profile a placed figure uses: its formation for foot and horse, its piece for a gun unit, or the holder. */
-export type BandKey = 'close' | 'loose' | 'horse' | GunPiece | 'holder';
+/**
+ * Which measured profile a placed figure uses: its formation for foot and horse, its piece for a gun unit (`horseGun` for a
+ * horse-artillery gun, which has no layer: its horse holder stands there), or the holder.
+ */
+export type BandKey = 'close' | 'loose' | 'horse' | GunPiece | 'horseGun' | 'holder';
 
 /**
  * The ink of every figure in its own frame (facing right, feet at 0,0), as bands of 2 units from the top down, [top, bottom,
  * left, right], stroke included: measured by rasterising each figure at 4 px per unit and scanning for ink, as the union over
  * every key and all four paint indices of that formation (or gun piece), then rounded outwards to half a unit. Weapons, plumes
  * and pennons are included, so the inside-the-hex test catches a bayonet or a lance tip crossing the hex edge. Re-measure
- * after changing a figure's drawing.
+ * after changing a figure's drawing: with a dev server running, `npx vite-node scripts/art-bands.ts -- --port <port> --write`.
  */
 export const FIGURE_BANDS: Record<BandKey, readonly Rect[]> = {
   close: [
@@ -122,10 +126,15 @@ export const FIGURE_BANDS: Record<BandKey, readonly Rect[]> = {
     [-4, -2, -19, 17], [-2, 0, -18.5, 14], [0, 2, -15.5, 13],
   ],
   gun: [
-    [-38, -36, -21.5, -18], [-36, -34, -22, -18], [-34, -32, -21.5, -15.5], [-32, -30, -22.5, -13.5], [-30, -28, -23, -13.5],
-    [-28, -26, -23.5, -13], [-26, -24, -23.5, -13.5], [-24, -22, -23.5, 1.5], [-22, -20, -23.5, 16.5], [-20, -18, -26, 17],
-    [-18, -16, -27, 17], [-16, -14, -27.5, 17], [-14, -12, -30, 15.5], [-12, -10, -26, 11.5], [-10, -8, -26.5, 11.5],
+    [-38, -36, -21.5, -18], [-36, -34, -22, -18], [-34, -32, -21.5, -16.5], [-32, -30, -22.5, -13.5], [-30, -28, -23, -13.5],
+    [-28, -26, -23.5, -13.5], [-26, -24, -23.5, -14], [-24, -22, -23.5, 1.5], [-22, -20, -23.5, 16.5], [-20, -18, -26, 17],
+    [-18, -16, -27, 17], [-16, -14, -27.5, 17], [-14, -12, -30, 11.5], [-12, -10, -26, 11.5], [-10, -8, -26.5, 11.5],
     [-8, -6, -27, 11.5], [-6, -4, -27.5, 11], [-4, -2, -33, 10], [-2, 0, -33, 8.5], [0, 2, -33, 6.5],
+  ],
+  horseGun: [
+    [-22, -20, -6.5, 1], [-20, -18, -9.5, 15], [-18, -16, -11.5, 15.5], [-16, -14, -13, 15.5], [-14, -12, -13.5, 15.5],
+    [-12, -10, -12.5, 10.5], [-10, -8, -12, 10.5], [-8, -6, -13, 10.5], [-6, -4, -14, 10], [-4, -2, -15.5, 9.5],
+    [-2, 0, -15.5, 8], [0, 2, -15.5, 5.5],
   ],
   rammer: [
     [-44, -42, 1.5, 4], [-42, -40, 0.5, 4.5], [-40, -38, 0.5, 4.5], [-38, -36, 1, 7.5], [-36, -34, -0.5, 9],

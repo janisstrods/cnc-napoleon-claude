@@ -1,6 +1,6 @@
 // One piece of a gun unit: the gun itself with the gunner laying it, a rammer, a linstock man, or a man with a cartridge bag.
-// A horse-artillery stand (the spec has `holder`) also shows a mounted gunner holding his horse (HorseHolderFigure, drawn by
-// the token at the rear of the base at every strength). Data decides everything (the spec's crew dress and headgear,
+// A horse-artillery stand (the spec has `holder`) shows instead of the layer a mounted gunner holding his horse by the trail
+// (HorseHolderFigure, drawn by the token at every strength). Data decides everything (the spec's crew dress and headgear,
 // carriage colour and barrel metal); nothing here knows a nation.
 //
 // Every piece is drawn facing right with its feet (wheels, hooves) at (0,0). The gun is seen from the side and a little from
@@ -206,8 +206,9 @@ export function GunPieceFigure({ spec, n, i, piece }: { spec: GunSpec; n: Nation
   if (piece === 'gun') {
     const s = Math.round(GUN_SCALE * (spec.holder === true ? HORSE_GUN_SCALE : 1) * 1000) / 1000;
     // the gunner crouches behind the trail end (x -13 in the gun's frame), his handspike planted in it; he is drawn in the
-    // gun's scaled frame, so undo the scale for him
-    const layer = (
+    // gun's scaled frame, so undo the scale for him. A horse-artillery gun has no layer: its horse holder stands in his place
+    // by the trail, so that nothing covers the horse.
+    const layer = spec.holder === true ? null : (
       <g transform={`scale(${Math.round((1 / s) * 1000) / 1000}) translate(${-13 * s - LAYER_BACK} 0)`}>
         <Crewman dress={spec.crew.dress} head={spec.crew.head} f={f} piece="gun" />
       </g>

@@ -2,12 +2,12 @@ import { createElement as h } from 'react';
 import { describe, expect, it } from 'vitest';
 import { ARTILLERY, type ArtKey, type ArtilleryKey } from '../../../src/art/nap/keys';
 import { NapMiniature } from '../../../src/art/nap/token';
-import { standing } from '../../../src/art/nap/slots';
+import { FIGURE_BANDS, standing } from '../../../src/art/nap/slots';
 import { HorseHolderFigure } from '../../../src/art/nap/gun';
 import { NATION_LOOKS } from '../../../src/art/nap/nations';
 import { FIGURE_SPECS } from '../../../src/art/nap/specs';
 import type { GunPiece, GunSpec } from '../../../src/art/nap/uniform';
-import { count, hueClass, shape, svg, token } from './helpers';
+import { count, hueClass, placed, shape, svg, token } from './helpers';
 
 const spec = (k: ArtKey) => FIGURE_SPECS[k] as GunSpec;
 const piece = (k: ArtilleryKey, p: GunPiece, i = 0) => svg(h(NapMiniature, { unitKey: k, i, piece: p }));
@@ -148,6 +148,34 @@ describe('artillery', () => {
       expect(out, k).toContain(spec(k).crew.dress.coat);
       expect(out).not.toMatch(/NaN|undefined|Infinity/);
     }
+  });
+
+  it('the horse-artillery gun has no layer (the horse holder stands there); foot and Guard guns keep him', () => {
+    for (const k of HORSE) expect(piece(k, 'gun'), k).not.toContain('data-crew="gun"');
+    for (const k of FOOT) expect(piece(k, 'gun'), k).toContain('data-crew="gun"');
+  });
+
+  it('nothing drawn after the holder covers his horse\'s head, neck and body or his torso, both facings, 1 to 3 blocks', () => {
+    // in the holder's own frame (facing right, hooves at 0,0): the horse from croup to muzzle, and the rider's torso
+    const REGIONS: [number, number, number, number][] = [[-29, -9.5, -12.5, 20.5], [-33.5, -18.5, -4.8, 2.4]];
+    const hits: string[] = [];
+    for (const k of HORSE) for (const facing of ['right', 'left'] as const) for (let b = 1; b <= 3; b++) {
+      const all = placed(k, token(k, { blocks: b, maxBlocks: 3, facing }));
+      const [, hx, hy, hsx, hsy] = all.find(([key]) => key === 'holder')!;
+      const rect = ([t, bt, l, r]: number[], tx: number, ty: number, sx: number, sy: number) =>
+        [ty + t * sy, ty + bt * sy, Math.min(tx + l * sx, tx + r * sx), Math.max(tx + l * sx, tx + r * sx)];
+      for (const reg of REGIONS) {
+        const [t0, b0, l0, r0] = rect(reg, hx, hy, hsx, hsy);
+        for (const [key, tx, ty, sx, sy] of all) {
+          if (key === 'holder') continue;
+          for (const band of FIGURE_BANDS[key]) {
+            const [t1, b1, l1, r1] = rect(band as unknown as number[], tx, ty, sx, sy);
+            if (t1 < b0 && t0 < b1 && l1 < r0 && l0 < r1) hits.push(`${k} ${facing} ${b} ${key} band ${band[0]}`);
+          }
+        }
+      }
+    }
+    expect([...new Set(hits)]).toEqual([]);
   });
 
   it('the gunner crouches behind the trail end, drawn behind the near wheel', () => {

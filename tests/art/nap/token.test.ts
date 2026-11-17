@@ -2,27 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { createElement as h } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { ARM_OF, CODE_NAMES, codeOf } from '../../../src/engine/codes';
-import { FIGURE_BANDS, SLOTS, type BandKey, type Formation } from '../../../src/art/nap/slots';
+import { FIGURE_BANDS, SLOTS, type Formation } from '../../../src/art/nap/slots';
 import { ART_KEYS, ART_NATIONS, type ArtKey } from '../../../src/art/nap/keys';
 import { ArmGlyph } from '../../../src/art/nap/badge';
 import { MEDALLION_SCALE, NAP_LEADER_ATTACH_OFFSET, NapLeaderToken, NapUnitIcon } from '../../../src/art/nap';
-import { FIGURE_SPECS } from '../../../src/art/nap/specs';
 import FigureGallery from '../../../src/dev/FigureGallery';
-import { count, svg, token } from './helpers';
+import { balanced, count, placed, svg, token } from './helpers';
 
 const BAD = /NaN|undefined|Infinity/;
 const GUARDS = ['FR/YG', 'FR/OG', 'FR/GHC', 'FR/GA', 'BR/GG', 'BR/GHC'];
-/** The element starting at `from`, up to its balanced closing tag. */
-function balanced(m: string, from: number): string {
-  let depth = 0;
-  const re = /<g[\s>]|<\/g>/g;
-  re.lastIndex = from;
-  for (let r = re.exec(m); r; r = re.exec(m)) {
-    depth += r[0] === '</g>' ? -1 : 1;
-    if (depth === 0) return m.slice(from, r.index + 4);
-  }
-  return '';
-}
 const badge = (m: string) => (m.indexOf('<g data-badge') < 0 ? '' : balanced(m, m.indexOf('<g data-badge')));
 /** The figure groups of a token by data-slot value. */
 function slotGroups(m: string): Record<string, string> {
@@ -111,28 +99,6 @@ describe('NapUnitToken', () => {
     }
   });
 });
-
-/** Every placed figure of a token as [band key, translate x, translate y, scale x, scale y], read from the markup. */
-function placed(k: ArtKey, out: string): [BandKey, number, number, number, number][] {
-  const spec = FIGURE_SPECS[k];
-  const res: [BandKey, number, number, number, number][] = [];
-  const tr = /<g transform="translate\(([-\d.]+) ([-\d.]+)\) scale\(([-\d.]+) ([-\d.]+)\)">/;
-  for (const r of out.matchAll(/<g data-slot="\d"/g)) {
-    const g = balanced(out, r.index!);
-    const m = tr.exec(g);
-    expect(m, k).not.toBeNull();
-    const piece = /data-piece="(\w+)"/.exec(g)?.[1];
-    const key: BandKey = spec.drawing === 'gun' ? (piece as BandKey) : spec.drawing === 'horse' ? 'horse' : spec.order === 'close' ? 'close' : 'loose';
-    res.push([key, ...(m!.slice(1).map(Number) as [number, number, number, number])]);
-  }
-  const hold = out.indexOf('<g data-holder="true"');
-  if (hold >= 0) {
-    const m = tr.exec(balanced(out, hold));
-    expect(m, k).not.toBeNull();
-    res.push(['holder', ...(m!.slice(1).map(Number) as [number, number, number, number])]);
-  }
-  return res;
-}
 
 describe('inside the hex', () => {
   // A point is inside the pointy-top hex of radius 50, inset by `d`, if it clears the vertical edges (apothem 43.30) and the
