@@ -37,7 +37,7 @@ const history: BattleHistory = {
       { kind: 'river', points: [[420, 500], [620, 535], [800, 555], [930, 565]], width: 8, label: 'Almanza creek' },
       { kind: 'road', points: [[905, 0], [885, 150], [880, 350], [880, 470]], label: 'Coast track' },
       { kind: 'label', at: [850, 80], text: 'Torre Barrosa' },
-      { kind: 'label', at: [850, 395], text: 'Torre Bermeja' },
+      { kind: 'label', at: [878, 330], text: 'Torre Bermeja' },
       { kind: 'label', at: [880, 595], text: 'Santi Petri' },
       { kind: 'label', at: [110, 340], text: 'Laguna del Puerco' },
     ],
@@ -72,8 +72,8 @@ const history: BattleHistory = {
           duncan: [360, 215],
           hussars: [770, 165],
           whit: [845, 215],
-          pena: [740, 330],
-          lard: [815, 420],
+          pena: [790, 385],
+          lard: [815, 440],
           zayas: [905, 555],
           villatte: [845, 500],
           ruffin: [150, 520],
@@ -91,11 +91,11 @@ const history: BattleHistory = {
         title: 'Victor strikes',
         caption: "At noon La Peña orders Graham off the Cerro towards Bermeja, leaving a Spanish rearguard. About 12.30 Victor bursts from the forest: Ruffin climbs the Cerro, Leval strikes at the wood, the dragoons loop round. The rearguard flees and Browne comes down.",
         at: {
-          villatte: [700, 545],
-          dilkes: [560, 215],
-          duncan: [640, 245],
-          barnard: [690, 215],
-          wheatley: [735, 270],
+          villatte: [640, 575],
+          dilkes: [510, 175],
+          duncan: [590, 215],
+          barnard: [690, 235],
+          wheatley: [630, 265],
           browne: [340, 160],
           cruz: [300, 120],
           ruffin: [260, 345],
@@ -105,7 +105,7 @@ const history: BattleHistory = {
           drag: [170, 220],
         },
         arrows: [
-          { side: 'top', points: [[480, 195], [620, 245], [740, 290]] },
+          { side: 'top', points: [[480, 215], [580, 285], [700, 330]] },
           { side: 'bottom', points: [[270, 330], [300, 270], [320, 220]] },
           { side: 'bottom', points: [[460, 350], [510, 305], [540, 265]] },
           { side: 'bottom', points: [[100, 440], [110, 300], [160, 200], [210, 120]] },
@@ -136,7 +136,7 @@ const history: BattleHistory = {
       },
       {
         title: 'Victor driven off',
-        caption: "Ruffin and Rousseau fall mortally wounded and both divisions break. Ponsonby's hussars charge their rallying squares, taking guns. La Peña and his 10,000 stay by the Torre Bermeja, and Graham, too tired to pursue, crosses to the Isla next day.",
+        caption: "Ruffin and Rousseau fall mortally wounded and both divisions break. Ponsonby's German hussars scatter the dragoons covering the rally, leaving two more guns. La Peña and his 10,000 stay by the Torre Bermeja; Graham crosses to the Isla next day.",
         at: {
           dilkes: [330, 200],
           browne: [280, 220],
@@ -170,7 +170,7 @@ const history: BattleHistory = {
   },
   sources: [
     'Charles Oman, A History of the Peninsular War, vol. 4 (1911), Section XXIII, ch. IV, pp. 91–130; losses in Appendices IV and V (Internet Archive scan pagination)',
-    'W. F. P. Napier, History of the War in the Peninsula, vol. 3 (Boone edition, title page 1831; Internet Archive scan), Book XII, ch. II, pp. 438–47',
+    'W. F. P. Napier, History of the War in the Peninsula, vol. 3 (1831), Book XII, ch. II, pp. 438–47',
   ],
 };
 

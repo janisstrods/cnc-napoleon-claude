@@ -10,7 +10,7 @@ const history: BattleHistory = {
     war: 'Peninsular War, 1807–1814',
     text: [
       "In October 1809 the Duke del Parque's Spanish Army of the Left won at Tamames, and Marchand's French 6th Corps fell back on Salamanca. When the main Spanish army was crushed at Ocaña on 19 November, Del Parque, unaware, was marching on Salamanca again; he heard of the disaster on the morning of 24 November.",
-      "He at once gave up his conquests, fearing French reinforcements from Madrid, and retired towards the hills by way of Alba de Tormes. Kellermann, commanding in Old Castile, set off after him on 26 November with his cavalry, leaving the infantry and guns to follow.",
+      "Oman says he at once gave up his conquests for fear of French reinforcements from Madrid; Napier says orders to join Albuquerque started his retreat on the 26th. He fell back towards the hills by way of Alba de Tormes, with Kellermann, commanding in Old Castile, in pursuit with the cavalry and the infantry and guns behind.",
     ],
   },
   sides: {
@@ -59,7 +59,7 @@ const history: BattleHistory = {
           belveder: [390, 215],
           carrera: [710, 250],
           scav: [440, 290],
-          sguns: [350, 215],
+          sguns: [310, 255],
           lorcet: [330, 520],
           dragoons: [540, 555],
         },
@@ -89,11 +89,11 @@ const history: BattleHistory = {
           carrera: [790, 270],
           belveder: [650, 225],
           lorcet: [520, 340],
-          dragoons: [640, 345],
+          dragoons: [610, 365],
           marchand: [380, 430],
         },
         arrows: [
-          { side: 'bottom', points: [[560, 380], [650, 330], [720, 295]] },
+          { side: 'bottom', points: [[540, 385], [620, 350], [690, 320]] },
           { side: 'bottom', points: [[380, 520], [380, 470], [380, 450]] },
           { side: 'top', points: [[780, 245], [680, 180], [575, 140]], style: 'retreat' },
         ],
@@ -123,12 +123,12 @@ const history: BattleHistory = {
     losses: "Spanish about 3,000 killed or taken, five flags and nine guns; French under 300 (Oman, who counts 4 officers killed and 14 wounded).",
     text: [
       "The army rallied in the hills behind Tamames: some 20,000 within ten or twelve days, without guns, says Napier, while Oman counts 26,000 after a month. Left to winter in the Sierra de Gata, it lost about 9,000 more men to fever, dysentery and hunger by mid-January 1810.",
-      "Oman blames Del Parque for dividing his army with a river behind it, yet calls Kellermann's unsupported charge a reckless stroke that no one could have foreseen. Neither commander, he adds, was entitled to expect such an outcome.",
+      "Oman faults Del Parque for splitting his army across a river with the enemy in pursuit, but thinks Kellermann's charge broke every rule and was a gamble that happened to pay off.",
     ],
   },
   sources: [
     'Charles Oman, A History of the Peninsular War, vol. 3 (1908), Section XVII, ch. IV, pp. 97–102 (Internet Archive scan pagination)',
-    'W. F. P. Napier, History of the War in the Peninsula, vol. 3 (Boone edition, title page 1831; Internet Archive scan), Book IX, ch. VI, pp. 86–89',
+    'W. F. P. Napier, History of the War in the Peninsula, vol. 3 (1831), Book IX, ch. VI, pp. 86–89',
   ],
 };
 
