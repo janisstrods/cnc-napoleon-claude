@@ -1,14 +1,9 @@
-// The 15 base-game battles (001-015), the 24 battles of Expansion #1, Greece & Eastern Kingdoms (101-124), the 23
-// battles of Expansion #2, Rome & the Barbarians (201-223), and the 19 battles of Expansion #3, The Roman Civil Wars
-// (301-319). Setups, rules included, are transcribed data (src/scenarios/data); texts are original summaries, one module
-// per box (base-texts.ts, exp1-texts.ts, exp2-texts.ts, exp3-texts.ts).
+// The battles: only the hidden drill battle 000 until the Napoleonic battles return. Setups, rules included, are
+// transcribed data (src/scenarios/data); texts are original summaries (texts.ts).
 import { EXPANSIONS, type Expansion } from '../engine/expansions';
 import type { GameOptions, ObjectiveSetup, ScenarioSetup, SideSetup, TerrainSetup } from '../engine/setup';
 import type { LeaderTrait, Side, SpecialRuleId } from '../engine/types';
-import { BASE_TEXTS, type ScenarioTexts } from './base-texts';
-import { EXP1_TEXTS } from './exp1-texts';
-import { EXP2_TEXTS } from './exp2-texts';
-import { EXP3_TEXTS } from './exp3-texts';
+import { TEXTS, type ScenarioTexts } from './texts';
 
 export type { Expansion };
 
@@ -24,6 +19,8 @@ export interface ScenarioJson {
   name: string;
   year: string;
   expansion?: Expansion;
+  /** Left out of the battle picker and random battle (the drill battle 000). */
+  hidden?: boolean;
   top: SideSetup;
   bottom: SideSetup;
   first: Side;
@@ -89,12 +86,11 @@ export interface ScenarioInfo {
   specialText: string[];
   setup: ScenarioSetup;
   difficultyHint: string;
+  /** Not offered by the battle picker or random battle. */
+  hidden?: boolean;
 }
 
 const files = import.meta.glob<ScenarioJson>('./data/*.json', { eager: true, import: 'default' });
-
-/** The briefing texts of each box (`EXPANSIONS`), by battle id. */
-const TEXTS: Record<Expansion, Record<string, ScenarioTexts>> = { base: BASE_TEXTS, exp1: EXP1_TEXTS, exp2: EXP2_TEXTS, exp3: EXP3_TEXTS };
 
 const copyLeader = <T extends { traits?: LeaderTrait[] }>(l: T): T => (l.traits ? { ...l, traits: [...l.traits] } : { ...l });
 
@@ -137,7 +133,7 @@ const copyHexes = <T>(v: T): T => (Array.isArray(v) ? (v.map((x: unknown) => (Ar
 export function scenarioFromJson(j: ScenarioJson): ScenarioInfo {
   const expansion = j.expansion ?? 'base';
   if (!EXPANSIONS.some((e) => e.id === expansion)) throw new Error(`unknown expansion ${String(j.expansion)} (${j.id})`);
-  const texts: ScenarioTexts | undefined = TEXTS[expansion][j.id];
+  const texts: ScenarioTexts | undefined = TEXTS[j.id];
   const setup: ScenarioSetup = {
     id: j.id,
     name: j.name,
@@ -184,6 +180,7 @@ export function scenarioFromJson(j: ScenarioJson): ScenarioInfo {
     specialText: texts?.specialText ?? [],
     setup,
     difficultyHint: texts?.hint ?? '',
+    ...(j.hidden ? { hidden: true } : {}),
   };
 }
 

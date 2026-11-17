@@ -45,7 +45,7 @@ describe('board marks and the hovered hex', () => {
   });
 
   it('a retreat: the path of the option ending on the hovered hex', () => {
-    const s = createGame(scenarioById('214').setup, 1);
+    const s = createGame(scenarioById('000').setup, 1);
     const slave = s.units.find((u) => u.side === 'top')!;
     const opt = (path: HexId[], losses = 0): RetreatOption => ({ path, end: path[path.length - 1], losses, attachLeader: null });
     const dec: Decision = {

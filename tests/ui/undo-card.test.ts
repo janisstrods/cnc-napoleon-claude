@@ -32,7 +32,7 @@ describe('Undo card', () => {
   useFakeClock();
 
   it('takes the card back while its units are chosen, and after they are ordered until one moves; its log line goes with it', async () => {
-    const c = new GameController({ ...newSessionConfig('001', 'bottom', 'recruit'), seed: 3 }, new SeededOpponent());
+    const c = new GameController({ ...newSessionConfig('000', 'bottom', 'recruit'), seed: 3 }, new SeededOpponent());
     try {
       await runToHuman(c);
       expect(c.view.pending).toMatchObject({ kind: 'playCard', side: 'bottom' });

@@ -2,7 +2,7 @@
 // battle, the main menu's tally and button, the record dialog, and a new medal in the end-of-battle dialog.
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createGame } from '../../src/engine';
 import { SCENARIOS, scenarioById } from '../../src/scenarios';
 import { BattleResult } from '../../src/ui/game/BattleResult';
@@ -13,13 +13,20 @@ import { stubStorage, useStubStorageCleanup } from '../support/storage';
 
 useStubStorageCleanup();
 
-const akragas = scenarioById('001');
+// The only battle, 000, is hidden from the picker; these screens need a visible one, so the module shows it.
+vi.mock('../../src/scenarios', async (importOriginal) => {
+  const m = await importOriginal<typeof import('../../src/scenarios')>();
+  const SCENARIOS = m.SCENARIOS.map((s) => ({ ...s, hidden: undefined }));
+  return { ...m, SCENARIOS, scenarioById: (id: string) => SCENARIOS.find((s) => s.id === id)! };
+});
+
+const akragas = scenarioById('000');
 const [bottomArmy, topArmy] = [akragas.setup.bottom.army, akragas.setup.top.army];
 
-/** Akragas won against the Consul from the bottom side and lost against the Recruit from the top. */
+/** Drill won against the Consul from the bottom side and lost against the Recruit from the top. */
 function seedRecord(): BattleRecord {
   stubStorage();
-  const rec = addResult(addResult({}, '001', 'bottom', 'consul', 'won'), '001', 'top', 'recruit', 'lost');
+  const rec = addResult(addResult({}, '000', 'bottom', 'consul', 'won'), '000', 'top', 'recruit', 'lost');
   saveRecord(rec);
   return rec;
 }
@@ -36,18 +43,16 @@ describe('Triumphs in the battle picker', () => {
   it('each battle row shows its two medals, bottom army first', () => {
     seedRecord();
     const row = element(picker(), 'button', /class="scen-item active"/);
-    expect(row).toContain('Akragas');
+    expect(row).toContain('Drill');
     expect(row).toContain(`aria-label="${bottomArmy}: gold (beat the Consul) · ${topArmy}: not won yet"`);
     expect(row.indexOf('medal is-gold')).toBeLessThan(row.indexOf('medal is-fought'));
-    const next = element(picker(), 'button', /class="scen-item "/);
-    expect(next).toContain('medal is-none');
-    expect(next).not.toContain('is-gold');
+    // (the second row, with no medals, is gone: only one battle is shown)
   });
 
   it('a tab counts the medals won in its box', () => {
     seedRecord();
     const html = picker();
-    expect(element(html, 'button', /id="battle-tab-base"/)).toContain('aria-label="1 of 30 medals won"');
+    expect(element(html, 'button', /id="battle-tab-base"/)).toContain('aria-label="1 of 2 medals won"');
     expect(element(html, 'button', /id="battle-tab-exp1"/)).not.toContain('medals won');
   });
 
@@ -73,10 +78,10 @@ describe('Triumphs in the battle picker', () => {
   });
 
   it('opens on the battle picked in the Triumphs record, in its box', () => {
-    const html = picker('109');
-    expect(html).toMatch(/<div class="brief-title">Gaugamela/);
-    expect(element(html, 'button', /id="battle-tab-exp1"/)).toContain('aria-selected="true"');
-    expect(element(html, 'button', /class="scen-item active"/)).toContain('Gaugamela');
+    const html = picker('000');
+    expect(html).toMatch(/<div class="brief-title">Drill/);
+    expect(element(html, 'button', /id="battle-tab-base"/)).toContain('aria-selected="true"');
+    expect(element(html, 'button', /class="scen-item active"/)).toContain('Drill');
   });
 });
 
@@ -106,7 +111,7 @@ describe('Triumphs on the main menu', () => {
     expect(html.split('class="tri-cell"').length - 1).toBe(SCENARIOS.length);
     expect(html.split('class="medal-pair"').length - 1).toBe(SCENARIOS.length);
     for (const box of ['Punic Wars', 'Greece', 'Barbarians', 'Civil Wars']) expect(html).toMatch(new RegExp(`<h3>[^<]*${box}`));
-    expect(html).toContain('title="Akragas: ');
+    expect(html).toContain('title="Drill: ');
     expect(html).toContain('>Save record<');
     expect(html).toContain('>Load record<');
     expect(html).toContain('type="file"');

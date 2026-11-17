@@ -96,7 +96,7 @@ export default function KitGallery() {
     <Tabletop style={{ position: 'fixed', inset: 0, overflow: 'auto', padding: '36px 48px 80px', boxSizing: 'border-box' }}>
       <header style={{ textAlign: 'center', marginBottom: 8 }}>
         <div style={{ fontFamily: 'var(--kit-font-title)', fontSize: 13, letterSpacing: '.4em', color: '#bfa776', textTransform: 'uppercase' }}>
-          Commands &amp; Colors · Ancients
+          Commands &amp; Colours · Napoleonics
         </div>
         <h1
           style={{

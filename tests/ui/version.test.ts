@@ -15,7 +15,10 @@ describe('release', () => {
 
   it('every release is named after a different battle of the game, numbers newest first', () => {
     const battles = new Set(SCENARIOS.map((s) => s.name));
-    for (const r of RELEASES) expect(battles, r.name).toContain(r.name);
+    for (const r of RELEASES) {
+      if (r.name === 'Unreleased') continue; // until the first release (Plan 8)
+      expect(battles, r.name).toContain(r.name);
+    }
     expect(new Set(RELEASES.map((r) => r.name)).size).toBe(RELEASES.length);
     const nums = RELEASES.map((r) => r.number.split('.').map(Number));
     for (let i = 1; i < nums.length; i++) {

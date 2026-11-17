@@ -55,11 +55,8 @@ function aiGame(scId: string, seed: number): Golden {
   return { id: `ai-${scId}-${seed}`, hash: h.toString(16), answers: d.answers.length, winner: String(d.state.winner) };
 }
 
-export const RANDOM_GAMES: [string, number][] = [
-  ['001', 11], ['002', 12], ['003', 13], ['004', 14], ['005', 15], ['006', 16], ['007', 17], ['008', 18],
-  ['009', 19], ['010', 20], ['011', 21], ['012', 22], ['013', 23], ['014', 24], ['015', 25],
-];
-export const AI_GAMES: [string, number][] = [['002', 31], ['007', 32], ['010', 33]];
+export const RANDOM_GAMES: [string, number][] = [['000', 11]];
+export const AI_GAMES: [string, number][] = [['000', 32]];
 
 export function goldenGames(): Golden[] {
   return [...RANDOM_GAMES.map(([s, n]) => randomGame(s, n)), ...AI_GAMES.map(([s, n]) => aiGame(s, n))];

@@ -118,7 +118,7 @@ describe('reactive policies', () => {
   });
 
   it('never consumes dice forced by the test hook', () => {
-    const sc = scenarioById('005');
+    const sc = scenarioById('000');
     const d = new GameDriver(createGame(sc.setup, 3));
     const opts: AiOptions = { side: d.pending!.side, difficulty: 'tribune', personality: PERSONALITIES[1], seed: 9, budgetScale: 0.1 };
     const mem = newMemory();
@@ -139,7 +139,7 @@ describe('reactive policies', () => {
   });
 
   it('does not use hidden information: same decision whatever the opponent holds and the dice will be', () => {
-    const sc = scenarioById('001');
+    const sc = scenarioById('000');
     const base = createGame(sc.setup, 5);
     const opts: AiOptions = { side: base.active, difficulty: 'tribune', personality: PERSONALITIES[0], seed: 1234, budgetScale: 0.1, deterministic: true };
     const variant = createGame(sc.setup, 5);
@@ -159,7 +159,7 @@ describe('reactive policies', () => {
 
 describe('AiClient', () => {
   it('falls back to in-thread decisions when Web Workers are unavailable', async () => {
-    const sc = scenarioById('004');
+    const sc = scenarioById('000');
     const d = new GameDriver(createGame(sc.setup, 8));
     const c = {
       top: new AiClient({ side: 'top', difficulty: 'recruit', personality: PERSONALITIES[0], seed: 1, budgetScale: 0.3 }),

@@ -541,7 +541,7 @@ describe('answer validation (answerError)', () => {
 
 describe('game state: the fixed scenario rules and the special play state', () => {
   it('cloneState shares the scenario rules (readonly) and copies the play state', () => {
-    const s = createGame(scenarioById('308').setup, 1);
+    const s = createGame(scenarioById('000').setup, 1);
     const c = cloneState(s);
     expect(c.scenario).toBe(s.scenario);
     expect(c.special).not.toBe(s.special);

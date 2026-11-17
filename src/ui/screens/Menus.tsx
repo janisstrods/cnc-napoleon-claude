@@ -11,11 +11,11 @@ import { PERSONALITIES, personalityFor } from '../../ai/personality';
 import { RulesDialog } from './RulesDialog';
 import { HistoryButton } from '../history/HistoryButton';
 import {
-  OPTIONAL_RULES, PICKER_TABS, battlesOf, chosenOptions, loadOptionChoices, loadPickerTab, offeredOptions, optionValue, randomPick,
+  OPTIONAL_RULES, PICKER_TABS, battlesOf, visibleBattles, chosenOptions, loadOptionChoices, loadPickerTab, offeredOptions, optionValue, randomPick,
   saveOptionChoice, savePickerTab, tabForKey, type OptionId,
 } from './picker';
 import { BUILD_TIME, RELEASE, buildLabel } from '../../version';
-import { storage } from '../storage';
+import { storage, storageKey } from '../storage';
 import { MEDAL_FOR, beatenLevels, loadRecord, recordTotals, sideStanding, sideTally } from '../record';
 import { Medal, MedalPair } from './Medal';
 import { MenuTally, TriumphsDialog } from './Triumphs';
@@ -47,7 +47,7 @@ export function MainMenu(p: {
         </div>
         <h1 className="menu-title">Commands &amp; Colors</h1>
         <div className="menu-sub">ANCIENTS</div>
-        <p className="menu-tag">From Marathon to the Severn, 490 BC – AD 51 · {SCENARIOS.length} historical battles: the base game and Expansions #1, #2 and #3</p>
+        <p className="menu-tag">Commands &amp; Colours: Napoleonics — battles of the Peninsular War and the Hundred Days</p>
         <div className="menu-armies" aria-hidden>
           <svg viewBox="-52 -48 524 96" width="620" height="114">
             {MENU_ARMY_L.map((t, i) => (
@@ -91,7 +91,7 @@ export function MainMenu(p: {
       />
       <Modal open={credits} title="Credits" onClose={() => setCredits(false)} width={640}>
         <div className="credits">
-          <p>An unofficial, fan-made digital edition of <i>Commands &amp; Colors: Ancients</i>, designed by Richard Borg and published by GMT Games. Commands &amp; Colors is a trademark of GMT Games LLC. This edition uses original artwork and paraphrased rules text; it is not affiliated with or endorsed by GMT Games.</p>
+          <p>An unofficial, fan-made digital edition of <i>Commands &amp; Colours: Napoleonics</i>, based on the <i>Commands &amp; Colors</i> system designed by Richard Borg and published by GMT Games. Commands &amp; Colors is a trademark of GMT Games LLC. This edition uses original artwork and paraphrased rules text; it is not affiliated with or endorsed by GMT Games.</p>
           <p>Scenario setups follow the base game's 15 battles as documented by the community at commandsandcolors.net.</p>
           <p><b>Expansion #1</b>, <i>Greece &amp; Eastern Kingdoms</i>: its 24 battles (101–124) were transcribed hex by hex from the official battle maps published at commandsandcolors.net (122–124 from GMT's Bonus Pack #2). Its rules are paraphrased, its battle summaries original, and its armies drawn as original artwork.</p>
           <p><b>Expansion #2</b>, <i>Rome &amp; the Barbarians</i>: its 23 battles (201–223) were transcribed the same way from the battle maps published at commandsandcolors.net. Its rules are paraphrased, its battle summaries original, and its armies drawn as original artwork.</p>
@@ -174,16 +174,54 @@ function sideRecordText(won: number, lost: number, draw: number, army: string): 
   return `Your record as ${army}: ${parts.join(', ')}`;
 }
 
-export function ScenarioSelect(p: {
+type ScenarioSelectProps = {
   onBack: () => void;
   onStart: (scenarioId: string, side: Side, difficulty: Difficulty, personality?: string, options?: GameOptions) => void;
   /** The battle to open on (picked in the Triumphs record); else the first of the tab shown last time. */
   initialBattle?: string;
-}) {
-  const initial = SCENARIOS.find((s) => s.id === p.initialBattle);
+};
+
+/** The picker when no battle is visible (only the hidden drill exists): an empty list and briefing, Start disabled. */
+function EmptyScenarioSelect(p: { onBack: () => void }) {
+  return (
+    <div className="select-root">
+      <div className="select-list">
+        <div className="select-head">
+          <Button variant="ghost" onClick={p.onBack}>← Back</Button>
+          <h2>Choose a Battle</h2>
+        </div>
+        <div className="select-tabs" role="tablist" aria-label="Battles">
+          {PICKER_TABS.map((t, i) => (
+            <button key={t.id} id={`battle-tab-${t.id}`} role="tab" aria-selected={i === 0} aria-controls="battle-list" tabIndex={i === 0 ? 0 : -1} className={i === 0 ? 'active' : ''}>
+              {t.label} <small>0</small>
+            </button>
+          ))}
+        </div>
+        <div className="select-scroll" id="battle-list" role="tabpanel" aria-labelledby={`battle-tab-${PICKER_TABS[0].id}`} />
+        <Button variant="ghost" className="random-btn" disabled>Random battle</Button>
+      </div>
+      <div className="select-detail">
+        <Panel variant="parchment" className="brief">
+          <div className="brief-head"><div className="brief-title">No battles yet</div></div>
+        </Panel>
+        <div className="choose-row">
+          <Button variant="primary" className="start-btn" disabled>To Battle!</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function ScenarioSelect(p: ScenarioSelectProps) {
+  const fallback = visibleBattles(SCENARIOS)[0];
+  return fallback ? <ScenarioSelectBody {...p} fallback={fallback} /> : <EmptyScenarioSelect onBack={p.onBack} />;
+}
+
+function ScenarioSelectBody(p: ScenarioSelectProps & { fallback: ScenarioInfo }) {
+  const initial = visibleBattles(SCENARIOS).find((s) => s.id === p.initialBattle);
   const [tab, setTab] = useState<Expansion>(() => initial?.expansion ?? loadPickerTab());
   const battles = useMemo(() => battlesOf(SCENARIOS, tab), [tab]);
-  const [sel, setSel] = useState<ScenarioInfo>(() => initial ?? battles[0] ?? SCENARIOS[0]);
+  const [sel, setSel] = useState<ScenarioInfo>(() => initial ?? battles[0] ?? p.fallback);
   // the player's record: read once, as nothing changes it while the picker is open
   const [record] = useState(loadRecord);
   const [choices, setChoices] = useState<GameOptions>(() => loadOptionChoices());
@@ -205,7 +243,7 @@ export function ScenarioSelect(p: {
     tabRefs.current[t]?.focus();
   };
   const [side, setSide] = useState<Side>('bottom');
-  const [diff, setDiff] = useState<Difficulty>(() => (storage.get('cca-difficulty') as Difficulty) || 'tribune');
+  const [diff, setDiff] = useState<Difficulty>(() => (storage.get(storageKey('difficulty')) as Difficulty) || 'tribune');
   // Random battle: a battle from any box and a side; the list then scrolls to it (only after a random pick, or when the
   // picker opens on a battle from the Triumphs record)
   const listRef = useRef<HTMLDivElement>(null);
@@ -213,6 +251,7 @@ export function ScenarioSelect(p: {
   const [rolls, setRolls] = useState(0);
   const pickRandom = () => {
     const pick = randomPick(SCENARIOS, sel.id);
+    if (!pick) return; // no visible battle (the drill battle 000 is hidden)
     if (pick.battle.expansion !== tab) {
       setTab(pick.battle.expansion);
       savePickerTab(pick.battle.expansion);
@@ -253,7 +292,7 @@ export function ScenarioSelect(p: {
     return `${growth?.side === sd && growth.to > startCommand ? `${startCommand}→${growth.to}` : armies[sd].cards} cards`;
   };
   const start = () => {
-    storage.set('cca-difficulty', diff);
+    storage.set(storageKey('difficulty'), diff);
     p.onStart(sel.id, side, diff, persona || undefined, chosenOptions(sel, choices));
   };
   return (

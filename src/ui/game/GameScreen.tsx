@@ -53,7 +53,7 @@ export function GameScreen({ controller, onExit, onRematch }: {
   const [cmdFocus, setCmdFocus] = useState<string | null>(null);
 
   useEffect(() => {
-    if (import.meta.env.DEV) (window as unknown as { __cca: GameController }).__cca = controller;
+    if (import.meta.env.DEV) (window as unknown as { __ccn: GameController }).__ccn = controller;
   }, [controller]);
 
   // keyboard shortcuts: Enter = main action, Esc = clear selection, 1-9 = pick a card

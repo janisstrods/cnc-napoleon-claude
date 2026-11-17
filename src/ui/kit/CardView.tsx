@@ -214,7 +214,7 @@ export function CardBack(p: { size?: CardSize; className?: string; style?: CSSPr
           <Icon name="crossedSwords" size="100%" gradient={GOLD} className="kit-cardback__swords" />
         </div>
         <div className="kit-cardback__caption kit-cardback__caption--top">Command</div>
-        <div className="kit-cardback__caption kit-cardback__caption--bottom">Ancients</div>
+        <div className="kit-cardback__caption kit-cardback__caption--bottom">Napoleonics</div>
       </div>
     </div>
   );

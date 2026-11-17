@@ -98,18 +98,7 @@ describe('Expansion #1 figures', () => {
     expect(roman('companions')).toBe(roman());
   });
 
-  it('Miniature draws every elite fielded in a scenario with its own figures', () => {
-    const elites: { elite: EliteId; look: ArmyLook; type: UnitType }[] = [];
-    for (const sc of SCENARIOS) {
-      for (const u of sc.setup.units) {
-        if (u.elite && !elites.some((e) => e.elite === u.elite)) elites.push({ elite: u.elite, look: sc.setup[u.side].look, type: u.type });
-      }
-    }
-    expect(elites.map((e) => e.elite).sort()).toEqual(['bowAuxilia', 'carthSacredBand', 'companions', 'immortals', 'silverShields', 'tenthLegion', 'thebanSacredBand']);
-    for (const { elite, look, type } of elites) {
-      expect(fig(type, look, 2, elite), elite).not.toBe(fig(type, look, 2));
-    }
-  });
+  // 'Miniature draws every elite fielded in a scenario' was deleted with the Ancients battles (Plan 2A): no battle fields an elite now.
 
   it('the elite standard carries the army device: the Carthaginian disc and crescent stays, other elites show their own', () => {
     const std = (look: ArmyLook) => svg(h(EliteStandard, { p: paletteFor(look, 'grk') }));

@@ -2,7 +2,6 @@
 // storage, export and import, and the controller recording a finished battle once.
 import { describe, expect, it, vi } from 'vitest';
 import { GameDriver, other, randomAnswer, type Side } from '../../src/engine';
-import { SCENARIOS } from '../../src/scenarios';
 import { GameController, initialState, newSessionConfig } from '../../src/ui/game/controller';
 import {
   addResult, beatenLevels, exportRecord, importRecord, loadRecord, mergeRecords, outcomeFor, parseRecord, recordFinished,
@@ -59,10 +58,11 @@ describe('battle record', () => {
     r = addResult(r, '001', 'top', 'tribune', 'won');
     r = addResult(r, '002', 'top', 'tribune', 'lost');
     r = addResult(r, '101', 'top', 'recruit', 'won');
-    const base = SCENARIOS.filter((s) => s.expansion === 'base').map((s) => s.id);
+    // the record is plain data keyed by battle id, so the ids need not be shipped battles
+    const base = Array.from({ length: 15 }, (_, i) => String(i + 1).padStart(3, '0'));
     expect(recordTotals(r, base)).toEqual({ gold: 1, silver: 1, bronze: 0, fought: 2, battles: 15, sides: 30 });
-    expect(recordTotals(r, SCENARIOS.map((s) => s.id))).toEqual({
-      gold: 1, silver: 1, bronze: 1, fought: 3, battles: SCENARIOS.length, sides: 2 * SCENARIOS.length,
+    expect(recordTotals(r, [...base, '101'])).toEqual({
+      gold: 1, silver: 1, bronze: 1, fought: 3, battles: 16, sides: 32,
     });
   });
 
@@ -105,11 +105,11 @@ describe('battle record', () => {
     expect(loadRecord()).toEqual({});
     const r = addResult({}, '108', 'bottom', 'tribune', 'won');
     saveRecord(r);
-    expect(JSON.parse(m.get('cca-record-v1')!)).toEqual({ version: 1, battles: r });
+    expect(JSON.parse(m.get('ccn-record-v1')!)).toEqual({ version: 1, battles: r });
     expect(loadRecord()).toEqual(r);
-    m.set('cca-record-v1', '{not json');
+    m.set('ccn-record-v1', '{not json');
     expect(loadRecord()).toEqual({});
-    m.set('cca-record-v1', JSON.stringify({ version: 2, battles: r }));
+    m.set('ccn-record-v1', JSON.stringify({ version: 2, battles: r }));
     expect(loadRecord()).toEqual({});
   });
 
@@ -128,15 +128,15 @@ describe('battle record', () => {
   it('exports to a dated file and imports it back; other files are refused', () => {
     const r = addResult(addResult({}, '301', 'top', 'consul', 'won'), '012', 'bottom', 'recruit', 'lost');
     const file = exportRecord(r, new Date(2026, 9, 11, 12));
-    expect(file.name).toBe('cca-triumphs-2026-10-11.json');
+    expect(file.name).toBe('ccn-triumphs-2026-10-11.json');
     const parsed = JSON.parse(file.text);
-    expect(parsed.game).toBe('cca-triumphs');
+    expect(parsed.game).toBe('ccn-triumphs');
     expect(parsed.version).toBe(1);
     expect(importRecord(file.text)).toEqual(r);
     expect(importRecord('{"version":1,"battles":{}}')).toBeNull();
     expect(importRecord(JSON.stringify({ version: 1, engine: 2, config: {}, answers: [] }))).toBeNull();
     expect(importRecord('not json')).toBeNull();
-    expect(importRecord(JSON.stringify({ game: 'cca-triumphs', version: 1, battles: {} }))).toEqual({});
+    expect(importRecord(JSON.stringify({ game: 'ccn-triumphs', version: 1, battles: {} }))).toEqual({});
   });
 });
 
@@ -157,7 +157,7 @@ describe('recording a battle when it ends', () => {
 
   /** A controller resuming that battle from its last answer, with the human on `side`, run until it shows the end. */
   async function replayEnd(game: ReturnType<typeof finishedGame>, side: Side) {
-    const cfg = newSessionConfig('002', side, 'consul');
+    const cfg = newSessionConfig('000', side, 'consul');
     cfg.seed = game.seed;
     const c = new GameController(cfg, new SeededOpponent(), game.answers);
     for (let i = 0; i < 400 && !c.view.over; i++) {
@@ -170,26 +170,26 @@ describe('recording a battle when it ends', () => {
 
   it('records a won battle once, with its new medal', async () => {
     const storage = stubStorage();
-    const game = finishedGame('002', 12);
+    const game = finishedGame('000', 12);
     const c = await replayEnd(game, game.winner);
-    expect(sideTally(loadRecord(), '002', game.winner)).toEqual({ won: 1, lost: 0, draw: 0 });
+    expect(sideTally(loadRecord(), '000', game.winner)).toEqual({ won: 1, lost: 0, draw: 0 });
     expect(c.view.over?.newMedal).toBe('gold');
     // the loop running again after the end records nothing more, and keeps the medal shown
     (c as unknown as { run(): void }).run();
     await vi.advanceTimersByTimeAsync(500);
-    expect(sideTally(loadRecord(), '002', game.winner)).toEqual({ won: 1, lost: 0, draw: 0 });
+    expect(sideTally(loadRecord(), '000', game.winner)).toEqual({ won: 1, lost: 0, draw: 0 });
     expect(c.view.over?.newMedal).toBe('gold');
     c.dispose();
-    expect(storage.has('cca-autosave-v1')).toBe(false);
+    expect(storage.has('ccn-autosave-v1')).toBe(false);
   });
 
   it('records a lost battle, with no medal', async () => {
     stubStorage();
-    const game = finishedGame('002', 12);
+    const game = finishedGame('000', 12);
     const loser = other(game.winner);
     const c = await replayEnd(game, loser);
-    expect(sideTally(loadRecord(), '002', loser)).toEqual({ won: 0, lost: 1, draw: 0 });
-    expect(sideStanding(loadRecord(), '002', loser)).toBe('fought');
+    expect(sideTally(loadRecord(), '000', loser)).toEqual({ won: 0, lost: 1, draw: 0 });
+    expect(sideStanding(loadRecord(), '000', loser)).toBe('fought');
     expect(c.view.over?.newMedal).toBeUndefined();
     c.dispose();
   });

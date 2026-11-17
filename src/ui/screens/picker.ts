@@ -2,7 +2,7 @@
 // choices). Pure apart from the tab and the choices remembered in storage.
 import { EXPANSIONS, type Expansion, type GameOptions, type Side } from '../../engine';
 import type { ScenarioInfo } from '../../scenarios';
-import { storage } from '../storage';
+import { storage, storageKey } from '../storage';
 
 export interface PickerTab {
   id: Expansion;
@@ -15,9 +15,14 @@ export interface PickerTab {
  */
 export const PICKER_TABS: readonly PickerTab[] = EXPANSIONS.map((e) => ({ id: e.id, label: e.pickerLabel }));
 
-/** The battles of one tab, in the order given (the scenario list is sorted by id). */
+/** The battles the picker and random battle may offer: every battle but the hidden ones (the drill battle 000). */
+export function visibleBattles(all: readonly ScenarioInfo[]): ScenarioInfo[] {
+  return all.filter((s) => !s.hidden);
+}
+
+/** The visible battles of one tab, in the order given (the scenario list is sorted by id). */
 export function battlesOf(all: readonly ScenarioInfo[], tab: Expansion): ScenarioInfo[] {
-  return all.filter((s) => s.expansion === tab);
+  return visibleBattles(all).filter((s) => s.expansion === tab);
 }
 
 /** The tab a key press on the tab list selects: Left/Right step (wrapping around), Home/End the first/last; else none. */
@@ -29,21 +34,23 @@ export function tabForKey(current: Expansion, key: string): Expansion | undefine
 }
 
 /**
- * Random battle: any battle of `all` except the one shown (`currentId`), so a press always changes it, and a side to
- * command, each equally likely. `rand` returns numbers in [0, 1), like Math.random.
+ * Random battle: any visible battle of `all` except the one shown (`currentId`), so a press always changes it, and a side
+ * to command, each equally likely. Null when there is no visible battle. `rand` returns numbers in [0, 1), like Math.random.
  */
 export function randomPick(
   all: readonly ScenarioInfo[],
   currentId: string,
   rand: () => number = Math.random,
-): { battle: ScenarioInfo; side: Side } {
-  const others = all.filter((s) => s.id !== currentId);
-  const pool = others.length ? others : all;
+): { battle: ScenarioInfo; side: Side } | null {
+  const shown = visibleBattles(all);
+  if (!shown.length) return null;
+  const others = shown.filter((s) => s.id !== currentId);
+  const pool = others.length ? others : shown;
   const battle = pool[Math.min(pool.length - 1, Math.floor(rand() * pool.length))];
   return { battle, side: rand() < 0.5 ? 'bottom' : 'top' };
 }
 
-const TAB_KEY = 'cca-battle-tab';
+const TAB_KEY = storageKey('battle-tab');
 
 /** The tab shown last time (the base game when none is stored or the value is unknown). */
 export function loadPickerTab(): Expansion {
@@ -89,7 +96,7 @@ export function offeredOptions(sc: ScenarioInfo): OptionId[] {
   return (Object.keys(OPTIONAL_RULES) as OptionId[]).filter((id) => o[id] !== undefined);
 }
 
-const OPTIONS_KEY = 'cca-options';
+const OPTIONS_KEY = storageKey('options');
 
 /** The player's last choice per optional rule (only known rules with a boolean value survive). */
 export function loadOptionChoices(): GameOptions {

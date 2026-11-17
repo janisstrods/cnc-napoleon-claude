@@ -3,9 +3,6 @@
 import { describe, expect, it } from 'vitest';
 import { ALL_HEXES, OFF_BOARD, createGame, hexId, isHill, neighbours, steepSlope, type ObjectiveSetup } from '../../src/engine';
 import { scenarioById, scenarioFromJson, scenariosFromFiles, type ScenarioJson } from '../../src/scenarios';
-import gergovia from '../../src/scenarios/data/308.json';
-import bibracte from '../../src/scenarios/data/306.json';
-import valentia from '../../src/scenarios/data/304.json';
 
 const H = (r: number, c: number) => hexId(r, c);
 
@@ -192,18 +189,12 @@ describe('scenario loader', () => {
     expect(raw).toEqual(RAW);
   });
 
-  it('base scenario files (no expansion field) are base scenarios and carry their rules in the file, like the expansions', () => {
-    const sc = scenarioById('002');
-    expect(sc.expansion).toBe('base');
-    expect(sc.setup.units.filter((u) => u.elite).map((u) => u.elite)).toEqual(['carthSacredBand']);
-    expect(scenarioById('005').setup.ambush).toEqual({}); // Mago's ambush: the Trebbia defaults
-    expect(scenarioById('011').setup.objectives).toEqual([{ kind: 'capture', side: 'bottom', text: 'The Romans storm a Carthaginian camp!' }]);
-    // 006 Trasimenus: 4 cards, 2 to start, hand growth to 4, and the Legate the forum post adds (listed last, §18.8)
-    const tr = scenarioById('006').setup;
-    expect([tr.bottom.cards, tr.initialCommand, tr.handGrowth, tr.leaders.at(-1)]).toEqual([
-      4, { bottom: 2 }, { side: 'bottom', to: 4 }, { side: 'bottom', name: 'Legate', r: 8, c: 9 },
-    ]);
-    expect(scenarioById('010').setup.sacredLeader).toEqual({ side: 'bottom', name: 'Scipio' });
+  it('a scenario file without an expansion field is a base scenario; `hidden` passes through', () => {
+    const { expansion: _e, ...noBox } = RAW;
+    expect(scenarioFromJson(noBox).expansion).toBe('base');
+    expect(scenarioFromJson(noBox).hidden).toBeUndefined();
+    expect(scenarioFromJson({ ...noBox, hidden: true }).hidden).toBe(true);
+    expect(scenarioById('000').setup.units).toHaveLength(8);
   });
 
   it('the starting Command, the Command bonus, the sacred leader and the one-army rules reach the setup (objects as copies)', () => {
@@ -338,114 +329,21 @@ describe('malformed scenario files', () => {
   it('well-formed files build as before, sorted by id', () => {
     const list = scenariosFromFiles({ './b.json': { ...RAW, id: '199' }, './a.json': { ...RAW, id: '198' } });
     expect(list.map((x) => x.id)).toEqual(['198', '199']);
-    expect(scenarioById('108').name).toBe('Issus');
   });
 });
 
-describe('Expansion #3 terrain through the loader (src/scenarios/data/308.json, §18.7)', () => {
-  const sc = scenarioFromJson(gergovia as unknown as ScenarioJson);
+// The per-battle loader suites of the Ancients files (Expansion #3 terrain, reinforcements, units, the 301-319 walk) were
+// deleted with those files in Plan 2A; the Ancients-only fields they covered (ambush, placeUnits, orders, orderDice,
+// immobile, commands) go with the engine rewrite and are not tested here. The walk below checks the files that remain.
 
-  it('keeps the hills under the Gergovia walls and the Gallic camps', () => {
-    const hills = sc.setup.terrain.filter((t) => t.hill).map((t) => [t.r, t.c, t.t]);
-    expect(hills).toEqual([
-      [0, 5, 'wall'], [0, 6, 'wall'], [0, 7, 'wall'], [0, 8, 'wall'], [0, 9, 'wall'], [2, 5, 'camp'], [2, 7, 'camp'], [2, 9, 'camp'],
-    ]);
-    const s = createGame(sc.setup, 1);
-    expect(ALL_HEXES.filter((h) => s.hillUnder[h])).toEqual([H(0, 5), H(0, 6), H(0, 7), H(0, 8), H(0, 9), H(2, 5), H(2, 7), H(2, 9)]);
-    expect([isHill(s, H(0, 9)), isHill(s, H(2, 9)), s.terrain[H(0, 9)], s.terrain[H(2, 9)]]).toEqual([true, true, 'wall', 'camp']);
-  });
-
-  it('so its steep slopes include the wall corner and the camp next to the forests (12 in all)', () => {
-    const s = createGame(sc.setup, 1);
-    expect(steepSlope(s, H(0, 9), H(0, 10))).toBe(true); // wall corner (0,9) and forest (0,10)
-    expect(steepSlope(s, H(2, 10), H(2, 9))).toBe(true); // forest (2,10) and Gallic camp (2,9)
-    expect(steepSlope(s, H(1, 4), H(1, 3))).toBe(true); // an ordinary hill and forest
-    const sides = ALL_HEXES.flatMap((a) => neighbours(a).filter((b) => a < b && steepSlope(s, a, b)));
-    expect(sides).toHaveLength(12);
-  });
-});
-
-describe('Expansion #3 reinforcements through the loader (src/scenarios/data/308.json, §18.9)', () => {
-  const raw = (): ScenarioJson => JSON.parse(JSON.stringify(gergovia)) as ScenarioJson;
-  const G = [[3, 0], [4, 0], [5, 0], [6, 0], [7, 0]] as [number, number][];
-  const R = [[8, 0], [8, 1], [8, 2], [8, 3], [8, 4]] as [number, number][];
-
-  it('keeps the fixed entry hexes, noMove and attachLeader of the Gallic reinforcements', () => {
-    const sc = scenarioFromJson(raw());
-    expect(sc.setup.ambush).toMatchObject({ afterOwnTurns: 0, entryHexes: G, noMove: true, attachLeader: true });
-    const s = createGame(sc.setup, 1);
-    expect(s.scenario.ambush).toMatchObject({
-      trigger: ['inspiredL', 'inspiredC', 'inspiredR', 'leadershipAny'], afterOwnTurns: 0,
-      entryHexes: G.map(([r, c]) => H(r, c)), noMove: true, attachLeader: true,
-    });
-    expect(s.special.reserveUnits.map((u) => u.type)).toEqual(['AX', 'AX', 'WA', 'WA']);
-    expect(s.special.reserveLeaders.map((l) => l.name)).toEqual(['Vercingetorix']);
-  });
-
-  it('keeps the Roman forced placement: an off-board Julian MI for the left baseline, apart from the reserves', () => {
-    const sc = scenarioFromJson(raw());
-    expect(sc.setup.placeUnits).toEqual([{ side: 'bottom', type: 'MI', hexes: R, after: 'ambush' }]);
-    const s = createGame(sc.setup, 1);
-    expect(s.special.placeUnits.map((p) => [p.unit.side, p.unit.type, p.unit.hex, p.unit.legion, p.hexes, p.after])).toEqual([
-      ['bottom', 'MI', OFF_BOARD, 'julian', R.map(([r, c]) => H(r, c)), 'ambush'],
-    ]);
-    expect(s.units.some((u) => u.id === s.special.placeUnits[0].unit.id)).toBe(false);
-  });
-
-  it('the setup is a copy: changing its entry hexes or placements leaves the JSON data alone', () => {
-    const j = raw();
-    const keep = JSON.parse(JSON.stringify(j));
-    const { setup } = scenarioFromJson(j);
-    setup.ambush!.entryHexes![0][0] = 8;
-    setup.placeUnits![0].hexes[0][1] = 9;
-    setup.placeUnits![0].type = 'HI';
-    expect(j).toEqual(keep);
-  });
-});
-
-describe('Expansion #3 units and commands through the loader (src/scenarios/data/306.json, 304.json)', () => {
-  const read = (j: unknown): ScenarioJson => JSON.parse(JSON.stringify(j)) as ScenarioJson;
-
-  it('306: the two recruits keep `immobile` in the setup and the state (§18.11)', () => {
-    const sc = scenarioFromJson(read(bibracte));
-    expect(sc.setup.units.filter((u) => u.immobile).map((u) => [u.side, u.type, u.r, u.c])).toEqual([['bottom', 'AX', 8, 4], ['bottom', 'AX', 8, 5]]);
-    const s = createGame(sc.setup, 1);
-    expect(s.units.filter((u) => u.immobile).map((u) => [u.type, u.hex])).toEqual([['AX', H(8, 4)], ['AX', H(8, 5)]]);
-    expect(s.units.filter((u) => !u.immobile)).toHaveLength(s.units.length - 2);
-  });
-
-  it('304: both leaders keep their command, the units theirs, and the commands their blocks (§18.5)', () => {
-    const sc = scenarioFromJson(read(valentia));
-    expect(sc.setup.leaders.filter((l) => l.side === 'top').map((l) => [l.name, l.command])).toEqual([['Perpenna', 'perpenna'], ['Herennius', 'herennius']]);
-    const s = createGame(sc.setup, 1);
-    expect(s.scenario.commands).toEqual([
-      { id: 'herennius', name: 'Herennius', side: 'top' }, { id: 'perpenna', name: 'Perpenna', side: 'top', blocks: 'grk' },
-    ]);
-    expect(s.leaders.map((l) => [l.name, l.command])).toEqual([
-      ['Perpenna', 'perpenna'], ['Herennius', 'herennius'], ['Memmius', undefined], ['Pompey', undefined], ['Afranius', undefined],
-    ]);
-    const count = (c: string) => s.units.filter((u) => u.command === c).length;
-    expect([count('herennius'), count('perpenna'), s.units.filter((u) => u.side === 'top' && !u.command).length]).toEqual([10, 5, 0]);
-  });
-
-  it('the setup is a copy: changing a unit or leader leaves the JSON data alone', () => {
-    const j = read(bibracte);
-    const keep = JSON.parse(JSON.stringify(j));
-    const { setup } = scenarioFromJson(j);
-    setup.units.find((u) => u.immobile)!.immobile = false;
-    setup.leaders[0].command = 'x';
-    expect(j).toEqual(keep);
-  });
-});
-
-describe('the Expansion #3 files (301-319) through the loader: every key reaches the setup, as a copy', () => {
-  const FILES = Object.values(import.meta.glob<ScenarioJson>('../../src/scenarios/data/3*.json', { eager: true, import: 'default' }))
+describe('the scenario files through the loader: every key reaches the setup, as a copy', () => {
+  const FILES = Object.values(import.meta.glob<ScenarioJson>('../../src/scenarios/data/*.json', { eager: true, import: 'default' }))
     .sort((a, b) => a.id.localeCompare(b.id));
   type Path = (string | number)[];
   const isNode = (v: unknown): v is object => typeof v === 'object' && v !== null;
-  /** The value at `path` of the built scenario: the battle's year and box are in the info, everything else in its setup. */
+  /** The value of a file key in the built scenario: year, box and `hidden` are in the info, everything else in its setup. */
   const target = (info: ReturnType<typeof scenarioFromJson>, key: string): unknown =>
-    key === 'year' || key === 'expansion' ? info[key] : (info.setup as unknown as Record<string, unknown>)[key];
+    key === 'year' || key === 'expansion' || key === 'hidden' ? info[key] : (info.setup as unknown as Record<string, unknown>)[key];
 
   /**
    * Walk a file value and the loaded value side by side: every key and list entry of the file must be in the setup with the
@@ -470,65 +368,32 @@ describe('the Expansion #3 files (301-319) through the loader: every key reaches
     }
   }
 
-  it('are the 19 battles 301-319 of the Roman Civil Wars box, and SCENARIOS holds them as built', () => {
-    expect(FILES.map((j) => [j.id, j.expansion])).toEqual(Array.from({ length: 19 }, (_, k) => [String(301 + k), 'exp3']));
+  it('is the hidden drill battle 000, and SCENARIOS holds it as built', () => {
+    expect(FILES.map((j) => j.id)).toEqual(['000']);
     for (const j of FILES) expect(scenarioById(j.id), j.id).toEqual(scenarioFromJson(j));
   });
 
-  it('every key present anywhere in the files reaches the loaded setup unchanged and as a copy', () => {
+  it('every key of the file reaches the loaded setup unchanged and as a copy', () => {
     for (const j of FILES) {
       const info = scenarioFromJson(j);
       const problems: string[] = [];
       for (const [k, v] of Object.entries(j)) {
         if (k === 'id' || k === 'name') expect([k, info[k]]).toEqual([k, v]);
+        // the roster check and notes some files carry are ignored by the loader
+        if (k === 'rosterCheck' || k === 'notes' || k === 'specialRules' || k === 'cardsNote') continue;
         compare(v, target(info, k), [j.id, k], problems);
       }
       expect(problems, j.id).toEqual([]);
     }
   });
 
-  it('the keys the files use, by kind, so a new one is noticed (and the walk above checks it reaches the setup)', () => {
-    const seen: Record<string, Set<string>> = {};
-    const add = (kind: string, keys: string[]) => keys.forEach((k) => (seen[kind] ??= new Set()).add(k));
-    const LISTS: Record<string, string> = {
-      units: 'unit', leaders: 'leader', terrain: 'terrain', objectives: 'objective', placeUnits: 'placeUnit', commands: 'command',
-      reserves: 'reserve', reserveLeaders: 'reserveLeader',
-    };
-    const OBJECTS: Record<string, string> = { top: 'side', bottom: 'side', ambush: 'ambush', handGrowth: 'handGrowth', legions: 'legions' };
-    for (const j of FILES) {
-      add('file', Object.keys(j));
-      for (const [k, v] of Object.entries(j)) {
-        if (LISTS[k]) for (const x of v as object[]) add(LISTS[k], Object.keys(x));
-        if (OBJECTS[k]) add(OBJECTS[k], Object.keys(v as object));
-      }
-    }
-    const sorted = Object.fromEntries(Object.entries(seen).map(([k, v]) => [k, [...v].sort()]));
-    expect(sorted).toEqual({
-      file: ['ambush', 'banners', 'bottom', 'commands', 'expansion', 'first', 'handGrowth', 'id', 'leaders', 'legions', 'name', 'objectives',
-        'placeUnits', 'reserveLeaders', 'reserves', 'rules', 'terrain', 'top', 'units', 'year'],
-      side: ['army', 'blocks', 'cards', 'commander', 'look', 'orderDice', 'orders'],
-      unit: ['c', 'command', 'immobile', 'r', 'side', 'type'],
-      leader: ['c', 'command', 'name', 'r', 'side', 'traits'],
-      terrain: ['art', 'c', 'edges', 'faces', 'ford', 'hill', 'r', 't'],
-      objective: ['banners', 'hexes', 'kind', 'leadersScore', 'marker', 'max', 'remove', 'side', 'sides', 'text', 'units', 'when'],
-      ambush: ['afterOwnTurns', 'attachLeader', 'entryHexes', 'noMove', 'text', 'trigger'],
-      placeUnit: ['after', 'hexes', 'side', 'type'],
-      command: ['blocks', 'id', 'name', 'side'],
-      reserve: ['side', 'type'],
-      reserveLeader: ['name', 'side'],
-      handGrowth: ['side', 'to'],
-      legions: ['bottom', 'top'],
-    });
-  });
-
   it('the walk notices a dropped or shared field', () => {
-    const j = JSON.parse(JSON.stringify(FILES.find((x) => x.id === '308'))) as ScenarioJson;
+    const j = JSON.parse(JSON.stringify(FILES[0])) as ScenarioJson;
     const info = scenarioFromJson(j);
-    delete info.setup.ambush!.noMove;
     delete (info.setup.units[0] as { r?: number }).r;
-    info.setup.placeUnits![0].hexes[2] = j.placeUnits![0].hexes[2];
+    info.setup.leaders[0] = j.leaders[0] as never;
     const problems: string[] = [];
     for (const [k, v] of Object.entries(j)) compare(v, target(info, k), [j.id, k], problems);
-    expect(problems).toEqual(['308.ambush.noMove: dropped', '308.units.0.r: dropped', '308.placeUnits.0.hexes.2: shared with the file, not copied']);
+    expect(problems).toEqual(['000.units.0.r: dropped', '000.leaders.0: shared with the file, not copied']);
   });
 });

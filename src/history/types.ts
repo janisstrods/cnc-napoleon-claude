@@ -13,11 +13,11 @@ export type Pt = [x: number, y: number];
 export interface BattleHistory {
   /** The scenario id ('007'). */
   id: string;
-  /** The accepted date when it differs from the scenario's year ("255 BC"); the dialog's title shows it. */
+  /** The accepted date when it differs from the scenario's year ("17 August 1808", "16–17 January 1809"); the dialog's title shows it. */
   date?: string;
   /** Slide 1: the war and why the armies met here. */
   context: {
-    /** The war or campaign, with dates: "Second Punic War, 218–201 BC". */
+    /** The war or campaign, with dates: "Peninsular War, 1807–1814". */
     war: string;
     /** One or two short paragraphs. */
     text: string[];
@@ -37,14 +37,14 @@ export interface BattleHistory {
     /** One or two short paragraphs on what followed. */
     text: string[];
   };
-  /** Ancient authors with book and chapter, and modern references. */
+  /** Contemporary and modern references. */
   sources: string[];
 }
 
 export interface SideHistory {
   /** The army: "Carthaginians and allies". */
   name: string;
-  /** Commanders, with their role where useful: "Hasdrubal (left-wing cavalry)". */
+  /** Commanders, with their role where useful: "Wellesley (commanding)". */
   commanders: string[];
   /** Estimated strength, with its uncertainty: "c. 40,000 foot and 10,000 horse". */
   strength: string;
@@ -72,27 +72,26 @@ export type MapFeature =
   | { kind: 'road'; points: Pt[]; label?: string }
   /** A walled town; `size` is the half-width in map units (default 26). */
   | { kind: 'town'; at: Pt; size?: number; label?: string }
-  /** A fortified camp; `size` is the half-width in map units (default 34). */
-  | { kind: 'camp'; at: Pt; size?: number; label?: string }
+  /** A walled farm or château (Hougoumont); `size` is the half-width in map units (default 20). */
+  | { kind: 'farm'; at: Pt; size?: number; label?: string }
+  /** An earthwork redoubt or entrenchment; `size` is the half-width in map units (default 30). */
+  | { kind: 'redoubt'; at: Pt; size?: number; label?: string }
   /** A free text label: a place name, a hill name. */
   | { kind: 'label'; at: Pt; text: string };
 
 export type UnitKind =
-  | 'foot' // formed infantry: phalanx, hoplites, legions
-  | 'light' // skirmishers, archers, slingers
-  | 'warband' // loose-order tribal foot
-  | 'horse' // formed cavalry
-  | 'lighthorse' // skirmishing cavalry, horse archers
-  | 'elephants'
-  | 'chariots'
-  | 'camels'
-  | 'machines'; // bolt-shooters, stone-throwers
+  | 'infantry' // formed line and column infantry
+  | 'light' // voltigeurs, rifles, skirmishers
+  | 'guard' // guard and elite infantry
+  | 'cavalry' // light and line cavalry
+  | 'heavycavalry' // cuirassiers, carabiniers, dragoons of the line of battle
+  | 'artillery'; // batteries
 
 export interface MapUnit {
   id: string;
   side: Side;
   kind: UnitKind;
-  /** A short name shown beside the block: "Libyans", "Companions". */
+  /** A short name shown beside the block: "95th Rifles", "Imperial Guard". */
   label?: string;
   /** Block size in map units (defaults depend on the kind). */
   w?: number;

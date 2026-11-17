@@ -1,0 +1,450 @@
+{
+ "id": "015",
+ "grid": {
+  "x0": 74.12,
+  "y0": 136.12,
+  "w": 87.0,
+  "pitch": 75.5
+ },
+ "terrain": [
+  {
+   "r": 2,
+   "c": 0,
+   "t": "forest"
+  },
+  {
+   "r": 4,
+   "c": 2,
+   "t": "forest"
+  },
+  {
+   "r": 4,
+   "c": 5,
+   "t": "forest"
+  },
+  {
+   "r": 5,
+   "c": 1,
+   "t": "forest"
+  },
+  {
+   "r": 5,
+   "c": 10,
+   "t": "forest"
+  },
+  {
+   "r": 6,
+   "c": 1,
+   "t": "forest"
+  },
+  {
+   "r": 6,
+   "c": 12,
+   "t": "forest"
+  },
+  {
+   "r": 7,
+   "c": 4,
+   "t": "forest"
+  },
+  {
+   "r": 2,
+   "c": 1,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 2,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 3,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 7,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 8,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 9,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 10,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 11,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 12,
+   "t": "hill"
+  },
+  {
+   "r": 6,
+   "c": 5,
+   "t": "hill"
+  },
+  {
+   "r": 6,
+   "c": 6,
+   "t": "hill"
+  },
+  {
+   "r": 6,
+   "c": 7,
+   "t": "hill"
+  },
+  {
+   "r": 6,
+   "c": 8,
+   "t": "hill"
+  },
+  {
+   "r": 6,
+   "c": 9,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 6,
+   "t": "sandQuarry"
+  },
+  {
+   "r": 3,
+   "c": 5,
+   "t": "town",
+   "art": "label: La Haye Sainte (town tile used, not the optional walled farm)"
+  },
+  {
+   "r": 4,
+   "c": 1,
+   "t": "town",
+   "art": "label: Hougoumont (town tile used, not the optional walled farm)"
+  },
+  {
+   "r": 4,
+   "c": 12,
+   "t": "town",
+   "art": "label: Papelotte"
+  }
+ ],
+ "units": [
+  {
+   "r": 0,
+   "c": 1,
+   "side": "top",
+   "key": "AL/LN"
+  },
+  {
+   "r": 0,
+   "c": 7,
+   "side": "top",
+   "key": "AL/LN"
+  },
+  {
+   "r": 1,
+   "c": 4,
+   "side": "top",
+   "key": "AL/LN"
+  },
+  {
+   "r": 1,
+   "c": 11,
+   "side": "top",
+   "key": "AL/LN"
+  },
+  {
+   "r": 2,
+   "c": 1,
+   "side": "top",
+   "key": "AL/LN"
+  },
+  {
+   "r": 3,
+   "c": 8,
+   "side": "top",
+   "key": "AL/LN"
+  },
+  {
+   "r": 0,
+   "c": 3,
+   "side": "top",
+   "key": "AL/LC"
+  },
+  {
+   "r": 0,
+   "c": 11,
+   "side": "top",
+   "key": "AL/LC"
+  },
+  {
+   "r": 4,
+   "c": 12,
+   "side": "top",
+   "key": "AL/LT"
+  },
+  {
+   "r": 1,
+   "c": 3,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 1,
+   "c": 9,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 2,
+   "c": 8,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 3,
+   "c": 5,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 4,
+   "c": 1,
+   "side": "top",
+   "key": "BR/LT"
+  },
+  {
+   "r": 2,
+   "c": 6,
+   "side": "top",
+   "key": "BR/RI"
+  },
+  {
+   "r": 1,
+   "c": 2,
+   "side": "top",
+   "key": "BR/GG"
+  },
+  {
+   "r": 0,
+   "c": 8,
+   "side": "top",
+   "key": "BR/HC"
+  },
+  {
+   "r": 0,
+   "c": 6,
+   "side": "top",
+   "key": "BR/GHC"
+  },
+  {
+   "r": 2,
+   "c": 2,
+   "side": "top",
+   "key": "BR/FA"
+  },
+  {
+   "r": 2,
+   "c": 7,
+   "side": "top",
+   "key": "BR/FA"
+  },
+  {
+   "r": 2,
+   "c": 10,
+   "side": "top",
+   "key": "BR/FA"
+  },
+  {
+   "r": 6,
+   "c": 8,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 2,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 3,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 5,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 6,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 7,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 9,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 10,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 1,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 8,
+   "c": 10,
+   "side": "bottom",
+   "key": "FR/YG"
+  },
+  {
+   "r": 8,
+   "c": 5,
+   "side": "bottom",
+   "key": "FR/OG"
+  },
+  {
+   "r": 8,
+   "c": 1,
+   "side": "bottom",
+   "key": "FR/LC"
+  },
+  {
+   "r": 8,
+   "c": 11,
+   "side": "bottom",
+   "key": "FR/LC"
+  },
+  {
+   "r": 8,
+   "c": 4,
+   "side": "bottom",
+   "key": "FR/CU"
+  },
+  {
+   "r": 8,
+   "c": 7,
+   "side": "bottom",
+   "key": "FR/GHC"
+  },
+  {
+   "r": 6,
+   "c": 5,
+   "side": "bottom",
+   "key": "FR/FA"
+  },
+  {
+   "r": 6,
+   "c": 9,
+   "side": "bottom",
+   "key": "FR/FA"
+  },
+  {
+   "r": 7,
+   "c": 0,
+   "side": "bottom",
+   "key": "FR/HA"
+  },
+  {
+   "r": 8,
+   "c": 9,
+   "side": "bottom",
+   "key": "FR/GA"
+  }
+ ],
+ "leaders": [
+  {
+   "r": 1,
+   "c": 3,
+   "side": "top",
+   "name": "Hill"
+  },
+  {
+   "r": 2,
+   "c": 8,
+   "side": "top",
+   "name": "Picton"
+  },
+  {
+   "r": 1,
+   "c": 9,
+   "side": "top",
+   "name": "Perponcher"
+  },
+  {
+   "r": 6,
+   "c": 8,
+   "side": "bottom",
+   "name": "d'Erlon"
+  },
+  {
+   "r": 7,
+   "c": 2,
+   "side": "bottom",
+   "name": "Reille"
+  },
+  {
+   "r": 8,
+   "c": 6,
+   "side": "bottom",
+   "name": "Ney"
+  }
+ ],
+ "objectives": [
+  {
+   "r": 3,
+   "c": 5,
+   "note": "La Haye Sainte: temporary banner for the French, held at turn start (survey 015); blue outline on the map"
+  },
+  {
+   "r": 4,
+   "c": 1,
+   "note": "Hougoumont: temporary banner for the French, held at turn start (survey 015); blue outline on the map"
+  },
+  {
+   "r": 4,
+   "c": 12,
+   "note": "Papelotte: temporary banner for the French, held at turn start (survey 015); blue outline on the map"
+  }
+ ],
+ "notes": [
+  "Units 21 + 19 and leaders 3 + 3 as the survey.",
+  "Colours: BR red blocks, AL brown blocks. Perponcher sits in a red stack on BR/LN 1,9, so he counts as a BR leader (BR/LDR 3: Hill 1,3, Picton 2,8, Perponcher 1,9); AL has no leader.",
+  "RI at 2,6 is the RIFLE LIGHT block (red) and stands on the sand quarry (one hex, pale glow round the block). Cavalry: BR/HC 0,8 and BR/GHC 0,6 red; AL/LC 0,3 and 0,11 brown. 4,1 LT is red (BR/LT, Hougoumont); 4,12 LT is brown (AL/LT, Papelotte).",
+  "Ney stands alone at 8,6 as a leader block. d'Erlon 6,8 and Reille 7,2 are stacked behind FR/LN (Reille's label is blurred at 6x; spelling follows the survey).",
+  "Terrain: forest 8, hill 14 (under blocks at 2,1 2,2 2,7 2,8 2,10 6,5 6,8 6,9, hill rays round them), sand quarry 1, town 3, no river.",
+  "La Haye Sainte 3,5, Hougoumont 4,1 and Papelotte 4,12 are town tiles with a blue objective outline and a unit standing on each (BR/LN, BR/LT, AL/LT). The page's optional walled farm is not used; art labels name each building.",
+  "scan.py has no detector for sand quarry or town tiles, so these are read from the crops only."
+ ]
+}

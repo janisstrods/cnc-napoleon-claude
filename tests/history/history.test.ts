@@ -1,12 +1,15 @@
-// Battle histories: every base and Expansion #1 battle has one, each passes the validator (references, bounds, word
-// limits), the phase rules hold, and the dialog's slides, map and button render.
+// Battle histories: every battle of a covered expansion has one, each passes the validator (references, bounds, word
+// limits), the phase rules hold, and the dialog's slides, map and button render. No battle has a history yet (Plan 2A
+// removed them); the validator and the dialog are exercised on tests/history/fixture-007.ts.
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { SCENARIOS, scenarioById, type Expansion } from '../../src/scenarios';
+import { SCENARIOS, scenarioById } from '../../src/scenarios';
+import { CATALOGUE, catalogueEntry, type CatalogueEntry } from '../../src/scenarios/catalogue';
 import { MAP_H, MAP_W, hasHistory, historyIds, loadHistory, unitFrames, unitsAtPhase, type BattleHistory, type BattleMap as MapData } from '../../src/history';
 import { validateHistory, words } from '../../src/history/validate';
-import { BattleMap, luminance } from '../../src/ui/history/BattleMap';
+import { BattleMap, UnitGlyph, luminance } from '../../src/ui/history/BattleMap';
+import fixture007 from './fixture-007';
 import { HistoryButton, HistorySlides, SLIDE_TITLES, nextPos, prevPos, sideColors } from '../../src/ui/history/HistoryDialog';
 
 const histories = new Map<string, BattleHistory>();
@@ -14,18 +17,21 @@ beforeAll(async () => {
   for (const id of historyIds()) histories.set(id, await loadHistory(id));
 });
 
-/** Expansions whose battles must all have a history; a newly added expansion joins the list once its histories are written. */
-const COVERED: Expansion[] = ['base', 'exp1', 'exp2', 'exp3'];
+/** Boxes whose catalogue battles must all have a history; a box joins the list once its histories are written. */
+const COVERED: CatalogueEntry['box'][] = [];
+
+/** The validator and dialog fixture (not a battle of the game). */
+const fixture: BattleHistory = fixture007;
 
 describe('coverage', () => {
-  it('every battle of the covered expansions has a history', () => {
-    const missing = SCENARIOS.filter((s) => COVERED.includes(s.expansion) && !hasHistory(s.id)).map((s) => s.id);
+  it('every catalogue battle of the covered boxes has a history', () => {
+    const missing = CATALOGUE.filter((b) => COVERED.includes(b.box) && !hasHistory(b.id)).map((b) => b.id);
     expect(missing).toEqual([]);
   });
 
   it('every history belongs to a battle and carries its own id', () => {
     for (const [id, h] of histories) {
-      expect(scenarioById(id), id).toBeDefined();
+      expect(catalogueEntry(id), id).toBeDefined();
       expect(h.id, `battles/${id}.ts`).toBe(id);
     }
   });
@@ -49,14 +55,18 @@ describe('content', () => {
     }
   });
 
+  it('the fixture history passes the validator', () => {
+    expect(validateHistory(fixture)).toEqual([]);
+  });
+
   it('the validator catches broken references, bounds and long text', () => {
-    const h = histories.get('007')!;
+    const h = fixture;
     const bad: BattleHistory = structuredClone(h);
     bad.map.phases[1].at.ghost = [10, 10];
     bad.map.phases[0].at.numid = [MAP_W + 5, 10];
     bad.map.phases[2].gone = ['nobody'];
     bad.context.text = [Array(200).fill('word').join(' ')];
-    bad.map.units.push({ id: 'idle', side: 'top', kind: 'foot' });
+    bad.map.units.push({ id: 'idle', side: 'top', kind: 'infantry' });
     bad.date = '216';
     const problems = validateHistory(bad).join('\n');
     expect(problems).toMatch(/unknown unit ghost/);
@@ -65,7 +75,25 @@ describe('content', () => {
     expect(problems).toMatch(/context.text has 200 words/);
     expect(problems).toMatch(/idle is never placed/);
     expect(problems).toMatch(/date "216"/);
-    expect(validateHistory({ ...h, date: '9 AD' })).toEqual([]);
+    expect(validateHistory({ ...h, date: '21 August 1808' })).toEqual([]);
+    expect(validateHistory({ ...h, date: '16–17 January 1809' })).toEqual([]);
+    expect(validateHistory({ ...h, date: '1808 AD' }).join('\n')).toMatch(/date "1808 AD"/);
+    expect(validateHistory({ ...h, date: '216' }).join('\n')).toMatch(/date "216"/);
+  });
+
+  it('draws a distinct glyph for each unit kind', () => {
+    const kinds = ['infantry', 'light', 'guard', 'cavalry', 'heavycavalry', 'artillery'] as const;
+    const drawn = kinds.map((kind) => renderToStaticMarkup(createElement('svg', null, createElement(UnitGlyph, { kind, w: 80, h: 24, color: '#fff' }))));
+    expect(new Set(drawn).size).toBe(6);
+  });
+
+  it('names all six kinds in the legend', () => {
+    const h: BattleHistory = structuredClone(fixture);
+    const kinds = ['infantry', 'light', 'guard', 'cavalry', 'heavycavalry', 'artillery'] as const;
+    h.map.units = kinds.map((kind) => ({ id: kind, side: 'top' as const, kind }));
+    h.map.phases = [{ title: 'One', caption: 'x', at: Object.fromEntries(kinds.map((k, i) => [k, [100 + i * 100, 100] as [number, number]])) }];
+    const html = renderToStaticMarkup(createElement(HistorySlides, { h, scenario: scenarioById('000'), pos: { slide: 1, phase: 0 }, onPos: () => {} }));
+    for (const n of ['Infantry', 'Light infantry', 'Guard', 'Cavalry', 'Heavy cavalry', 'Artillery']) expect(html).toContain(`</svg>${n}</span>`);
   });
 
   it('counts words', () => {
@@ -77,8 +105,8 @@ describe('phases', () => {
   const map: MapData = {
     terrain: [],
     units: [
-      { id: 'a', side: 'top', kind: 'foot' },
-      { id: 'b', side: 'bottom', kind: 'horse' },
+      { id: 'a', side: 'top', kind: 'infantry' },
+      { id: 'b', side: 'bottom', kind: 'cavalry' },
       { id: 'late', side: 'bottom', kind: 'light' },
     ],
     phases: [
@@ -122,10 +150,10 @@ describe('navigation', () => {
 });
 
 describe('rendering', () => {
-  const sc = scenarioById('007')!;
+  const sc = scenarioById('000');
 
   it('shows each slide with its text', () => {
-    const h = histories.get('007')!;
+    const h = fixture;
     const html = (slide: number, phase = 0) =>
       renderToStaticMarkup(createElement(HistorySlides, { h, scenario: sc, pos: { slide, phase }, onPos: () => {} }));
     const s1 = html(0);
@@ -152,7 +180,7 @@ describe('rendering', () => {
         expect(drawn - hidden, `${id} phase ${i + 1}`).toBe(unitsAtPhase(h.map, i).length);
       });
     }
-    const h = histories.get('007')!;
+    const h = fixture;
     const colors = sideColors(sc);
     const [x, y] = h.map.phases[0].at.numid;
     const plain = renderToStaticMarkup(createElement(BattleMap, { map: h.map, phase: 0, colors }));
@@ -169,8 +197,7 @@ describe('rendering', () => {
   });
 
   it('offers the History button only for a battle with a history', () => {
-    expect(renderToStaticMarkup(createElement(HistoryButton, { scenario: sc }))).toContain('History');
-    const none = { ...sc, id: '999' };
-    expect(renderToStaticMarkup(createElement(HistoryButton, { scenario: none }))).toBe('');
+    // no battle has one now (the fixture is not in src/history/battles), so the button is empty for every battle
+    for (const s of [sc, { ...sc, id: '999' }]) expect(renderToStaticMarkup(createElement(HistoryButton, { scenario: s }))).toBe('');
   });
 });

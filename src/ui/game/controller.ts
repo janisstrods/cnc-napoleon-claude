@@ -9,7 +9,7 @@ import { SCENARIOS, scenarioById } from '../../scenarios';
 import type { Opponent } from './opponent';
 import { FACE_WORDS, currentDiceTurn, diceRollSummary, diceTurnOrders, diceTurnVictim, pieceName, type DiceTurn } from './diceOrders';
 import { sfx } from '../sound';
-import { storage } from '../storage';
+import { storage, storageKey } from '../storage';
 import { outcomeFor, recordFinished, type Medal } from '../record';
 
 export type Difficulty = 'recruit' | 'tribune' | 'consul';
@@ -116,7 +116,7 @@ export interface ViewState {
   fatal: boolean;
 }
 
-const SAVE_KEY = 'cca-autosave-v1';
+const SAVE_KEY = storageKey('autosave-v1');
 
 export function loadSaved(): SavedGame | null {
   const raw = storage.get(SAVE_KEY);
@@ -205,7 +205,7 @@ export class GameController {
     } else {
       this.driver = new GameDriver(initial, { snapshots: true });
     }
-    const speed = Number(storage.get('cca-speed') ?? '1') || 1;
+    const speed = Number(storage.get(storageKey('speed')) ?? '1') || 1;
     this.view = {
       display: cloneState(this.driver.state),
       pending: null,
@@ -270,7 +270,7 @@ export class GameController {
   }
 
   setSpeed(speed: number) {
-    storage.set('cca-speed', String(speed));
+    storage.set(storageKey('speed'), String(speed));
     this.set({ speed });
   }
 
