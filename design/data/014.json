@@ -1,0 +1,473 @@
+{
+ "id": "014",
+ "grid": {
+  "x0": 72.38,
+  "y0": 132.38,
+  "w": 87.0,
+  "pitch": 75.5
+ },
+ "terrain": [
+  {
+   "r": 1,
+   "c": 2,
+   "t": "forest"
+  },
+  {
+   "r": 2,
+   "c": 2,
+   "t": "forest"
+  },
+  {
+   "r": 2,
+   "c": 3,
+   "t": "forest"
+  },
+  {
+   "r": 3,
+   "c": 1,
+   "t": "forest"
+  },
+  {
+   "r": 3,
+   "c": 2,
+   "t": "forest"
+  },
+  {
+   "r": 3,
+   "c": 11,
+   "t": "forest"
+  },
+  {
+   "r": 4,
+   "c": 1,
+   "t": "forest"
+  },
+  {
+   "r": 4,
+   "c": 2,
+   "t": "forest"
+  },
+  {
+   "r": 5,
+   "c": 0,
+   "t": "forest"
+  },
+  {
+   "r": 5,
+   "c": 1,
+   "t": "forest"
+  },
+  {
+   "r": 6,
+   "c": 0,
+   "t": "forest"
+  },
+  {
+   "r": 7,
+   "c": 0,
+   "t": "forest"
+  },
+  {
+   "r": 1,
+   "c": 0,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 0,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 10,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 4,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 5,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 6,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 7,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 9,
+   "t": "hill"
+  },
+  {
+   "r": 6,
+   "c": 5,
+   "t": "hill"
+  },
+  {
+   "r": 6,
+   "c": 6,
+   "t": "hill"
+  },
+  {
+   "r": 6,
+   "c": 7,
+   "t": "hill"
+  },
+  {
+   "r": 6,
+   "c": 8,
+   "t": "hill"
+  },
+  {
+   "r": 1,
+   "c": 5,
+   "t": "town",
+   "art": "label: Quatre Bras"
+  },
+  {
+   "r": 6,
+   "c": 11,
+   "t": "town",
+   "art": "label: La Thile (town tiles lie under the LN and Bachelu stack)"
+  },
+  {
+   "r": 5,
+   "c": 2,
+   "t": "river"
+  },
+  {
+   "r": 5,
+   "c": 3,
+   "t": "river"
+  },
+  {
+   "r": 5,
+   "c": 5,
+   "t": "river"
+  },
+  {
+   "r": 5,
+   "c": 6,
+   "t": "river"
+  },
+  {
+   "r": 5,
+   "c": 7,
+   "t": "river"
+  },
+  {
+   "r": 5,
+   "c": 8,
+   "t": "river"
+  },
+  {
+   "r": 5,
+   "c": 9,
+   "t": "river"
+  },
+  {
+   "r": 5,
+   "c": 11,
+   "t": "river"
+  },
+  {
+   "r": 5,
+   "c": 4,
+   "t": "river",
+   "crossing": "bridge"
+  },
+  {
+   "r": 5,
+   "c": 10,
+   "t": "river",
+   "crossing": "bridge"
+  }
+ ],
+ "units": [
+  {
+   "r": 0,
+   "c": 1,
+   "side": "top",
+   "key": "BR/GG"
+  },
+  {
+   "r": 0,
+   "c": 3,
+   "side": "top",
+   "key": "BR/GG"
+  },
+  {
+   "r": 0,
+   "c": 2,
+   "side": "top",
+   "key": "BR/FA"
+  },
+  {
+   "r": 0,
+   "c": 8,
+   "side": "top",
+   "key": "BR/FA"
+  },
+  {
+   "r": 0,
+   "c": 7,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 0,
+   "c": 9,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 0,
+   "c": 10,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 0,
+   "c": 11,
+   "side": "top",
+   "key": "BR/RI"
+  },
+  {
+   "r": 0,
+   "c": 6,
+   "side": "top",
+   "key": "AL/LC"
+  },
+  {
+   "r": 2,
+   "c": 5,
+   "side": "top",
+   "key": "AL/LC"
+  },
+  {
+   "r": 2,
+   "c": 10,
+   "side": "top",
+   "key": "AL/FA"
+  },
+  {
+   "r": 4,
+   "c": 2,
+   "side": "top",
+   "key": "AL/FA"
+  },
+  {
+   "r": 3,
+   "c": 4,
+   "side": "top",
+   "key": "AL/LN"
+  },
+  {
+   "r": 3,
+   "c": 5,
+   "side": "top",
+   "key": "AL/LN"
+  },
+  {
+   "r": 3,
+   "c": 6,
+   "side": "top",
+   "key": "AL/LN"
+  },
+  {
+   "r": 3,
+   "c": 9,
+   "side": "top",
+   "key": "AL/LN"
+  },
+  {
+   "r": 4,
+   "c": 1,
+   "side": "top",
+   "key": "AL/LN"
+  },
+  {
+   "r": 4,
+   "c": 0,
+   "side": "top",
+   "key": "AL/LT"
+  },
+  {
+   "r": 3,
+   "c": 2,
+   "side": "top",
+   "key": "AL/ML"
+  },
+  {
+   "r": 6,
+   "c": 3,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 6,
+   "c": 4,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 6,
+   "c": 7,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 6,
+   "c": 8,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 6,
+   "c": 11,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 6,
+   "c": 12,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 7,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 9,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 1,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 6,
+   "c": 2,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 7,
+   "c": 1,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 7,
+   "c": 3,
+   "side": "bottom",
+   "key": "FR/LC"
+  },
+  {
+   "r": 8,
+   "c": 3,
+   "side": "bottom",
+   "key": "FR/CU"
+  },
+  {
+   "r": 8,
+   "c": 4,
+   "side": "bottom",
+   "key": "FR/CU"
+  },
+  {
+   "r": 6,
+   "c": 5,
+   "side": "bottom",
+   "key": "FR/FA"
+  },
+  {
+   "r": 6,
+   "c": 6,
+   "side": "bottom",
+   "key": "FR/FA"
+  },
+  {
+   "r": 6,
+   "c": 10,
+   "side": "bottom",
+   "key": "FR/FA"
+  }
+ ],
+ "leaders": [
+  {
+   "r": 0,
+   "c": 7,
+   "side": "top",
+   "name": "Alten"
+  },
+  {
+   "r": 0,
+   "c": 10,
+   "side": "top",
+   "name": "Picton"
+  },
+  {
+   "r": 3,
+   "c": 6,
+   "side": "top",
+   "name": "Prince of Orange"
+  },
+  {
+   "r": 4,
+   "c": 1,
+   "side": "top",
+   "name": "Perponcher"
+  },
+  {
+   "r": 8,
+   "c": 3,
+   "side": "bottom",
+   "name": "Kellermann"
+  },
+  {
+   "r": 7,
+   "c": 7,
+   "side": "bottom",
+   "name": "Foy"
+  },
+  {
+   "r": 6,
+   "c": 11,
+   "side": "bottom",
+   "name": "Bachelu"
+  }
+ ],
+ "objectives": [
+  {
+   "r": 1,
+   "c": 5,
+   "note": "Quatre Bras: temporary banner for the French, held at turn start (survey 014); blue outline on the map"
+  }
+ ],
+ "notes": [
+  "Units 19 + 17 and leaders 4 + 3 as the survey. Every leader is a block stacked behind a line infantry unit.",
+  "Colours: BR red blocks (GG 0,1 0,3; FA 0,2 0,8; LN 0,7 0,9 0,10; RI 0,11 shown as RIFLE LIGHT); AL brown blocks (LC 0,6 2,5; FA 2,10 4,2; LN 3,4 3,5 3,6 3,9 4,1; LT 4,0; ML 3,2, the MILITIA block).",
+  "Leaders: Alten 0,7 and Picton 0,10 (BR/LN); Prince of Orange 3,6 and Perponcher 4,1 (AL/LN); Kellermann 8,3 (FR/CU), Foy 7,7 and Bachelu 6,11 (FR/LN).",
+  "Terrain: forest 12, hill 12 (hills under blocks at 3,4 3,5 3,6 3,9 6,5 6,6 6,7 6,8 show hill rays round the block), town 2, river 10 hexes in one piece (page: 7 stream + 2 bridge + 1 source).",
+  "Stream 5,2 (the drawn source, branching tributaries) to 5,11; bridges 5,4 and 5,10. Stream is fordable and does not stop movement by the scenario rule, so no per-hex crossing is recorded except the two bridges.",
+  "Towns: Quatre Bras 1,5 (the one objective hex, blue outline) and La Thile 6,11, hidden mostly by the LN + Bachelu stack; its tile and roofs are visible round the block and the label sits above it. scan.py has no town detector so it does not flag it.",
+  "The map shows no walled farms."
+ ]
+}
