@@ -55,7 +55,8 @@ export function baseMeleeDice(s: GameState, u: Unit, target: Unit | Leader, move
 export function meleeDice(s: GameState, u: Unit, target: Unit | Leader, ctx: DiceCtx): number {
   const st = statsOf(s, u);
   let n = baseMeleeDice(s, u, target, ctx.moved);
-  if (n <= 0 && ctx.declared && st.melee.kind === 'artillery' && ctx.moved > 0) n = baseMeleeDice(s, u, target, 0);  // R12
+  if (n <= 0 && ctx.declared && st.melee.kind === 'artillery' && st.fire.kind === 'artillery' && st.fire.moved && ctx.moved > 0) n = baseMeleeDice(s, u, target, 0);  // R12
+  if (n <= 0) return 0;
   if (ctx.role === 'attack' || (ctx.role === 'bonus' && s.turn.mods.bonusMelee)) {
     if (cardApplies(s, u)) {
       const lost = s.turn.mods.lostInTown

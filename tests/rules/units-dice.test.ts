@@ -1,4 +1,4 @@
-// Rules: RR §2.1–§2.6, §3.1, §3.2 (design/rules-reference.md)
+// Rules: RR §2.1–§2.6, §3.1, §3.2, §3.3 (design/rules-reference.md)
 import { describe, expect, it } from 'vitest';
 import { DIE_SIDES, UNIT_STATS, type RowKey } from '../../src/engine';
 import { baseFireDice, baseMeleeDice, escapeDice, fireDice, meleeDice, sabreKills, scoreRoll } from '../../src/engine/dice';
@@ -73,6 +73,14 @@ describe('melee dice', () => {
   });
 });
 
+describe('melee card dice never create a melee', () => {
+  it('a moved foot gun (base 0) with a melee card still rolls 0 when not declared', () => {
+    const s = build({ units: [{ side: 'bottom', key: 'BR/FA', at: [5, 6] }, { side: 'top', key: 'FR/LN', at: [4, 6] }] });
+    const d = play(s, 'bombard', ['u1']);
+    expect(meleeDice(d.state, u(d, 'u1')!, u(d, 'u2')!, { role: 'attack', moved: 1 })).toBe(0);
+  });
+});
+
 describe('scoring', () => {
   it('scoring (§3.1, R16, R17)', () => {
     expect(DIE_SIDES.filter((f) => f === 'infantry')).toHaveLength(2);
@@ -121,12 +129,13 @@ describe('card dice, caps and escape', () => {
     expect(meleeDice(st, sq, hc, { role: 'back', moved: 0 })).toBe(1);
     expect(meleeDice(st, hc, sq, { role: 'attack', moved: 0 })).toBe(1);
     expect(meleeDice(st, u(d, 'u4')!, sq, { role: 'attack', moved: 0 })).toBe(4);
-    st.active = 'top'; sq.hex = H(6, 7);
+    st.active = 'top';
     expect(fireDice(st, sq, ln.hex, { role: 'attack', moved: 0 })).toBe(1);
   });
   it('no card creates a shot from 0 base dice (R15)', () => {
     const s = build({ units: [{ side: 'bottom', key: 'PT/LN', at: [6, 6], blocks: 1 }, { side: 'top', key: 'FR/LN', at: [4, 6] }] });
     const d = play(s, 'forceMarch', ['u1']);
+    d.state.turn.mods.fire = { plus: 1 };
     expect(fireDice(d.state, u(d, 'u1')!, H(4, 6), { role: 'attack', moved: 1 })).toBe(0);
   });
   it('escape dice: type bonus and square cap, no terrain, no cards (§3.3, R24)', () => {
