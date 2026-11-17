@@ -170,7 +170,7 @@ export function Musket({ from, to, rifle = false, bayonet = true }: { from: P; t
   const nx = -u[1] * 0.5; // a short cross-stroke for the lock-plate / band
   const ny = u[0] * 0.5;
   return (
-    <g>
+    <g data-gun={rifle ? 'rifle' : 'musket'}>
       {bayonet ? <Line2 d={`M${pt(to)} L${pt(tip)}`} w={rifle ? 0.75 : 0.6} c={METAL.steel} ow={0.35} /> : null}
       <Line2 d={`M${pt(stockEnd)} L${pt(to)}`} w={rifle ? 0.8 : 0.95} c={METAL.steel} ow={0.45} />
       <Line2 d={`M${pt(from)} L${pt(stockEnd)}`} w={rifle ? 1.3 : 1.55} c={METAL.wood} ow={0.5} />
@@ -255,7 +255,8 @@ export function FootFigure({ spec, n, i }: { spec: FootSpec; n: NationLook; i: n
   const rifle = spec.weapon === 'rifle';
   const dress = spec.dress;
   const lean = torsoTransform(g.stance);
-  const gun = <Musket from={g.gun[0]} to={g.gun[1]} rifle={rifle} bayonet />;
+  // a rifle is shorter in the barrel than a musket
+  const gun = <Musket from={g.gun[0]} to={rifle ? at(g.gun[0], g.gun[1], 0.9) : g.gun[1]} rifle={rifle} bayonet />;
   const far = <Sleeve from={FAR_SHOULDER} elbow={g.far.elbow} hand={g.far.hand} dress={dress} f={f} near={false} />;
   return (
     <g data-fig="foot" data-pose={pose}>

@@ -69,7 +69,10 @@ WORK_DIR = "/Users/janisstrods/Gamemaking/cnc-napoleonics-research/map-work"
 
 
 def map_path(mid):
-    return mid if mid.endswith(".jpg") else f"{MAPS_DIR}/{mid}.jpg"
+    """Path of a map image. 104 is 104.png (the 104.jpg is stale); everything else NNN.jpg."""
+    if mid.endswith((".jpg", ".png")):
+        return mid
+    return f"{MAPS_DIR}/{mid}.png" if mid == "104" else f"{MAPS_DIR}/{mid}.jpg"
 
 
 def grid_for(mid):
@@ -77,7 +80,7 @@ def grid_for(mid):
     import json, os
     try:
         g = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "grids.json")))
-        e = g[os.path.basename(mid).replace(".jpg", "")]
+        e = g[os.path.splitext(os.path.basename(mid))[0]]
         return {k: e[k] for k in ("x0", "y0", "w", "pitch")}
     except (OSError, KeyError):
         return dict(DEFAULT_GRID)

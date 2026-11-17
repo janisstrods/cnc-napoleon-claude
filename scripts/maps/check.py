@@ -122,11 +122,11 @@ def check(data, expected):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Validate battle data files against the survey matrix (design/survey.md 2.1).")
+    ap = argparse.ArgumentParser(description="Validate battle data files against the survey matrix (design/survey.md or design/exp1-survey.md 2.1).")
     ap.add_argument("files", nargs="+", help="design/data/<id>.json")
-    ap.add_argument("--survey", default=ex.SURVEY)
+    ap.add_argument("--survey", help="survey file to read (default: survey.md for 001-015, exp1-survey.md for 101-118)")
     a = ap.parse_args()
-    exp = ex.parse_survey(a.survey)
+    exp = ex.parse_survey(a.survey) if a.survey else {**ex.parse_survey(ex.SURVEY), **ex.parse_survey(ex.EXP1_SURVEY)}
     bad = 0
     for f in a.files:
         d = json.load(open(f))
