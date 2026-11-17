@@ -1,6 +1,6 @@
 # C&C: Napoleonics Expansion #1 (The Spanish Army): scenario survey (battles 101-118)
 
-Compiled 2026-11-17. Sources: the 18 scenario pages on commandsandcolors.net (page tables and special rules, read from the page HTML), the 18 map images (`images/CCN/scenarios/1NN.jpg`, saved outside the repo in `cnc-napoleonics-research/maps/`), and the site's Expansion #1 pages (contents, introduction, new units and leaders, new game mechanic, new terrain tiles). The Expansion #1 scenario booklet and unit reference cards are not available online; no PDF was found on the site, so booklet comparison was not possible (see section 3). This file is the source for the battle transcription of 101-118 and for the Spanish rulings. It holds no hex coordinates; those come later from the map images.
+Compiled 2026-11-17. Sources: the 18 scenario pages on commandsandcolors.net (page tables and special rules, read from the page HTML), the 18 map images (`images/CCN/scenarios/1NN.jpg`, except 104, whose page now embeds `104.png`, modified 5 February 2026; the older `104.jpg` is out of date and kept only for reference, saved outside the repo in `cnc-napoleonics-research/maps/`), and the site's Expansion #1 pages (contents, introduction, new units and leaders, new game mechanic, new terrain tiles). The Expansion #1 scenario booklet and unit reference cards are not available online; no PDF was found on the site, so booklet comparison was not possible (see section 3). This file is the source for the battle transcription of 101-118 and for the Spanish rulings. It holds no hex coordinates; those come later from the map images.
 
 ## How to read this
 
@@ -36,7 +36,7 @@ Compiled 2026-11-17. Sources: the 18 scenario pages on commandsandcolors.net (pa
 - **Special rules (paraphrased):**
   - The whole Rumblar River is fordable.
   - Spanish Guerrilla Action in effect, Spanish start with no counters.
-  - Swiss infantry (new unit type): French Swiss are 4 LN-style units drawn as red British blocks with a British leader; Spanish Swiss are 2 units drawn as brown Portuguese blocks with a Portuguese leader. All have 5 blocks. Swiss that move and shoot roll half their blocks rounded down; they melee at 1 die per block and retreat 1 hex per flag.
+  - Swiss infantry (new unit type): French Swiss are 4 LN-style units drawn as red British blocks with a British leader; Spanish Swiss are 2 units drawn as brown Portuguese blocks with a Portuguese leader. All have 5 blocks. Swiss that move and shoot roll half their blocks rounded down; they melee at 1 die per block and retreat 1 hex per flag. The page does not say how many dice Swiss infantry roll when firing while standing still.
   - Once two French Swiss units are eliminated, the other two are removed at once; their removal gives the Spanish no banners.
 - **Layout (indicative):** Spanish (top) hold a high line in two groups left and right with the river down the left edge; the Swiss pair sits top-left. French (bottom) have the red Swiss line bottom-left and the main column strung along the bottom two rows. The banner track shows 7.
 - **New needs:**
@@ -95,13 +95,13 @@ Compiled 2026-11-17. Sources: the 18 scenario pages on commandsandcolors.net (pa
 - **Top:** Spanish (yellow blocks). Commander (page): Blake. **5 cards** (Tactician 3).
 - **Bottom:** French (blue blocks). Commander (page): Victor. **5 cards** (Tactician 3). **Moves first.**
 - **Leaders (map):**
-  - Top: SP: three leaders, all lone horse-mounted blocks (one labelled Blake, the others illegible).
-  - Bottom: FR: three leaders stacked with LN.
+  - Top: SP: Romana, Blake and Acevedo, all lone horse-mounted blocks.
+  - Bottom: FR: Ruffin, Villatte and Lapisse, each stacked with an LN.
 - **Victory:** 7 banners.
 - **Units (page table equals map unless noted):**
   - Top: SP/LN 6, SP/LT 2, SP/GR 2, SP/ML 3, SP/LC 2, SP/FA 2, SP/LDR 3. **Total 17 units + 3 leaders.**
-  - Bottom: FR/LN 10, FR/LT 2, FR/LC 2, FR/FA 1, FR/HA 2, FR/LDR 3. **Total 17 units + 3 leaders.**
-  - Page vs map: Page FR/FA 2 and FR/HA 1; the map shows FR/FA 1 (right wing) and FR/HA 2 (left wing and bottom row, both labelled Horse). Map followed.
+  - Bottom: FR/LN 10, FR/LT 2, FR/LC 2, FR/FA 2, FR/HA 1, FR/LDR 3. **Total 17 units + 3 leaders.**
+  - Page vs map: no differences in rows or totals, using the current `104.png` map (the older `104.jpg` showed FR/FA 1 and FR/HA 2 and is out of date). Both SP/LC have 3 blocks.
 - **Terrain (page counts):** Forest 11, Hill 11, River 7, River bend 2, River end 1, Town 4 (Espinosa 2 hexes, Quintana 2).
 - **Guerrilla Action:** Rule in effect; Spanish start with **1** counter.
 - **Objectives:** None beyond kill banners.
@@ -109,7 +109,7 @@ Compiled 2026-11-17. Sources: the 18 scenario pages on commandsandcolors.net (pa
   - Spanish Guerrilla Action in effect, one starting counter.
   - The River Trueba is impassable.
   - The Shallow Stream is fordable.
-- **Layout (indicative):** Espinosa village at the top centre, Quintana at the centre; River Trueba arcs across the top left, the Shallow Stream runs down the right edge. Spanish (top) in a broad line with Spanish militia down the right flank; French (bottom) in two groups of line infantry with two horse artillery.
+- **Layout (indicative):** Espinosa village at the top centre, Quintana at the centre; River Trueba arcs across the top left, the Shallow Stream runs down the right edge. Spanish (top) in a broad line with Spanish militia down the right flank; French (bottom) in two groups of line infantry with one horse artillery on the left and one foot artillery in each group.
 - **New needs:**
   - Two different water rules in one battle: one impassable river, one fordable stream.
 
@@ -148,7 +148,7 @@ Compiled 2026-11-17. Sources: the 18 scenario pages on commandsandcolors.net (pa
 - **Units (page table equals map unless noted):**
   - Top: SP/LN 6, SP/LT 1, SP/GR 2, SP/LC 3, SP/HC 1, SP/FA 3, SP/LDR 3. **Total 16 units + 3 leaders.**
   - Bottom: FR/LN 6, FR/LT 3, FR/LC 2, FR/HC 1, FR/FA 1, FR/HA 2, FR/LDR 4. **Total 15 units + 4 leaders.**
-  - Page vs map: Page SP/LC 2; the map shows SP/LC 3 (two on the top row, one on the second). Map followed (SP 16 units instead of 15).
+  - Page vs map: Page SP/LC 2; the map shows SP/LC 3 (two on the top row, one on the second). Map followed (SP 16 units instead of 15). A forum post (topic #6805, user Tarheel) says the booklet shows a Spanish LC in the back row that an older map lacked, which fits the map.
 - **Terrain (page counts):** Hill 14, River 5, River bend 5, River with bridge 1, Town 1 (Mengabril).
 - **Guerrilla Action:** Rule in effect; Spanish start with **1** counter.
 - **Objectives:** None beyond kill banners; Spanish hand shrinks as banners are lost.
@@ -174,14 +174,14 @@ Compiled 2026-11-17. Sources: the 18 scenario pages on commandsandcolors.net (pa
 - **Units (page table equals map unless noted):**
   - Top: SP/LN 8, SP/LT 1, SP/LC 2, SP/FA 3, SP/LDR 3. **Total 14 units + 3 leaders.**
   - Bottom: FR/LN 9, FR/LC 1, FR/CU 1, FR/FA 2, FR/LDR 3. **Total 13 units + 3 leaders.**
-  - Page vs map: Page SP/LC 1; the map shows SP/LC 2 (top row left centre, top right). Map followed.
+  - Page vs map: Page SP/LC 1; the map shows SP/LC 2 (second row left, second row right). Map followed. A forum post (topic #3098, user Tarheel) says an SP/LC was missing on the Spanish right flank in an earlier picture.
 - **Terrain (page counts):** Hill 28, River 1, River bend 2, River with bridge 1 (straight).
 - **Guerrilla Action:** Rule in effect; Spanish start with **1** counter.
 - **Objectives:** None beyond kill banners.
 - **Special rules (paraphrased):**
   - Spanish Guerrilla Action in effect, one starting counter.
   - The Guadalope River is impassable except at the bridge.
-- **Layout (indicative):** The Guadalope River and its bridge lie along the top edge, behind the Spanish line. A patch of hills fills the left third. French (bottom) in a left and a right group with cavalry in the centre.
+- **Layout (indicative):** The Guadalope River and its bridge lie along the top edge, behind the Spanish line. A patch of hills fills the left third. French (bottom) in a left and a right group with the cavalry at the bottom left and bottom centre-left.
 - **New needs:**
   - Bridge hex as the only crossing of an impassable river.
 
@@ -482,12 +482,12 @@ Compiled 2026-11-17. Sources: the 18 scenario pages on commandsandcolors.net (pa
 | FR/HC | 1 |  | 3 |  |  | 1 |  |  | 3 | 1 | 5 | 2 | 6 | 1 | 1 |  |  |  | 24 |
 | FR/CU | 1 |  |  |  |  |  | 1 | 1 |  |  |  |  |  |  |  |  |  |  | 3 |
 | FR/GLC |  |  |  |  | 2 |  |  |  |  |  |  |  |  |  |  |  |  |  | 2 |
-| FR/FA | 2 | 2 | 2 | 1 |  | 1 | 2 | 2 | 3 | 2 |  | 1 |  | 2 | 2 | 3 | 2 | 1 | 28 |
-| FR/HA |  |  | 1 | 2 |  | 2 |  |  | 1 | 1 | 2 |  |  |  |  | 1 |  |  | 10 |
+| FR/FA | 2 | 2 | 2 | 2 |  | 1 | 2 | 2 | 3 | 2 |  | 1 |  | 2 | 2 | 3 | 2 | 1 | 29 |
+| FR/HA |  |  | 1 | 1 |  | 2 |  |  | 1 | 1 | 2 |  |  |  |  | 1 |  |  | 9 |
 | FR/GA |  |  |  |  | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  | 1 |
 | FR/LDR | 3 | 3 | 3 | 3 | 2 | 4 | 3 | 3 | 3 | 4 | 2 | 4 | 2 | 3 | 4 | 4 | 3 | 3 | 56 |
 
-Leader rows follow the map. In 101 the SP/LDR and FR/LDR rows include the Swiss leaders (one each Swiss force, drawn as Portuguese and British leader blocks). Page tables differ from this matrix only in the rows noted in section 3 (104, 106, 107, 114, 115, 116).
+Leader rows follow the map. In 101 the SP/LDR and FR/LDR rows include the Swiss leaders (one each Swiss force, drawn as Portuguese and British leader blocks). Page tables differ from this matrix only in the rows noted in section 3 (106, 107, 114, 115, 116).
 
 Side totals (non-leader units and leaders per side), each equal to the sum of that side's rows in the entries:
 
@@ -521,14 +521,14 @@ Grand total: 576 units and 110 leaders in the matrix, equal to the side totals (
 |---|---|---|
 | Forest | 101-105, 109-115, 117, 118 | Not in 106, 107, 108 or 116; 2 to 13 hexes. |
 | Hill | 101, 102, 104-108, 110, 111, 113-118 | Not in 103, 109 or 112; 4 to 31. |
-| River or stream (straight) | 101-104, 106, 107, 109, 110, 113-118 | Fordable in 101, 102, 103, 110, 115 (with fords), 117; impassable in 104 (Trueba), 106 and 107 (except at the bridge); not fordable in 113, 114, 116, 118; Portina Brook in 109. |
+| River or stream (straight) | 101-104, 106, 107, 109, 110, 113-118 | Fordable in 101, 102, 103, 104 (Shallow Stream), 110, 115 (with fords), 117; impassable in 104 (Trueba), 106 and 107 (except at the bridge); not fordable in 113, 114, 116, 118; Portina Brook in 109. |
 | River bend | 101-104, 106, 107, 109, 110, 113-118 | Art variant of the river tile. |
 | River end (stream source) | 101, 104, 110 | One each. |
 | River junction (Y) | 101 | One. |
 | Bridge on a straight river hex | 106, 107, 113, 115, 116, 118 | One each. |
 | Bridge on a river bend hex | 102, 116 | One each. 116 has both bridge variants. |
 | River ford and bend ford | 115 | Two of each; crossing does not stop movement. |
-| Town | 103-106, 108-110, 112, 114-116 | Includes villages; 108 uses a town tile for an abbey. |
+| Town | 103, 104, 106, 108-110, 112, 114-116 | Includes villages; 108 uses a town tile for an abbey. |
 | Entrenchment, 3-sided (flat redoubt) | 109 | Two; a Spanish and a British FA start on them. |
 | Entrenchment, 4-sided (new tile) | 105 | One; a Spanish FA starts on it. |
 | Hill with entrenchment | 118 | Three (the booklet orientation is not available; read the sides from the map). |
@@ -540,7 +540,7 @@ New tiles in the box: Walled Farm (acts as a town), 4-sided and 2-sided redoubts
 
 | Objective type | Battles | Banner value |
 |---|---|---|
-| Kill banners only | 101, 103, 104, 106, 107, 108, 109, 110, 111, 112, 118 | 1 per unit eliminated |
+| Kill banners only | 101, 103, 104, 106, 107, 108, 109, 110, 111, 112, 116, 118 | 1 per unit eliminated |
 | Single held hex, temporary, counted at the start of the owner's turn | 113 (bridge, FR), 115 (either Albuera hex, FR) | 1 (one banner for either hex in 115; OPEN, see 2.6) |
 | Group majority banner, temporary, starting banners | 114 (Barrosa Ridge, 11 hexes, SP side starts with 1), 117 (three groups, Spanish start with 3) | 1 per group |
 | Exit hex or edge, leaders excluded | 102 (Spanish baseline, from the fourth ordered unit) | 1 per extra exiting unit |
@@ -575,8 +575,8 @@ Kill banners apply in every battle; the table lists the extra objective, if any.
 ### 2.5 Other needs
 
 - **Unit types** beyond the base list: none except the new **SWI** code (Swiss line infantry, 101). All other types are in the code list. The Spanish nation block is new: SP/LN, LT, GR, ML, LC, HC, CU, FA and leader. The French lancer (FR/LNC, 4 blocks) appears in 112 and 115. FR/GLC (4 blocks) and FR/GA appear in 105.
-- **Spanish unit values** from the site's new-units page (paraphrased; the reference card itself is not available): LN 4 blocks, moves 1, moving fire loses a die, retreats 2 hexes per flag. LT 5 blocks, retreats 2. GR 4 blocks, may ignore one flag, one extra die in melee. ML 4 blocks, no sabre hits in melee except against a lone leader, retreats 3. LC 3 blocks, moves 3. HC 3 blocks, moves 2, one extra die in melee. CU 3 blocks, may ignore one flag. FA 3 blocks, retreats 1. Leader moves 3 alone. Cavalry may retire and reform when meleed by infantry or when hit by combined arms. The Spanish CU entry also carries a note that lancers do not re-roll flag results; its meaning there is unclear (open question for the rulings).
-- **Block counts that differ from the standard on the maps** (read by eye; not exhaustive): 101 Swiss line 5 blocks (rule); 103 SP/HC drawn with 4; 104 one SP/LC with 4; 105 one SP/LN with 3 and one FR/LN with 5; 110 one SP/LN with 5; 109 BR/GG 5; 114 one BR/LN with 5 and the other BR/LN with 4. British LN are drawn with 4 blocks in 109, 114-116 and 118; the base-game block count for BR/LN is in the base survey and has not been rechecked here. These are part of the setup and must be transcribed per unit.
+- **Spanish unit values** from the site's new-units page (paraphrased; the reference card itself is not available). LN: 4 blocks, moves 1; moving fire is half the blocks rounded down, minus 1 die; moving melee minus 1 die; retreats 2 hexes per flag. LT: 5 blocks, moves 1, or 2 without battling; moving fire half the blocks rounded down; moving melee minus 1 die; retreats 2. GR: 4 blocks, moves 1; moving fire half rounded down; one extra die in melee; may ignore one flag; retreats 2 per flag. ML: 4 blocks, moves 1; moving fire half rounded down minus 1 die, moving melee minus 1 die; no sabre hits in melee except against a lone leader; retreats 3. LC: 3 blocks, moves 3. HC: 3 blocks, moves 2, one extra die in melee. CU: 3 blocks, moves 2, one extra die in melee, may ignore one flag, and ignores one hit from infantry ranged fire. FA: 3 blocks, retreats 1 hex per flag. Leader moves 3 alone. Spanish cavalry may retire and reform when meleed by infantry or when hit by combined arms.
+- **Block counts that differ from the standard on the maps** (read by eye; not exhaustive): 101 Swiss line 5 blocks (rule); 103 SP/HC drawn with 4; 105 one SP/LN with 3 and one FR/LN with 5; 110 one SP/LN with 5; 109 BR/GG 5; 114 one BR/LN with 5 and the other BR/LN with 4. British LN are drawn with 4 blocks in 109, 114-116 and 118; the base-game block count for BR/LN is in the base survey and has not been rechecked here. These are part of the setup and must be transcribed per unit.
 - **Mechanics:** Spanish Guerrilla Action counters (see below); Spanish Infantry in Square track (4 Spanish square counters in the box; the rule for 106 limits it to two units); 9 Spanish/French two-sided banner counters (116 needs a banner track to 9); the banner track pre-set with Spanish flags in 114 (one) and 117 (three); Swiss infantry rules; exit banners; sudden-death victory; Stewart's Folly; card-reveal move-first; hand reduction.
 - **Mixed armies on one side:** 109 (SP and BR), 114 (BR, SP, PT), 115 (BR, SP, PT), 116 (BR, PT, SP), 118 (SP and BR). All share one hand and one command; the page names the commander of the larger or senior force. The deployment sides are the map banner (Spanish or British).
 - **Leaders:** PT/LDR in 115 and 116; BR/LDR and SP/LDR in mixed battles; attach as normal leaders.
@@ -619,27 +619,25 @@ These are text ambiguities. They are not decided here.
 4. **106 hand reduction.** The French pick a random card at each banner loss. If the loss comes mid-turn after a card has been played, is the card taken from the current hand at once, and does the floor of three apply to the number of cards held or to the hand size for the next draw?
 5. **106 square limit.** "A maximum of two units" in square during the battle: at one time, or in total over the battle?
 6. **102 exit banners.** Banners start only after three ordered Spanish units have exited. Must the exit be made as an ordered move, or does a retreat off the Spanish edge count too?
-7. **101 Swiss.** Half the blocks (rounded down) applies to Swiss that move and fire: confirm it does not apply to melee. The mass removal of the remaining French Swiss gives the Spanish nothing; does it count as an elimination for any other rule?
-8. **114 and 117 banner timing.** The banner is lost "when a side no longer has the majority". Is that checked only at the start of that side's own turn, or the moment a unit moves or dies, including on the enemy turn? When the majority swaps in the middle of an enemy turn, does the enemy gain the banner immediately?
-9. **115 Albuera.** The text says one banner if a French unit holds either hex. If French units hold both hexes, is it still one banner?
-10. **115 Stewart's Folly.** The text names the British player; do Spanish and Portuguese units also lose the ability to form square, and does the denial last the whole French turn?
-11. **109 Portina Brook.** The text says movement stops but there is no battle restriction: is this the same as the base fordable river in this project, or a separate terrain rule?
-12. **116 Move First.** The cards reveal simultaneously, which needs hidden selection for both players. The page marks both sides with an asterisk, so the first-turn card is the one chosen for the reveal; confirm that this card is discarded as played and that the unpicked cards stay in hand.
-13. **105 sudden death.** Does the French win count immediately when the third artillery unit dies, even during a Spanish counter-attack, and is the check made after each combat?
+7. **101 Swiss.** The mass removal of the remaining French Swiss gives the Spanish nothing; does it count as an elimination for any other rule?
+8. **114 and 117 banner timing.** Settled by base ruling R66 (design/rulings.md on main); restate it for the Spanish battles and check that it covers a majority that changes during the opponent's turn.
+9. **115 Stewart's Folly.** The text names the British player; do Spanish and Portuguese units also lose the ability to form square?
+10. **109 Portina Brook.** Settled by base ruling R47 (design/rulings.md on main); check that the brook rule is the same as the base brook and that nothing else is needed.
+11. **116 Move First.** The cards reveal simultaneously, which needs hidden selection for both players. The page marks both sides with an asterisk, so the first-turn card is the one chosen for the reveal; confirm that this card is discarded as played and that the unpicked cards stay in hand.
+12. **105 sudden death.** Does the French win count immediately when the third artillery unit dies, even during a Spanish counter-attack, and is the check made after each combat?
 
 ---
 
 ## 3. Discrepancies
 
-1. **104:** the page lists FR/FA 2 and FR/HA 1; the map shows FR/FA 1 and FR/HA 2 (both left-side units are labelled Horse). Followed the map.
-2. **106:** the page lists SP/LC 2; the map shows 3. Followed the map (SP 16 units).
-3. **107:** the page lists SP/LC 1; the map shows 2. Followed the map.
-4. **114:** the map shows a BR/LC (top row, red light cavalry) with no row on the page. Followed the map (BR 11 units).
-5. **115:** the page lists a FR/CU; the map shows FR/LNC (Light Lancers) and no cuirassier. Followed the map.
-6. **116:** the page lists FR/LDR 3; the map has four French leaders (Conroux, Daricau, Leval, Villatte, as read). Followed the map.
-7. **Booklet not available.** The Expansion #1 scenario booklet and reference cards could not be fetched (not on the site). The precedence used elsewhere (designer ruling, booklet, map, page) therefore falls back to map over page.
-8. **Introduction page dates.** The introduction page lists 7 November (Gamonal), 11 November (Espinosa), 6 June (María), 13 October (Tamames) and "Barrosa (French Attack)" and "Vitoria (Hill's Attack)"; the scenario pages (and the catalogue) give 10 November, 10-11 November, 15 June, 18 October, "Barrosa" and "Vitoria". The catalogue follows the scenario pages.
-9. **Intro page spelling:** Gamonel, Ocano and Alcaniz appear in the introduction; the catalogue and scenario pages use Gamonal, Ocaña and Alcañiz.
-10. **115:** the page names "the British player" for the Guerrilla rule start while the rule text names the Spanish commander (see 2.6, item 1).
-11. **108:** the page names the French line infantry icon `LI`; translated to LN.
-12. **Terrain counts** were compared loosely by eye against the page counts; no difference was found, but hex-exact counts are verified only at transcription.
+1. **106:** the page lists SP/LC 2; the map shows 3. Followed the map (SP 16 units).
+2. **107:** the page lists SP/LC 1; the map shows 2. Followed the map.
+3. **114:** the map shows a BR/LC (top row, red light cavalry) with no row on the page. Followed the map (BR 11 units).
+4. **115:** the page lists a FR/CU; the map shows FR/LNC (Light Lancers) and no cuirassier. Followed the map.
+5. **116:** the page lists FR/LDR 3; the map has four French leaders (Conroux, Daricau, Leval, Villatte, as read). Followed the map.
+6. **Booklet not available.** The Expansion #1 scenario booklet and reference cards could not be fetched (not on the site). The precedence used elsewhere (designer ruling, booklet, map, page) therefore falls back to map over page.
+7. **Introduction page dates.** The introduction page lists 7 November (Gamonal), 11 November (Espinosa), 6 June (María), 13 October (Tamames) and "Barrosa (French Attack)" and "Vitoria (Hill's Attack)"; the scenario pages (and the catalogue) give 10 November, 10-11 November, 15 June, 18 October, "Barrosa" and "Vitoria". The catalogue follows the scenario pages.
+8. **Intro page spelling:** Gamonel, Ocano and Alcaniz appear in the introduction; the catalogue and scenario pages use Gamonal, Ocaña and Alcañiz.
+9. **115:** the page names "the British player" for the Guerrilla rule start while the rule text names the Spanish commander (see 2.6, item 1).
+10. **108:** the page names the French line infantry icon `LI`; translated to LN.
+11. **Terrain counts** were compared loosely by eye against the page counts; no difference was found, but hex-exact counts are verified only at transcription.
