@@ -1,0 +1,158 @@
+// 008 Bussaco (Ney's Assault). Top: the Anglo-Portuguese army on the ridge (Wellington); bottom: the French (Masséna, Ney's VI Corps).
+// North is to the right: the French came from the east, the main road runs up to the convent on the left, Sula and the Light Division are right of centre.
+import type { BattleHistory } from '../types';
+
+const history: BattleHistory = {
+  id: '008',
+  date: '27 September 1810',
+  context: {
+    war: 'Peninsular War: third French invasion of Portugal, 1810–1811',
+    text: [
+      "In September 1810 Masséna's Army of Portugal followed Wellington back from the frontier towards Coimbra. Wellington halted on the Serra do Bussaco, a long ridge above the Mondego, and hid his army behind the crest.",
+      "On 27 September Reynier's II Corps attacked the southern end of the ridge first (told in 007). Ney, thinking Reynier had reached the crest, then sent two divisions of VI Corps up the Coimbra road and against the spur above Sula, held by Craufurd's Light Division. Sources differ on how long he waited.",
+    ],
+  },
+  sides: {
+    top: {
+      name: 'British and Portuguese',
+      commanders: ['Wellington (commanding)', 'Craufurd (Light Division)', 'Pack (Portuguese brigade)', 'Spencer (1st Division)'],
+      strength: 'c. 52,000 on the whole ridge (Oman); far fewer in this sector',
+      forces: 'The Light Division (43rd, 52nd, 95th, caçadores, German Legion), Pack\'s Portuguese, the Guards, Ross\'s battery.',
+    },
+    bottom: {
+      name: 'French Army of Portugal (VI Corps)',
+      commanders: ['Marshal Ney (VI Corps)', 'Loison and Marchand (divisions)', 'Simon and Ferey (brigades)'],
+      strength: 'c. 13,000 in the two attacking divisions (Oman); Loison alone c. 6,500',
+      forces: "Line and light infantry in column, with guns; Mermet's division and Montbrun's cavalry in reserve.",
+    },
+  },
+  map: {
+    north: 90,
+    terrain: [
+      { kind: 'hills', points: [[-40, -40], [1040, -40], [1040, 150], [880, 165], [720, 140], [540, 165], [380, 135], [200, 160], [-40, 150]] },
+      { kind: 'road', points: [[290, 650], [315, 500], [338, 360], [358, 240], [380, 135]], label: 'Coimbra road' },
+      { kind: 'farm', at: [382, 118], size: 18, label: 'Convent' },
+      { kind: 'label', at: [110, 62], text: 'Serra do Bussaco' },
+      { kind: 'town', at: [555, 300], size: 20, label: 'Sula' },
+      { kind: 'town', at: [330, 470], size: 18, label: 'Moura' },
+      { kind: 'label', at: [905, 480], text: 'To the pass (007)' },
+      { kind: 'woods', points: [[740, 350], [830, 345], [850, 420], [770, 440]] },
+    ],
+    units: [
+      { id: 'drag', side: 'top', kind: 'heavycavalry', label: 'Heavy dragoons', w: 80, h: 24 },
+      { id: 'guards', side: 'top', kind: 'guard', label: 'Guards brigade', w: 76, h: 28 },
+      { id: 'pack', side: 'top', kind: 'infantry', label: "Pack's Portuguese", w: 84, h: 28 },
+      { id: 'p19', side: 'top', kind: 'infantry', label: '19th Portuguese', w: 70, h: 26 },
+      { id: 'ross', side: 'top', kind: 'artillery', label: "Ross's battery", w: 56, h: 26 },
+      { id: 'c43', side: 'top', kind: 'light', label: '43rd Foot', w: 64, h: 26 },
+      { id: 'c52', side: 'top', kind: 'light', label: '52nd Foot', w: 64, h: 26 },
+      { id: 'c95', side: 'top', kind: 'light', label: '95th Rifles', w: 62, h: 24 },
+      { id: 'cac', side: 'top', kind: 'light', label: 'Caçadores', w: 60, h: 24 },
+      { id: 'ger', side: 'top', kind: 'infantry', label: 'German Legion', w: 76, h: 26 },
+      { id: 'cole', side: 'top', kind: 'infantry', label: "Cole's 4th Division", w: 90, h: 28 },
+      { id: 'maucune', side: 'bottom', kind: 'infantry', label: "Maucune's brigade", w: 90, h: 32 },
+      { id: 'marc2', side: 'bottom', kind: 'infantry', label: "Marchand's 2nd brig.", w: 90, h: 32 },
+      { id: 'simon', side: 'bottom', kind: 'infantry', label: "Simon's brigade", w: 90, h: 32 },
+      { id: 'ferey', side: 'bottom', kind: 'infantry', label: "Ferey's brigade", w: 90, h: 32 },
+      { id: 'skir', side: 'bottom', kind: 'light', label: 'Skirmishers', w: 70, h: 24 },
+      { id: 'mermet', side: 'bottom', kind: 'infantry', label: 'Mermet (reserve)', w: 100, h: 30 },
+      { id: 'guns', side: 'bottom', kind: 'artillery', label: "Ney's guns", w: 56, h: 26 },
+      { id: 'cav', side: 'bottom', kind: 'cavalry', label: "Montbrun's cavalry", w: 80, h: 22 },
+    ],
+    phases: [
+      {
+        title: 'Ney forms up',
+        caption: "Marchand's brigades gather by the Coimbra road, Loison's by Sula, with Mermet in reserve at Moura. Above Sula, Craufurd keeps the 43rd and 52nd out of sight behind the crest while skirmishers hold the slope.",
+        at: {
+          drag: [450, 48],
+          guards: [265, 100],
+          pack: [330, 210],
+          p19: [495, 160],
+          ross: [565, 135],
+          c43: [645, 138],
+          c52: [725, 138],
+          c95: [650, 205],
+          cac: [585, 255],
+          ger: [800, 185],
+          cole: [925, 108],
+          maucune: [335, 430],
+          marc2: [250, 475],
+          simon: [625, 430],
+          ferey: [745, 450],
+          skir: [690, 375],
+          mermet: [380, 545],
+          guns: [490, 385],
+          cav: [850, 545],
+        },
+      },
+      {
+        title: "Loison climbs the slope",
+        caption: "Simon's and Ferey's columns climb towards Craufurd's spur, their skirmishers pressing the riflemen and caçadores. Marchand's men advance up the road. The Allied guns struggle to find targets in the haze.",
+        at: {
+          simon: [625, 315],
+          ferey: [745, 320],
+          skir: [690, 250],
+          c95: [700, 178],
+          maucune: [338, 305],
+          marc2: [255, 360],
+        },
+        arrows: [
+          { side: 'bottom', points: [[625, 410], [625, 345], [632, 285]] },
+          { side: 'bottom', points: [[745, 430], [745, 350], [742, 290]] },
+          { side: 'bottom', points: [[335, 410], [338, 335], [342, 255]] },
+        ],
+      },
+      {
+        title: 'The 43rd and 52nd charge',
+        caption: "As the columns reach the last steep ground, Craufurd's hidden regiments rise, fire a close volley and charge. Loison's columns break and are driven down the hill. Loison loses about 1,200 men; Simon is wounded and taken.",
+        at: {
+          c43: [630, 212],
+          c52: [735, 212],
+          simon: [625, 282],
+          ferey: [745, 285],
+          skir: [690, 255],
+        },
+        broken: ['simon', 'ferey', 'skir'],
+        arrows: [
+          { side: 'top', points: [[640, 160], [632, 190], [628, 226]] },
+          { side: 'top', points: [[730, 160], [733, 190], [737, 226]] },
+          { side: 'bottom', points: [[618, 296], [606, 360]], style: 'rout' },
+          { side: 'bottom', points: [[748, 300], [765, 365]], style: 'rout' },
+        ],
+      },
+      {
+        title: 'Marchand held; Ney stops',
+        caption: "Pack's Portuguese and the Guards, with Craufurd's guns, stop Marchand's brigades, and the 19th Portuguese beat a party near the convent. After about an hour Ney breaks off. Allied losses here are about 200.",
+        at: {
+          maucune: [338, 300],
+          marc2: [268, 365],
+          pack: [335, 225],
+          p19: [455, 198],
+        },
+        broken: ['maucune'],
+        arrows: [
+          { side: 'top', points: [[335, 198], [335, 262]] },
+          { side: 'top', points: [[505, 165], [480, 188], [430, 208]] },
+          { side: 'bottom', points: [[338, 312], [342, 385]], style: 'rout' },
+        ],
+      },
+    ],
+  },
+  outcome: {
+    winner: 'top',
+    result: "Allied repulse of Ney's assault",
+    losses: "Loison about 1,200 of 6,500, Marchand's brigades perhaps 1,100; Allied losses on this sector about 200 (Oman).",
+    text: [
+      'The Light Division lost only a few dozen men, the 43rd and 52nd about 23 between them, in the most lopsided exchange of the day. Across the whole ridge the Allies lost about 1,250 and the French about 4,500.',
+      "Masséna found no way up, but on 28 September his cavalry discovered a road round Wellington's left. The Allies left the ridge that night and withdrew through Coimbra to the Lines of Torres Vedras, which Masséna reached in October and did not attack.",
+    ],
+  },
+  sources: [
+    'Charles Oman, A History of the Peninsular War, vol. 3 (1908), pp. 378–385 (the battle of Busaco)',
+    'W. F. P. Napier, History of the War in the Peninsula, Book XI, ch. 7 (Busaco)',
+    "J. Rickard, 'Battle of Bussaco, 27 September 1810', historyofwar.org",
+    "Commands & Colors Napoleonics, scenario 008 (commandsandcolors.net), for the scenario's sides",
+  ],
+};
+
+export default history;
