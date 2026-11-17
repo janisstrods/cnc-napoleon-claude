@@ -11,7 +11,7 @@ import type { Gen } from './decisions';
 import { SIDES, type FlowCtx, type GameState } from './types';
 
 /**
- * The draw phase (RR §5.2 step 5, §12.4): the played card to the discard; an Élan (turn.reshuffle) shuffles discard and
+ * The draw phase, a generator: call with `yield*` (RR §5.2 step 5, §12.4): the played card to the discard; an Élan (turn.reshuffle) shuffles discard and
  * deck together (R53); each other side draws one replacement per First Strike it played (R78); then the active side draws
  * 1, or with a Scout draws 2, keeps 1 and discards the other face up (R51). Card ids appear only in `discarded`.
  */

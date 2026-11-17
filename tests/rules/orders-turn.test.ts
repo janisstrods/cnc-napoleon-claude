@@ -3,11 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { CARD_LIST, GameDriver, sectionsOf, validateOrders, type CardKind, type GameState, type Side } from '../../src/engine';
 import { H, build, endMoves, endTurn, ev, giveCard, leaderId, must, noFirstStrike, play, type Pos } from './helpers';
 
-const sorted = <T>(a: T[]): T[] => [...a].sort();
-
 it('sections from each side, dotted-line hexes in two (§1)', () => {
   expect([[6, 2], [6, 4], [6, 6], [6, 8], [6, 10]].map(([r, c]) => sectionsOf(H(r, c), 'bottom'))).toEqual([['left'], ['left', 'center'], ['center'], ['center', 'right'], ['right']]);
-  expect(sorted(sectionsOf(H(2, 4), 'top'))).toEqual(sorted(['right', 'center'])); expect(sectionsOf(H(2, 2), 'top')).toEqual(['right']);
+  // hex.ts lists a section in the player's own Left, Centre, Right order, so the top side reads ['center', 'right'] here
+  expect(sectionsOf(H(2, 4), 'top')).toEqual(['center', 'right']); expect(sectionsOf(H(2, 2), 'top')).toEqual(['right']);
 });
 
 const B = (cs: number[]): Pos => ({ units: cs.map((c) => ({ side: 'bottom' as const, key: 'BR/LN' as const, at: [6, c] as [number, number] })) });
@@ -123,6 +122,7 @@ describe('the draw phase', () => {
     expect(es.filter((e) => e.t === 'scoutDrew')).toEqual([{ t: 'scoutDrew', side: 'bottom' }]);
     expect(es.filter((e) => e.t === 'draw')).toEqual([]);
     const [a, b] = p.cards;
+    expect(JSON.stringify(es.filter((e) => e.t !== 'cardPlayed'))).not.toMatch(new RegExp(`\\b(${a}|${b})\\b`));
     must(d, { kind: 'choose', index: 1 });
     const after = ev(d);
     expect(d.state.players.bottom.hand).toContain(b); expect(d.state.players.bottom.hand).not.toContain(a);
@@ -131,6 +131,7 @@ describe('the draw phase', () => {
     expect(d.state.players.bottom.hand).toHaveLength(5);
   });
   it('Scout with one card left in the deck: the discard, Scout included, becomes the deck between the draws (R51)', () => {
+    // crafted short deck: one card in the deck, two in the discard
     let scoutId = -1; let x = -1; let rest: number[] = [];
     const d = start(build(scoutPos), 'scoutC', (s, card) => {
       scoutId = card; [x, ...rest] = s.deck.slice(0, 3); s.deck = [x]; s.discard = rest.slice(0, 2);
@@ -148,6 +149,7 @@ describe('the draw phase', () => {
     const d = start(build(scoutPos), 'scoutC', (s) => {
       s.deck = s.deck.filter((c) => c !== elan); s.discard = s.discard.filter((c) => c !== elan);
       for (const sd of ['top', 'bottom'] as Side[]) s.players[sd].hand = s.players[sd].hand.filter((c) => c !== elan);
+      // crafted two-card deck: the Élan is on top, so the Scout draws it first
       const keep = s.deck.shift()!; s.deck = [keep, elan];   // draws pop: Élan first
     });
     const p = d.pending!;
@@ -162,12 +164,15 @@ describe('the draw phase', () => {
   it('Élan reshuffle: the discard and deck are shuffled together before the draws; square-track cards stay out (R53)', () => {
     const s = build({ units: [{ side: 'bottom', key: 'BR/LN', at: [6, 6], square: 1 }, ...far!] });
     const track = s.players.bottom.squareTrack[0];
+    // crafted short deck (2 cards) and discard (2 cards): the draw must come from the shuffle of both
     const d = start(s, 'elan', (st) => { const [a, b, c, e] = st.deck.splice(0, 4); st.discard = [a, b]; st.deck = [c, e]; });
     const id = CARD_LIST.indexOf('elan');
     endTurn(d);
     const st = d.state;
     const es = ev(d);
-    expect(es.some((e) => e.t === 'reshuffle')).toBe(true);
+    const kinds = es.map((e) => e.t);
+    expect(kinds).toContain('reshuffle');
+    expect(kinds.indexOf('reshuffle')).toBeLessThan(kinds.indexOf('draw'));
     expect(st.discard).toEqual([]);
     expect([...st.deck, ...st.players.bottom.hand]).toContain(id);
     expect(st.players.bottom.squareTrack[0]).toBe(track); expect(st.deck).not.toContain(track!);
@@ -191,12 +196,10 @@ describe('Counter-Attack (§12.5, R56)', () => {
   });
   it('copies the last card mirrored', () => {
     const s = build(pos('bottom')); s.lastCard.top = 'probeL';
-    const d = start(s, 'counterAttack', undefined, []);
-    ev(d);
-    const s2 = build(pos('bottom')); s2.lastCard.top = 'probeL';
-    noFirstStrike(s2); const c = giveCard(s2, 'bottom', 'counterAttack'); const d2 = new GameDriver(s2);
-    must(d2, { kind: 'playCard', card: c });
-    expect(d2.pending).toMatchObject({ kind: 'orders', card: 'probeR', mirrored: true });
+    noFirstStrike(s); const c = giveCard(s, 'bottom', 'counterAttack'); const d = new GameDriver(s);
+    must(d, { kind: 'playCard', card: c });
+    expect(d.pending).toMatchObject({ kind: 'orders', card: 'probeR', mirrored: true });
+    must(d, { kind: 'orders', pieces: [] });
     expect(d.state.lastCard.bottom).toBe('probeR');
   });
   it('a copied Scout ends with scoutKeep; a copied First Strike orders nothing', () => {
@@ -210,8 +213,6 @@ describe('Counter-Attack (§12.5, R56)', () => {
   it('a Counter-Attack that copied probeC is copied as probeC', () => {
     const s = build(pos('top')); s.lastCard.bottom = 'probeC';
     const d = start(s, 'counterAttack');
-    expect(d.state.lastCard.top).toBe('probeC');
-    endTurn(d);
     expect(d.state.lastCard.top).toBe('probeC');
     const c = giveCard(d.state, 'bottom', 'counterAttack');
     must(d, { kind: 'playCard', card: c });
