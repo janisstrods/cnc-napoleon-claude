@@ -55,6 +55,10 @@ describe('content', () => {
     }
   });
 
+  it('the fixture history passes the validator', () => {
+    expect(validateHistory(fixture)).toEqual([]);
+  });
+
   it('the validator catches broken references, bounds and long text', () => {
     const h = fixture;
     const bad: BattleHistory = structuredClone(h);

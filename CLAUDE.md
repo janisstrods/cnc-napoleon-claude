@@ -58,7 +58,7 @@ Expansion #1 AI-vs-AI balance runs with behaviour counters: `npx vite-node scrip
 - One table per kind of thing: `UNIT_STATS` (`src/engine/units.ts`), `ELITES` (`elites.ts`), `TERRAIN_STATS` (`terrain.ts`)
   and `EXPANSIONS` (`expansions.ts`). A new unit type, elite or terrain is a row there, and the compiler then asks for its
   art (`FIGURE_KIND` and the slot tables in `src/art/token.tsx`; device, shield and helmet renderers in `src/art/parts.tsx`
-  and `exp2/exp3-parts.tsx`). A new expansion is an `EXPANSIONS` row plus its battle files and its texts module.
+  and `exp2/exp3-parts.tsx`). A new expansion is an `EXPANSIONS` row plus its battle files; briefing texts of every battle are one table in `src/scenarios/texts.ts`.
 - Battle rules are data: the scenario JSON → `ScenarioSetup` (`src/engine/setup.ts`) → `GameState.scenario` (readonly,
   shared by `cloneState`). Play state lives in `GameState.special` (copied). A rule that falls on one side names it in the
   data; it never goes by army name.

@@ -333,4 +333,67 @@ describe('malformed scenario files', () => {
 });
 
 // The per-battle loader suites of the Ancients files (Expansion #3 terrain, reinforcements, units, the 301-319 walk) were
-// deleted with those files in Plan 2A; the synthetic cases above cover the same loader fields.
+// deleted with those files in Plan 2A; the Ancients-only fields they covered (ambush, placeUnits, orders, orderDice,
+// immobile, commands) go with the engine rewrite and are not tested here. The walk below checks the files that remain.
+
+describe('the scenario files through the loader: every key reaches the setup, as a copy', () => {
+  const FILES = Object.values(import.meta.glob<ScenarioJson>('../../src/scenarios/data/*.json', { eager: true, import: 'default' }))
+    .sort((a, b) => a.id.localeCompare(b.id));
+  type Path = (string | number)[];
+  const isNode = (v: unknown): v is object => typeof v === 'object' && v !== null;
+  /** The value of a file key in the built scenario: year, box and `hidden` are in the info, everything else in its setup. */
+  const target = (info: ReturnType<typeof scenarioFromJson>, key: string): unknown =>
+    key === 'year' || key === 'expansion' || key === 'hidden' ? info[key] : (info.setup as unknown as Record<string, unknown>)[key];
+
+  /**
+   * Walk a file value and the loaded value side by side: every key and list entry of the file must be in the setup with the
+   * same value, and no object or list of the setup may be the file's own. Returns the problems found.
+   */
+  function compare(file: unknown, loaded: unknown, path: Path, problems: string[]) {
+    const at = path.join('.');
+    if (!isNode(file)) {
+      if (loaded !== file) problems.push(`${at}: ${JSON.stringify(file)} became ${JSON.stringify(loaded)}`);
+      return;
+    }
+    if (!isNode(loaded)) return void problems.push(`${at}: dropped (${JSON.stringify(loaded)})`);
+    if (loaded === file) problems.push(`${at}: shared with the file, not copied`);
+    if (Array.isArray(file)) {
+      if (!Array.isArray(loaded) || loaded.length !== file.length) return void problems.push(`${at}: list changed`);
+      file.forEach((v, i) => compare(v, loaded[i], [...path, i], problems));
+      return;
+    }
+    for (const [k, v] of Object.entries(file)) {
+      if (!Object.prototype.hasOwnProperty.call(loaded, k)) problems.push(`${at}.${k}: dropped`);
+      else compare(v, (loaded as Record<string, unknown>)[k], [...path, k], problems);
+    }
+  }
+
+  it('is the hidden drill battle 000, and SCENARIOS holds it as built', () => {
+    expect(FILES.map((j) => j.id)).toEqual(['000']);
+    for (const j of FILES) expect(scenarioById(j.id), j.id).toEqual(scenarioFromJson(j));
+  });
+
+  it('every key of the file reaches the loaded setup unchanged and as a copy', () => {
+    for (const j of FILES) {
+      const info = scenarioFromJson(j);
+      const problems: string[] = [];
+      for (const [k, v] of Object.entries(j)) {
+        if (k === 'id' || k === 'name') expect([k, info[k]]).toEqual([k, v]);
+        // the roster check and notes some files carry are ignored by the loader
+        if (k === 'rosterCheck' || k === 'notes' || k === 'specialRules' || k === 'cardsNote') continue;
+        compare(v, target(info, k), [j.id, k], problems);
+      }
+      expect(problems, j.id).toEqual([]);
+    }
+  });
+
+  it('the walk notices a dropped or shared field', () => {
+    const j = JSON.parse(JSON.stringify(FILES[0])) as ScenarioJson;
+    const info = scenarioFromJson(j);
+    delete (info.setup.units[0] as { r?: number }).r;
+    info.setup.leaders[0] = j.leaders[0] as never;
+    const problems: string[] = [];
+    for (const [k, v] of Object.entries(j)) compare(v, target(info, k), [j.id, k], problems);
+    expect(problems).toEqual(['000.units.0.r: dropped', '000.leaders.0: shared with the file, not copied']);
+  });
+});

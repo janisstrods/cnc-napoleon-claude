@@ -1,8 +1,11 @@
 // Plan 2A clean slate: the Ancients battles are gone; only the hidden drill battle 000 remains.
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it } from 'vitest';
 import { SCENARIOS, scenarioById } from '../../src/scenarios';
 import { battlesOf, PICKER_TABS, randomPick, visibleBattles } from '../../src/ui/screens/picker';
 import { clearSaved, ENGINE_VERSION, loadSaved } from '../../src/ui/game/controller';
+import { ScenarioSelect } from '../../src/ui/screens/Menus';
 import { storageKey } from '../../src/ui/storage';
 import { dropStorage, stubStorage } from '../support/storage';
 
@@ -31,5 +34,14 @@ describe('clean slate', () => {
     expect(loadSaved()).toBeNull();
     expect(store.has(key)).toBe(false);
     clearSaved();
+  });
+
+  it('the picker never shows the hidden Drill, and with no battle its Start is disabled', () => {
+    const html = renderToStaticMarkup(createElement(ScenarioSelect, { onBack: () => {}, onStart: () => {} }));
+    expect(html).not.toContain('Drill');
+    expect(html).not.toContain('scen-item');
+    expect(/<button(?=[^>]*\bdisabled)(?=[^>]*start-btn)[^>]*>(<span[^>]*>)?To Battle!/.test(html)).toBe(true);
+    // also when the Triumphs record asks for it by id
+    expect(renderToStaticMarkup(createElement(ScenarioSelect, { onBack: () => {}, onStart: () => {}, initialBattle: '000' }))).not.toContain('Drill');
   });
 });

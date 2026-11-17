@@ -1,13 +1,5 @@
-// Expected setup of each battle, checked by per-box scenario tests (none now). The shape is kept for the Napoleonic
-// battles; the Ancients values were deleted with their battles (Plan 2A). They came from the imported
-// scenario files and were cross-checked against the unit tables, card counts, first player, blocks and banners in
-// design/exp1-survey.md. They agree except where official errata or rulings override the scenario page:
-// - 107 Granicus: Persian MI 2 / MC 3 (the page table); the map draws the two satrap units as MI.
-// - 117 Asculum: 6 banners; the four leaders are placed before the first turn (Romans first), so none is on the board.
-// - 121 Magnesia: the Seleucids use Greek blocks and field the camel the map shows (the table omits it).
-// Leader names follow the maps, with the fixes recorded in design/exp1-scenario-notes.md (Alcetas, Peucestas,
-// Nicarchus, Flamininus); names given to leaders the maps leave unnamed are plausible picks, not sources.
-//
+// Expected setup of each battle, checked by per-box scenario tests (none now: Plan 2A deleted the Ancients manifests; the
+// Napoleonic battles add theirs here).
 // `terrain` and `checksum` fingerprint the board (see checksum.ts): a tally of terrain hexes by type, river crossing and
 // rampart edge, and one checksum over every terrain hex and one over every unit and leader position and elite. They
 // were generated from the verified data files, so a moved piece, a changed terrain hex or ford, or a moved elite shows.

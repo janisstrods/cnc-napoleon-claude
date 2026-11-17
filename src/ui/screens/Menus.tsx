@@ -47,7 +47,7 @@ export function MainMenu(p: {
         </div>
         <h1 className="menu-title">Commands &amp; Colors</h1>
         <div className="menu-sub">ANCIENTS</div>
-        <p className="menu-tag">From Marathon to the Severn, 490 BC – AD 51 · {visibleBattles(SCENARIOS).length} historical battles: the base game and Expansions #1, #2 and #3</p>
+        <p className="menu-tag">Commands &amp; Colours: Napoleonics — battles of the Peninsular War and the Hundred Days</p>
         <div className="menu-armies" aria-hidden>
           <svg viewBox="-52 -48 524 96" width="620" height="114">
             {MENU_ARMY_L.map((t, i) => (
@@ -174,16 +174,54 @@ function sideRecordText(won: number, lost: number, draw: number, army: string): 
   return `Your record as ${army}: ${parts.join(', ')}`;
 }
 
-export function ScenarioSelect(p: {
+type ScenarioSelectProps = {
   onBack: () => void;
   onStart: (scenarioId: string, side: Side, difficulty: Difficulty, personality?: string, options?: GameOptions) => void;
   /** The battle to open on (picked in the Triumphs record); else the first of the tab shown last time. */
   initialBattle?: string;
-}) {
-  const initial = SCENARIOS.find((s) => s.id === p.initialBattle);
+};
+
+/** The picker when no battle is visible (only the hidden drill exists): an empty list and briefing, Start disabled. */
+function EmptyScenarioSelect(p: { onBack: () => void }) {
+  return (
+    <div className="select-root">
+      <div className="select-list">
+        <div className="select-head">
+          <Button variant="ghost" onClick={p.onBack}>← Back</Button>
+          <h2>Choose a Battle</h2>
+        </div>
+        <div className="select-tabs" role="tablist" aria-label="Battles">
+          {PICKER_TABS.map((t, i) => (
+            <button key={t.id} id={`battle-tab-${t.id}`} role="tab" aria-selected={i === 0} aria-controls="battle-list" tabIndex={i === 0 ? 0 : -1} className={i === 0 ? 'active' : ''}>
+              {t.label} <small>0</small>
+            </button>
+          ))}
+        </div>
+        <div className="select-scroll" id="battle-list" role="tabpanel" aria-labelledby={`battle-tab-${PICKER_TABS[0].id}`} />
+        <Button variant="ghost" className="random-btn" disabled>Random battle</Button>
+      </div>
+      <div className="select-detail">
+        <Panel variant="parchment" className="brief">
+          <div className="brief-head"><div className="brief-title">No battles yet</div></div>
+        </Panel>
+        <div className="choose-row">
+          <Button variant="primary" className="start-btn" disabled>To Battle!</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function ScenarioSelect(p: ScenarioSelectProps) {
+  const fallback = visibleBattles(SCENARIOS)[0];
+  return fallback ? <ScenarioSelectBody {...p} fallback={fallback} /> : <EmptyScenarioSelect onBack={p.onBack} />;
+}
+
+function ScenarioSelectBody(p: ScenarioSelectProps & { fallback: ScenarioInfo }) {
+  const initial = visibleBattles(SCENARIOS).find((s) => s.id === p.initialBattle);
   const [tab, setTab] = useState<Expansion>(() => initial?.expansion ?? loadPickerTab());
   const battles = useMemo(() => battlesOf(SCENARIOS, tab), [tab]);
-  const [sel, setSel] = useState<ScenarioInfo>(() => initial ?? battles[0] ?? SCENARIOS[0]);
+  const [sel, setSel] = useState<ScenarioInfo>(() => initial ?? battles[0] ?? p.fallback);
   // the player's record: read once, as nothing changes it while the picker is open
   const [record] = useState(loadRecord);
   const [choices, setChoices] = useState<GameOptions>(() => loadOptionChoices());
