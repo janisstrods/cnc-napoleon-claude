@@ -1,0 +1,132 @@
+// 105 Somosierra, 30 November 1808. Top: San Juan's Spanish Army of Reserve; bottom: Napoleon's army, led up the pass by Ruffin's division.
+// The map is drawn with the Spaniards at the top: Napoleon advanced southward, so north points down the page (180 degrees)
+// and Madrid and Buitrago lie off the top edge. West is to the right, where the Duratón ravine and Sepúlveda lie.
+import type { BattleHistory } from '../types';
+
+const history: BattleHistory = {
+  id: '105',
+  context: {
+    war: 'Peninsular War, 1807–1814',
+    text: [
+      "By late November 1808 Napoleon had broken the Spanish armies on the Ebro and was marching from Burgos on Madrid. Two passes through the Sierra de Guadarrama guard the capital, and he chose the northern road over the Somosierra.",
+      "General Benito San Juan was sent to hold it with an improvised force, about 12,000 men at first. He put sixteen guns across the crest of the pass, with a shallow earthwork, and left a detachment at Sepúlveda that slipped away to Segovia on the night of 29 November. On the 30th the Emperor pushed up the road.",
+    ],
+  },
+  sides: {
+    top: {
+      name: 'Spanish Army of Reserve',
+      commanders: ['General Benito San Juan (commanding)', 'Colonel Sarden (Sepúlveda detachment)'],
+      strength: 'up to 12,000 at first, perhaps 9,000 in the pass, with 16 guns (Oman)',
+      forces: 'Six regular and two militia battalions, seven of raw levies, a few cavalry and sixteen guns at the crest.',
+    },
+    bottom: {
+      name: "Napoleon's army",
+      commanders: ['Napoleon (commanding)', 'Ruffin (1st Corps division)', 'Barrois (brigade)', 'Montbrun (Polish horse)'],
+      strength: "c. 40,000 in the column (Oman); few were engaged",
+      forces: "Ruffin's ten battalions led the attack, with a Guard battery, the Polish light horse and the Guard chasseurs.",
+    },
+  },
+  map: {
+    north: 180,
+    terrain: [
+      { kind: 'hills', points: [[170, 70], [420, 60], [405, 340], [150, 370]] },
+      { kind: 'hills', points: [[560, 60], [830, 55], [850, 340], [580, 360]] },
+      { kind: 'river', points: [[640, 640], [590, 540], [610, 420], [560, 320], [600, 220]], width: 10, label: 'Duratón' },
+      { kind: 'road', points: [[470, 640], [440, 540], [500, 440], [450, 340], [490, 240], [480, 150], [480, -20]] },
+      { kind: 'redoubt', at: [480, 140], size: 34 },
+      { kind: 'town', at: [905, 540], size: 26, label: 'Sepúlveda' },
+      { kind: 'label', at: [230, 585], text: 'Boceguillas' },
+      { kind: 'label', at: [480, 28], text: 'To Buitrago and Madrid' },
+    ],
+    units: [
+      { id: 'batt', side: 'top', kind: 'artillery', label: 'Sixteen guns', w: 60 },
+      { id: 'spE', side: 'top', kind: 'infantry', label: 'East slope', w: 110 },
+      { id: 'spW', side: 'top', kind: 'infantry', label: 'West slope', w: 110 },
+      { id: 'res', side: 'top', kind: 'infantry', label: 'Reserve (San Juan)', w: 90 },
+      { id: 'r96', side: 'bottom', kind: 'infantry', label: '96th (Barrois)', w: 70 },
+      { id: 'r9', side: 'bottom', kind: 'light', label: '9th Léger', w: 80 },
+      { id: 'r24', side: 'bottom', kind: 'infantry', label: '24th of the Line', w: 90 },
+      { id: 'gg', side: 'bottom', kind: 'artillery', label: 'Guard battery', w: 46 },
+      { id: 'esc', side: 'bottom', kind: 'cavalry', label: 'Polish squadron', w: 50 },
+      { id: 'reg', side: 'bottom', kind: 'cavalry', label: 'Poles and chasseurs', w: 90 },
+    ],
+    phases: [
+      {
+        title: 'Ruffin climbs the pass',
+        caption: "In mist and rain Ruffin's division deploys: the 96th up the road, the 9th Léger and 24th skirmishing on the heights either side. San Juan's guns sweep the road. Napoleon brings up a Guard battery, to little effect.",
+        at: {
+          batt: [480, 150],
+          spE: [310, 195],
+          spW: [660, 195],
+          res: [480, 90],
+          r96: [480, 450],
+          r9: [700, 430],
+          r24: [290, 430],
+          gg: [400, 545],
+          esc: [500, 540],
+          reg: [600, 590],
+        },
+        arrows: [
+          { side: 'bottom', points: [[480, 430], [480, 370], [480, 330]] },
+          { side: 'bottom', points: [[700, 410], [710, 340], [715, 290]] },
+          { side: 'bottom', points: [[290, 410], [285, 340], [285, 290]] },
+        ],
+      },
+      {
+        title: 'The Poles charge',
+        caption: "Impatient, Napoleon orders his Polish escort squadron up the road. Per Ségur, 88 men charge; four officers and forty men are killed and sixteen wounded, none reaching the guns. The Emperor's bulletin claimed the guns were taken.",
+        at: {
+          esc: [485, 235],
+          r96: [480, 395],
+        },
+        broken: ['esc'],
+        arrows: [{ side: 'bottom', points: [[500, 520], [490, 380], [485, 250]] }],
+      },
+      {
+        title: 'Infantry and second charge',
+        caption: "Barrois's 96th wins the rocks from which the Poles started, and the 9th and 24th near the crest. With the Spaniards wavering, the rest of the Polish regiment and the Guard chasseurs charge and take the battery.",
+        at: {
+          r96: [480, 290],
+          r9: [700, 215],
+          r24: [285, 215],
+          reg: [480, 175],
+        },
+        broken: ['spE', 'spW'],
+        gone: ['batt', 'esc'],
+        arrows: [
+          { side: 'bottom', points: [[600, 570], [520, 400], [485, 200]] },
+          { side: 'bottom', points: [[700, 300], [700, 240]] },
+        ],
+      },
+      {
+        title: 'The pass is forced',
+        caption: "The Spaniards scatter. Most, posted west of the road, flee towards Segovia; a few reach Madrid. Only about 200 are caught. The Poles chase to Buitrago, and Napoleon sleeps there that night.",
+        at: {
+          reg: [480, 85],
+          r96: [480, 170],
+        },
+        gone: ['spE', 'spW', 'res'],
+        arrows: [
+          { side: 'top', points: [[660, 195], [760, 130], [830, 60]], style: 'rout' },
+          { side: 'top', points: [[480, 90], [480, 40]], style: 'rout' },
+          { side: 'bottom', points: [[480, 150], [480, 80]] },
+        ],
+      },
+    ],
+  },
+  outcome: {
+    winner: 'bottom',
+    result: 'French victory; the road to Madrid is open',
+    losses: 'Oman: about 200 Spaniards caught and sixteen guns lost; the Polish squadron lost 60 by Ségur, 24 by the bulletin.',
+    text: [
+      "Oman judged that Ruffin's infantry, not the cavalry, won the pass; the Poles' second charge only hastened it by minutes. Napier, by contrast, gave the charge the decisive role and thought the position nearly impregnable.",
+      "San Juan escaped, but on 7 December his mutinous troops killed him at Talavera de la Reina. The French appeared before Madrid on 2 December, and it capitulated on 4 December; the Army of Reserve had dissolved.",
+    ],
+  },
+  sources: [
+    'Charles Oman, A History of the Peninsular War, vol. 1 (1902), Section VII chap. 6, pp. 450–61 (combat pp. 456–60)',
+    'W. F. P. Napier, History of the War in the Peninsula, vol. 1 (1828), Book IV chap. 2, pp. 408–10',
+  ],
+};
+
+export default history;
