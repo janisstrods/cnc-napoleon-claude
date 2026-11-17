@@ -1,0 +1,365 @@
+{
+ "id": "006",
+ "grid": {
+  "x0": 74.38,
+  "y0": 129.88,
+  "w": 87.0,
+  "pitch": 75.5
+ },
+ "terrain": [
+  {
+   "r": 0,
+   "c": 5,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 7,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 8,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 9,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 9,
+   "t": "hill"
+  },
+  {
+   "r": 6,
+   "c": 0,
+   "t": "hill"
+  },
+  {
+   "r": 7,
+   "c": 0,
+   "t": "hill"
+  },
+  {
+   "r": 8,
+   "c": 4,
+   "t": "hill"
+  },
+  {
+   "r": 8,
+   "c": 5,
+   "t": "hill"
+  },
+  {
+   "r": 0,
+   "c": 6,
+   "t": "forest"
+  },
+  {
+   "r": 5,
+   "c": 0,
+   "t": "forest"
+  },
+  {
+   "r": 0,
+   "c": 1,
+   "t": "river"
+  },
+  {
+   "r": 0,
+   "c": 2,
+   "t": "river"
+  },
+  {
+   "r": 0,
+   "c": 3,
+   "t": "river"
+  },
+  {
+   "r": 1,
+   "c": 0,
+   "t": "river"
+  },
+  {
+   "r": 2,
+   "c": 0,
+   "t": "river"
+  },
+  {
+   "r": 0,
+   "c": 4,
+   "t": "river",
+   "crossing": "bridge",
+   "art": "bridge hex, also the British exit hex"
+  },
+  {
+   "r": 2,
+   "c": 4,
+   "t": "fieldworks",
+   "on": "plain",
+   "sides": [
+    "W",
+    "SW",
+    "SE"
+   ]
+  },
+  {
+   "r": 2,
+   "c": 5,
+   "t": "fieldworks",
+   "on": "plain",
+   "sides": [
+    "SW",
+    "SE",
+    "E"
+   ]
+  },
+  {
+   "r": 0,
+   "c": 11,
+   "t": "fortress",
+   "art": "label: Fortress of Almeida"
+  },
+  {
+   "r": 0,
+   "c": 12,
+   "t": "fortress",
+   "art": "label: Fortress of Almeida"
+  },
+  {
+   "r": 4,
+   "c": 10,
+   "t": "windmill"
+  }
+ ],
+ "units": [
+  {
+   "r": 2,
+   "c": 3,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 2,
+   "c": 9,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 3,
+   "c": 9,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 2,
+   "c": 2,
+   "side": "top",
+   "key": "BR/LT"
+  },
+  {
+   "r": 2,
+   "c": 6,
+   "side": "top",
+   "key": "BR/RI"
+  },
+  {
+   "r": 3,
+   "c": 10,
+   "side": "top",
+   "key": "BR/RI"
+  },
+  {
+   "r": 0,
+   "c": 8,
+   "side": "top",
+   "key": "BR/LC"
+  },
+  {
+   "r": 0,
+   "c": 9,
+   "side": "top",
+   "key": "BR/HC"
+  },
+  {
+   "r": 0,
+   "c": 11,
+   "side": "top",
+   "key": "BR/FA"
+  },
+  {
+   "r": 2,
+   "c": 7,
+   "side": "top",
+   "key": "BR/HA"
+  },
+  {
+   "r": 2,
+   "c": 8,
+   "side": "top",
+   "key": "BR/HA"
+  },
+  {
+   "r": 2,
+   "c": 4,
+   "side": "top",
+   "key": "PT/LT"
+  },
+  {
+   "r": 2,
+   "c": 5,
+   "side": "top",
+   "key": "PT/LT"
+  },
+  {
+   "r": 5,
+   "c": 5,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 5,
+   "c": 7,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 6,
+   "c": 2,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 6,
+   "c": 3,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 7,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 9,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 5,
+   "c": 6,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 6,
+   "c": 1,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 8,
+   "c": 8,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 8,
+   "c": 6,
+   "side": "bottom",
+   "key": "FR/GR"
+  },
+  {
+   "r": 7,
+   "c": 10,
+   "side": "bottom",
+   "key": "FR/LC"
+  },
+  {
+   "r": 7,
+   "c": 11,
+   "side": "bottom",
+   "key": "FR/LC"
+  },
+  {
+   "r": 8,
+   "c": 0,
+   "side": "bottom",
+   "key": "FR/LC"
+  },
+  {
+   "r": 8,
+   "c": 4,
+   "side": "bottom",
+   "key": "FR/HC"
+  },
+  {
+   "r": 8,
+   "c": 5,
+   "side": "bottom",
+   "key": "FR/HC"
+  },
+  {
+   "r": 7,
+   "c": 1,
+   "side": "bottom",
+   "key": "FR/FA"
+  }
+ ],
+ "leaders": [
+  {
+   "r": 0,
+   "c": 5,
+   "side": "top",
+   "name": "Craufurd"
+  },
+  {
+   "r": 0,
+   "c": 9,
+   "side": "top",
+   "name": "Anson"
+  },
+  {
+   "r": 2,
+   "c": 3,
+   "side": "top",
+   "name": "Sydney"
+  },
+  {
+   "r": 6,
+   "c": 2,
+   "side": "bottom",
+   "name": "Ferey"
+  },
+  {
+   "r": 6,
+   "c": 6,
+   "side": "bottom",
+   "name": "Loison"
+  },
+  {
+   "r": 8,
+   "c": 9,
+   "side": "bottom",
+   "name": "Mermet"
+  }
+ ],
+ "objectives": [
+  {
+   "r": 0,
+   "c": 4,
+   "note": "British exit hex (outlined in red on the map), also the River Coa bridge. Any ordered Anglo-Portuguese unit of any strength leaving the board by this hex scores one banner for BR; leaders do not score (survey 006). Anglo-Portuguese units cannot retreat off the bridge; a unit that cannot retreat takes one block of damage per hex it could not move. OPEN RULINGS QUESTION (survey): the text gives the French one banner if an Anglo-Portuguese unit is eliminated on this hex; it is not stated whether that is one banner in total for the unit or an extra on top of the normal kill banner. Not decided here."
+  }
+ ],
+ "notes": [
+  "River Coa: 6 hexes in one piece: 0,1 0,2 0,3 0,4 (bridge) 1,0 2,0. It is impassable except at the bridge (survey). The bridge hex 0,4 is also the exit objective; the river art enters 0,4 from the left and leaves through the top edge.",
+  "Fieldworks 2,4 and 2,5 are flat (on plain): scan.py reports hill 0.15 and 0.10 there, but that is the dark shadow of the brown works, not hill rays (no ray ring in the plain crop; survey gives 9 hills and flat entrenchments). Works are three-sided: 2,4 has a wall on W, SW and SE (open to the E); 2,5 on SW, SE and E (open to the W). A PT/LT (brown block) stands on each.",
+  "Almeida: two hexes 0,11 (BR/FA on it) and 0,12, both recorded as fortress (survey: two town hexes, treated as town, ignore one flag for BR and PT). The windmill hex 4,10 shows a windmill and a few houses on a pale ground; recorded as windmill.",
+  "Hills: 0,5 (under the Craufurd block), 2,7 2,8 2,9 3,9, 6,0 7,0, 8,4 8,5 (under HC blocks); the survey count of 9 matches. Forests: 0,6 and 5,0.",
+  "Survey discrepancy 6: no Ney block on the map; the French leaders are Ferey (6,2 with FR/LN), Loison (6,6, alone) and Mermet (8,9 with FR/LN). British: Craufurd (0,5, alone), Anson (0,9 with BR/HC), Sydney (2,3 with BR/LN; may be Sydenham). No Portuguese leader. PT/LT 2 (brown blocks) both on the entrenchments."
+ ]
+}

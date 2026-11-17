@@ -1,0 +1,419 @@
+{
+ "id": "011",
+ "grid": {
+  "x0": 72.38,
+  "y0": 132.38,
+  "w": 87.0,
+  "pitch": 75.5
+ },
+ "terrain": [
+  {
+   "r": 1,
+   "c": 5,
+   "t": "hill"
+  },
+  {
+   "r": 1,
+   "c": 6,
+   "t": "hill"
+  },
+  {
+   "r": 1,
+   "c": 9,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 0,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 2,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 3,
+   "t": "hill"
+  },
+  {
+   "r": 5,
+   "c": 0,
+   "t": "hill"
+  },
+  {
+   "r": 5,
+   "c": 5,
+   "t": "hill"
+  },
+  {
+   "r": 5,
+   "c": 6,
+   "t": "hill"
+  },
+  {
+   "r": 5,
+   "c": 9,
+   "t": "hill"
+  },
+  {
+   "r": 5,
+   "c": 10,
+   "t": "hill"
+  },
+  {
+   "r": 6,
+   "c": 1,
+   "t": "hill"
+  },
+  {
+   "r": 6,
+   "c": 2,
+   "t": "hill"
+  },
+  {
+   "r": 6,
+   "c": 5,
+   "t": "hill"
+  },
+  {
+   "r": 6,
+   "c": 9,
+   "t": "hill"
+  },
+  {
+   "r": 7,
+   "c": 4,
+   "t": "hill"
+  },
+  {
+   "r": 0,
+   "c": 11,
+   "t": "forest"
+  },
+  {
+   "r": 1,
+   "c": 10,
+   "t": "forest"
+  },
+  {
+   "r": 4,
+   "c": 9,
+   "t": "town",
+   "art": "label: Chapel of N.S. de la Pena"
+  },
+  {
+   "r": 7,
+   "c": 7,
+   "t": "town",
+   "art": "label: Calvarisa de Ariba"
+  },
+  {
+   "r": 8,
+   "c": 7,
+   "t": "town",
+   "art": "label: Calvarisa de Ariba"
+  },
+  {
+   "r": 8,
+   "c": 8,
+   "t": "town",
+   "art": "label: Calvarisa de Ariba"
+  },
+  {
+   "r": 3,
+   "c": 4,
+   "t": "river"
+  },
+  {
+   "r": 3,
+   "c": 5,
+   "t": "river"
+  },
+  {
+   "r": 3,
+   "c": 6,
+   "t": "river"
+  },
+  {
+   "r": 3,
+   "c": 7,
+   "t": "river"
+  },
+  {
+   "r": 3,
+   "c": 8,
+   "t": "river"
+  },
+  {
+   "r": 3,
+   "c": 9,
+   "t": "river"
+  },
+  {
+   "r": 3,
+   "c": 11,
+   "t": "river"
+  },
+  {
+   "r": 4,
+   "c": 4,
+   "t": "river"
+  },
+  {
+   "r": 5,
+   "c": 3,
+   "t": "river"
+  },
+  {
+   "r": 6,
+   "c": 3,
+   "t": "river"
+  },
+  {
+   "r": 7,
+   "c": 3,
+   "t": "river"
+  },
+  {
+   "r": 8,
+   "c": 3,
+   "t": "river"
+  },
+  {
+   "r": 3,
+   "c": 10,
+   "t": "river",
+   "crossing": "bridge"
+  }
+ ],
+ "units": [
+  {
+   "r": 0,
+   "c": 0,
+   "side": "top",
+   "key": "BR/LC"
+  },
+  {
+   "r": 0,
+   "c": 10,
+   "side": "top",
+   "key": "BR/LC"
+  },
+  {
+   "r": 0,
+   "c": 4,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 0,
+   "c": 5,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 0,
+   "c": 6,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 2,
+   "c": 4,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 2,
+   "c": 5,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 2,
+   "c": 6,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 2,
+   "c": 7,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 1,
+   "c": 1,
+   "side": "top",
+   "key": "BR/GG"
+  },
+  {
+   "r": 1,
+   "c": 2,
+   "side": "top",
+   "key": "BR/GG"
+  },
+  {
+   "r": 1,
+   "c": 5,
+   "side": "top",
+   "key": "BR/FA"
+  },
+  {
+   "r": 1,
+   "c": 8,
+   "side": "top",
+   "key": "BR/RI"
+  },
+  {
+   "r": 1,
+   "c": 9,
+   "side": "top",
+   "key": "BR/LT"
+  },
+  {
+   "r": 1,
+   "c": 10,
+   "side": "top",
+   "key": "BR/HA"
+  },
+  {
+   "r": 0,
+   "c": 12,
+   "side": "top",
+   "key": "BR/HC"
+  },
+  {
+   "r": 1,
+   "c": 11,
+   "side": "top",
+   "key": "BR/HC"
+  },
+  {
+   "r": 6,
+   "c": 0,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 7,
+   "c": 6,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 7,
+   "c": 9,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 7,
+   "c": 0,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 2,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 5,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 6,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 7,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 9,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 10,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 11,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 1,
+   "side": "bottom",
+   "key": "FR/FA"
+  },
+  {
+   "r": 7,
+   "c": 5,
+   "side": "bottom",
+   "key": "FR/FA"
+  },
+  {
+   "r": 6,
+   "c": 12,
+   "side": "bottom",
+   "key": "FR/LC"
+  }
+ ],
+ "leaders": [
+  {
+   "r": 0,
+   "c": 9,
+   "side": "top",
+   "name": "Alten"
+  },
+  {
+   "r": 1,
+   "c": 3,
+   "side": "top",
+   "name": "H. Campbell"
+  },
+  {
+   "r": 1,
+   "c": 11,
+   "side": "top",
+   "name": "Bock"
+  },
+  {
+   "r": 8,
+   "c": 0,
+   "side": "bottom",
+   "name": "Ferey"
+  },
+  {
+   "r": 7,
+   "c": 8,
+   "side": "bottom",
+   "name": "Foy"
+  }
+ ],
+ "objectives": [],
+ "notes": [
+  "Pela Gracia River: 13 hexes, 3,4-3,11 along row 3 then 4,4 5,3 6,3 7,3 8,3 down to the bottom edge; bridge on 3,10. Fordable in every hex, entering does not stop movement (survey).",
+  "Towns: Chapel of N.S. de la Pena 4,9; Calvarisa de Ariba 7,7 8,7 8,8 (FR/LN stands on 8,7).",
+  "Forest 1,10 holds BR/HA. Leaders: Campbell (map label; survey 'H. Campbell') 1,3 alone; Bock 1,11 stacked with BR/HC (label reads Brock/Bock, survey Bock); Alten 0,9 alone; Ferey 8,0, Foy 7,8 alone.",
+  "Map has no objective hexes: victory is 6 banners by killing units (survey)."
+ ],
+ "riverPieces": 1
+}
