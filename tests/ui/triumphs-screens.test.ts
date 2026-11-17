@@ -13,10 +13,10 @@ import { stubStorage, useStubStorageCleanup } from '../support/storage';
 
 useStubStorageCleanup();
 
-// The only battle, 000, is hidden from the picker; these screens need a visible one, so the module shows it.
+// The drill 000 is hidden from the picker; these screens need a visible one, so the module shows it, and only it (the generated base battles are left out).
 vi.mock('../../src/scenarios', async (importOriginal) => {
   const m = await importOriginal<typeof import('../../src/scenarios')>();
-  const SCENARIOS = m.SCENARIOS.map((s) => ({ ...s, hidden: undefined }));
+  const SCENARIOS = m.SCENARIOS.filter((s) => s.id === '000').map((s) => ({ ...s, hidden: undefined }));
   return { ...m, SCENARIOS, scenarioById: (id: string) => SCENARIOS.find((s) => s.id === id)! };
 });
 

@@ -8,10 +8,14 @@ import { catalogueEntry } from '../../src/scenarios/catalogue';
 import { convertBattle, formatScenario, type RawBattle } from './convert';
 import { META } from './meta';
 
-const args = process.argv.slice(2);
+const args = process.argv.slice(2).filter((a) => a !== '--');
 const check = args.includes('--check');
 const at = args.indexOf('--ids');
-const ids = at >= 0 && args[at + 1] ? args[at + 1].split(',') : Object.keys(META);
+const idList = at >= 0 ? args[at + 1] : undefined;
+if (at >= 0 && (!idList || idList.startsWith('--'))) throw new Error('--ids needs a comma-separated list, e.g. --ids 001,006');
+const stray = args.filter((a, i) => a !== '--check' && a !== '--ids' && i !== at + 1);
+if (stray.length > 0) throw new Error(`unknown argument ${stray.join(' ')} (use --check, --ids a,b)`);
+const ids = idList ? idList.split(',') : Object.keys(META);
 
 const read = (p: URL): string | undefined => {
   try { return readFileSync(p, 'utf8'); } catch { return undefined; }

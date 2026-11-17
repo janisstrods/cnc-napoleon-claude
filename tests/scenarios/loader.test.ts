@@ -145,9 +145,10 @@ describe('the scenario files through the loader: every key reaches the setup, as
     }
   }
 
-  it('is the hidden drill battle 000, and SCENARIOS holds it as built', () => {
-    expect(FILES.map((j) => j.id)).toEqual(['000']);
-    expect([FILES[0].hidden, FILES[0].expansion]).toEqual([true, undefined]);
+  it('the files are 000 to 015, only the drill 000 is hidden, none names a box, and SCENARIOS holds each as built', () => {
+    expect(FILES.map((j) => j.id)).toEqual(['000', ...Array.from({ length: 15 }, (_, i) => String(i + 1).padStart(3, '0'))]);
+    expect(FILES.filter((j) => j.hidden).map((j) => j.id)).toEqual(['000']);
+    expect(FILES.filter((j) => j.expansion !== undefined)).toEqual([]);
     for (const j of FILES) expect(scenarioById(j.id), j.id).toEqual(scenarioFromJson(j));
   });
 

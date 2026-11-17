@@ -27,7 +27,7 @@ const fails = (st: ScenarioSetup, re: RegExp = /\(test\)$/) => expect(() => crea
 describe('setup builds the board', () => {
   it('the reference position and every shipped scenario build', () => {
     expect(() => createGame(base, 1)).not.toThrow();
-    expect(SCENARIOS.map((sc) => sc.id)).toEqual(['000']);
+    expect(SCENARIOS.map((sc) => sc.id)).toEqual(['000', ...Array.from({ length: 15 }, (_, i) => String(i + 1).padStart(3, '0'))]);
     for (const sc of SCENARIOS) expect(() => createGame(sc.setup, 1), sc.id).not.toThrow();
   });
   it('rivers: each rule and crossing becomes its terrain row (RR §14)', () => {
