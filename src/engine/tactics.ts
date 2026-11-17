@@ -11,7 +11,7 @@ import type { FlowCtx, GameState, Side } from './types';
 
 const orderAll = (s: GameState, ctx: FlowCtx, side: Side, ids: string[], cardMods: boolean): void => {
   for (const id of ids) s.turn.ordered[id] = newOrderedPiece(s, id, cardMods);
-  if (ids.length) ctx.emit({ t: 'ordered', side, ids });
+  ctx.emit({ t: 'ordered', side, ids });
 };
 
 /** Élan: Command dice; each arm face orders a unit of that arm, a flag any piece; ordered pieces roll +1 (R53). */

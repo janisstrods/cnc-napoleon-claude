@@ -26,7 +26,7 @@ export function validateElan(s: GameState, side: Side, faces: readonly DieFace[]
     if (face === 'sabre') return 'A sabre orders nothing.';
     const p = pieceById(s, id);
     if (!p || p.side !== side || p.hex < 0) return 'Order only your own units and leaders.';
-    if (face !== 'flag' && (isLeaderId(id) || statsOf(s, p as Unit).arm !== face)) return `A ${face} symbol orders a ${face} unit.`;
+    if (face !== 'flag' && (isLeaderId(id) || statsOf(s, p as Unit).arm !== face)) return `That symbol orders only ${face} units.`;
   }
   // a leader attached to a unit in square detaches only together with that unit (R32)
   for (const id of seen) {
@@ -48,7 +48,7 @@ export function validateRally(s: GameState, side: Side, faces: readonly DieFace[
     if (!isArmFace(faces[i])) return 'Only an infantry, cavalry or artillery symbol rallies.';
     const u = ownUnit(s, side, id);
     if (!u) return 'Rally only your own units.';
-    if (statsOf(s, u).arm !== faces[i]) return `A ${faces[i]} symbol rallies a ${faces[i]} unit.`;
+    if (statsOf(s, u).arm !== faces[i]) return `That symbol rallies only ${faces[i]} units.`;
     gain.set(id, (gain.get(id) ?? 0) + 1);
   }
   for (const [id, n] of gain) {
@@ -68,7 +68,7 @@ export function shortSupplyTargets(s: GameState, _side: Side): string[] {
   return s.units.filter((u) => u.hex >= 0 && u.square === undefined).map((u) => u.id);
 }
 
-/** The hexes a Short Supply unit may be placed on: its own baseline in its section(s), else the row in front, else none (R55). */
+/** The hexes a Short Supply unit may be placed on: its own baseline in its section(s), else the row in front, else none; its own hex counts when it stands there (R55). */
 export function shortSupplyHexes(s: GameState, unitId: string): HexId[] {
   const u = unitById(s, unitId);
   if (!u || u.hex < 0) return [];
@@ -82,7 +82,7 @@ export function shortSupplyHexes(s: GameState, unitId: string): HexId[] {
     for (let c = 0; c < 13; c++) {
       const h = hexId(r, c);
       if (rowOf(h) !== r || colOf(h) !== c) continue;
-      if (sectionsOf(h, u.side).some((x) => secs.includes(x)) && isEmptyHex(s, h) && passableFor(s, h, arm)) out.push(h);
+      if (sectionsOf(h, u.side).some((x) => secs.includes(x)) && (h === u.hex || isEmptyHex(s, h)) && passableFor(s, h, arm)) out.push(h);
     }
     if (out.length) return out;
   }

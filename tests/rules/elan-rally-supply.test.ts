@@ -74,6 +74,24 @@ describe('Élan (R53)', () => {
     expect(Object.keys(s.turn.ordered)).toEqual([]);
   });
 
+  it('a flag on a leader attached to a square is refused unless an arm face also orders the square (R32, R53)', () => {
+    const s0 = build({ units: [{ side: 'bottom', key: 'BR/LN', at: [6, 6], square: 1 }, { side: 'top', key: 'FR/LN', at: [1, 6] }], leaders: [{ side: 'bottom', at: [6, 6] }] });
+    forceDice(['flag', 'infantry', 'sabre', 'sabre']);   // the square lowers Command to 4
+    const d = play(s0, 'elan');
+    const L = leaderId(d.state, 0);
+    expect(d.answer({ kind: 'assign', ids: [L, null, null, null] })).toBe(false);
+    expect(d.answer({ kind: 'assign', ids: [L, 'u1', null, null] })).toBe(true);
+  });
+
+  it('an answered Élan or Rally that orders nothing still emits an empty ordered event', () => {
+    const s0 = build(elanPos());
+    forceDice(FACES5);
+    const d = play(s0, 'elan');
+    ev(d);
+    must(d, { kind: 'assign', ids: [null, null, null, null, null] });
+    expect(ev(d)).toContainEqual({ t: 'ordered', side: 'bottom', ids: [] });
+  });
+
   it('rolls with the purpose elan', () => {
     const s0 = build(elanPos());
     forceDice(FACES5);
@@ -222,6 +240,15 @@ describe('Short Supply (R55)', () => {
     const s = d.state;
     must(d, { kind: 'choose', index: 0 });
     expect((d.pending as { options: number[] }).options).toEqual(row0);
+  });
+
+  it('a unit already on its own baseline may stay: its own hex is a legal destination, never the row in front (R55)', () => {
+    const s0 = build({ units: [...topRow(0, [4, 5, 6, 7, 8]), { side: 'bottom', key: 'BR/LN', at: [6, 6] }] });
+    const d = play(s0, 'shortSupply');
+    must(d, { kind: 'choose', index: 2 });   // u3 at (0,6)
+    expect(d.pending).toMatchObject({ kind: 'shortSupplyHex', unit: 'u3', options: [H(0, 6)] });
+    must(d, { kind: 'hex', hex: H(0, 6) });
+    expect(d.state.units[2].hex).toBe(H(0, 6));
   });
 
   it('only hexes passable for the unit\'s arm are offered', () => {
