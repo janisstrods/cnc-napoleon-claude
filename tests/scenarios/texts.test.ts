@@ -41,6 +41,27 @@ describe('briefing texts', () => {
     expect(j('015')).toContain('impetuous');
   });
 
+  it('special rules are the fixed copy', () => {
+    const fixed: Record<string, string[]> = {
+      '001': ['Each hill at either end of the French baseline gives the Anglo-Portuguese a temporary banner while one of their units holds it at the start of their turn.', 'The river is fordable everywhere.'],
+      '002': [],
+      '003': ['Vimiero: the French gain 2 temporary banners while they hold both town hexes at the start of their turn, and lose both the moment either hex is empty.', 'The river is fordable everywhere.'],
+      '004': ['All streams are fordable.'],
+      '005': ['The Portina Brook stops movement but gives no battle penalties; a unit that entered it this turn may not take ground.', 'A British battery starts behind field works on a hill.'],
+      '006': ['An Anglo-Portuguese unit that leaves the board by the Côa bridge on its own baseline scores 1 permanent banner; leaders may leave but score nothing.', 'No retreat leads off the bridge: a unit that cannot complete its retreat loses blocks instead.', 'The river is impassable except at the bridge.', 'The Fortress of Almeida counts as a town; an Anglo-Portuguese unit there may ignore 1 flag.', 'Each side holds 4 cards.'],
+      '007': ['The stream is fordable everywhere.'],
+      '008': [],
+      '009': ['The Ancos is impassable except at the bridge.'],
+      '010': ['The Azan is impassable except at the bridge.'],
+      '011': ['The stream is fordable everywhere, and entering it does not stop movement.'],
+      '012': ['Two French light infantry units start in square, so 2 French cards begin on the square track.', 'The first French infantry unit destroyed gives the British 1 banner; each later one gives 2.'],
+      '013': ['Nauzeilles and the Seminary each give the Anglo-Portuguese a temporary banner while held at the start of their turn.', 'The river is fordable; crossing at the ford does not stop movement.'],
+      '014': ['Quatre Bras gives the French a temporary banner while held at the start of their turn.', 'The stream is fordable everywhere, and entering it does not stop movement.', 'Allied line infantry retreats 2 hexes per flag.'],
+      '015': ['La Haye Sainte, Hougoumont and Papelotte each give the French a temporary banner while held at the start of their turn.', 'British cavalry is impetuous: after a successful attack it must break through and press on 1 hex towards the French.', 'Allied line infantry retreats 2 hexes per flag.'],
+    };
+    for (const [id, lines] of Object.entries(fixed)) expect(TEXTS[id]?.specialText ?? [], id).toEqual(lines);
+  });
+
   it('British spelling, and no quotation of 15 words or more', () => {
     const us = /\b(center|centers|color|colors|maneuvers?|defense|honor|favor|armor|toward)\b/i;
     for (const s of allStrings()) {
