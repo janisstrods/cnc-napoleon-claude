@@ -5,7 +5,7 @@ import { fireAttack } from './fire';
 import { meleeAttack } from './melee';
 import { applyMove } from './movement';
 import { battleReady, movablePieces, type Found } from './options';
-import { autoOrders, fallbackActive, newOrderedPiece } from './orders';
+import { autoOrders, eligiblePieces, fallbackActive, newOrderedPiece } from './orders';
 import { unitById } from './query';
 import { leaveSquareStep } from './squares';
 import { elanStep, rallyStep, shortSupplyStep } from './tactics';
@@ -41,6 +41,8 @@ export function* cardStep(s: GameState, ctx: FlowCtx, side: Side): Gen {
   } else {
     let ids = autoOrders(s, side, effective);
     let single = false;
+    // a card that can order nothing skips the orders and phases 2-4 (RR §5.2 step 1)
+    if (ids === null && eligiblePieces(s, side, effective).length === 0) return;
     if (ids === null) {
       const a = (yield* ask(s, ctx, { kind: 'orders', side, card: effective, mirrored, single: effective === 'grandManoeuvre' })) as { pieces: string[]; single?: boolean };
       ids = a.pieces;

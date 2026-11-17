@@ -21,12 +21,13 @@ function ownPieceHex(s: GameState, side: Side, id: string): number | null {
   return p && p.side === side && p.hex >= 0 ? p.hex : null;
 }
 
-/** The pieces that could be ordered by this card. */
+/** The pieces that could be ordered by this card (an attached leader only where the card lets him detach). */
 export function eligiblePieces(s: GameState, side: Side, kind: CardKind): string[] {
   const ids = [...s.units, ...s.leaders].filter((p) => p.side === side && p.hex >= 0).map((p) => p.id);
   const counts = sectionCounts(s, kind);
   if (!counts) return ids.filter((id) => !isLeaderId(id) || !attachedUnitOf(s, id));
-  return ids.filter((id) => sectionsOf(pieceHex(s, id)!, side).some((sec) => (counts[sec] ?? 0) > 0));
+  const detach = CARD_DEFS[kind].detach;
+  return ids.filter((id) => (detach || !isLeaderId(id) || !attachedUnitOf(s, id)) && sectionsOf(pieceHex(s, id)!, side).some((sec) => (counts[sec] ?? 0) > 0));
 }
 
 function attachedUnitOf(s: GameState, leaderId: string): boolean {
@@ -75,7 +76,15 @@ export function validateOrders(s: GameState, side: Side, kind: CardKind, pieces:
   if (single) return 'That card has no single option.';
   const secs: SectionName[][] = [];
   for (const id of pieces) {
-    if (isLeaderId(id) && attachedUnitOf(s, id) && !CARD_DEFS[kind].detach) return 'The leader cannot detach.';
+    if (isLeaderId(id)) {
+      const l = leaderById(s, id)!;
+      const unit = s.units.find((u) => u.side === l.side && u.hex === l.hex);
+      if (unit) {
+        if (!CARD_DEFS[kind].detach) return 'The leader cannot detach.';
+        // a leader attached to a unit in square may only be ordered together with that unit (R32)
+        if (unit.square !== undefined && !pieces.includes(unit.id)) return 'A leader cannot detach from a square.';
+      }
+    }
     secs.push(sectionsOf(ownPieceHex(s, side, id)!, side));
   }
   if (pieces.length > orderLimit(s, side, kind)) return 'Too many orders.';
@@ -102,7 +111,7 @@ export function newOrderedPiece(s: GameState, id: string, cardMods: boolean): Or
 
 /**
  * A legal random answer for the card as the rules stand: greedy over shuffled eligible pieces, checked with `validateOrders`
- * (T11 refines it for sections, T12a for exact sets).
+ * (T12a refines it for exact sets).
  */
 export function sampleOrders(s: GameState, side: Side, kind: CardKind, rnd: () => number): { pieces: string[]; single?: boolean } {
   const elig = eligiblePieces(s, side, kind);
@@ -110,8 +119,11 @@ export function sampleOrders(s: GameState, side: Side, kind: CardKind, rnd: () =
     const j = Math.floor(rnd() * (i + 1));
     [elig[i], elig[j]] = [elig[j], elig[i]];
   }
+  const detach = CARD_DEFS[kind].detach;
   let sel: string[] = [];
   for (const id of elig) {
+    // a leader attached to a unit detaches only now and then, so random play explores both
+    if (detach && isLeaderId(id) && attachedUnitOf(s, id) && rnd() >= 0.25) continue;
     const trial = [...sel, id];
     if (!validateOrders(s, side, kind, trial)) sel = trial;
   }

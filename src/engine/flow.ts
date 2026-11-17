@@ -1,22 +1,58 @@
 // Turn flow as a generator: yields Decisions, receives Answers (RR §5.2). The flow's modules, each importing only those
 // before it, are listed in the layering of the plan; this one holds the turn, the draw phase and the game loop.
-import { drawCard } from './cards';
+import { drawCard, takeCard } from './cards';
+import { ask } from './decisions';
 import { turnStartObjectives } from './objectives';
 import { battlePhase, cardStep, movePhase } from './phases';
 import { other } from './query';
+import { shuffle } from './rng';
 import { newTurn } from './setup';
 import type { Gen } from './decisions';
-import type { FlowCtx, GameState } from './types';
+import { SIDES, type FlowCtx, type GameState } from './types';
 
-/** The draw phase: the played card to the discard, then the active side draws. Skeleton: one card (→ T11). */
-export function drawPhase(s: GameState, ctx: FlowCtx): void {
+/**
+ * The draw phase (RR §5.2 step 5, §12.4): the played card to the discard; an Élan (turn.reshuffle) shuffles discard and
+ * deck together (R53); each other side draws one replacement per First Strike it played (R78); then the active side draws
+ * 1, or with a Scout draws 2, keeps 1 and discards the other face up (R51). Card ids appear only in `discarded`.
+ */
+export function* drawPhase(s: GameState, ctx: FlowCtx): Gen {
   const t = s.turn;
+  const side = s.active;
   t.phase = 'draw';
   if (t.card !== null) {
     s.discard.push(t.card);
     t.card = null;
   }
-  drawCard(s, ctx, s.active);
+  if (t.reshuffle) {
+    s.deck = shuffle(s, [...s.deck, ...s.discard]);
+    s.discard = [];
+    ctx.emit({ t: 'reshuffle' });
+  }
+  for (const o of SIDES) {
+    if (o === side) continue;
+    for (let i = 0; i < t.firstStrikes[o]; i++) drawCard(s, ctx, o);
+  }
+  if (!t.scout) {
+    drawCard(s, ctx, side);
+    return;
+  }
+  const a = takeCard(s, ctx);
+  const b = a === null ? null : takeCard(s, ctx);
+  if (a === null) return;
+  const hand = s.players[side].hand;
+  if (b === null) {
+    hand.push(a);
+    ctx.emit({ t: 'draw', side });
+    return;
+  }
+  // both cards sit in the hand while the choice is open, so every card stays accounted for
+  hand.push(a, b);
+  ctx.emit({ t: 'scoutDrew', side });
+  const ans = (yield* ask(s, ctx, { kind: 'scoutKeep', side, cards: [a, b] })) as { index: number };
+  const drop = ans.index === 0 ? b : a;
+  hand.splice(hand.indexOf(drop), 1);
+  s.discard.push(drop);
+  ctx.emit({ t: 'discarded', side, card: drop });
 }
 
 function* battleToEnd(s: GameState, ctx: FlowCtx): Gen {
@@ -24,7 +60,7 @@ function* battleToEnd(s: GameState, ctx: FlowCtx): Gen {
   t.phase = 'battle';
   yield* battlePhase(s, ctx);
   if (s.winner) return;
-  drawPhase(s, ctx);
+  yield* drawPhase(s, ctx);
   s.lastCard[s.active] = t.effective;
   s.special.turnsDone[s.active]++;
   t.phase = 'done';

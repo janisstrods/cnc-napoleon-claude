@@ -172,16 +172,26 @@ export function cardDice(mod: DiceMod | null, st: UnitStats): number {
   return n;
 }
 
-/** Draw one card for `side` (an empty deck takes the shuffled discard pile: `reshuffle` event); emits `draw`. */
-export function drawCard(s: GameState, ctx: FlowCtx, side: Side): void {
+/**
+ * Take the top card of the deck (top = end of the array) without a `draw` event; an empty deck takes the shuffled discard
+ * pile first (`reshuffle` event). Null when both are empty. Square tracks are never part of either pile.
+ */
+export function takeCard(s: GameState, ctx: FlowCtx): number | null {
   if (s.deck.length === 0) {
-    if (s.discard.length === 0) return;
+    if (s.discard.length === 0) return null;
     s.deck = s.discard;
     s.discard = [];
     shuffle(s, s.deck);
     ctx.emit({ t: 'reshuffle' });
   }
-  s.players[side].hand.push(s.deck.pop()!);
+  return s.deck.pop()!;
+}
+
+/** Draw one card for `side` (an empty deck takes the shuffled discard pile: `reshuffle` event); emits `draw` (no card id). */
+export function drawCard(s: GameState, ctx: FlowCtx, side: Side): void {
+  const c = takeCard(s, ctx);
+  if (c === null) return;
+  s.players[side].hand.push(c);
   ctx.emit({ t: 'draw', side });
 }
 
