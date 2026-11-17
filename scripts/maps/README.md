@@ -1,7 +1,11 @@
 # Map-reading and checking tools
 
 Python 3 (PIL, numpy; pytest for tests), no other dependencies. Used to transcribe the 15 base-game battle maps
-(`cnc-napoleonics-research/maps/NNN.jpg`, 1190x866) into `design/data/<id>.json` and to verify those files.
+(`cnc-napoleonics-research/maps/NNN.jpg`, 1190x866) and the 18 Spanish expansion maps (101-118) into
+`design/data/<id>.json` and to verify those files. Expected unit counts come from `design/survey.md` section 2.1
+(001-015) or `design/exp1-survey.md` section 2.1 (101-118), chosen by battle id (`expected.expected(id)`). The Spanish
+survey adds the infantry code SWI (Swiss line, 101 only: SP/SWI and FR/SWI); top is Spanish or British, bottom French.
+Map 104 is `104.png` (1196x866; the `104.jpg` is stale and never used): `hexgrid.map_path` resolves it.
 Images produced by the tools go to `cnc-napoleonics-research/map-work/` and are never committed.
 
 Tests: `python3 -m pytest scripts/maps -q`. Every tool has `--help`.
@@ -24,6 +28,11 @@ and on 001+007+015 together (`grids.json` holds the per-map fits):
   (74.4, 130.1); 006, 012 (74.1, 129.9); 015 (74.1, 136.1). The joint fit of 001+007+015 gives (72.25, 132.4),
   which is 2-4 px off on 015, so the tools use the per-map fit (`hexgrid.grid_for`). Put the map's fit in each data
   file's `grid` (use the `x0 y0 w pitch` from `grids.json`).
+- **Spanish maps 101-118** (same 1190x866 size, 104.png is 1196 wide): w = 87.0 on all 18 and pitch 75.5 on 13 of
+  them (102 75.125, 107 75.0, 115 75.375, others differ from 75.5 by under 0.5 px of fit noise). x0, y0 cluster at
+  (74.4, 129.9-130.4) for 101, 103, 104, 105, 106, 109, 110, 111, 113, 114, 117, 118; 108, 115, 116 are near
+  (72.1-72.5, 132.4-133.1); 112 is the outlier (77.25, 135.9). Per-map fits are in `grids.json`. Overlays of 104, 107
+  and 112 show every hex outline on the grid.
 - Checked on overlays of 001, 006, 007 and 015: every hex outline sits on the grid, and the red objective hex outlines
   (001 at 8,2 and 8,11; 006 at 0,4) fall exactly on the grid hexes.
 

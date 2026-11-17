@@ -41,13 +41,13 @@ def main():
     ap.add_argument("--grid", help="JSON string or file with grid (default: the map's fitted grid)")
     ap.add_argument("--out", default=f"{hg.WORK_DIR}/overlay")
     a = ap.parse_args()
-    ids = [f"{i:03d}" for i in range(1, 16)] if a.all else a.maps
+    ids = [f"{i:03d}" for i in list(range(1, 16)) + list(range(101, 119))] if a.all else a.maps
     if not ids:
         ap.error("give map ids or --all")
     os.makedirs(a.out, exist_ok=True)
     for m in ids:
         grid = hg.parse_grid(a.grid, m)
-        out = os.path.join(a.out, os.path.basename(m).replace(".jpg", "") + ".png")
+        out = os.path.join(a.out, os.path.splitext(os.path.basename(m))[0] + ".png")
         draw_overlay(Image.open(hg.map_path(m)), grid).save(out)
         print(out)
 

@@ -45,7 +45,7 @@ def main():
     crop = im.crop(box)
     crop = crop.resize((int(crop.width * a.scale), int(crop.height * a.scale)), Image.LANCZOS)
     os.makedirs(a.out, exist_ok=True)
-    name = f"{os.path.basename(a.map).replace('.jpg', '')}_r{a.rows}_c{a.cols}" + ("_plain" if a.plain else "") + ".png"
+    name = f"{os.path.splitext(os.path.basename(a.map))[0]}_r{a.rows}_c{a.cols}" + ("_plain" if a.plain else "") + ".png"
     out = os.path.join(a.out, name)
     crop.save(out)
     print(out)
