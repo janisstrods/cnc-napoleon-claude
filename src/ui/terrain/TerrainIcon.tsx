@@ -2,102 +2,66 @@
 import { useId, useMemo } from 'react';
 import type { TerrainType } from '../../engine/types';
 import { hexPoints } from '../geometry';
-import { paintDitches } from './ditch';
-import { paintBroken, paintCamps } from './ground';
-import { hexVariant, iconCtx } from './hexmath';
-import { paintHills, paintSteep } from './hills';
-import { paintRamparts } from './rampart';
+import { paintQuarry } from './ground';
+import { iconCtx } from './hexmath';
+import { paintHills, paintRugged } from './hills';
+import { paintFieldWorks } from './fieldworks';
 import { P } from './palette';
-import { paintCoastFords, paintSea } from './sea';
-import { paintForests, paintMarsh } from './vegetation';
-import { paintCityWalls, paintRomeWalls, paintTowns } from './walls';
-import { paintLakes, paintRivers } from './water';
+import { paintTowns } from './towns';
+import { paintForests } from './vegetation';
+import { paintRivers } from './water';
 
 const cache = new Map<string, JSX.Element | null>();
 
-/** The swatch shows a rampart protecting its two upper sides (NE + NW, the bits of a `faces: 'top'` piece). */
-const ICON_RAMPART = (1 << 1) | (1 << 2);
+/** The swatch shows works protecting the hex's two lower sides (SW + SE, the bits of a `sides: ['SW', 'SE']` work). */
+const ICON_WORKS = (1 << 4) | (1 << 5);
 
-/** The sea swatch is a stretch of coast: land across the hex's W and SW sides, open water everywhere else. */
-const iconSeaCell = (r: number, c: number) => !(c === -1 && (r === 0 || r === 1));
-/** On the coast-ford swatch the stones wade in from that beach (towards the W and SW sides). */
-const ICON_TO_LAND = { x: -Math.sqrt(3) / 2, y: 0.5 };
+const TUFTS = (
+  <path
+    d="M-22,-14l-2,-5M-22,-14l0,-6M-22,-14l2,-5M14,-22l-2,-5M14,-22l0,-6M14,-22l2,-5M-6,8l-2,-5M-6,8l0,-6M-6,8l2,-5M24,14l-2,-5M24,14l0,-6M24,14l2,-5M-18,26l-2,-5M-18,26l0,-6M-18,26l2,-5M6,32l-2,-5M6,32l0,-6M6,32l2,-5"
+    fill="none"
+    stroke={P.tuftDark}
+    strokeWidth={1.4}
+    strokeLinecap="round"
+    opacity={0.7}
+  />
+);
 
-function iconArt(t: TerrainType, ford: boolean, hexArt?: string, hill = false): JSX.Element | null {
-  // a coast played as a ford (217): a fordable river in the rules, drawn as sea shallows; Expansion #3: an impassable city
-  // wall or town (`steep` with art 'wall' or 'town'); a hill under a camp or wall
-  const v = hexVariant(t, hexArt);
-  if (v === 'coast') t = 'sea';
-  const city = v === 'coast' ? undefined : v;
-  const under = hill && (t === 'camp' || t === 'wall');
-  const key = `${t}:${ford ? 1 : 0}${city ? `:${city}` : ''}${under ? ':hill' : ''}`;
-  if (cache.has(key)) return cache.get(key)!;
-  const ctx = iconCtx(t, ford, under, city);
-  let el: JSX.Element | null = null;
-  const hillUnder = under ? <g transform="scale(0.82)">{paintHills(ctx, undefined, 1.9)}</g> : null;
+function terrainArt(t: TerrainType): JSX.Element | null {
+  const ctx = iconCtx(t);
   switch (t) {
     case 'hill':
-      el = <g transform="scale(0.82)">{paintHills(ctx, undefined, 1.9)}</g>;
-      break;
+      return <g transform="scale(0.82)">{paintHills(ctx, undefined, 1.9)}</g>;
+    case 'rugged':
+      return <g transform="scale(0.82)">{paintRugged(ctx, undefined, 1.9)}</g>;
     case 'forest':
-      el = paintForests(ctx);
-      break;
+      return paintForests(ctx);
+    case 'town':
+    case 'windmill':
+    case 'fortress':
+      return <g transform="scale(0.92)">{paintTowns(ctx)}</g>;
     case 'river':
-      el = paintRivers(ctx);
-      break;
-    case 'lake':
-      el = paintLakes(ctx);
-      break;
-    case 'sea':
-      // pull the coast into the hex so the beach shows inside the swatch; a fordable coast is shallow, with ford stones
-      el = ford ? (
-        <>
-          {paintSea(ctx, { seaCell: iconSeaCell, shift: 15, fordCell: () => true })}
-          {paintCoastFords(ctx, ICON_TO_LAND)}
-        </>
-      ) : (
-        paintSea(ctx, { seaCell: iconSeaCell, shift: 15 })
-      );
-      break;
-    case 'ditch':
-      el = paintDitches(ctx);
-      break;
-    case 'rampart':
-      // shrunk a little so the ditch outside the hexsides stays inside the swatch
-      el = <g transform="scale(0.86)">{paintRamparts(ctx, [ICON_RAMPART], { openEdges: false })}</g>;
-      break;
-    case 'steep':
-      if (city === 'town') el = <g transform="scale(0.92)">{paintTowns(ctx)}</g>;
-      else if (city === 'wall') el = <g transform="scale(0.86)">{paintRomeWalls(ctx, false)}</g>;
-      else el = paintSteep(ctx);
-      break;
-    case 'camp':
-      el = <>{hillUnder}{paintCamps(ctx)}</>;
-      break;
-    case 'wall':
-      el = <>{hillUnder}<g transform="scale(0.9)">{paintCityWalls(ctx, false)}</g></>;
-      break;
-    case 'broken':
-      el = paintBroken(ctx);
-      break;
-    case 'marsh':
-      el = paintMarsh(ctx);
-      break;
+    case 'ford':
+    case 'fordNoStop':
+    case 'brook':
+    case 'bridge':
+      return paintRivers(ctx);
+    case 'sandQuarry':
+      return paintQuarry(ctx);
     case 'plain':
-      el = (
-        <path
-          d="M-22,-14l-2,-5M-22,-14l0,-6M-22,-14l2,-5M14,-22l-2,-5M14,-22l0,-6M14,-22l2,-5M-6,8l-2,-5M-6,8l0,-6M-6,8l2,-5M24,14l-2,-5M24,14l0,-6M24,14l2,-5M-18,26l-2,-5M-18,26l0,-6M-18,26l2,-5M6,32l-2,-5M6,32l0,-6M6,32l2,-5"
-          fill="none"
-          stroke={P.tuftDark}
-          strokeWidth={1.4}
-          strokeLinecap="round"
-          opacity={0.7}
-        />
-      );
-      break;
+      return TUFTS;
     default:
-      el = null;
+      return null;
   }
+}
+
+function iconArt(t: TerrainType, works: boolean): JSX.Element | null {
+  const key = `${t}:${works ? 1 : 0}`;
+  if (cache.has(key)) return cache.get(key)!;
+  const own = terrainArt(t);
+  // shrunk a little so the ditch outside the hexsides stays inside the swatch
+  const field = works ? <g transform="scale(0.86)">{paintFieldWorks(iconCtx(t), [ICON_WORKS], { openEdges: false })}</g> : null;
+  const el = own || field ? <>{own}{field}</> : null;
   cache.set(key, el);
   return el;
 }
@@ -105,14 +69,12 @@ function iconArt(t: TerrainType, ford: boolean, hexArt?: string, hill = false): 
 const HEX_PTS = hexPoints(0, 0);
 
 /**
- * A painted hex swatch of terrain `t`, `size` pixels square. `art`: the hex's art where it differs from its terrain
- * (`terrainArtOf`): `'coast'` on a fordable river draws a coast played as a ford (217); `'wall'` or `'town'` on a `steep`
- * hex an impassable city wall (301) or a walled town (303, 304). `hill`: a hill under a camp or a wall (308,
- * `GameState.hillUnder`).
+ * A painted hex swatch of terrain `t`, `size` pixels square. `works`: the hex also has Field Works along its two lower
+ * sides.
  */
-export function TerrainIcon({ t, ford = false, art: hexArt, hill = false, size }: { t: TerrainType; ford?: boolean; art?: string; hill?: boolean; size: number }): JSX.Element {
+export function TerrainIcon({ t, works = false, size }: { t: TerrainType; works?: boolean; size: number }): JSX.Element {
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '');
-  const art = useMemo(() => iconArt(t, ford, hexArt, hill), [t, ford, hexArt, hill]);
+  const art = useMemo(() => iconArt(t, works), [t, works]);
   const clip = `ti${uid}`;
   return (
     <svg width={size} height={size} viewBox="-52 -52 104 104" style={{ display: 'inline-block', verticalAlign: 'middle' }} aria-hidden>

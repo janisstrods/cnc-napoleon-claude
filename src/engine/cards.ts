@@ -1,145 +1,179 @@
-// The 60-card Command deck. Texts are paraphrased summaries of each card's effect.
+// The 70 Command cards (RR §12.1–§12.2): the table and its pure helpers. The skeleton draw, effective-card and battle-ban hooks are at the end (logic in T11 / T12a).
+// Imports only codes, types, hex, rng, expansions, units, terrain, query.
 import { other } from './query';
 import { shuffle } from './rng';
-import type { CardDef, CardKind, FlowCtx, GameState, OrderMods, SectionName, Side } from './types';
+import type { UnitStats } from './units';
+import type { CardDef, CardKind, DiceMod, FlowCtx, GameState, OrderMods, OrderedPiece, SectionName, SelectRule, Side, Unit } from './types';
 
-const sec = (n: number, word: string): string =>
-  `Issue an order to ${n} units or leaders in the ${word} section.`;
-
-export const CARD_DEFS: Record<CardKind, CardDef> = {
-  order2L: { kind: 'order2L', title: 'Order Two Units Left', group: 'section', count: 3, text: sec(2, 'left'), sections: ['left'], detach: true },
-  order2C: { kind: 'order2C', title: 'Order Two Units Center', group: 'section', count: 4, text: sec(2, 'center'), sections: ['center'], detach: true },
-  order2R: { kind: 'order2R', title: 'Order Two Units Right', group: 'section', count: 3, text: sec(2, 'right'), sections: ['right'], detach: true },
-  order3L: { kind: 'order3L', title: 'Order Three Units Left', group: 'section', count: 3, text: sec(3, 'left'), sections: ['left'], detach: true },
-  order3C: { kind: 'order3C', title: 'Order Three Units Center', group: 'section', count: 4, text: sec(3, 'center'), sections: ['center'], detach: true },
-  order3R: { kind: 'order3R', title: 'Order Three Units Right', group: 'section', count: 3, text: sec(3, 'right'), sections: ['right'], detach: true },
-  order4L: { kind: 'order4L', title: 'Order Four Units Left', group: 'section', count: 1, text: sec(4, 'left'), sections: ['left'], detach: true },
-  order4C: { kind: 'order4C', title: 'Order Four Units Center', group: 'section', count: 1, text: sec(4, 'center'), sections: ['center'], detach: true },
-  order4R: { kind: 'order4R', title: 'Order Four Units Right', group: 'section', count: 1, text: sec(4, 'right'), sections: ['right'], detach: true },
-  outFlanked: {
-    kind: 'outFlanked', title: 'Out Flanked', group: 'section', count: 2,
-    text: 'Issue an order to 2 units or leaders in the left section and 2 in the right section.',
-    sections: ['left', 'right'], detach: true,
-  },
-  coordinated: {
-    kind: 'coordinated', title: 'Coordinated Attack', group: 'section', count: 2,
-    text: 'Issue an order to 1 unit or leader in each section.',
-    sections: ['left', 'center', 'right'], detach: true,
-  },
-  orderLight: {
-    kind: 'orderLight', title: 'Order Light Troops', group: 'troop', count: 4,
-    text: 'Order light foot and light mounted units, up to your Command. Light foot may move through friendly units. No light units? Order 1 unit of your choice.',
-    sections: [], detach: false,
-  },
-  orderMedium: {
-    kind: 'orderMedium', title: 'Order Medium Troops', group: 'troop', count: 3,
-    text: 'Order medium foot and medium mounted units, up to your Command. No medium units? Order 1 unit of your choice.',
-    sections: [], detach: false,
-  },
-  orderHeavy: {
-    kind: 'orderHeavy', title: 'Order Heavy Troops', group: 'troop', count: 2,
-    text: 'Order heavy foot and heavy mounted units, up to your Command. No heavy units? Order 1 unit of your choice.',
-    sections: [], detach: false,
-  },
-  orderMounted: {
-    kind: 'orderMounted', title: 'Order Mounted', group: 'troop', count: 1,
-    text: 'Order mounted units and/or leaders, up to your Command. No mounted units? Order 1 unit of your choice.',
-    sections: [], detach: true,
-  },
-  inspiredL: {
-    kind: 'inspiredL', title: 'Inspired Left Leadership', group: 'leadership', count: 1,
-    text: "Order a leader in the left section, his unit, and up to 4 more units in a linked chain of adjacent hexes. Or order 1 unit of your choice in the left section.",
-    sections: ['left'], detach: false,
-  },
-  inspiredC: {
-    kind: 'inspiredC', title: 'Inspired Center Leadership', group: 'leadership', count: 1,
-    text: "Order a leader in the center section, his unit, and up to 4 more units in a linked chain of adjacent hexes. Or order 1 unit of your choice in the center section.",
-    sections: ['center'], detach: false,
-  },
-  inspiredR: {
-    kind: 'inspiredR', title: 'Inspired Right Leadership', group: 'leadership', count: 1,
-    text: "Order a leader in the right section, his unit, and up to 4 more units in a linked chain of adjacent hexes. Or order 1 unit of your choice in the right section.",
-    sections: ['right'], detach: false,
-  },
-  leadershipAny: {
-    kind: 'leadershipAny', title: 'Leadership Any Section', group: 'leadership', count: 3,
-    text: 'Order a leader anywhere, his unit, and up to 3 more units in a linked chain of adjacent hexes. Or order 1 unit of your choice.',
-    sections: ['left', 'center', 'right'], detach: false,
-  },
-  clash: {
-    kind: 'clash', title: 'Clash of Shields', group: 'tactic', count: 1,
-    text: 'Every unit adjacent to the enemy is ordered. No movement before combat. +2 dice in close combat. May momentum advance (bonus combat at normal dice). No ranged combat.',
-    sections: [], detach: false,
-  },
-  counterAttack: {
-    kind: 'counterAttack', title: 'Counter Attack', group: 'tactic', count: 2,
-    text: "Issue the same order your opponent just played. Section and Inspired cards swap left and right.",
-    sections: [], detach: false,
-  },
-  darken: {
-    kind: 'darken', title: 'Darken the Sky', group: 'tactic', count: 1,
-    text: 'Every unit with missile weapons is ordered and may fire twice. No movement. No missile units? Order 1 unit of your choice.',
-    sections: [], detach: false,
-  },
-  doubleTime: {
-    kind: 'doubleTime', title: 'Double Time', group: 'tactic', count: 2,
-    text: 'Order up to 4 foot units in a linked group. Each may move 2 hexes and still close combat; warriors may move 2-3 but must close combat. No ranged combat.',
-    sections: [], detach: false,
-  },
-  firstStrike: {
-    kind: 'firstStrike', title: 'First Strike', group: 'tactic', count: 1,
-    text: "Play when the opponent declares a close combat against you, before dice are rolled. Your unit battles first; if the attacker survives in place it then attacks normally. No battle back.",
-    sections: [], detach: false,
-  },
-  spartacus: {
-    kind: 'spartacus', title: 'I Am Spartacus', group: 'tactic', count: 1,
-    text: 'Roll dice equal to your Command. Each unit symbol orders one unit of that type; each helmet orders any unit or leader. Ordered units roll 1 extra die. Then reshuffle deck and discards.',
-    sections: [], detach: true,
-  },
-  lineCommand: {
-    kind: 'lineCommand', title: 'Line Command', group: 'tactic', count: 4,
-    text: 'Order a group of foot units in linked adjacent hexes. Each may move up to 1 hex and battle. No foot units? Order 1 unit of your choice.',
-    sections: [], detach: false,
-  },
-  mountedCharge: {
-    kind: 'mountedCharge', title: 'Mounted Charge', group: 'tactic', count: 2,
-    text: 'Order mounted units up to your Command. +1 die in close combat. Heavy mounted units may move 3 hexes and battle. No ranged combat.',
-    sections: [], detach: false,
-  },
-  moveFireMove: {
-    kind: 'moveFireMove', title: 'Move-Fire-Move', group: 'tactic', count: 2,
-    text: 'Order light units up to your Command. All move, then all fire, then all may move again. No close combat. Light foot may move through friendly units.',
-    sections: [], detach: false,
-  },
-  rally: {
-    kind: 'rally', title: 'Rally', group: 'tactic', count: 1,
-    text: "Roll dice equal to your Command. Each unit symbol restores 1 block to a unit of that type in or next to a leader's hex; a helmet restores any type. Rallied units are ordered.",
-    sections: [], detach: false,
-  },
+export const NO_MODS: OrderMods = {
+  fire: null, melee: null, bonusMelee: false, lostInTown: false, move: null, noMove: false, noFire: false, noMelee: false,
 };
 
-/** Deterministic list of the 60 card instances: index = card id. */
-export const CARD_LIST: CardKind[] = (() => {
-  const list: CardKind[] = [];
-  for (const def of Object.values(CARD_DEFS)) for (let i = 0; i < def.count; i++) list.push(def.kind);
-  return list;
-})();
+const mods = (m: Partial<OrderMods>): OrderMods => ({ ...NO_MODS, ...m });
+const plus = (n: number, extra: Partial<DiceMod> = {}): DiceMod => ({ plus: n, ...extra });
+
+interface Spec {
+  title: string; group: 'section' | 'tactic'; count: number; text: string; sections?: SectionName[]; detach: boolean;
+  select: SelectRule; mods?: OrderMods; draw?: CardDef['draw'];
+}
+const def = (kind: CardKind, x: Spec): CardDef => ({
+  kind, title: x.title, group: x.group, count: x.count, text: x.text, sections: x.sections ?? [], detach: x.detach, select: x.select,
+  mods: x.mods ?? NO_MODS, draw: x.draw ?? 'normal',
+});
+
+const SEC: Record<'L' | 'C' | 'R', { name: SectionName; label: string }> = {
+  L: { name: 'left', label: 'Left' }, C: { name: 'center', label: 'Centre' }, R: { name: 'right', label: 'Right' },
+};
+const NUM_WORDS = ['no', 'one', 'two', 'three'];
+type Family = 'scout' | 'probe' | 'attack' | 'assault';
+const FAMILY: Record<Family, { title: string; counts: Record<'L' | 'C' | 'R', number>; per: number | 'command'; draw: CardDef['draw'] }> = {
+  scout: { title: 'Scout', counts: { L: 2, C: 2, R: 2 }, per: 1, draw: 'scout' },
+  probe: { title: 'Probe', counts: { L: 4, C: 6, R: 4 }, per: 2, draw: 'normal' },
+  attack: { title: 'Attack', counts: { L: 4, C: 6, R: 4 }, per: 3, draw: 'normal' },
+  assault: { title: 'Assault', counts: { L: 2, C: 2, R: 2 }, per: 'command', draw: 'normal' },
+};
+function familyText(f: Family, label: string): string {
+  const per = FAMILY[f].per;
+  const orders = per === 'command' ? 'as many units as your Command allows' : `${NUM_WORDS[per]} unit${per === 1 ? '' : 's'}`;
+  const extra = f === 'scout' ? ' At the draw phase you take two cards and keep one.' : '';
+  return `Give orders to ${orders} in your ${label} section.${extra}`;
+}
+const sec = (f: Family, side: 'L' | 'C' | 'R'): CardDef => {
+  const kind = `${f}${side}` as CardKind;
+  const { name, label } = SEC[side];
+  return def(kind, {
+    title: `${FAMILY[f].title} ${label}`, group: 'section', count: FAMILY[f].counts[side], text: familyText(f, label), sections: [name],
+    detach: true, select: { kind: 'sections', counts: { [name]: FAMILY[f].per } }, draw: FAMILY[f].draw,
+  });
+};
+
+/** Every card kind, in the order of the `CardKind` union (CARD_LIST and card ids follow this key order). */
+export const CARD_DEFS: Readonly<Record<CardKind, CardDef>> = {
+  scoutL: sec('scout', 'L'),
+  scoutC: sec('scout', 'C'),
+  scoutR: sec('scout', 'R'),
+  probeL: sec('probe', 'L'),
+  probeC: sec('probe', 'C'),
+  probeR: sec('probe', 'R'),
+  attackL: sec('attack', 'L'),
+  attackC: sec('attack', 'C'),
+  attackR: sec('attack', 'R'),
+  assaultL: sec('assault', 'L'),
+  assaultC: sec('assault', 'C'),
+  assaultR: sec('assault', 'R'),
+  coordinatedAdvance: def('coordinatedAdvance', {
+    title: 'Coordinated Advance', group: 'section', count: 2, sections: ['left', 'center', 'right'], detach: true,
+    text: 'Order one unit on each wing and two in the centre.', select: { kind: 'sections', counts: { left: 1, center: 2, right: 1 } },
+  }),
+  flankAttack: def('flankAttack', {
+    title: 'Flank Attack', group: 'section', count: 2, sections: ['left', 'right'], detach: true,
+    text: 'Order two units on each wing; the centre stays quiet.', select: { kind: 'sections', counts: { left: 2, right: 2 } },
+  }),
+  forward: def('forward', {
+    title: 'Forward', group: 'section', count: 2, sections: ['left', 'center', 'right'], detach: true,
+    text: 'Order two units in every section.', select: { kind: 'sections', counts: { left: 2, center: 2, right: 2 } },
+  }),
+  reconInForce: def('reconInForce', {
+    title: 'Recon in Force', group: 'section', count: 2, sections: ['left', 'center', 'right'], detach: true,
+    text: 'Order one unit in every section.', select: { kind: 'sections', counts: { left: 1, center: 1, right: 1 } },
+  }),
+  bayonetCharge: def('bayonetCharge', {
+    title: 'Bayonet Charge', group: 'tactic', count: 2, detach: false,
+    text: 'Up to four infantry units may advance two hexes and still fight in melee, but may not fire; guards add a die.',
+    select: { kind: 'kinds', match: { arms: ['infantry'] }, max: 4, notAdjacentToEnemy: false },
+    mods: mods({ melee: plus(0, { tags: [{ tag: 'guard', arm: 'infantry', plus: 1 }] }), move: { options: [{ max: 2, battle: true }] }, noFire: true }),
+  }),
+  bombard: def('bombard', {
+    title: 'Bombard', group: 'tactic', count: 2, detach: false,
+    text: 'Up to four artillery units add two dice to their fire and melee; guard guns add one more; they may move three hexes without fighting.',
+    select: { kind: 'kinds', match: { arms: ['artillery'] }, max: 4, notAdjacentToEnemy: false },
+    mods: mods({
+      fire: plus(2, { tags: [{ tag: 'guard', arm: 'artillery', plus: 1 }] }), melee: plus(2, { tags: [{ tag: 'guard', arm: 'artillery', plus: 1 }] }),
+      move: { options: [{ max: 0, battle: true }, { max: 3, battle: false }] },
+    }),
+  }),
+  cavalryCharge: def('cavalryCharge', {
+    title: 'Cavalry Charge', group: 'tactic', count: 3, detach: false,
+    text: 'Up to four cavalry or horse artillery units; cavalry roll an extra die in melee, heavy horse may move three and still fight, but the bonus is lost in towns.',
+    select: { kind: 'kinds', match: { arms: ['cavalry'], tags: ['horseArtillery'] }, max: 4, notAdjacentToEnemy: false },
+    mods: mods({
+      melee: plus(1, { arms: ['cavalry'], tags: [{ tag: 'guard', arm: 'cavalry', plus: 1 }] }), bonusMelee: true, lostInTown: true,
+      move: { options: [{ max: 3, battle: true }], only: { tags: ['heavy'] } },
+    }),
+  }),
+  counterAttack: def('counterAttack', {
+    title: 'Counter-Attack', group: 'tactic', count: 2, detach: false,
+    text: 'Play the same orders your opponent used on their last turn, mirrored if it named a wing.', select: { kind: 'copy' },
+  }),
+  elan: def('elan', {
+    title: 'Élan', group: 'tactic', count: 1, detach: false,
+    text: 'Roll dice equal to your Command; each arm face orders a unit of that arm and each flag any unit or leader, and ordered units gain a die in every battle. The deck is reshuffled at the draw.',
+    select: { kind: 'dice', roll: 'elan' }, mods: mods({ fire: plus(1), melee: plus(1), bonusMelee: true }), draw: 'reshuffle',
+  }),
+  fireAndHold: def('fireAndHold', {
+    title: 'Fire and Hold', group: 'tactic', count: 2, detach: false,
+    text: 'Up to four infantry or artillery units not next to the enemy fire with an extra die, but may neither move nor melee.',
+    select: { kind: 'kinds', match: { arms: ['infantry', 'artillery'] }, max: 4, notAdjacentToEnemy: true },
+    mods: mods({ fire: plus(1), noMove: true, noMelee: true }),
+  }),
+  firstStrike: def('firstStrike', {
+    title: 'First Strike', group: 'tactic', count: 2, detach: false,
+    text: 'Played when a unit is attacked in melee: the defender strikes first before the attacker rolls.', select: { kind: 'none' },
+  }),
+  forceMarch: def('forceMarch', {
+    title: 'Force March', group: 'tactic', count: 2, detach: false,
+    text: 'Order all the infantry of one section; light, grenadier, guard and led infantry may move two hexes and still fight, other foot may move two without fighting.',
+    select: { kind: 'sectionAll', match: { arms: ['infantry'] } }, mods: mods({ move: 'forceMarch' }),
+  }),
+  coldSteel: def('coldSteel', {
+    title: 'Give Them the Cold Steel', group: 'tactic', count: 1, detach: false,
+    text: 'Order every unit of yours already next to the enemy; they melee with an extra die but may neither move nor fire.',
+    select: { kind: 'adjacentToEnemy' }, mods: mods({ melee: plus(1), noMove: true, noFire: true }),
+  }),
+  leadership: def('leadership', {
+    title: 'Leadership', group: 'tactic', count: 2, detach: true,
+    text: 'Order units that stand with a leader; each fights with an extra die in fire and melee.',
+    select: { kind: 'leaders' }, mods: mods({ fire: plus(1), melee: plus(1), bonusMelee: true }),
+  }),
+  grandManoeuvre: def('grandManoeuvre', {
+    title: 'La Grande Manoeuvre', group: 'tactic', count: 1, detach: true,
+    text: 'Up to four units, wherever they stand, may move four hexes without fighting; a leader may move four as well.',
+    select: { kind: 'grandManoeuvre', max: 4 }, mods: mods({ move: { options: [{ max: 4, battle: false }], leader: 4 } }),
+  }),
+  rally: def('rally', {
+    title: 'Rally', group: 'tactic', count: 1, detach: false,
+    text: 'Roll dice equal to your Command; each infantry, cavalry or artillery face returns a block to a wounded unit of that arm, and a unit that gains one is ordered.', select: { kind: 'dice', roll: 'rally' },
+  }),
+  shortSupply: def('shortSupply', {
+    title: 'Short Supply', group: 'tactic', count: 1, detach: false,
+    text: 'Choose one unit, yours or the enemy’s, and its owner lifts it to a free hex of its own baseline in the same section; it orders nothing.', select: { kind: 'shortSupply' },
+  }),
+};
+
+/** CARD_DEFS expanded by count, in key order: 70 entries; a card id is an index into it. */
+export const CARD_LIST: readonly CardKind[] = (Object.keys(CARD_DEFS) as CardKind[]).flatMap((k) => Array<CardKind>(CARD_DEFS[k].count).fill(k));
 
 export function cardKind(id: number): CardKind {
   return CARD_LIST[id];
 }
 
-/**
- * `side` draws one card (reshuffling the discards into an empty deck). Hellespont (§17.4): while the side owes cards for
- * lost leaders (`cardDebt`), any draw pays off one owed card instead of drawing (the end-of-turn draw, the First Strike
- * draw, the extra draws of hand growth (§18.8) and Beneventum's alike).
- */
-export function drawCard(s: GameState, ctx: FlowCtx, side: Side) {
-  if (s.special.cardDebt[side] > 0) {
-    s.special.cardDebt[side]--;
-    ctx.emit({ t: 'log', text: `The ${s.players[side].army} army draws no card: it lost a leader.`, side });
-    return;
-  }
+/** Swaps Left and Right (`probeL` ↔ `probeR`); other kinds unchanged. */
+export function mirrorKind(k: CardKind): CardKind {
+  if (k.endsWith('L') && CARD_DEFS[k].group === 'section' && k !== 'forward') return `${k.slice(0, -1)}R` as CardKind;
+  if (k.endsWith('R') && CARD_DEFS[k].group === 'section' && k !== 'forward') return `${k.slice(0, -1)}L` as CardKind;
+  return k;
+}
+
+/** Card dice of a unit: (arms absent or including its arm ? plus : 0) + Σ matching tags (tag ∈ st.tags && arm === st.arm). */
+export function cardDice(mod: DiceMod | null, st: UnitStats): number {
+  if (!mod) return 0;
+  let n = !mod.arms || mod.arms.includes(st.arm) ? mod.plus : 0;
+  for (const t of mod.tags ?? []) if (st.tags.includes(t.tag) && t.arm === st.arm) n += t.plus;
+  return n;
+}
+
+/** Draw one card for `side` (an empty deck takes the shuffled discard pile: `reshuffle` event); emits `draw`. */
+export function drawCard(s: GameState, ctx: FlowCtx, side: Side): void {
   if (s.deck.length === 0) {
     if (s.discard.length === 0) return;
     s.deck = s.discard;
@@ -151,29 +185,7 @@ export function drawCard(s: GameState, ctx: FlowCtx, side: Side) {
   ctx.emit({ t: 'draw', side });
 }
 
-/** Section cards: number of orders per section (from the player's own point of view). */
-export function sectionOrders(kind: CardKind): Partial<Record<SectionName, number>> | null {
-  switch (kind) {
-    case 'order2L': return { left: 2 };
-    case 'order2C': return { center: 2 };
-    case 'order2R': return { right: 2 };
-    case 'order3L': return { left: 3 };
-    case 'order3C': return { center: 3 };
-    case 'order3R': return { right: 3 };
-    case 'order4L': return { left: 4 };
-    case 'order4C': return { center: 4 };
-    case 'order4R': return { right: 4 };
-    case 'outFlanked': return { left: 2, right: 2 };
-    case 'coordinated': return { left: 1, center: 1, right: 1 };
-    default: return null;
-  }
-}
-
-/**
- * The card kind `side` executes by playing card `cardId` (§12): the card's own, or for Counter Attack a copy of the
- * opponent's last card (`lastCard`), mirrored left for right (`mirrored` true when the copy differs), or null when there is
- * nothing to copy.
- */
+/** The card a played card acts as: Counter-Attack becomes a (mirrored) copy of the opponent's last card (R56). */
 export function effectiveCard(s: GameState, side: Side, cardId: number): { kind: CardKind | null; mirrored: boolean } {
   const kind = cardKind(cardId);
   if (kind !== 'counterAttack') return { kind, mirrored: false };
@@ -183,34 +195,7 @@ export function effectiveCard(s: GameState, side: Side, cardId: number): { kind:
   return { kind: copy, mirrored: copy !== last };
 }
 
-/** Mirror a card for Counter Attack (left <-> right). */
-export function mirrorKind(kind: CardKind): CardKind {
-  const swap: Partial<Record<CardKind, CardKind>> = {
-    order2L: 'order2R', order2R: 'order2L', order3L: 'order3R', order3R: 'order3L',
-    order4L: 'order4R', order4R: 'order4L', inspiredL: 'inspiredR', inspiredR: 'inspiredL',
-  };
-  return swap[kind] ?? kind;
-}
-
-export function defaultMods(): OrderMods {
-  return {
-    ccBonus: 0, ccBonusOnBonusCombat: false, rangedBonus: 0, noRanged: false, noClose: false, noMove: false,
-    passThrough: false, maxMove: null, doubleTime: false, mountedCharge: false, shots: 1, moveFireMove: false,
-  };
-}
-
-export function modsFor(kind: CardKind): OrderMods {
-  const m = defaultMods();
-  switch (kind) {
-    case 'orderLight': m.passThrough = true; break;
-    case 'clash': m.ccBonus = 2; m.noMove = true; m.noRanged = true; break;
-    case 'darken': m.noMove = true; m.noClose = true; m.shots = 2; break;
-    case 'doubleTime': m.doubleTime = true; m.noRanged = true; break;
-    case 'spartacus': m.ccBonus = 1; m.ccBonusOnBonusCombat = true; m.rangedBonus = 1; break;
-    case 'lineCommand': m.maxMove = 1; break;
-    case 'mountedCharge': m.ccBonus = 1; m.ccBonusOnBonusCombat = true; m.mountedCharge = true; m.noRanged = true; break;
-    case 'moveFireMove': m.moveFireMove = true; m.noClose = true; m.passThrough = true; break;
-    default: break;
-  }
-  return m;
+/** Does the turn's card forbid this ordered unit to battle now (Fire and Hold R58, Cold Steel R61)? Stub: false (→ T12a). */
+export function cardForbidsBattle(_s: GameState, _op: OrderedPiece, _u: Unit): boolean {
+  return false;
 }

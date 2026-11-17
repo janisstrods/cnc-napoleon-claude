@@ -20,8 +20,8 @@ vi.mock('../../src/scenarios', async (importOriginal) => {
   return { ...m, SCENARIOS, scenarioById: (id: string) => SCENARIOS.find((s) => s.id === id)! };
 });
 
-const akragas = scenarioById('000');
-const [bottomArmy, topArmy] = [akragas.setup.bottom.army, akragas.setup.top.army];
+const drill = scenarioById('000');
+const [bottomArmy, topArmy] = [drill.setup.bottom.army, drill.setup.top.army];
 
 /** Drill won against the Consul from the bottom side and lost against the Recruit from the top. */
 function seedRecord(): BattleRecord {
@@ -110,7 +110,7 @@ describe('Triumphs on the main menu', () => {
     }));
     expect(html.split('class="tri-cell"').length - 1).toBe(SCENARIOS.length);
     expect(html.split('class="medal-pair"').length - 1).toBe(SCENARIOS.length);
-    for (const box of ['Punic Wars', 'Greece', 'Barbarians', 'Civil Wars']) expect(html).toMatch(new RegExp(`<h3>[^<]*${box}`));
+    for (const box of ['The Peninsula', 'The Spanish Army']) expect(html).toMatch(new RegExp(`<h3>[^<]*${box}`));
     expect(html).toContain('title="Drill: ');
     expect(html).toContain('>Save record<');
     expect(html).toContain('>Load record<');
@@ -120,7 +120,7 @@ describe('Triumphs on the main menu', () => {
 
 describe('a new medal at the end of a battle', () => {
   const result = (newMedal?: 'gold' | 'silver' | 'bronze') => renderToStaticMarkup(createElement(BattleResult, {
-    state: createGame(akragas.setup, 1), human: 'top', onExit: () => {},
+    state: createGame(drill.setup, 1), human: 'top', onExit: () => {},
     over: { winner: 'top', reason: `${topArmy} captured 5 banners`, newMedal },
   }));
 

@@ -1,20 +1,20 @@
 // Napoleonics vocabulary: nations, arms and unit codes. Imports nothing.
-// UNIT_KEYS (the rows that actually exist) is added in Plan 2B from RR §2; until then `UnitKey` is the vocabulary.
+// `UnitKey` is the vocabulary (it names units that have no row, such as FR/LNC and SP/SWI); UNIT_KEYS lists the rows of RR §2.
 export const NATIONS = ['FR', 'BR', 'PT', 'AL', 'SP'] as const;
 export type Nation = (typeof NATIONS)[number];
 export const ARMS = ['infantry', 'cavalry', 'artillery'] as const;
 export type Arm = (typeof ARMS)[number];
-export const UNIT_CODES = ['LN', 'LT', 'RI', 'GR', 'YG', 'OG', 'GG', 'ML', 'LC', 'LNC', 'HC', 'CU', 'GLC', 'GHC', 'FA', 'HA', 'GA'] as const;
+export const UNIT_CODES = ['LN', 'LT', 'RI', 'GR', 'YG', 'OG', 'GG', 'ML', 'SWI', 'LC', 'LNC', 'HC', 'CU', 'GLC', 'GHC', 'FA', 'HA', 'GA'] as const;
 export type UnitCode = (typeof UNIT_CODES)[number];
 
 export const ARM_OF: Readonly<Record<UnitCode, Arm>> = {
-  LN: 'infantry', LT: 'infantry', RI: 'infantry', GR: 'infantry', YG: 'infantry', OG: 'infantry', GG: 'infantry', ML: 'infantry',
+  LN: 'infantry', LT: 'infantry', RI: 'infantry', GR: 'infantry', YG: 'infantry', OG: 'infantry', GG: 'infantry', ML: 'infantry', SWI: 'infantry',
   LC: 'cavalry', LNC: 'cavalry', HC: 'cavalry', CU: 'cavalry', GLC: 'cavalry', GHC: 'cavalry',
   FA: 'artillery', HA: 'artillery', GA: 'artillery',
 };
 
 export const CODE_NAMES: Readonly<Record<UnitCode, string>> = {
-  LN: 'Line Infantry', LT: 'Light Infantry', RI: 'Rifles', GR: 'Grenadiers', YG: 'Young Guard', OG: 'Old Guard', GG: 'Guard Grenadiers', ML: 'Militia',
+  LN: 'Line Infantry', LT: 'Light Infantry', RI: 'Rifles', GR: 'Grenadiers', YG: 'Young Guard', OG: 'Old Guard', GG: 'Guard Grenadiers', ML: 'Militia', SWI: 'Swiss Infantry',
   LC: 'Light Cavalry', LNC: 'Lancers', HC: 'Heavy Cavalry', CU: 'Cuirassiers', GLC: 'Guard Light Cavalry', GHC: 'Guard Heavy Cavalry',
   FA: 'Foot Artillery', HA: 'Horse Artillery', GA: 'Guard Foot Artillery',
 };
@@ -30,4 +30,17 @@ export function codeOf(k: UnitKey): UnitCode { return k.split('/')[1] as UnitCod
 export function isUnitKey(s: string): s is UnitKey {
   const [n, c, ...rest] = s.split('/');
   return rest.length === 0 && (NATIONS as readonly string[]).includes(n) && (UNIT_CODES as readonly string[]).includes(c);
+}
+
+/** The unit rows of RR §2.2–§2.4, in RR order. */
+export const UNIT_KEYS = [
+  'FR/LN', 'FR/LT', 'FR/GR', 'FR/YG', 'FR/OG', 'FR/ML', 'FR/LC', 'FR/HC', 'FR/CU', 'FR/GHC', 'FR/FA', 'FR/HA', 'FR/GA',
+  'BR/LN', 'BR/LT', 'BR/RI', 'BR/GR', 'BR/GG', 'BR/LC', 'BR/HC', 'BR/GHC', 'BR/FA', 'BR/HA',
+  'PT/LN', 'PT/LT', 'PT/ML', 'PT/LC', 'PT/HC', 'PT/FA',
+  'AL/LN', 'AL/LT', 'AL/ML', 'AL/LC', 'AL/FA',
+] as const satisfies readonly UnitKey[];
+/** A UnitKey that has a UNIT_STATS row. */
+export type RowKey = (typeof UNIT_KEYS)[number];
+export function isRowKey(s: string): s is RowKey {
+  return (UNIT_KEYS as readonly string[]).includes(s);
 }

@@ -1,6 +1,7 @@
 // Board queries shared by rules, AI and UI.
 import { neighbours } from './hex';
-import type { GameState, HexId, Leader, LeaderTrait, Side, Unit } from './types';
+import { statsOf } from './units';
+import type { GameState, HexId, Leader, Side, Unit } from './types';
 
 export function other(side: Side): Side {
   return side === 'top' ? 'bottom' : 'top';
@@ -74,14 +75,6 @@ export function leaderUnit(s: GameState, l: Leader): Unit | undefined {
   return undefined;
 }
 
-/** Every leader trait (§17.2, §18.3), for validating scenario data. */
-export const LEADER_TRAITS: readonly LeaderTrait[] = ['ccBonus', 'attachedOnly', 'forcedMarch', 'spartacusDice'];
-
-/** Does the leader have trait `t`? Ordinary leaders have none. */
-export function leaderHas(l: Leader, t: LeaderTrait): boolean {
-  return l.traits?.includes(t) ?? false;
-}
-
 export function isLoneLeader(s: GameState, l: Leader): boolean {
   return l.hex >= 0 && !leaderUnit(s, l);
 }
@@ -95,8 +88,21 @@ export function enemyUnitAdjacent(s: GameState, h: HexId, side: Side, at?: Piece
   return false;
 }
 
-/** Friendly units + lone friendly leaders adjacent to unit u (support for bolster morale; `at`: see PieceIndex). */
+/** True if any enemy cavalry unit is adjacent to hex h, from `side`'s point of view (`at`: see PieceIndex). */
+export function enemyCavalryAdjacent(s: GameState, h: HexId, side: Side, at?: PieceIndex): boolean {
+  for (const x of neighbours(h)) {
+    const v = unitOn(s, x, at);
+    if (v && v.side !== side && statsOf(s, v).arm === 'cavalry') return true;
+  }
+  return false;
+}
+
+/**
+ * Support for bolster morale: adjacent friendly units (squares included) plus adjacent lone friendly leaders; 0 for a unit
+ * in square (RR §10.2). `at`: see PieceIndex.
+ */
 export function supportCount(s: GameState, u: Unit, at?: PieceIndex): number {
+  if (u.square !== undefined) return 0;
   let n = 0;
   for (const h of neighbours(u.hex)) {
     const v = unitOn(s, h, at);
@@ -108,21 +114,6 @@ export function supportCount(s: GameState, u: Unit, at?: PieceIndex): number {
     if (l && l.side === u.side) n++;
   }
   return n;
-}
-
-/**
- * A friendly leader attached to or adjacent to hex h (for leader helmet hits). An `attachedOnly` leader (a satrap, §17.2)
- * counts only for the unit he is attached to, i.e. only on his own hex. `at`: see PieceIndex.
- */
-export function leaderNear(s: GameState, h: HexId, side: Side, at?: PieceIndex): boolean {
-  if (h < 0) return false;
-  const own = leaderOn(s, h, at);
-  if (own && own.side === side) return true;
-  for (const x of neighbours(h)) {
-    const l = leaderOn(s, x, at);
-    if (l && l.side === side && !leaderHas(l, 'attachedOnly')) return true;
-  }
-  return false;
 }
 
 export function unitsOf(s: GameState, side: Side): Unit[] {

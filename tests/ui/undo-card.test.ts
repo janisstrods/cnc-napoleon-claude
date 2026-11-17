@@ -15,15 +15,14 @@ function buttons(c: GameController): string[] {
   const human = c.config.humanSide;
   const noop = () => {};
   const p = gamePrompt({
-    controller: c, view: c.view, s: c.view.display, human, ai: other(human), deploying: null, ambushLeader: undefined,
-    ui: SEL, setUi: noop, setCmdFocus: noop, answer: noop, onExit: noop,
+    controller: c, view: c.view, s: c.view.display, human, ai: other(human), ui: SEL, setUi: noop, answer: noop, onExit: noop,
   });
   return (p?.buttons ?? []).map((b) => renderToStaticMarkup(b).replace(/<[^>]+>/g, ''));
 }
 
 /** A section card in the human's hand that orders at least two of its units. */
 function sectionCard(s: GameState, human: 'top' | 'bottom'): number {
-  const card = s.players[human].hand.find((x) => /^order[234][LCR]$/.test(CARD_LIST[x]) && eligiblePieces(s, human, CARD_LIST[x]).length >= 2);
+  const card = s.players[human].hand.find((x) => CARD_DEFS[CARD_LIST[x]].group === 'section' && /^(probe|attack)/.test(CARD_LIST[x]) && eligiblePieces(s, human, CARD_LIST[x]).length >= 2);
   if (card === undefined) throw new Error('no section card with two units in hand');
   return card;
 }
@@ -66,7 +65,7 @@ describe('Undo card', () => {
       expect(c.view.pending).toMatchObject({ kind: 'move', side: 'bottom' });
       expect(c.view.undo).toBe('card');
       expect(buttons(c)).toContain('Undo card');
-      const to = pieceMoves(c.driver.state, a, 1).find((m) => m.hex >= 0)!.hex;
+      const to = pieceMoves(c.driver.state, a).find((m) => m.hex >= 0)!.hex;
       c.answer({ kind: 'move', piece: a, to });
       await runToHuman(c);
       expect(c.view.pending).toMatchObject({ kind: 'move', side: 'bottom' });

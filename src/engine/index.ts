@@ -1,30 +1,29 @@
 // Public engine API.
+export * from './codes';
 export * from './types';
 export * from './expansions';
 export * from './hex';
+export * from './rng';
 export * from './units';
-export * from './elites';
 export * from './terrain';
-export * from './cards';
 export * from './query';
+export * from './cards';
 export * from './setup';
-export * from './movement';
-export * from './held';
+export * from './scenarioRules';
 export * from './banners';
 export * from './objectives';
-export * from './orders';
-export * from './combat';
+export * from './dice';
+export * from './sight';
 export * from './retreat';
+export * from './movement';
+export * from './orders';
+export * from './tacticRules';
+export * from './options';
+export * from './combinedArms';
+export * from './squares';
+export * from './legal';
+export * from './driver';
 export * from './text';
-export {
-  ambushAvailable, ambushSections, ambushSectionChoices, ambushChoices, ambushSectionAllowed, pieceMoves, movablePieces, battleTargets,
-  closeTargets, battleReady, pendingCharge, rollingFirePaths, rollingFireRoutes, isRollingFirePath, mayAttackInto, wallStrikesFirst,
-} from './options';
-export type { BattleTarget } from './options';
 export { answerError } from './decisions';
 export type { Gen } from './decisions';
-export { newOrderedPiece } from './phases';
-export { gameFlow, turnFlow, nextTurn, continueTurn, placementOptions } from './flow';
-export * from './driver';
-export { rollDice, rollDie, random, randInt, shuffle, freshSeed, forceDice, forcedDiceLeft, DIE_FACES } from './rng';
-export * from './legal';
+export { gameFlow, turnFlow, nextTurn, continueTurn, drawPhase } from './flow';

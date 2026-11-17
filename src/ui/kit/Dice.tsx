@@ -1,25 +1,26 @@
 import { useId, type CSSProperties } from 'react';
+import { DIE_FACES } from '../../engine/rng';
 import type { DieFace } from '../../engine/types';
 import { ICON_PATHS } from './icons/paths';
 import { theme } from './theme';
 
 export type DieState = 'hit' | 'flag' | 'miss' | null;
 
-const FACES: DieFace[] = ['light', 'medium', 'heavy', 'leader', 'flag', 'swords'];
+const FACES: readonly DieFace[] = DIE_FACES;
 
+// Placeholder glyphs (a circle, a triangle, a square, a flag, crossed sabres) until the dice are drawn for the Napoleonic art.
 const FACE_LABEL: Record<DieFace, string> = {
-  light: 'Light (green circle)',
-  medium: 'Medium (blue triangle)',
-  heavy: 'Heavy (red square)',
-  leader: 'Leader (helmet)',
+  infantry: 'Infantry (circle)',
+  cavalry: 'Cavalry (triangle)',
+  artillery: 'Artillery (square)',
   flag: 'Flag',
-  swords: 'Crossed swords',
+  sabre: 'Crossed sabres',
 };
 
 /** Symbol layer of a die, drawn into a 100x100 box. `uid` scopes the gradient ids. */
 function Symbol({ face, uid }: { face: DieFace; uid: string }) {
   switch (face) {
-    case 'light':
+    case 'infantry':
       return (
         <g>
           <circle cx="50" cy="52" r="24" fill="rgba(0,0,0,.18)" />
@@ -27,7 +28,7 @@ function Symbol({ face, uid }: { face: DieFace; uid: string }) {
           <ellipse cx="44" cy="40" rx="11" ry="6" fill="#fff" opacity=".28" />
         </g>
       );
-    case 'medium':
+    case 'cavalry':
       return (
         <g>
           <path d="M50 24 L78 72 L22 72 Z" fill="rgba(0,0,0,.18)" stroke="rgba(0,0,0,.18)" strokeWidth="6" strokeLinejoin="round" transform="translate(0 2)" />
@@ -36,7 +37,7 @@ function Symbol({ face, uid }: { face: DieFace; uid: string }) {
           <path d="M50 34 L58 48 L42 48 Z" fill="#fff" opacity=".2" />
         </g>
       );
-    case 'heavy':
+    case 'artillery':
       return (
         <g>
           <rect x="27" y="29" width="46" height="46" rx="4" fill="rgba(0,0,0,.18)" />
@@ -44,8 +45,6 @@ function Symbol({ face, uid }: { face: DieFace; uid: string }) {
           <rect x="32" y="31" width="36" height="9" rx="3" fill="#fff" opacity=".2" />
         </g>
       );
-    case 'leader':
-      return <path d={ICON_PATHS.helmet} transform="translate(13 11) scale(.145)" fill={`url(#${uid}gi)`} />;
     case 'flag':
       return (
         <g>
@@ -55,7 +54,7 @@ function Symbol({ face, uid }: { face: DieFace; uid: string }) {
           <circle cx="30.2" cy="15" r="5.2" fill={`url(#${uid}gi)`} />
         </g>
       );
-    case 'swords':
+    case 'sabre':
       return <path d={ICON_PATHS.crossedSwords} transform="translate(13 13) scale(.144)" fill={`url(#${uid}gi)`} />;
   }
 }
@@ -65,17 +64,17 @@ function SymbolDefs({ uid }: { uid: string }) {
     <defs>
       <radialGradient id={`${uid}gl`} cx=".4" cy=".35" r=".75">
         <stop offset="0" stopColor="#5cc067" />
-        <stop offset=".55" stopColor={theme.dice.light} />
+        <stop offset=".55" stopColor={theme.dice.infantry} />
         <stop offset="1" stopColor="#1b5e24" />
       </radialGradient>
       <linearGradient id={`${uid}gm`} x1="0" y1="0" x2="0" y2="1">
         <stop offset="0" stopColor="#4f80d6" />
-        <stop offset=".6" stopColor={theme.dice.medium} />
+        <stop offset=".6" stopColor={theme.dice.cavalry} />
         <stop offset="1" stopColor="#163b80" />
       </linearGradient>
       <linearGradient id={`${uid}gh`} x1="0" y1="0" x2=".3" y2="1">
         <stop offset="0" stopColor="#e05244" />
-        <stop offset=".55" stopColor={theme.dice.heavy} />
+        <stop offset=".55" stopColor={theme.dice.artillery} />
         <stop offset="1" stopColor="#7d140f" />
       </linearGradient>
       <linearGradient id={`${uid}gi`} x1="0" y1="0" x2=".2" y2="1">
@@ -87,7 +86,7 @@ function SymbolDefs({ uid }: { uid: string }) {
   );
 }
 
-/** A die face's symbol on its own, without the die body (e.g. the troop-class badge on cards). */
+/** A die face's symbol on its own, without the die body (e.g. the arm badge on cards). */
 export function DieSymbol({ face, className }: { face: DieFace; className?: string }) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   return (
@@ -189,4 +188,4 @@ export function DiceTray(p: {
   );
 }
 
-export const ALL_DIE_FACES: readonly DieFace[] = FACES;
+export const ALL_DIE_FACES: readonly DieFace[] = DIE_FACES;

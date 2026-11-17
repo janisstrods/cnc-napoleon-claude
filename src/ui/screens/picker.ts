@@ -1,6 +1,5 @@
-// Battle picker logic: the boxes as tabs, and the optional rules a battle offers (with the player's remembered
-// choices). Pure apart from the tab and the choices remembered in storage.
-import { EXPANSIONS, type Expansion, type GameOptions, type Side } from '../../engine';
+// Battle picker logic: the boxes as tabs. Pure apart from the tab remembered in storage.
+import { EXPANSIONS, type Expansion, type Side } from '../../engine';
 import type { ScenarioInfo } from '../../scenarios';
 import { storage, storageKey } from '../storage';
 
@@ -9,10 +8,7 @@ export interface PickerTab {
   label: string;
 }
 
-/**
- * Picker tabs in display order, one per box (`EXPANSIONS`): the base game (001–015), Expansion #1 (101–124), Expansion #2
- * (201–223), then Expansion #3 (301–319).
- */
+/** Picker tabs in display order, one per box (`EXPANSIONS`): the base game, then Expansion #1. */
 export const PICKER_TABS: readonly PickerTab[] = EXPANSIONS.map((e) => ({ id: e.id, label: e.pickerLabel }));
 
 /** The battles the picker and random battle may offer: every battle but the hidden ones (the drill battle 000). */
@@ -60,79 +56,4 @@ export function loadPickerTab(): Expansion {
 
 export function savePickerTab(tab: Expansion) {
   storage.set(TAB_KEY, tab);
-}
-
-// ---------------------------------------------------------------------------------------------
-// optional rules (§17.3)
-
-export type OptionId = keyof GameOptions;
-
-export interface OptionalRule {
-  name: string;
-  /** One-line explanation for the briefing of `sc`. */
-  text: (sc: ScenarioInfo) => string;
-}
-
-/** The army of a battle that is not Roman (the side Tactical Flexibility weakens), or a generic word. */
-function nonRomanArmy(sc: ScenarioInfo): string {
-  const { top, bottom } = sc.setup;
-  if (top.army === 'Roman') return bottom.army;
-  if (bottom.army === 'Roman') return top.army;
-  return 'non-Roman';
-}
-
-export const OPTIONAL_RULES: Record<OptionId, OptionalRule> = {
-  tacticalFlexibility: {
-    name: 'Roman Tactical Flexibility',
-    text: (sc) =>
-      `${nonRomanArmy(sc)} heavy infantry with fewer than two friendly neighbours, and not on broken ground, battle back ` +
-      'against Roman medium or heavy infantry with only 3 dice.',
-  },
-};
-
-/** Optional rules the battle offers (its `setup.options`), in a fixed order. */
-export function offeredOptions(sc: ScenarioInfo): OptionId[] {
-  const o = sc.setup.options ?? {};
-  return (Object.keys(OPTIONAL_RULES) as OptionId[]).filter((id) => o[id] !== undefined);
-}
-
-const OPTIONS_KEY = storageKey('options');
-
-/** The player's last choice per optional rule (only known rules with a boolean value survive). */
-export function loadOptionChoices(): GameOptions {
-  const raw = storage.get(OPTIONS_KEY);
-  try {
-    const parsed: unknown = raw ? JSON.parse(raw) : null;
-    const out: GameOptions = {};
-    if (parsed && typeof parsed === 'object') {
-      for (const id of Object.keys(OPTIONAL_RULES) as OptionId[]) {
-        const v = (parsed as Record<string, unknown>)[id];
-        if (typeof v === 'boolean') out[id] = v;
-      }
-    }
-    return out;
-  } catch {
-    return {};
-  }
-}
-
-/** Remember one choice (merged into the stored choices); returns the new set. */
-export function saveOptionChoice(choices: GameOptions, id: OptionId, value: boolean): GameOptions {
-  const next: GameOptions = { ...choices, [id]: value };
-  storage.set(OPTIONS_KEY, JSON.stringify(next));
-  return next;
-}
-
-/** Whether an optional rule is on for this battle: the remembered choice, else the scenario's default. */
-export function optionValue(sc: ScenarioInfo, id: OptionId, choices: GameOptions): boolean {
-  return choices[id] ?? sc.setup.options?.[id] ?? false;
-}
-
-/** The options to start `sc` with (every rule it offers, set), or undefined when it offers none. */
-export function chosenOptions(sc: ScenarioInfo, choices: GameOptions): GameOptions | undefined {
-  const ids = offeredOptions(sc);
-  if (!ids.length) return undefined;
-  const out: GameOptions = {};
-  for (const id of ids) out[id] = optionValue(sc, id, choices);
-  return out;
 }

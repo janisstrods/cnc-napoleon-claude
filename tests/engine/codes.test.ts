@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ARM_OF, CODE_NAMES, UNIT_CODES, codeOf, isUnitKey, nationOf } from '../../src/engine/codes';
+import { ARM_OF, CODE_NAMES, UNIT_CODES, codeOf, isRowKey, isUnitKey, nationOf } from '../../src/engine/codes';
 import { CATALOGUE, catalogueEntry } from '../../src/scenarios/catalogue';
 
 describe('Napoleonics vocabulary', () => {
@@ -10,6 +10,9 @@ describe('Napoleonics vocabulary', () => {
   it('splits and checks unit keys', () => {
     expect(nationOf('BR/RI')).toBe('BR'); expect(codeOf('FR/GHC')).toBe('GHC');
     expect(isUnitKey('PT/LN')).toBe(true); expect(isUnitKey('PT/XX')).toBe(false); expect(isUnitKey('LN')).toBe(false);
+  });
+  it('UNIT_KEYS has a row key for each nation’s units', () => {
+    expect(isRowKey('AL/LN')).toBe(true); expect(isRowKey('SP/LN')).toBe(false);
   });
   it('catalogues 15 base and 18 Spanish battles with unique ids', () => {
     expect(CATALOGUE.filter((b) => b.box === 'base').map((b) => b.id)).toEqual(

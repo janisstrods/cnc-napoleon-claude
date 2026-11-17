@@ -8,7 +8,7 @@ import { scenarioById } from '../../src/scenarios';
 import { BattleResult } from '../../src/ui/game/BattleResult';
 import type { LegResult } from '../../src/ui/game/controller';
 
-/** 000 Drill (3 banners; top Carthaginian, bottom Syracusan) after the battle, with the given banner counts. */
+/** 000 Drill (4 banners; top British, bottom French) after the battle, with the given banner counts. */
 function finished(top: number, bottom: number, turn = 19): GameState {
   const s = createGame(scenarioById('000').setup, 1);
   s.players.top.banners = top;
@@ -19,7 +19,7 @@ function finished(top: number, bottom: number, turn = 19): GameState {
 
 function render(state: GameState, human: Side, winner: Side | 'draw', rematch = true, firstLeg?: LegResult): string {
   return renderToStaticMarkup(createElement(BattleResult, {
-    state, human, over: { winner, reason: 'Carthaginian captured 5 banners' }, onExit: () => {},
+    state, human, over: { winner, reason: 'British captured 5 banners' }, onExit: () => {},
     onRematch: rematch ? () => {} : undefined, firstLeg,
   }));
 }
@@ -32,18 +32,19 @@ describe('BattleResult', () => {
   it('shows the result, a row per army (yours first, the winner marked) and the turns played', () => {
     const s = finished(3, 1);
     const html = render(s, 'bottom', 'top');
-    expect(html).toContain('Carthaginian captured 5 banners.');
-    expect(html.indexOf('Syracusan')).toBeLessThan(html.indexOf('Carthaginian</span>'));
+    expect(html).toContain('British captured 5 banners.');
+    expect(html.indexOf('French')).toBeLessThan(html.indexOf('British</span>'));
     expect(count(html, 'victory-row is-winner')).toBe(1);
-    expect(html).toMatch(/victory-row is-winner[^>]*aria-label="Carthaginian: 3 of 3 banners"/);
-    expect(html).toContain('aria-label="Syracusan: 1 of 3 banners"');
+    expect(html).toMatch(/victory-row is-winner[^>]*aria-label="British: 3 of 4 banners"/);
+    expect(html).toContain('aria-label="French: 1 of 4 banners"');
     expect(html).toContain('19 turns played');
   });
 
   it('draws captured banners and the empty slots still to win', () => {
     const html = render(finished(3, 1), 'bottom', 'top');
     expect(count(html, 'victory-banner is-won')).toBe(4);
-    expect(count(html, 'victory-banner is-empty')).toBe(2);
+    // 3 and 1 of 4: one empty slot for the British, three for the French
+    expect(count(html, 'victory-banner is-empty')).toBe(4);
   });
 
   it('a draw marks no winner; one turn is singular', () => {
@@ -54,8 +55,8 @@ describe('BattleResult', () => {
 
   it('play-again buttons say which army you will command; without them only the menu button remains', () => {
     const html = render(finished(5, 3), 'bottom', 'top');
-    expect(html).toMatch(/Play again<small class="victory-as">as Syracusan<\/small>/);
-    expect(html).toMatch(/Switch sides<small class="victory-as">as Carthaginian<\/small>/);
+    expect(html).toMatch(/Play again<small class="victory-as">as French<\/small>/);
+    expect(html).toMatch(/Switch sides<small class="victory-as">as British<\/small>/);
     expect(html).not.toContain('Rematch');
     expect(html).toContain('Return to menu');
     const solo = render(finished(5, 3), 'bottom', 'top', false);
@@ -68,13 +69,13 @@ describe('BattleResult', () => {
   });
 
   it('after the second battle with switched sides, sums up both battles from your side', () => {
-    // 1st: as Carthaginian, won 5–3. 2nd (now): as Syracusan, lost 2–5. Totals: you 7, the computer 8.
+    // 1st: as British, won 5–3. 2nd (now): as French, lost 2–5. Totals: you 7, the computer 8.
     const first: LegResult = { humanSide: 'top', banners: { top: 5, bottom: 3 }, winner: 'top' };
     const html = render(finished(5, 2), 'bottom', 'top', true, first);
     const text = matchText(html);
     expect(text).toContain('Both sides');
-    expect(text).toMatch(/1st battle as Carthaginian Victory 5 3/);
-    expect(text).toMatch(/2nd battle as Syracusan Defeat 2 5/);
+    expect(text).toMatch(/1st battle as British Victory 5 3/);
+    expect(text).toMatch(/2nd battle as French Defeat 2 5/);
     expect(text).toMatch(/Total 7 8/);
     expect(text).toContain('The computer takes the match, 8 banners to 7.');
     expect(html.indexOf('class="match"')).toBeLessThan(html.indexOf('victory-actions'));
@@ -85,8 +86,8 @@ describe('BattleResult', () => {
     expect(matchText(render(finished(5, 4), 'bottom', 'top', true, first))).toContain('You take the match, 9 banners to 6.');
     const even: LegResult = { humanSide: 'top', banners: { top: 4, bottom: 5 }, winner: 'bottom' };
     const drawn = matchText(render(finished(4, 5), 'bottom', 'bottom', true, even));
-    expect(drawn).toMatch(/1st battle as Carthaginian Defeat 4 5/);
-    expect(drawn).toMatch(/2nd battle as Syracusan Victory 5 4/);
+    expect(drawn).toMatch(/1st battle as British Defeat 4 5/);
+    expect(drawn).toMatch(/2nd battle as French Victory 5 4/);
     expect(drawn).toContain('The match is drawn, 9 banners each.');
   });
 });

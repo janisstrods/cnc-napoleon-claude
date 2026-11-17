@@ -14,7 +14,7 @@ function seq(...values: number[]): () => number {
 
 // 000 is hidden, so the picker has no battle of its own now: stand-ins are copies of 000 that are visible, one box each.
 const drill = scenarioById('000');
-const BOXES: Expansion[] = ['base', 'exp1', 'exp2', 'exp3'];
+const BOXES: Expansion[] = ['base', 'exp1'];
 const SCENARIOS: ScenarioInfo[] = Array.from({ length: 12 }, (_, i) => ({
   ...drill, id: String(901 + i), hidden: undefined, expansion: BOXES[i % BOXES.length],
 }));

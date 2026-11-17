@@ -10,7 +10,7 @@ export function toRoman(n: number): string {
 }
 
 /**
- * Three boxes Left / Center / Right (from the viewer's own point of view); highlighted ones are filled.
+ * Three boxes Left / Centre / Right (from the viewer's own point of view); highlighted ones are filled.
  * Optional `counts` prints the number of orders (Roman numerals) inside the highlighted boxes.
  */
 export function SectionMiniMap(p: {

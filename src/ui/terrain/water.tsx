@@ -1,15 +1,10 @@
-// Rivers (with fords) and lakes. (The sea has its own painter, sea.tsx; rivers still run into it.)
-import { addToGrid, blurGrid, fillGrid, isoPath, makeGrid } from './field';
-import type { TerrainType } from '../../engine/types';
-import { DIRS, fmt, neighborRC, polyPath, RI, type Dir, type HexInfo, type PaintCtx, type Pt } from './hexmath';
+// Rivers with their crossings: a ford (stepping stones on a sand bar), a brook (a narrow stream) and a bridge (a plank deck).
+import { DIRS, fmt, isWater, neighborRC, polyPath, RI, type Dir, type HexInfo, type PaintCtx, type Pt } from './hexmath';
 import { fbm, rng } from './noise';
 import { P } from './palette';
 import { add, len, mul, sub, unit } from './vec';
 
-type PortKind = 'hex' | 'lake' | 'off' | 'end';
-
-/** Standing water a river can run into: lakes and the sea. */
-const isStill = (t: TerrainType) => t === 'lake' || t === 'sea';
+type PortKind = 'hex' | 'off' | 'end';
 interface Port {
   d: Dir;
   kind: PortKind;
@@ -23,7 +18,7 @@ interface Key {
 }
 
 /**
- * Where the river leaves hex h: every neighbouring river/lake hex, plus (for a river end) the
+ * Where the river leaves hex h: every neighbouring water hex, plus (for a river end) the
  * board edge it flows off - preferring the edge straight ahead - or an in-board dead end.
  */
 function portsOf(ctx: PaintCtx, h: HexInfo): Port[] {
@@ -33,8 +28,7 @@ function portsOf(ctx: PaintCtx, h: HexInfo): Port[] {
     const [r, c] = neighborRC(h.r, h.c, d);
     const n = ctx.get(r, c);
     if (!n) off.push(d);
-    else if (n.t === 'river') links.push({ d, kind: 'hex' });
-    else if (isStill(n.t)) links.push({ d, kind: 'lake' });
+    else if (isWater(n.t)) links.push({ d, kind: 'hex' });
   }
   if (links.length >= 2) return links;
   if (links.length === 1) {
@@ -58,7 +52,7 @@ interface RiverGeom {
 }
 
 function traceRivers(ctx: PaintCtx): RiverGeom {
-  const rivers = ctx.hexes.filter((h) => h.t === 'river');
+  const rivers = ctx.hexes.filter((h) => isWater(h.t));
   const ports = new Map<number, Port[]>();
   for (const h of rivers) ports.set(h.id, portsOf(ctx, h));
   const nb = (h: HexInfo, d: Dir) => {
@@ -90,10 +84,6 @@ function traceRivers(ctx: PaintCtx): RiverGeom {
       keys.push({ p: m, t: u, hex: h.id });
       if (port.kind === 'off') {
         keys.push({ p: add(m, mul(u, ctx.ext)), t: u, hex: h.id });
-        return;
-      }
-      if (port.kind === 'lake') {
-        keys.push({ p: add(m, mul(u, 22)), t: u, hex: h.id });
         return;
       }
       if (port.kind === 'end') {
@@ -135,7 +125,6 @@ function traceRivers(ctx: PaintCtx): RiverGeom {
       const keys: Key[] = [];
       const inward = mul(u, -1);
       if (tp.kind === 'off') keys.push({ p: add(m, mul(u, ctx.ext)), t: inward, hex: h.id });
-      if (tp.kind === 'lake') keys.push({ p: add(m, mul(u, 22)), t: inward, hex: h.id });
       keys.push({ p: m, t: inward, hex: h.id, end: tp.kind === 'end' });
       keys.push({ p: center(h), t: unit(sub(mid(h, other.d), m)), hex: h.id });
       if (visited.has(vkey(h.id, other.d))) continue;
@@ -269,30 +258,17 @@ function hexRun(s: Sample[], id: number): Sample[][] {
   return runs;
 }
 
-/** Where a river runs into the sea: the shared hexside's midpoint and the unit vector out to sea. */
-function seaMouths(ctx: PaintCtx, rivers: HexInfo[]): { m: Pt; u: Pt }[] {
-  const out: { m: Pt; u: Pt }[] = [];
-  for (const h of rivers) {
-    for (const d of DIRS) {
-      const [r, c] = neighborRC(h.r, h.c, d);
-      const n = ctx.get(r, c);
-      if (n?.t !== 'sea') continue;
-      out.push({ m: { x: (h.x + n.x) / 2, y: (h.y + n.y) / 2 }, u: unit(sub(n, h)) });
-    }
-  }
-  return out;
-}
-
 /**
- * Rivers with their fords. `id` (unique SVG ids) lets a river that runs into the sea fade out across the beach into the
- * water (the sea is painted first); without it, or without a river mouth, the plain river group is drawn.
+ * Rivers with their crossings. A ford has stepping stones on a sand bar across the stream (`ford` and `fordNoStop`), a brook
+ * is a narrow, shallow stream, a bridge a plank deck across the river.
  */
-export function paintRivers(ctx: PaintCtx, id?: (s: string) => string): JSX.Element | null {
-  const rivers = ctx.hexes.filter((h) => h.t === 'river');
+export function paintRivers(ctx: PaintCtx): JSX.Element | null {
+  const rivers = ctx.hexes.filter((h) => isWater(h.t));
   if (!rivers.length) return null;
   const { chains } = traceRivers(ctx);
   const fords = rivers.filter((h) => h.ford);
-  const mouths = id ? seaMouths(ctx, rivers) : [];
+  const bridges = rivers.filter((h) => h.t === 'bridge');
+  const brooks = new Set(rivers.filter((h) => h.t === 'brook').map((h) => h.id));
   const baseHW = 13.5;
   const hwAt = (p: Pt) => {
     let w = baseHW * (0.86 + 0.32 * fbm(p.x / 45, p.y / 45, 7));
@@ -300,10 +276,11 @@ export function paintRivers(ctx: PaintCtx, id?: (s: string) => string): JSX.Elem
       const d = Math.hypot(p.x - f.x, p.y - f.y) / RI;
       if (d < 1) w += 5.5 * (1 - d * d) * (1 - d * d);
     }
-    // an estuary: the river widens as it meets the sea
-    for (const q of mouths) {
-      const d = Math.hypot(p.x - q.m.x, p.y - q.m.y) / 34;
-      if (d < 1) w += 7 * (1 - d) * (1 - d);
+    // a brook is half as wide as the river, tapering in over the hex's own boundary
+    for (const h of rivers) {
+      if (!brooks.has(h.id)) continue;
+      const d = Math.hypot(p.x - h.x, p.y - h.y) / RI;
+      if (d < 1) w -= w * 0.48 * (1 - d * d);
     }
     return w;
   };
@@ -317,7 +294,7 @@ export function paintRivers(ctx: PaintCtx, id?: (s: string) => string): JSX.Elem
     for (let i = 4; i < s.length - 6; i += 7 + Math.floor(R() * 5)) {
       const q = s[i];
       const hx = rivers.find((h) => h.id === q.hex);
-      if (hx?.ford || isStill(ctx.terrainAt(q.p.x, q.p.y))) continue;
+      if (hx?.ford || hx?.t === 'bridge') continue;
       const side = R() < 0.5 ? -1 : 1;
       const o = q.hw * (0.25 + R() * 0.35) * side;
       const a = add(q.p, mul(q.n, o));
@@ -387,6 +364,29 @@ export function paintRivers(ctx: PaintCtx, id?: (s: string) => string): JSX.Elem
     }
   }
 
+  // bridges: a plank deck across the flow, with rails
+  let deckShadow = '';
+  let deck = '';
+  let planks = '';
+  let rails = '';
+  for (const b of bridges) {
+    for (const s of samples) {
+      for (const run of hexRun(s, b.id)) {
+        let best = run[0];
+        for (const q of run) if (Math.hypot(q.p.x - b.x, q.p.y - b.y) < Math.hypot(best.p.x - b.x, best.p.y - b.y)) best = q;
+        const tng = { x: best.n.y, y: -best.n.x };
+        const half = best.hw + 7;
+        const hl = 6.5; // half the deck's length along the flow
+        const corner4 = (a: number, t: number): Pt => add(best.p, add(mul(best.n, a), mul(tng, t)));
+        const quad = (a: number, t: number) => polyPath([corner4(-a, -t), corner4(a, -t), corner4(a, t), corner4(-a, t)]);
+        deckShadow += polyPath([corner4(-half + 1.5, -hl + 2.5), corner4(half + 1.5, -hl + 2.5), corner4(half + 1.5, hl + 2.5), corner4(-half + 1.5, hl + 2.5)]);
+        deck += quad(half, hl);
+        for (let k = -half + 3; k < half - 1; k += 3.4) planks += `M${fmt(corner4(k, -hl).x)},${fmt(corner4(k, -hl).y)}L${fmt(corner4(k, hl).x)},${fmt(corner4(k, hl).y)}`;
+        for (const t of [-hl, hl]) rails += `M${fmt(corner4(-half, t).x)},${fmt(corner4(-half, t).y)}L${fmt(corner4(half, t).x)},${fmt(corner4(half, t).y)}`;
+      }
+    }
+  }
+
   const layers = (
     <>
       <path d={all(10)} fill={P.verge} opacity={0.32} />
@@ -407,95 +407,16 @@ export function paintRivers(ctx: PaintCtx, id?: (s: string) => string): JSX.Elem
         </g>
       )}
       <path d={glints} fill="none" stroke={P.glint} strokeWidth={1.3} strokeLinecap="round" />
+      {bridges.length > 0 && (
+        <g className="bridges">
+          <path d={deckShadow} fill="rgba(16,30,40,0.38)" />
+          <path d={deck} fill={P.woodLight} stroke={P.woodDark} strokeWidth={1.1} strokeLinejoin="round" />
+          <path d={planks} fill="none" stroke={P.woodDark} strokeWidth={0.7} opacity={0.7} />
+          <path d={rails} fill="none" stroke={P.woodDark} strokeWidth={2.2} strokeLinecap="round" />
+          <path d={rails} fill="none" stroke={P.palisadeLight} strokeWidth={0.9} strokeLinecap="round" />
+        </g>
+      )}
     </>
   );
-  if (!mouths.length) return <g className="rivers">{layers}</g>;
-  // fade each mouth from just above the waterline to where the channel stops, 22 px out to sea
-  const b = ctx.bounds;
-  const at = (q: { m: Pt; u: Pt }, a: number, s: number): Pt => ({ x: q.m.x + q.u.x * a - q.u.y * s, y: q.m.y + q.u.y * a + q.u.x * s });
-  return (
-    <g className="rivers">
-      <defs>
-        {mouths.map((q, i) => {
-          const a = at(q, -4, 0);
-          const e = at(q, 19, 0);
-          return (
-            <linearGradient key={i} id={id!(`mouth${i}`)} gradientUnits="userSpaceOnUse" x1={fmt(a.x)} y1={fmt(a.y)} x2={fmt(e.x)} y2={fmt(e.y)}>
-              <stop offset="0" stopColor="#fff" />
-              <stop offset="1" stopColor="#000" />
-            </linearGradient>
-          );
-        })}
-        <mask id={id!('mouths')} maskUnits="userSpaceOnUse" x={b.x0} y={b.y0} width={b.x1 - b.x0} height={b.y1 - b.y0}>
-          <rect x={b.x0} y={b.y0} width={b.x1 - b.x0} height={b.y1 - b.y0} fill="#fff" />
-          {mouths.map((q, i) => (
-            <path key={i} d={polyPath([at(q, -12, -44), at(q, 44, -44), at(q, 44, 44), at(q, -12, 44)])} fill={`url(#${id!(`mouth${i}`)})`} />
-          ))}
-        </mask>
-      </defs>
-      <g mask={`url(#${id!('mouths')})`}>{layers}</g>
-    </g>
-  );
+  return <g className="rivers">{layers}</g>;
 }
-
-const isLake = (t: TerrainType) => t === 'lake';
-
-export function paintLakes(ctx: PaintCtx): JSX.Element | null {
-  const lakes = ctx.hexes.filter((h) => isLake(h.t));
-  if (!lakes.length) return null;
-  const b = ctx.bounds;
-  const pad = 70;
-  const rect = {
-    x0: Math.max(b.x0, Math.min(...lakes.map((h) => h.x)) - pad),
-    y0: Math.max(b.y0, Math.min(...lakes.map((h) => h.y)) - pad),
-    x1: Math.min(b.x1, Math.max(...lakes.map((h) => h.x)) + pad),
-    y1: Math.min(b.y1, Math.max(...lakes.map((h) => h.y)) + pad),
-  };
-  const g = makeGrid(rect, 3);
-  fillGrid(g, (x, y) => (isLake(ctx.terrainAt(x, y)) ? 1 : 0));
-  blurGrid(g, 3, 3);
-  addToGrid(g, (x, y) => (fbm(x / 26, y / 26, 3) - 0.5) * 0.22);
-  const shore = isoPath(g, 0.4);
-  const water = isoPath(g, 0.55);
-  const deep = isoPath(g, 0.8);
-  const deeper = isoPath(g, 0.95);
-
-  // wavelets
-  let waves = '';
-  const R = rng(4242 + lakes[0].id);
-  for (const h of lakes) {
-    for (let k = 0; k < 3; k++) {
-      const x = h.x + (R() - 0.5) * 52;
-      const y = h.y + (R() - 0.5) * 44;
-      const w = 6 + R() * 6;
-      waves += `M${fmt(x - w)},${fmt(y)}q${fmt(w / 2)},${fmt(-3)} ${fmt(w)},0q${fmt(w / 2)},3 ${fmt(w)},0`;
-    }
-  }
-  // reeds on the shore
-  let reeds = '';
-  for (const h of lakes) {
-    for (let k = 0; k < 6; k++) {
-      const a = R() * Math.PI * 2;
-      const rr = 38 + R() * 8;
-      const x = h.x + Math.cos(a) * rr;
-      const y = h.y + Math.sin(a) * rr;
-      if (isLake(ctx.terrainAt(x + Math.cos(a) * 10, y + Math.sin(a) * 10))) continue;
-      for (let m = -2; m <= 2; m++) reeds += `M${fmt(x + m * 1.4)},${fmt(y + 2)}l${fmt(m * 1.2)},${fmt(-6 - R() * 4)}`;
-    }
-  }
-
-  return (
-    <g className="lakes">
-      <path d={shore} fill={P.verge} opacity={0.4} transform="translate(0 3)" />
-      <path d={shore} fill={P.sand} />
-      <path d={shore} fill="none" stroke={P.sandDark} strokeWidth={1.2} opacity={0.7} />
-      <path d={water} fill={P.waterEdge} />
-      <path d={water} fill="none" stroke={P.bank} strokeWidth={1.6} opacity={0.75} />
-      <path d={deep} fill={P.water} />
-      <path d={deeper} fill={P.waterDeep} opacity={0.9} />
-      <path d={waves} fill="none" stroke={P.glint} strokeWidth={1.2} strokeLinecap="round" />
-      <path d={reeds} fill="none" stroke={P.reedDark} strokeWidth={1} strokeLinecap="round" />
-    </g>
-  );
-}
-

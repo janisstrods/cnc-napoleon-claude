@@ -1,551 +1,85 @@
-// Computer opponent for Commands & Colors: Ancients.
-//
-// chooseAnswer() answers any engine Decision for the AI's side. The turn is planned when the card is chosen: every
-// card in hand is tried with candidate order sets and movement plans, each plan is played out several times on
-// determinised clones of the game (the opponent's hand and the deck are re-dealt from unseen cards, dice reseeded
-// from the AI's private RNG), evaluated statically and compared, minus the value of keeping the card for later.
-// Battles use rollouts per candidate attack; reactive decisions use fast expected-value heuristics.
-import { bannerTotal } from '../engine/banners';
-import { CARD_DEFS, cardKind, modsFor, sectionOrders } from '../engine/cards';
-import { answerError } from '../engine/decisions';
-import { randomAnswer } from '../engine/legal';
-import { orderDice } from '../engine/orders';
-import { other, unitById } from '../engine/query';
-import { isWall } from '../engine/terrain';
-import { cloneState, newTurn } from '../engine/setup';
-import { rangeOf } from '../engine/elites';
-import { UNIT_STATS } from '../engine/units';
-import {
-  OFF_BOARD, type Answer, type CardKind, type Decision, type EliteId, type GameState, type HexId, type SectionName, type Side, type UnitType,
-} from '../engine/types';
-import { hexDist, nearestEnemy } from './board';
-import { attackAnswer, attackOptions } from './estimate';
-import { evalCacheFor } from './evaluate';
-import { greedyMoveStep, type MoveCtx } from './moves';
-import { orderCandidates } from './ordering';
+// Computer opponent stub for Commands & Colors: Napoleonics (Plan 2B T1c-3a). It plays legal moves with its own seeded
+// random generator so that the game UI has an opponent; the real AI is a later plan. It reads only what its own side may
+// see: never the opponent's hand, the square track or the deck.
+import { answerError, battleTargets, CARD_DEFS, randomAnswer } from '../engine';
+import type { Answer, CardKind, Decision, GameState, Side } from '../engine';
 import { PERSONALITIES, personalityById, personalityFor, type Personality } from './personality';
-import { DIFFICULTY, candScore, decideBattle, makeCtx, planDiceTurn, planTurn, type Cand, type DiffCfg } from './planner';
-import {
-  chooseBonusCombat, chooseCavalryExtra, chooseCommandIndex, chooseIgnoreFlags, chooseLeaderEvade, chooseMomentum, choosePlaceUnit,
-  choosePlacement, chooseRetreat, defendChoice, diceAssignments, diceVictimIndex, rallyAssign, spartacusAssign,
-} from './policies';
 import { Rng, entropySeed } from './rand';
-import { safeAnswer } from './sim';
-import { NEUTRAL_W, setViewer, weightsFor, type Difficulty, type Weights } from './values';
-import { cardMoment, speak, type Moment, type VoiceMemory } from './voice';
 
-export type { Difficulty } from './values';
-export type { Personality } from './personality';
+export type Difficulty = 'recruit' | 'tribune' | 'consul'; // renamed in Plan 4
+export type { Personality };
 export { PERSONALITIES, personalityById, personalityFor };
-export { DIFFICULTY } from './planner';
 
 export interface AiOptions {
   side: Side;
   difficulty: Difficulty;
   personality: Personality;
   seed?: number;
-  /** Scales thinking time and simulation counts (default 1). Tests and batch matches use less. */
+  /** Scales thinking time (unused by the stub). */
   budgetScale?: number;
-  /** Advanced: override evaluation weights (tuning experiments). */
-  tune?: Partial<Weights>;
-  /** Limit the search by simulation counts only (reproducible decisions for a given seed; for tests). */
   deterministic?: boolean;
-  /** Advanced: override search settings of the difficulty level (experiments). */
-  cfgPatch?: Partial<DiffCfg>;
 }
 
-interface StoredPlan {
-  turn: number;
-  side: Side;
-  /** The card played (-1 on a dice-order turn, §18.10). */
-  card: number;
-  kind: CardKind | null;
-  effective: CardKind | null;
-  orders: string[] | null;
-  ambush?: SectionName;
-  /** The command the plan names when the card asks (separate commands, §18.5). */
-  command?: string;
-  moves: Answer[] | null;
-  moveIdx: number;
-  label: string;
-  score: number;
-}
-
-/** Per-game scratch memory (plain data, structured-clone safe). */
 export interface AiMemory {
+  /** State of the AI's private generator (0: not yet seeded). */
   rngState: number;
-  plan: StoredPlan | null;
-  decided: string[];
-  decidedKey: string;
-  voice: VoiceMemory;
-  bonusUnit: string | null;
-  bonusTurn: number;
-  seenBanners: { mine: number; theirs: number } | null;
-  /** Diagnostics of the last decision (shown in dev tools / play review). */
-  last: { kind: Decision['kind']; ms: number; sims: number; plan?: string; alternatives?: string[] } | null;
-  /** Anti-stall: own turns in a row with nothing hurt on the board, the board signature and turn of the last check. */
-  quiet?: number;
-  quietSig?: number;
-  quietTurn?: number;
-  /** Turns past the patience threshold on the current turn (applied to all of this turn's decisions). */
-  quietX?: number;
-  /** Own-turn index (turns completed) at which each held card was first seen; keep value decays with time held. */
-  cardSeen?: Record<string, number>;
-  cardSeenIdx?: number;
-  /** Camps our side had captured at the previous decision (commentary), and of them ship markers (313). */
-  campsSeen?: number;
-  shipsSeen?: number;
-  /**
-   * Decisions where `decide` gave an illegal answer or threw, answered by `fallback()` instead: an AI bug whenever it is
-   * not 0 (each is also reported with console.error, which tests/ai turn into failures).
-   */
+  /** Answers replaced by the random fallback (each is also reported with console.error); must stay 0 in tests. */
   fallbacks?: number;
+  last: { kind: Decision['kind']; ms: number } | null;
 }
 
 export function newMemory(): AiMemory {
-  return {
-    rngState: 0,
-    plan: null,
-    decided: [],
-    decidedKey: '',
-    voice: { recent: [], sayTurn: -1, saysThisTurn: 0 },
-    bonusUnit: null,
-    bonusTurn: -1,
-    seenBanners: null,
-    last: null,
-    quiet: 0,
-    quietSig: -1,
-    quietTurn: -1,
-    quietX: 0,
-    cardSeen: {},
-    cardSeenIdx: -1,
-    campsSeen: -1,
-    fallbacks: 0,
-  };
+  return { rngState: 0, fallbacks: 0, last: null };
 }
 
 const now = (): number => (globalThis.performance ? globalThis.performance.now() : Date.now());
-
-/** Share of a recruit's turns played hastily (no simulations), and of its attacks picked loosely. */
-const RECRUIT_HASTY = 0.5;
-const RECRUIT_SCATTER = 0.4;
 
 /** Would the engine accept answer `a` to decision `d` (its one validator, `answerError`)? */
 export function isLegal(s: GameState, d: Decision, a: Answer): boolean {
   return answerError(s, d, a) === null;
 }
 
-function fallback(s: GameState, d: Decision, rng: Rng): Answer {
-  for (let attempt = 1; attempt < 60; attempt++) {
-    const a = safeAnswer(s, d, rng, attempt);
-    if (isLegal(s, d, a)) return a;
-  }
-  return randomAnswer(s, d, () => rng.next());
-}
-
-// ---------------------------------------------------------------------------
-// commentary helpers
-// ---------------------------------------------------------------------------
-
-function planShape(
-  s: GameState, me: Side, b: Cand,
-): { attacking: boolean; regrouping: boolean; advancing: boolean; focus?: UnitType; elite?: EliteId } {
-  const ordered = (b.orders ?? []).map((id) => unitById(s, id)).filter((u): u is NonNullable<typeof u> => !!u);
-  const dest = new Map<string, HexId>();
-  for (const m of b.moves ?? []) if (m.kind === 'move') dest.set(m.piece, m.to);
-  let attacking = false;
-  let back = 0;
-  let fwd = 0;
-  let focus: UnitType | undefined;
-  let elite: EliteId | undefined;
-  const noRanged = b.effective ? modsFor(b.effective).noRanged : false;
-  for (const u of ordered) {
-    const h = dest.get(u.id) ?? u.hex;
-    if (h < 0) continue;
-    const near = nearestEnemy(s, h, me);
-    const nearBefore = nearestEnemy(s, u.hex, me);
-    const range = rangeOf(u);
-    if (near <= 1 || (range > 0 && near <= range && !noRanged)) {
-      attacking = true;
-      if (!focus) {
-        focus = u.type;
-        elite = u.elite;
-      }
-    }
-    if (near > nearBefore) back++;
-    if (near < nearBefore) fwd++;
-  }
-  if (b.effective === 'clash' || b.effective === 'darken') attacking = true;
-  if (!focus && ordered.length) {
-    focus = ordered[0].type;
-    elite = ordered[0].elite;
-  }
-  return { attacking, regrouping: !attacking && back > fwd, advancing: !attacking && fwd > 0, focus, elite };
-}
-
-function commentCard(s: GameState, me: Side, P: Personality, mem: AiMemory, rng: Rng, b: Cand): string | undefined {
-  const opp = other(me);
-  const mine = bannerTotal(s, me);
-  const theirs = bannerTotal(s, opp);
-  const T = s.bannersToWin;
-  const prev = mem.seenBanners;
-  mem.seenBanners = { mine, theirs };
-  // reinforcements on fixed entry hexes (308) are no trap: they march in
-  if (b.ambush) return speak(s, me, P, s.scenario.ambush?.entryHexes ? 'reinforce' : 'ambush', mem.voice, rng, { chance: 2 });
-  if (prev && mine > prev.mine && rng.chance(0.6)) {
-    const line = speak(s, me, P, mine >= T - 1 ? 'nearVictory' : 'gained', mem.voice, rng, { chance: 1.2 });
-    if (line) return line;
-  }
-  if (prev && theirs > prev.theirs && rng.chance(0.5)) {
-    const line = speak(s, me, P, theirs >= T - 1 ? 'desperate' : 'lost', mem.voice, rng, { chance: 1 });
-    if (line) return line;
-  }
-  const shape = planShape(s, me, b);
-  let m: Moment = cardMoment(b.effective, shape.attacking, shape.regrouping, shape.advancing);
-  if (b.kind === 'counterAttack' && b.effective) m = rng.chance(0.6) ? 'counter' : m;
-  const important = m === 'clash' || m === 'darken' || m === 'rally' || m === 'counter' || m === 'spartacus' || m === 'mounted';
-  return speak(s, me, P, m, mem.voice, rng, { troops: shape.focus, elite: shape.elite, chance: important ? 0.75 : 0.35 });
-}
-
-/**
- * A break-out: a unit (or, in 317, a lone leader) leaving the board by an exit objective (010 Castulo); a unit climbing a
- * city wall (308, 309).
- */
-function moveLine(s: GameState, me: Side, P: Personality, mem: AiMemory, rng: Rng, a: Answer): string | undefined {
-  if (a.kind !== 'move') return undefined;
-  if (a.to === OFF_BOARD) return speak(s, me, P, 'exit', mem.voice, rng, { chance: 1.2 });
-  const u = unitById(s, a.piece);
-  if (u && u.hex >= 0 && isWall(s, a.to)) return speak(s, me, P, 'wall', mem.voice, rng, { troops: u.type, chance: 0.8 });
-  return undefined;
-}
-
-/**
- * Camp capture: a camp captured by our side since the previous decision (the engine credits it once the unit stops); a
- * ship marker taken (313) has its own lines.
- */
-function campLine(s: GameState, me: Side, P: Personality, mem: AiMemory, rng: Rng): string | undefined {
-  let n = 0;
-  let ships = 0;
-  s.scenario.objectives.forEach((o, i) => {
-    if (o.kind !== 'capture' || o.side !== me) return;
-    n += s.special.objState[i].taken.length;
-    if (o.marker === 'ship') ships += s.special.objState[i].taken.length;
-  });
-  const before = mem.campsSeen ?? -1;
-  const shipsBefore = mem.shipsSeen ?? 0;
-  mem.campsSeen = n;
-  mem.shipsSeen = ships;
-  if (before < 0 || n <= before) return undefined;
-  return speak(s, me, P, ships > shipsBefore ? 'ship' : 'camp', mem.voice, rng, { chance: 2 });
-}
-
-// ---------------------------------------------------------------------------
-// tempo and card-keeping memory
-// ---------------------------------------------------------------------------
-
-/** Banners (held ones too) and blocks on the board: changes whenever anything is hurt, destroyed, captured or held. */
-function boardSig(s: GameState): number {
-  let sig = bannerTotal(s, 'top') * 1000 + bannerTotal(s, 'bottom') * 100000;
-  for (const u of s.units) if (u.hex >= 0) sig += u.blocks;
-  return sig;
-}
-
-/**
- * Count our turns in a row in which nothing on the board was hurt; returns how many turns we are past our patience
- * (2 turns, 3 for the Shield). A fresh memory or a turn number going backwards (undo, resumed game) starts afresh.
- */
-function stallPressure(s: GameState, P: Personality, mem: AiMemory): number {
-  const sig = boardSig(s);
-  const fresh = mem.quietTurn === undefined || mem.quietTurn < 0 || s.turn.number <= mem.quietTurn;
-  mem.quiet = fresh ? 0 : sig === mem.quietSig ? (mem.quiet ?? 0) + 1 : 0;
-  mem.quietSig = sig;
-  mem.quietTurn = s.turn.number;
-  const patience = P.id === 'shield' ? 3 : 2;
-  mem.quietX = Math.max(0, mem.quiet - patience);
-  return mem.quietX;
-}
-
-/** Lean forward after a stand-off: close in, accept more risk, stop saving cards (bolder generals ramp faster). */
-function applyStall(W: Weights, qx: number, P: Personality): Weights {
-  if (qx <= 0) return W;
-  const ramp = 0.6 * (0.8 + 0.4 * P.aggression);
-  return {
-    ...W,
-    adv: W.adv * Math.min(6, 1 + ramp * qx),
-    riskSelf: W.riskSelf * Math.max(0.6, 1 - 0.08 * qx),
-    retention: W.retention * Math.max(0.3, 1 - 0.15 * qx),
-  };
-}
-
-/**
- * Track how many of our own turns each card has sat in hand. Keep values of non-section cards decay after 4 turns
- * (0.85 per extra turn) so strong cards are eventually spent instead of clogging the hand.
- */
-function keepScales(s: GameState, me: Side, mem: AiMemory): (card: number) => number {
-  const idx = s.special.turnsDone[me];
-  const prev = mem.cardSeen && mem.cardSeenIdx !== undefined && mem.cardSeenIdx >= 0 && idx >= mem.cardSeenIdx ? mem.cardSeen : {};
-  const seen: Record<string, number> = {};
-  for (const c of s.players[me].hand) {
-    const first = prev[c];
-    seen[c] = first !== undefined && first <= idx ? first : idx;
-  }
-  mem.cardSeen = seen;
-  mem.cardSeenIdx = idx;
-  return (card: number) => {
-    if (sectionOrders(cardKind(card))) return 1;
-    const held = idx - (seen[card] ?? idx);
-    return Math.pow(0.85, Math.max(0, held - 4));
-  };
-}
-
-/** First Strike's keep value: decays while held, and is lower when few sound units are in contact to use it on. */
-function firstStrikeKeep(s: GameState, me: Side, mem: AiMemory): number {
-  const fs = s.players[me].hand.find((c) => cardKind(c) === 'firstStrike');
-  if (fs === undefined) return 1;
-  const decay = keepScales(s, me, mem)(fs);
-  let strong = 0;
-  for (const u of s.units) {
-    if (u.side !== me || u.hex < 0 || u.blocks < 3) continue;
-    if (s.units.some((e) => e.side !== me && e.hex >= 0 && hexDist(e.hex, u.hex) === 1)) strong++;
-  }
-  return decay * (0.6 + 0.2 * Math.min(2, strong));
-}
-
-// ---------------------------------------------------------------------------
-// main entry
-// ---------------------------------------------------------------------------
-
-function decide(s: GameState, d: Decision, opts: AiOptions, mem: AiMemory, rng: Rng): { answer: Answer; say?: string } {
-  const P = opts.personality;
-  let W = weightsFor(P);
-  // A recruit is careless about threats and spends strong cards at once.
-  if (opts.difficulty === 'recruit') {
-    // beginner habits: piecemeal advances (no eye for formation), careless of threats, spends cards at once
-    W = {
-      ...W, riskSelf: W.riskSelf * 0.35, retention: W.retention * 0.3, attackThreshold: W.attackThreshold - 0.1,
-      support: 0, isolated: 0, stray: 0,
-    };
-  }
-  if (opts.tune) W = { ...W, ...opts.tune };
-  let cfg: DiffCfg = { ...(DIFFICULTY[opts.difficulty] ?? DIFFICULTY.tribune), ...(opts.cfgPatch ?? {}) };
-  const scale = opts.budgetScale ?? 1;
-  const me = d.side;
-  const turn = s.turn.number;
-  const det = !!opts.deterministic;
-  const ourPlan = () => (mem.plan && mem.plan.turn === turn && mem.plan.side === me ? mem.plan : null);
-  // a side with dice orders (§18.10) plays no card: its turn starts with its first dice decision
-  let stallSay: string | undefined;
-  if ((d.kind === 'diceVictim' || d.kind === 'diceOrders') && s.active === me && mem.quietTurn !== turn && orderDice(s, me)) {
-    if (stallPressure(s, P, mem) === 1) stallSay = speak(s, me, P, 'stallBreak', mem.voice, rng, { chance: 2 });
-  }
-  // a stand-off pushes this whole turn forward (planning, moves and battles)
-  if (d.kind !== 'playCard' && s.active === me && mem.quietTurn === turn) W = applyStall(W, mem.quietX ?? 0, P);
+/** The stub's policy; the caller checks the answer and falls back to a random one. */
+function decide(s: GameState, d: Decision, rng: Rng): Answer {
   switch (d.kind) {
-    case 'playCard': {
-      const qx = stallPressure(s, P, mem);
-      W = applyStall(W, qx, P);
-      // match point: search wider (same time budget)
-      if (opts.difficulty === 'tribune' && bannerTotal(s, me) >= s.bannersToWin - 1) {
-        cfg = { ...cfg, kMax: 64, extraVariants: 8, topCards: 6, k0: 8, topUp: 64, maxSims: cfg.maxSims * 2 };
-      }
-      const ctx = makeCtx(me, W, NEUTRAL_W, rng, cfg, scale, det);
-      ctx.keepScale = keepScales(s, me, mem);
-      // a recruit sometimes plays a hasty turn: first good-looking card, first order idea, greedy moves
-      ctx.hasty = opts.difficulty === 'recruit' && rng.chance(RECRUIT_HASTY);
-      const res = planTurn(s, ctx);
-      const b = res.best;
-      mem.plan = {
-        turn, side: me, card: b.card, kind: b.kind, effective: b.effective, orders: b.orders, ambush: b.ambush, command: b.command,
-        moves: b.moves, moveIdx: 0, label: b.label, score: candScore(b),
-      };
-      mem.decided = [];
-      mem.decidedKey = '';
-      mem.last = {
-        kind: d.kind, ms: res.ms, sims: res.sims, plan: `${b.label} = ${candScore(b).toFixed(3)}`,
-        alternatives: res.cands.slice(0, 6).map((c) => `${c.label}: ${candScore(c).toFixed(3)} (n=${c.n}${c.laN ? `, 2ply=${c.laN}` : ''}, keep=${c.retention.toFixed(2)})`),
-      };
-      const say = qx === 1 ? speak(s, me, P, 'stallBreak', mem.voice, rng, { chance: 2 }) : undefined;
-      return { answer: { kind: 'playCard', card: b.card }, say: say ?? commentCard(s, me, P, mem, rng, b) };
-    }
-    case 'orders': {
-      const p = ourPlan();
-      if (p && (p.effective === d.card || p.effective === null)) {
-        if (p.ambush) return { answer: { kind: 'orders', pieces: [], ambushSection: p.ambush } };
-        if (p.orders) {
-          const a: Answer = { kind: 'orders', pieces: p.orders };
-          if (isLegal(s, d, a)) return { answer: a };
-        }
-      }
-      if (!p && s.turn.card !== null) {
-        // No plan for this turn (resumed game, or a fresh worker mid-turn): plan again for the card already played.
-        const root = cloneState(s);
-        root.players[me].hand = [s.turn.card];
-        root.turn = newTurn(turn);
-        const ctx = makeCtx(me, W, NEUTRAL_W, rng, cfg, scale * 0.5, det);
-        const b = planTurn(root, ctx).best;
-        if (b && b.card === s.turn.card) {
-          mem.plan = {
-            turn, side: me, card: b.card, kind: b.kind, effective: b.effective, orders: b.orders, ambush: b.ambush, command: b.command,
-            moves: b.moves, moveIdx: 0, label: `${b.label} (replanned)`, score: candScore(b),
-          };
-          const a: Answer | null = b.ambush ? { kind: 'orders', pieces: [], ambushSection: b.ambush } : b.orders ? { kind: 'orders', pieces: b.orders } : null;
-          if (a && isLegal(s, d, a)) return { answer: a };
-          if (mem.plan) mem.plan.moves = null;
-        }
-      }
-      const oc = orderCandidates(s, me, d.card, W, 1)[0];
-      if (mem.plan && ourPlan()) mem.plan.moves = null;
-      if (oc?.ambush) return { answer: { kind: 'orders', pieces: [], ambushSection: oc.ambush } };
-      return { answer: { kind: 'orders', pieces: oc?.pieces ?? [] } };
-    }
-    case 'move': {
-      const p = ourPlan();
-      if (d.stage === 1 && p && p.moves) {
-        if (p.moveIdx < p.moves.length) {
-          const a = p.moves[p.moveIdx++];
-          if (isLegal(s, d, a)) return { answer: a, say: moveLine(s, me, P, mem, rng, a) };
-          p.moves = null; // the plan broke (e.g. a marsh casualty): continue greedily
-        } else return { answer: { kind: 'endMove' } };
-      }
-      const key = `${turn}:${d.stage}`;
-      if (mem.decidedKey !== key) {
-        mem.decidedKey = key;
-        mem.decided = [];
-      }
-      const mc: MoveCtx = { me, W, rng, noise: cfg.evalNoise * 0.15, decided: new Set(mem.decided) };
-      const a = greedyMoveStep(s, d.stage, mc);
-      mem.decided = [...mc.decided];
-      return { answer: a, say: moveLine(s, me, P, mem, rng, a) };
-    }
     case 'battle': {
-      if (opts.difficulty === 'recruit' && rng.chance(RECRUIT_SCATTER)) {
-        // a beginner often hits whatever looks promising instead of the best target
-        const good = attackOptions(s, W).filter((o) => o.ev > 0 || o.must);
-        const must = good.filter((o) => o.must);
-        const pool = must.length ? must : good;
-        if (pool.length) {
-          const o = rng.pick(pool);
-          return { answer: attackAnswer(o) };
-        }
+      const ids = Object.keys(s.turn.ordered).sort((a, b) => a.localeCompare(b, 'en', { numeric: true }));
+      for (const id of ids) {
+        const targets = battleTargets(s, id);
+        if (targets.length) return { kind: 'attack', unit: id, target: rng.pick(targets).hex };
       }
-      const ctx = makeCtx(me, W, NEUTRAL_W, rng, cfg, scale * 0.3, !!opts.deterministic);
-      const t0 = now();
-      const a = decideBattle(s, ctx);
-      mem.last = { kind: d.kind, ms: now() - t0, sims: ctx.sims };
-      return { answer: a };
-    }
-    case 'defend': {
-      let choice = defendChoice(s, d, W, d.canFirstStrike ? firstStrikeKeep(s, me, mem) : 1);
-      if (cfg.mistakeRate && rng.chance(cfg.mistakeRate)) {
-        const alts: ('stand' | 'evade')[] = d.canEvade ? ['stand', 'evade'] : ['stand'];
-        choice = rng.pick(alts);
-      }
-      const u = unitById(s, d.target);
-      const say = choice === 'firstStrike'
-        ? speak(s, me, P, 'firstStrike', mem.voice, rng, { chance: 1.5 })
-        : choice === 'evade' && u && u.blocks <= 2 && !UNIT_STATS[u.type].evadeRemoves // no cheering for abandoned machines
-          ? speak(s, me, P, 'evade', mem.voice, rng, { troops: u.type, elite: u.elite, chance: 0.35 })
-          : undefined;
-      return { answer: { kind: 'defend', choice }, say };
+      return { kind: 'endBattle' };
     }
     case 'ignoreFlags':
-      return { answer: { kind: 'ignoreFlags', count: cfg.mistakeRate && rng.chance(cfg.mistakeRate) ? d.max : chooseIgnoreFlags(s, d, W) } };
-    case 'retreat':
-      return { answer: { kind: 'choose', index: chooseRetreat(s, d, W) } };
-    case 'leaderEvade': {
-      const index = chooseLeaderEvade(s, d, W);
-      const o = d.options[index];
-      const say = o && (o.escapes?.length || o.attachLeader) ? speak(s, me, P, 'leaderEscape', mem.voice, rng, { chance: 0.5 }) : undefined;
-      return { answer: { kind: 'choose', index }, say };
-    }
-    case 'momentum': {
-      const bonusPossible = !(mem.bonusUnit === d.unit && mem.bonusTurn === turn);
-      const yes = chooseMomentum(s, d, W, bonusPossible);
-      const u = unitById(s, d.unit);
-      const say = yes && s.active === me ? speak(s, me, P, 'momentum', mem.voice, rng, { troops: u?.type, elite: u?.elite, chance: 0.25 }) : undefined;
-      return { answer: { kind: 'yesno', yes }, say };
-    }
-    case 'cavalryExtra':
-      return { answer: { kind: 'hex', hex: chooseCavalryExtra(s, d, W) } };
-    case 'bonusCombat': {
-      const hex = chooseBonusCombat(s, d, W);
-      if (hex !== null) {
-        mem.bonusUnit = d.unit;
-        mem.bonusTurn = turn;
-      }
-      return { answer: { kind: 'hex', hex } };
-    }
-    case 'chooseCommand': {
-      // the command the turn plan was made for (the same choice: chooseCommandIndex sees no hidden information)
-      const p = ourPlan();
-      const i = p?.command !== undefined ? d.options.indexOf(p.command) : -1;
-      return { answer: { kind: 'choose', index: i >= 0 ? i : chooseCommandIndex(s, d, W) } };
-    }
-    case 'rally':
-      return { answer: { kind: 'assign', ids: rallyAssign(s, me, d.faces, d.command) } };
-    case 'spartacus':
-      return { answer: { kind: 'assign', ids: spartacusAssign(s, me, d.faces, W, d.command) } };
-    case 'placeLeader':
-      return { answer: { kind: 'hex', hex: choosePlacement(s, d, W) } };
-    case 'placeUnit':
-      // forced placement (308, §18.9): the offered hex the evaluation likes best
-      return { answer: { kind: 'hex', hex: choosePlaceUnit(s, d, W) } };
-    case 'diceVictim':
-      // dice orders (310, §18.10): the unit whose retreat or lost block costs least
-      return { answer: { kind: 'choose', index: diceVictimIndex(s, d, W) }, say: stallSay };
-    case 'diceOrders': {
-      // dice orders (310, §18.10): the assignment and its movement plan, searched like a card's orders and moves
-      const all = diceAssignments(s, me, d.faces, W);
-      if (!all.length) return { answer: { kind: 'assign', ids: d.faces.map(() => null) } };
-      const ctx = makeCtx(me, W, NEUTRAL_W, rng, cfg, scale, det);
-      ctx.hasty = opts.difficulty === 'recruit' && rng.chance(RECRUIT_HASTY);
-      const res = planDiceTurn(s, all, ctx);
-      const b = res.best;
-      mem.plan = {
-        turn, side: me, card: -1, kind: null, effective: null, orders: b.orders, moves: b.moves, moveIdx: 0, label: b.label,
-        score: candScore(b),
-      };
-      mem.decided = [];
-      mem.decidedKey = '';
-      mem.last = {
-        kind: d.kind, ms: res.ms, sims: res.sims, plan: `${b.label} = ${candScore(b).toFixed(3)}`,
-        alternatives: res.cands.slice(0, 6).map((c) => `${c.label}: ${candScore(c).toFixed(3)} (n=${c.n})`),
-      };
-      // a face the plan left unused still orders the best piece it can: that unit stays where it is (the plan's moves end
-      // the movement) but may still battle; an order never costs anything
-      const planned = b.orders ?? [];
-      const ids = all.find((a) => planned.every((id) => a.pieces.includes(id)))?.ids ?? b.dice ?? all[0].ids;
-      return { answer: { kind: 'assign', ids }, say: stallSay ?? commentCard(s, me, P, mem, rng, b) };
-    }
+      return { kind: 'ignoreFlags', count: d.max };
+    case 'advance':
+      return { kind: 'yesno', yes: true };
+    default:
+      return randomAnswer(s, d, () => rng.next());
   }
 }
 
-/** Choose an answer for `decision` (decision.side === opts.side). Always returns a legal answer. */
+/** Choose an answer for `decision` (decision.side === opts.side). Always returns a legal answer when one exists. */
 export function chooseAnswer(state: GameState, decision: Decision, opts: AiOptions, mem: AiMemory): { answer: Answer; say?: string } {
+  const t0 = now();
   if (!mem.rngState) mem.rngState = (opts.seed ?? entropySeed()) >>> 0 || 1;
   const rng = new Rng(mem.rngState);
-  let out: { answer: Answer; say?: string };
-  setViewer(decision.side);
-  evalCacheFor(true);
+  let answer: Answer;
   try {
-    // Work on a private copy: the planner moves pieces around temporarily.
-    const camp = campLine(state, decision.side, opts.personality, mem, rng);
-    out = decide(cloneState(state), decision, opts, mem, rng);
-    if (!isLegal(state, decision, out.answer)) {
-      if (typeof console !== 'undefined') console.error('AI error: illegal answer replaced by a fallback', decision.kind, JSON.stringify(out.answer));
+    answer = decide(state, decision, rng);
+    if (!isLegal(state, decision, answer)) {
+      if (typeof console !== 'undefined') console.error('AI error: illegal answer replaced by a fallback', decision.kind, JSON.stringify(answer));
       mem.fallbacks = (mem.fallbacks ?? 0) + 1;
-      out = { answer: fallback(state, decision, rng) };
+      answer = randomAnswer(state, decision, () => rng.next());
     }
-    if (camp && !out.say) out.say = camp;
   } catch (e) {
     if (typeof console !== 'undefined') console.error('AI error', e);
     mem.fallbacks = (mem.fallbacks ?? 0) + 1;
-    out = { answer: fallback(state, decision, rng) };
+    answer = randomAnswer(state, decision, () => rng.next());
   }
-  setViewer(null);
-  evalCacheFor(false);
   mem.rngState = rng.state;
-  return out;
+  mem.last = { kind: decision.kind, ms: now() - t0 };
+  return { answer };
 }
 
 /** Card title helper for logs. */

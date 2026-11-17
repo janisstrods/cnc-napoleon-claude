@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
-import { UNIT_STATS, createGame, leaderUnit, orderDice, type GameOptions, type GameState, type Side, type UnitType } from '../../engine';
+import { UNIT_STATS, createGame, leaderUnit, nationOf, type GameState, type RowKey, type Side } from '../../engine';
 import { SCENARIOS, type Expansion, type ScenarioInfo } from '../../scenarios';
 import { LEADER_ATTACH_OFFSET, LeaderToken, UnitToken } from '../../art';
 import { BoardArt, ObjectiveMarkers } from '../terrain';
@@ -10,10 +10,7 @@ import { boardArtProps, leaderTokenProps, unitTokenProps } from '../game/boardPr
 import { PERSONALITIES, personalityFor } from '../../ai/personality';
 import { RulesDialog } from './RulesDialog';
 import { HistoryButton } from '../history/HistoryButton';
-import {
-  OPTIONAL_RULES, PICKER_TABS, battlesOf, visibleBattles, chosenOptions, loadOptionChoices, loadPickerTab, offeredOptions, optionValue, randomPick,
-  saveOptionChoice, savePickerTab, tabForKey, type OptionId,
-} from './picker';
+import { PICKER_TABS, battlesOf, visibleBattles, loadPickerTab, randomPick, savePickerTab, tabForKey } from './picker';
 import { BUILD_TIME, RELEASE, buildLabel } from '../../version';
 import { storage, storageKey } from '../storage';
 import { MEDAL_FOR, beatenLevels, loadRecord, recordTotals, sideStanding, sideTally } from '../record';
@@ -21,8 +18,8 @@ import { Medal, MedalPair } from './Medal';
 import { MenuTally, TriumphsDialog } from './Triumphs';
 import './screens.css';
 
-const MENU_ARMY_L: UnitType[] = ['HI', 'MI', 'LC'];
-const MENU_ARMY_R: UnitType[] = ['EL', 'WA', 'HC'];
+const MENU_ARMY_L: RowKey[] = ['FR/GR', 'FR/LN', 'FR/CU'];
+const MENU_ARMY_R: RowKey[] = ['BR/RI', 'BR/LN', 'BR/HC'];
 
 export function MainMenu(p: {
   saved: SavedGame | null;
@@ -45,19 +42,19 @@ export function MainMenu(p: {
             <Icon name="crossedSwords" size={58} gradient={['#fbe7a6', '#d8b064', '#8a6226']} />
           </div>
         </div>
-        <h1 className="menu-title">Commands &amp; Colors</h1>
-        <div className="menu-sub">ANCIENTS</div>
+        <h1 className="menu-title">Commands &amp; Colours</h1>
+        <div className="menu-sub">NAPOLEONICS</div>
         <p className="menu-tag">Commands &amp; Colours: Napoleonics — battles of the Peninsular War and the Hundred Days</p>
         <div className="menu-armies" aria-hidden>
           <svg viewBox="-52 -48 524 96" width="620" height="114">
             {MENU_ARMY_L.map((t, i) => (
               <g key={t} transform={`translate(${i * 80}, ${i % 2 ? 4 : 0})`}>
-                <UnitToken type={t} look="roman" blockColor="rom" blocks={UNIT_STATS[t].blocks} maxBlocks={UNIT_STATS[t].blocks} facing="right" />
+                <UnitToken unitKey={t} nation={nationOf(t)} blocks={UNIT_STATS[t].blocks} maxBlocks={UNIT_STATS[t].blocks} facing="right" />
               </g>
             ))}
             {MENU_ARMY_R.map((t, i) => (
               <g key={t} transform={`translate(${420 - i * 80}, ${i % 2 ? 4 : 0})`}>
-                <UnitToken type={t} look="carthaginian" blockColor="car" blocks={UNIT_STATS[t].blocks} maxBlocks={UNIT_STATS[t].blocks} facing="left" />
+                <UnitToken unitKey={t} nation={nationOf(t)} blocks={UNIT_STATS[t].blocks} maxBlocks={UNIT_STATS[t].blocks} facing="left" />
               </g>
             ))}
           </svg>
@@ -92,10 +89,8 @@ export function MainMenu(p: {
       <Modal open={credits} title="Credits" onClose={() => setCredits(false)} width={640}>
         <div className="credits">
           <p>An unofficial, fan-made digital edition of <i>Commands &amp; Colours: Napoleonics</i>, based on the <i>Commands &amp; Colors</i> system designed by Richard Borg and published by GMT Games. Commands &amp; Colors is a trademark of GMT Games LLC. This edition uses original artwork and paraphrased rules text; it is not affiliated with or endorsed by GMT Games.</p>
-          <p>Scenario setups follow the base game's 15 battles as documented by the community at commandsandcolors.net.</p>
-          <p><b>Expansion #1</b>, <i>Greece &amp; Eastern Kingdoms</i>: its 24 battles (101–124) were transcribed hex by hex from the official battle maps published at commandsandcolors.net (122–124 from GMT's Bonus Pack #2). Its rules are paraphrased, its battle summaries original, and its armies drawn as original artwork.</p>
-          <p><b>Expansion #2</b>, <i>Rome &amp; the Barbarians</i>: its 23 battles (201–223) were transcribed the same way from the battle maps published at commandsandcolors.net. Its rules are paraphrased, its battle summaries original, and its armies drawn as original artwork.</p>
-          <p><b>Battle histories:</b> original summaries written from the ancient historians (Herodotus, Xenophon, Polybius, Diodorus, Livy, Plutarch, Arrian and others) and modern scholarship, each with its sources. The maps are schematic reconstructions; ancient numbers and details are often uncertain.</p>
+          <p>Scenario setups follow the battles of the base game and its Spanish Army expansion, transcribed hex by hex from the community's published battle maps. Rules are paraphrased and battle summaries original.</p>
+          <p><b>Battle histories:</b> original summaries written from the standard histories of the Peninsular War and the Waterloo campaign, each with its sources. The maps are schematic reconstructions; numbers and details of the period are often uncertain.</p>
           <p><b>Fonts:</b> Cinzel (Natanael Gama) and EB Garamond (Georg Duffner, Octavio Pardo) — SIL Open Font License 1.1.</p>
           <p><b>Icons:</b> game-icons.net by Lorc and Delapouite — CC BY 3.0 (see CREDITS.md for the full list).</p>
           <p><b>Miniatures, terrain, cards and dice:</b> original SVG artwork made for this edition.</p>
@@ -106,26 +101,26 @@ export function MainMenu(p: {
 }
 
 function SetupPreview({ state, flipped, humanSide }: { state: GameState; flipped: boolean; humanSide: Side }) {
-  const blocks = { top: state.players.top.blocks, bottom: state.players.bottom.blocks };
+  const nations = { top: state.players.top.nation, bottom: state.players.bottom.nation };
   return (
     <svg className="preview-svg" viewBox={`0 0 ${BOARD_W} ${BOARD_H}`}>
       <BoardArt {...boardArtProps(state, flipped)} />
-      <ObjectiveMarkers objectives={state.scenario.objectives} objState={state.special.objState} flipped={flipped} blocks={blocks} units={state.units} />
+      <ObjectiveMarkers objectives={state.scenario.objectives} objState={state.special.objState} flipped={flipped} nations={nations} />
       {state.units.map((u) => {
         const { x, y } = hexCenterId(u.hex, flipped);
         return (
           <g key={u.id} transform={`translate(${x}, ${y})`}>
-            <UnitToken {...unitTokenProps(state, u, humanSide)} />
+            <UnitToken {...unitTokenProps(u, humanSide)} />
           </g>
         );
       })}
-      {/* leaders still to be placed (117 Asculum) wait off the board */}
+      {/* a leader still off the board is not drawn */}
       {state.leaders.filter((l) => l.hex >= 0).map((l) => {
         const { x, y } = hexCenterId(l.hex, flipped);
         const att = !!leaderUnit(state, l);
         return (
           <g key={l.id} transform={`translate(${x + (att ? LEADER_ATTACH_OFFSET.x : 0)}, ${y + (att ? LEADER_ATTACH_OFFSET.y : 0)})`}>
-            <LeaderToken {...leaderTokenProps(state, l, humanSide, att)} name={l.name} />
+            <LeaderToken {...leaderTokenProps(state, l, att)} name={l.name} />
           </g>
         );
       })}
@@ -150,22 +145,6 @@ const DIFFS: { id: Difficulty; name: string; text: string }[] = [
   { id: 'consul', name: 'Consul', text: 'Thinks deeper and punishes errors.' },
 ];
 
-/**
- * One optional rule of the briefing, as a switch. The checkbox carries the state for assistive technology; the visible
- * on/off word is hidden from it so the state is not read twice.
- */
-export function OptionToggle({ sc, id, on, onToggle }: { sc: ScenarioInfo; id: OptionId; on: boolean; onToggle: () => void }) {
-  return (
-    <label className={`opt-toggle ${on ? 'on' : ''}`}>
-      <input type="checkbox" checked={on} onChange={onToggle} />
-      <span className="opt-switch" aria-hidden />
-      <span className="opt-text">
-        <b>{OPTIONAL_RULES[id].name}</b> <i aria-hidden>{on ? 'on' : 'off'}</i> — {OPTIONAL_RULES[id].text(sc)}
-      </span>
-    </label>
-  );
-}
-
 /** Your record from one side of a battle, for its "Command the" button. */
 function sideRecordText(won: number, lost: number, draw: number, army: string): string {
   if (!won && !lost && !draw) return `Not fought yet as ${army}`;
@@ -176,7 +155,7 @@ function sideRecordText(won: number, lost: number, draw: number, army: string): 
 
 type ScenarioSelectProps = {
   onBack: () => void;
-  onStart: (scenarioId: string, side: Side, difficulty: Difficulty, personality?: string, options?: GameOptions) => void;
+  onStart: (scenarioId: string, side: Side, difficulty: Difficulty, personality?: string) => void;
   /** The battle to open on (picked in the Triumphs record); else the first of the tab shown last time. */
   initialBattle?: string;
 };
@@ -224,8 +203,6 @@ function ScenarioSelectBody(p: ScenarioSelectProps & { fallback: ScenarioInfo })
   const [sel, setSel] = useState<ScenarioInfo>(() => initial ?? battles[0] ?? p.fallback);
   // the player's record: read once, as nothing changes it while the picker is open
   const [record] = useState(loadRecord);
-  const [choices, setChoices] = useState<GameOptions>(() => loadOptionChoices());
-  const offered = offeredOptions(sel);
   const switchTab = (t: Expansion) => {
     if (t === tab) return;
     setTab(t);
@@ -280,20 +257,10 @@ function ScenarioSelectBody(p: ScenarioSelectProps & { fallback: ScenarioInfo })
   const enemy = sel.setup[side === 'top' ? 'bottom' : 'top'];
   const historical = personalityFor(enemy.commander, enemy.army);
   const armies = { top: sel.setup.top, bottom: sel.setup.bottom };
-  /**
-   * Cards a side holds: its Command, "2→4 cards" for a side whose hand grows to 4 (hand growth, 006 and 313, §18.8), or its
-   * order dice when it plays no cards (310, §18.10).
-   */
-  const cardsText = (sd: Side) => {
-    const dice = orderDice(preview, sd);
-    if (dice) return `no cards, ${dice} order dice`;
-    const growth = preview.scenario.handGrowth;
-    const startCommand = preview.players[sd].command;
-    return `${growth?.side === sd && growth.to > startCommand ? `${startCommand}→${growth.to}` : armies[sd].cards} cards`;
-  };
+  const cardsText = (sd: Side) => `${armies[sd].cards} cards`;
   const start = () => {
     storage.set(storageKey('difficulty'), diff);
-    p.onStart(sel.id, side, diff, persona || undefined, chosenOptions(sel, choices));
+    p.onStart(sel.id, side, diff, persona || undefined);
   };
   return (
     <div className="select-root">
@@ -359,15 +326,6 @@ function ScenarioSelectBody(p: ScenarioSelectProps & { fallback: ScenarioInfo })
               <ul className="brief-special">
                 {sel.specialText.map((t) => <li key={t}>{t}</li>)}
               </ul>
-            )}
-            {offered.length > 0 && (
-              <div className="brief-options">
-                <div className="brief-options-label">Optional rules</div>
-                {offered.map((id) => {
-                  const on = optionValue(sel, id, choices);
-                  return <OptionToggle key={id} sc={sel} id={id} on={on} onToggle={() => setChoices(saveOptionChoice(choices, id, !on))} />;
-                })}
-              </div>
             )}
           </div>
         </Panel>

@@ -1,18 +1,17 @@
-import type { Blocks, CardGroup } from '../../engine/types';
+import type { Nation } from '../../engine/codes';
+import type { CardGroup } from '../../engine/types';
 import { blockColors, type BannerCloth } from '../../art/palettes';
 
 export type { BannerCloth };
 
-/** Cloth colour of the banners an army captured: it comes from the army's block set (`BLOCK_COLORS` in art/palettes); throws when the blocks have none. */
-export function bannerCloth(blocks: Blocks): BannerCloth {
-  return blockColors(blocks).cloth;
+/** Cloth colour of the banners an army captured: it comes from the army's nation (`BLOCK_COLORS` in art/palettes). */
+export function bannerCloth(nation: Nation): BannerCloth {
+  return blockColors(nation).cloth;
 }
 
-/** Colour coding of the four card groups. */
+/** Colour coding of the two card groups. */
 export const GROUP_COLORS: Record<CardGroup, { main: string; light: string; dark: string; label: string }> = {
   section: { main: '#6f6526', light: '#a89b48', dark: '#3b350e', label: 'Section' },
-  troop: { main: '#8c1d1b', light: '#bd4232', dark: '#520f0e', label: 'Troop' },
-  leadership: { main: '#22457f', light: '#4d73b4', dark: '#11264d', label: 'Leadership' },
   tactic: { main: '#55235f', light: '#8a539c', dark: '#2d1035', label: 'Tactic' },
 };
 
@@ -47,9 +46,9 @@ export const theme = {
     flag: '#e3801f',
   },
   dice: {
-    light: '#2f8a3a',
-    medium: '#2453a6',
-    heavy: '#b3261e',
+    infantry: '#2f8a3a',
+    cavalry: '#2453a6',
+    artillery: '#b3261e',
     ivory: '#f6efdc',
   },
   group: GROUP_COLORS,

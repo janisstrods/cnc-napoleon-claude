@@ -1,21 +1,18 @@
-// Banners and victory (rules-reference §13, §18.4). A side's banner total is its permanent banners
-// (`PlayerState.banners`) plus the banners its objectives give it right now (held banners, held.ts). Held banners are
-// brought up to date before any banner is scored, so a total never counts a held banner already lost.
-import { drawCard } from './cards';
-import { heldBanners, heldSnapshot, refreshHeld } from './held';
-import { other } from './query';
+// Banners and victory (RR §13). A side's banner total is its permanent banners plus the banners of the temporary
+// objectives it holds right now (`objState[i].held`).
 import type { FlowCtx, GameState, Side } from './types';
 
-/** A side's banner total: its permanent banners plus its held banners. */
+/** A side's banner total: permanent banners plus the banners of its held temporary objectives. */
 export function bannerTotal(s: GameState, side: Side): number {
-  return s.players[side].banners + heldBanners(s, side);
+  let n = s.players[side].banners;
+  s.scenario.objectives.forEach((o, i) => {
+    if (o.side === side && (o.kind === 'tempHex' || o.kind === 'tempGroup') && s.special.objState[i]?.held) n += o.banners;
+  });
+  return n;
 }
 
-/**
- * The banner check after `side`'s total rose: a total reaching the battle's target wins it at once (event `victory`).
- * Returns true when the battle is over now. Losing held banners later never undoes a win.
- */
-export function bannerVictory(s: GameState, ctx: FlowCtx, side: Side): boolean {
+/** The victory check after `side`'s total rose: reaching `bannersToWin` wins at once. Returns true when the battle is over. */
+export function checkVictory(s: GameState, ctx: FlowCtx, side: Side): boolean {
   if (s.winner) return true;
   const total = bannerTotal(s, side);
   if (total < s.bannersToWin) return false;
@@ -25,49 +22,10 @@ export function bannerVictory(s: GameState, ctx: FlowCtx, side: Side): boolean {
   return true;
 }
 
-/**
- * Bring the held banners up to date (held.ts): after units moved, left the board or were eliminated, and before any
- * banner is scored. `change` (the turn-end rules, `turnEndObjectives`) is applied first, inside the same comparison.
- * Emits `held` for each side whose held banners changed (losses first, then the active side; reason = the text of the
- * first objective that changed for it), then the victory check for each side whose total rose. Emits nothing when
- * nothing changed (always in battles without hold, majority or section clear objectives) or once the battle is over.
- */
-export function updateHeld(s: GameState, ctx: FlowCtx, change?: (s: GameState) => void): void {
-  const { objectives } = s.scenario;
-  const { objState } = s.special;
-  if (!objectives.length || s.winner) return;
-  const before = heldSnapshot(s);
-  change?.(s);
-  refreshHeld(s);
-  const delta = (side: Side) => objState.reduce((n, st, i) => n + st.held[side] - before[i][side], 0);
-  const sides = [s.active, other(s.active)].filter((side) => delta(side) !== 0)
-    .sort((a, b) => Math.sign(delta(a)) - Math.sign(delta(b)));
-  for (const side of sides) {
-    const i = objState.findIndex((st, k) => st.held[side] !== before[k][side]);
-    ctx.emit({ t: 'held', side, held: heldBanners(s, side), total: bannerTotal(s, side), reason: objectives[i].text });
-  }
-  for (const side of sides) if (delta(side) > 0 && bannerVictory(s, ctx, side)) return;
-}
-
-/**
- * `side` scores a permanent banner (`reason` goes in the `banner` event, whose `total` is the banner total). The held
- * banners are brought up to date first (`updateHeld`, which may end the battle). A total reaching the battle's target
- * wins it. Then the battle's Command bonus, once, when this is `side`'s banner it names (009: the Romans hold 6 cards
- * from their 3rd banner and draw 2 at once).
- */
-export function gainBanner(s: GameState, ctx: FlowCtx, side: Side, reason: string) {
-  updateHeld(s, ctx);
+/** `side` scores `n` permanent banners; `reason` goes in the `banner` event. */
+export function gainBanner(s: GameState, ctx: FlowCtx, side: Side, n: number, reason: string): void {
   if (s.winner) return;
-  const p = s.players[side];
-  p.banners++;
+  s.players[side].banners += n;
   ctx.emit({ t: 'banner', side, total: bannerTotal(s, side), reason });
-  if (bannerVictory(s, ctx, side)) return;
-  const bonus = s.scenario.commandBonus;
-  if (bonus && bonus.side === side && p.banners === bonus.atBanners && !s.special.commandBonusGiven) {
-    s.special.commandBonusGiven = true;
-    p.command = bonus.command;
-    ctx.emit({ t: 'command', side, command: bonus.command });
-    ctx.emit({ t: 'log', text: bonus.text, side });
-    for (let i = 0; i < bonus.draw; i++) drawCard(s, ctx, side);
-  }
+  checkVictory(s, ctx, side);
 }

@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
-import type { GameOptions, Side } from '../engine';
+import type { Side } from '../engine';
 import {
   GameController, clearSaved, devRouteConfig, legResult, loadSaved, newSessionConfig, rematchConfig, type Difficulty,
   type SavedGame, type SessionConfig,
@@ -43,7 +43,7 @@ export function App() {
   const [screen, setScreen] = useState<Screen>({ kind: 'menu' });
   const devStarted = useRef(false);
   useEffect(() => {
-    // Dev shortcut: #/play/<scenario>/<top|bottom>/<difficulty>[/<seed>] starts a battle directly (001–015, 101–124, 201–223, 301–319).
+    // Dev shortcut: #/play/<scenario>/<top|bottom>/<difficulty>[/<seed>] starts a battle directly (000 for now).
     if (devStarted.current) return;
     const cfg = devRouteConfig(window.location.hash);
     if (!cfg) return;
@@ -92,9 +92,9 @@ export function App() {
       <ScenarioSelect
         initialBattle={screen.battle}
         onBack={toMenu}
-        onStart={(id: string, side: Side, diff: Difficulty, personality?: string, options?: GameOptions) => {
+        onStart={(id: string, side: Side, diff: Difficulty, personality?: string) => {
           clearSaved();
-          const cfg = newSessionConfig(id, side, diff, options);
+          const cfg = newSessionConfig(id, side, diff);
           if (personality) cfg.personality = personality;
           setScreen({ kind: 'game', controller: startController(cfg) });
         }}

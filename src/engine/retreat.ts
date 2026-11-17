@@ -1,190 +1,62 @@
-// Retreat / evade / leader-evade path enumeration (rules-reference §9, §10, §11). Pure functions.
-import { onBaseline, rearHexes } from './hex';
-import { attachedLeader, leaderAt, leaderOn, unitAt, unitOn, type PieceIndex } from './query';
-import { closedTo, entryRollCount } from './terrain';
-import { OFF_BOARD, type GameState, type HexId, type Leader, type RetreatOption, type Unit } from './types';
+// Retreat paths (RR §1, §10.1). Pure functions. Leader retreats (→ T6b) and Retire and Reform (→ T8) are stubs.
+import { rearHexes } from './hex';
+import { attachedLeader, leaderAt, unitAt } from './query';
+import { passableFor } from './terrain';
+import { statsOf } from './units';
+import type { GameState, HexId, Leader, LeaderRetreatOption, RetreatOption, Unit } from './types';
 
-export interface ElephantRetreatOption extends RetreatOption {
-  /** Units / lone enemy leaders blocking the elephant, and how many blocks each loses. */
-  blockers: { id: string; n: number }[];
+function cmpPath(a: HexId[], b: HexId[]): number {
+  for (let i = 0; i < Math.min(a.length, b.length); i++) if (a[i] !== b[i]) return a[i] - b[i];
+  return a.length - b.length;
 }
 
-/** Keep minimal-loss options, one per end hex (fewest marsh hexes on the way: `entryRollCount`). */
-function prune(s: GameState, opts: RetreatOption[]): RetreatOption[] {
-  if (!opts.length) return opts;
-  const minLoss = Math.min(...opts.map((o) => o.losses));
-  const byEnd = new Map<string, RetreatOption>();
-  for (const o of opts) {
-    if (o.losses !== minLoss) continue;
-    const key = `${o.end}|${o.offBoard ? 1 : 0}`;
-    const prev = byEnd.get(key);
-    if (!prev || entryRollCount(s, o.path) < entryRollCount(s, prev.path)) byEnd.set(key, o);
-  }
-  return [...byEnd.values()];
-}
-
-/** Retreat options for a (non-elephant) unit that must retreat `hexes` hexes toward its own side. */
+/**
+ * Retreat options for a unit that must retreat `hexes` hexes toward its own side: paths of retreat neighbours that avoid
+ * units, enemy leaders and impassable hexes. A unit without a leader may end early on a lone friendly leader (attach); one
+ * with a leader may pass but not end there (R75). Full paths if any exist, else the longest with a loss per hex short (R74).
+ * Ascending by end hex.
+ */
 export function retreatOptions(s: GameState, u: Unit, hexes: number): RetreatOption[] {
+  const arm = statsOf(s, u).arm;
   const hasLeader = !!attachedLeader(s, u);
-  const out: RetreatOption[] = [];
-  const walk = (cur: HexId, path: HexId[], left: number) => {
-    if (left === 0) {
-      out.push({ path, end: cur, losses: 0, attachLeader: null });
+  const complete: RetreatOption[] = [];
+  const ends: { path: HexId[] }[] = [];
+  const walk = (cur: HexId, path: HexId[]) => {
+    const onLeader = path.length > 0 && hasLeader && leaderAt(s, cur)?.side === u.side;
+    if (path.length === hexes) {
+      if (onLeader) return; // R75: a unit with a leader may pass a lone friendly leader but not end there
+      complete.push({ path, end: cur, losses: 0, attach: null });
       return;
     }
-    let moved = false;
+    if (!onLeader) ends.push({ path });
     for (const h of rearHexes(cur, u.side)) {
-      if (closedTo(s, u.type, cur, h) || unitAt(s, h)) continue;
+      if (unitAt(s, h) || !passableFor(s, h, arm)) continue;
       const l = leaderAt(s, h);
       if (l) {
-        if (l.side !== u.side || hasLeader) continue;
-        moved = true;
-        out.push({ path: [...path, h], end: h, losses: 0, attachLeader: l.id });
-        continue;
+        if (l.side !== u.side) continue;
+        if (!hasLeader) {
+          complete.push({ path: [...path, h], end: h, losses: 0, attach: l.id });
+          continue;
+        }
       }
-      moved = true;
-      walk(h, [...path, h], left - 1);
-    }
-    if (!moved) out.push({ path, end: cur, losses: left, attachLeader: null });
-  };
-  walk(u.hex, [], hexes);
-  return prune(s, out);
-}
-
-/** Elephant retreat: blocked by units or lone enemy leaders, those pieces lose blocks instead. */
-export function elephantRetreatOptions(s: GameState, u: Unit, hexes: number): ElephantRetreatOption[] {
-  const out: ElephantRetreatOption[] = [];
-  const hasLeader = !!attachedLeader(s, u);
-  const walk = (cur: HexId, path: HexId[], left: number) => {
-    if (left === 0) {
-      out.push({ path, end: cur, losses: 0, attachLeader: null, blockers: [] });
-      return;
-    }
-    let moved = false;
-    const blockers: string[] = [];
-    let edgeBlocked = 0;
-    const rears = rearHexes(cur, u.side);
-    for (const h of rears) {
-      if (closedTo(s, u.type, cur, h)) { edgeBlocked++; continue; }
-      const v = unitAt(s, h);
-      if (v) { blockers.push(v.id); continue; }
-      const l = leaderAt(s, h);
-      if (l) {
-        if (l.side !== u.side) { blockers.push(l.id); continue; }
-        if (hasLeader) { edgeBlocked++; continue; } // only one leader per hex
-        moved = true;
-        out.push({ path: [...path, h], end: h, losses: 0, attachLeader: l.id, blockers: [] });
-        continue;
-      }
-      moved = true;
-      walk(h, [...path, h], left - 1);
-    }
-    if (!moved) {
-      if (blockers.length) out.push({ path, end: cur, losses: 0, attachLeader: null, blockers: blockers.map((id) => ({ id, n: left })) });
-      else out.push({ path, end: cur, losses: left, attachLeader: null, blockers: [] });
+      walk(h, [...path, h]);
     }
   };
-  walk(u.hex, [], hexes);
-  // prefer complete retreats; otherwise keep everything (owner chooses)
-  const complete = out.filter((o) => o.losses === 0 && o.blockers.length === 0);
-  if (complete.length) return prune(s, complete) as ElephantRetreatOption[];
-  const minLoss = Math.min(...out.map((o) => o.losses));
-  return out.filter((o) => o.losses === minLoss);
+  walk(u.hex, []);
+  const byKey = (a: RetreatOption, b: RetreatOption) => a.end - b.end || cmpPath(a.path, b.path);
+  if (complete.length) return complete.sort(byKey);
+  const longest = Math.max(...ends.map((e) => e.path.length));
+  return ends.filter((e) => e.path.length === longest)
+    .map((e) => ({ path: e.path, end: e.path.length ? e.path[e.path.length - 1] : u.hex, losses: hexes - longest, attach: null }))
+    .sort(byKey);
 }
 
-/**
- * Evade options: 2 hexes toward own side (1 only if no 2-hex evade exists), not through units, lone enemy leaders,
- * impassable terrain or terrain the unit may not enter. Empty = cannot evade, and always for an immobile unit (306, §18.11:
- * it never moves; it still retreats when flags force it).
- */
-export function evadeOptions(s: GameState, u: Unit): RetreatOption[] {
-  if (u.immobile) return [];
-  const hasLeader = !!attachedLeader(s, u);
-  const two: RetreatOption[] = [];
-  const one: RetreatOption[] = [];
-  const free = (from: HexId, h: HexId) => !closedTo(s, u.type, from, h) && !unitAt(s, h);
-  for (const h1 of rearHexes(u.hex, u.side)) {
-    if (!free(u.hex, h1)) continue;
-    const l1 = leaderAt(s, h1);
-    if (l1) {
-      if (l1.side !== u.side || hasLeader) continue;
-      two.push({ path: [h1], end: h1, losses: 0, attachLeader: l1.id }); // stopping at a lone leader is a legal evade
-      continue;
-    }
-    let any = false;
-    for (const h2 of rearHexes(h1, u.side)) {
-      if (!free(h1, h2)) continue;
-      const l2 = leaderAt(s, h2);
-      if (l2) {
-        if (l2.side !== u.side || hasLeader) continue;
-        two.push({ path: [h1, h2], end: h2, losses: 0, attachLeader: l2.id });
-        any = true;
-        continue;
-      }
-      two.push({ path: [h1, h2], end: h2, losses: 0, attachLeader: null });
-      any = true;
-    }
-    if (!any) one.push({ path: [h1], end: h1, losses: 0, attachLeader: null });
-  }
-  return prune(s, two.length ? two : one);
+/** A retreating leader's options. Stub: none (→ T6b). */
+export function leaderRetreatOptions(_s: GameState, _l: Leader): LeaderRetreatOption[] {
+  return [];
 }
 
-/**
- * Can unit u evade at all (`evadeOptions` is not empty)? A first evade hex it may enter: not into a unit, nor onto a lone
- * enemy leader, nor onto a friendly one when it has a leader of its own. `at`: see PieceIndex.
- */
-export function canEvade(s: GameState, u: Unit, at?: PieceIndex): boolean {
-  if (u.immobile) return false;
-  const hasLeader = !!attachedLeader(s, u, at);
-  for (const h of rearHexes(u.hex, u.side)) {
-    if (closedTo(s, u.type, u.hex, h) || unitOn(s, h, at)) continue;
-    const l = leaderOn(s, h, at);
-    if (l && (l.side !== u.side || hasLeader)) continue;
-    return true;
-  }
-  return false;
-}
-
-/**
- * Leader evade options: 1-3 hexes toward his own side, through friendly pieces; may leave the board over his own
- * baseline. Passing through enemy units requires escape rolls (listed in `escapes`). Never up a steep slope (308, §18.7);
- * city walls are passed freely. Empty = eliminated.
- */
-export function leaderEvadeOptions(s: GameState, l: Leader): RetreatOption[] {
-  const out: RetreatOption[] = [];
-  const walk = (cur: HexId, path: HexId[], escapes: string[], steps: number) => {
-    if (steps === 3) return;
-    if (onBaseline(cur, l.side)) {
-      out.push({ path: [...path, OFF_BOARD], end: OFF_BOARD, losses: 0, attachLeader: null, offBoard: true, escapes });
-    }
-    for (const h of rearHexes(cur, l.side)) {
-      if (closedTo(s, null, cur, h)) continue;
-      const v = unitAt(s, h);
-      const ldr = leaderAt(s, h);
-      const np = [...path, h];
-      if (v && v.side !== l.side) {
-        // must escape through; can never end on an enemy unit
-        walk(h, np, [...escapes, v.id], steps + 1);
-        continue;
-      }
-      if (ldr && ldr.id !== l.id) {
-        // lone enemy leader or another friendly leader: may pass, may not end here
-        walk(h, np, escapes, steps + 1);
-        continue;
-      }
-      out.push({ path: np, end: h, losses: 0, attachLeader: v ? v.id : null, escapes });
-      walk(h, np, escapes, steps + 1);
-    }
-  };
-  walk(l.hex, [], [], 0);
-  // one option per end hex: fewest escapes, then shortest
-  const best = new Map<string, RetreatOption>();
-  for (const o of out) {
-    const key = o.offBoard ? 'off' : String(o.end);
-    const prev = best.get(key);
-    const e = o.escapes?.length ?? 0;
-    const pe = prev?.escapes?.length ?? 0;
-    if (!prev || e < pe || (e === pe && o.path.length < prev.path.length)) best.set(key, o);
-  }
-  return [...best.values()];
+/** Retire and Reform paths. Stub: none (→ T8). */
+export function retireReformOptions(_s: GameState, _u: Unit): RetreatOption[] {
+  return [];
 }

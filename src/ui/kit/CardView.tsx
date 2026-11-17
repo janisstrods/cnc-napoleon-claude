@@ -1,41 +1,31 @@
 import type { CSSProperties, KeyboardEvent } from 'react';
-import { CARD_DEFS, mirrorKind, sectionOrders } from '../../engine/cards';
-import type { CardKind, SectionName, UnitClass } from '../../engine/types';
-import { DieSymbol } from './Dice';
+import { CARD_DEFS, mirrorKind } from '../../engine/cards';
+import type { CardKind, SectionName } from '../../engine/types';
 import { Icon, type IconName } from './Icon';
 import { SectionMiniMap } from './SectionMiniMap';
 import { GROUP_COLORS } from './theme';
 
 export type CardSize = 'sm' | 'md' | 'lg';
 
-/** Illustration of each non-section card (game-icons.net, CC BY 3.0). */
+/** Illustration of each tactic card (game-icons.net, CC BY 3.0); section cards show the mini-map instead. */
 export const CARD_ICONS: Partial<Record<CardKind, IconName>> = {
-  orderLight: 'sling',
-  orderMedium: 'spartan',
-  orderHeavy: 'romanShield',
-  orderMounted: 'horseHead',
-  inspiredL: 'caesar',
-  inspiredC: 'caesar',
-  inspiredR: 'caesar',
-  leadershipAny: 'laurelCrown',
-  clash: 'shieldEchoes',
+  coordinatedAdvance: 'laurels',
+  flankAttack: 'horseHead',
+  forward: 'run',
+  reconInForce: 'bowman',
+  bayonetCharge: 'spears',
+  bombard: 'strikingArrows',
+  cavalryCharge: 'cavalry',
   counterAttack: 'shieldReflect',
-  darken: 'strikingArrows',
-  doubleTime: 'run',
+  elan: 'trumpetFlag',
+  fireAndHold: 'shieldEchoes',
   firstStrike: 'swordWound',
-  spartacus: 'swordsPower',
-  lineCommand: 'spears',
-  mountedCharge: 'cavalry',
-  moveFireMove: 'bowman',
+  forceMarch: 'run',
+  coldSteel: 'crossedSwords',
+  leadership: 'caesar',
+  grandManoeuvre: 'laurelCrown',
   rally: 'trumpetFlag',
-};
-
-/** Cards that order one troop class carry that class's die symbol. */
-export const CARD_CLASS: Partial<Record<CardKind, UnitClass>> = {
-  orderLight: 'light',
-  orderMedium: 'medium',
-  orderHeavy: 'heavy',
-  moveFireMove: 'light',
+  shortSupply: 'romanShield',
 };
 
 const GOLD = ['#fff0bf', '#e6c06a', '#b38532', '#8a6020'];
@@ -96,12 +86,13 @@ export function CardView(p: {
   const g = GROUP_COLORS[def.group];
   const swapped = p.mirrored && shownKind === p.kind && def.sections.length > 0 && def.sections.length < 3;
   const sections = swapped ? def.sections.map((s) => SWAP[s]) : def.sections;
-  const rawCounts = sectionOrders(shownKind);
+  // orders per section; a count of "as many as the Command allows" has no number to print
+  const select = def.select;
+  const rawCounts = select.kind === 'sections' ? select.counts : undefined;
   const counts: Partial<Record<SectionName, number>> | undefined = rawCounts
-    ? Object.fromEntries(Object.entries(rawCounts).map(([s, n]) => [swapped ? SWAP[s as SectionName] : s, n]))
+    ? Object.fromEntries(Object.entries(rawCounts).filter(([, n]) => typeof n === 'number').map(([s, n]) => [swapped ? SWAP[s as SectionName] : s, n]))
     : undefined;
   const icon = CARD_ICONS[shownKind];
-  const troopClass = CARD_CLASS[shownKind];
   const clickable = !!p.onClick && !p.disabled;
   const textLen = def.text.length;
   const textClass = textLen > 172 ? 'kit-card__text--xlong' : textLen > 140 ? 'kit-card__text--long' : textLen < 90 ? 'kit-card__text--short' : '';
@@ -155,11 +146,6 @@ export function CardView(p: {
         <header className="kit-card__header">
           <span className="kit-card__title">{def.title}</span>
           {def.detach ? <HelmetBadge /> : null}
-          {troopClass ? (
-            <div className="kit-card__class" title={`Orders ${troopClass} units`}>
-              <DieSymbol face={troopClass} />
-            </div>
-          ) : null}
           {p.mirrored ? (
             <div className="kit-card__mirror" title="Left and right swapped">
               &#8644;
@@ -173,7 +159,7 @@ export function CardView(p: {
               <div className="kit-card__maplabels" aria-hidden="true">
                 {(['left', 'center', 'right'] as const).map((s) => (
                   <span key={s} className={sections.includes(s) ? 'is-on' : undefined}>
-                    {s}
+                    {s === 'center' ? 'centre' : s}
                   </span>
                 ))}
               </div>
@@ -184,11 +170,6 @@ export function CardView(p: {
               <div className="kit-card__medallion">
                 {icon ? <Icon name={icon} size="100%" gradient={[g.light, g.main, g.dark]} className="kit-card__icon" /> : null}
               </div>
-              {def.group === 'leadership' ? (
-                <div className="kit-card__leadmap">
-                  <SectionMiniMap sections={sections} color={g.main} size={100} boxHeight={52} />
-                </div>
-              ) : null}
             </>
           )}
         </div>

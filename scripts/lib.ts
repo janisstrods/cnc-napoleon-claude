@@ -1,4 +1,4 @@
-// Shared plumbing for the dev scripts (scripts/ai-*.ts): command-line flags, the scripts' fallback generator, the
+// Shared plumbing for the dev scripts (scripts/ai-match.ts): command-line flags, the scripts' fallback generator, the
 // tournament job list, and the AI-vs-AI game loop.
 import { GameDriver, randomAnswer, type Answer, type Decision, type GameEvent, type Side } from '../src/engine';
 import { chooseAnswer, newMemory, type AiMemory, type AiOptions } from '../src/ai';
@@ -24,7 +24,7 @@ export function lcg(seed: number): () => number {
 /** One game of a tournament: a battle, the side side A plays, and the game's number. */
 export interface Job { sc: string; aSide: Side; g: number }
 
-/** Every battle `games` times, A as bottom and then as top, as `--shard` shares them out (ai-match, ai-balance). */
+/** Every battle `games` times, A as bottom and then as top, as `--shard` shares them out (ai-match). */
 export function shardJobs(scenarios: string[], games: number): Job[] {
   const [shard, shards] = shardArg();
   const jobs: Job[] = [];
@@ -42,7 +42,7 @@ export interface PlayHooks {
   before?: (dec: Decision) => void;
   /** An answer for the decision instead of its side's AI (undefined: the AI answers). */
   answer?: (dec: Decision) => Answer | undefined;
-  /** The thinking time of an AI turn plan: a card decision, or a dice-order side's assignment of its order dice (310). */
+  /** The thinking time of an AI turn plan (a card decision). */
   planMs?: (side: Side, ms: number) => void;
   /** Once the answer is chosen, before it is applied (`ai`: the AI's full result and memory, when the AI chose it). */
   chosen?: (dec: Decision, ans: Answer, ai?: { say?: string; mem: AiMemory }) => void;
@@ -70,7 +70,7 @@ export function playAiGame(d: GameDriver, opts: Record<Side, AiOptions>, hooks: 
       const mem = mems[dec.side];
       const t0 = hooks.planMs ? performance.now() : 0;
       const res = chooseAnswer(d.state, dec, opts[dec.side], mem);
-      if (hooks.planMs && (dec.kind === 'playCard' || dec.kind === 'diceOrders')) hooks.planMs(dec.side, performance.now() - t0);
+      if (hooks.planMs && dec.kind === 'playCard') hooks.planMs(dec.side, performance.now() - t0);
       ans = res.answer;
       hooks.chosen?.(dec, ans, { say: res.say, mem });
     }

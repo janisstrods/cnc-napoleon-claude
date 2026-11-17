@@ -1,4 +1,4 @@
-// Forests (painted tree clumps toward the hex rim) and marshes (mud, pools and reeds).
+// Forests: painted tree clumps toward the hex rim.
 import { blobPath, isoPath } from './field';
 import { fmt, hexBoundaryDist, type PaintCtx } from './hexmath';
 import { regionGrid } from './hills';
@@ -105,59 +105,3 @@ export function paintForests(ctx: PaintCtx): JSX.Element | null {
     </g>
   );
 }
-
-export function paintMarsh(ctx: PaintCtx): JSX.Element | null {
-  const hs = ctx.hexes.filter((h) => h.t === 'marsh');
-  if (!hs.length) return null;
-  const g = regionGrid(ctx, 'marsh', 3, 3, 0.35, 14, 41);
-  const mud = isoPath(g, 0.5);
-  const R = rng(321 + hs[0].id);
-  let pools = '';
-  let poolHi = '';
-  let reeds = '';
-  let reedsLight = '';
-  let heads = '';
-  for (const h of hs) {
-    const np = 5;
-    const ph = R() * Math.PI * 2;
-    for (let k = 0; k < np; k++) {
-      const a = ph + (k / np) * Math.PI * 2 + (R() - 0.5) * 0.6;
-      const d = 14 + R() * 18;
-      const x = h.x + Math.cos(a) * d;
-      const y = h.y + Math.sin(a) * d * 0.9;
-      const rx = 6 + R() * 6;
-      const ry = 3 + R() * 2.5;
-      pools += blobPath(x, y, rx, ry, R, 7, 0.22, (R() - 0.5) * 0.6);
-      poolHi += `M${fmt(x - rx * 0.4)},${fmt(y - ry * 0.2)}l${fmt(rx * 0.5)},0`;
-    }
-    const nr = 8;
-    const ph2 = R() * Math.PI * 2;
-    for (let k = 0; k < nr; k++) {
-      const a = ph2 + (k / nr) * Math.PI * 2 + (R() - 0.5) * 0.5;
-      const d = hexBoundaryDist(a) - 9 - R() * 8;
-      const x = h.x + Math.cos(a) * d;
-      const y = h.y + Math.sin(a) * d;
-      const blades = 5 + Math.floor(R() * 3);
-      for (let m = 0; m < blades; m++) {
-        const off = (m - (blades - 1) / 2) * 1.5;
-        const lean = off * 0.6 + (R() - 0.5) * 1.5;
-        const hgt = 7 + R() * 6;
-        const seg = `M${fmt(x + off)},${fmt(y)}q${fmt(lean * 0.3)},${fmt(-hgt * 0.5)} ${fmt(lean)},${fmt(-hgt)}`;
-        if (m % 2) reedsLight += seg;
-        else reeds += seg;
-        if (m === 1 || m === blades - 2) heads += `M${fmt(x + off + lean - 0.9)},${fmt(y - hgt + 0.5)}h1.8v-3.6h-1.8z`;
-      }
-    }
-  }
-  return (
-    <g className="marsh">
-      <path d={mud} fill={P.mud} opacity={0.6} />
-      <path d={pools} fill={P.pool} stroke={P.bank} strokeWidth={0.9} strokeOpacity={0.6} />
-      <path d={poolHi} fill="none" stroke={P.poolLight} strokeWidth={1.2} strokeLinecap="round" opacity={0.8} />
-      <path d={reeds} fill="none" stroke={P.reedDark} strokeWidth={1.1} strokeLinecap="round" />
-      <path d={reedsLight} fill="none" stroke={P.reed} strokeWidth={1} strokeLinecap="round" />
-      <path d={heads} fill="#5a4426" />
-    </g>
-  );
-}
-

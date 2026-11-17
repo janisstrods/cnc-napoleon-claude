@@ -1,6 +1,6 @@
-// Public API of the miniature art library.
-export type { BannerCloth, Kit, LookDef, LookPalette, Palette, SideColors } from './palettes';
-export { BASE_TOP, BLOCK_COLORS, LOOKS, blockColors, lookDef, paletteFor } from './palettes';
-export { UnitToken, unitTypeName, CLASS_COLORS, ClassSymbol, type UnitTokenProps } from './token';
+// Public API of the art library: placeholders until Plan 6B Task 7 wires src/art/nap into the tokens.
+export type { BannerCloth, SideColors } from './palettes';
+export { BASE_TOP, BLOCK_COLORS, blockColors } from './palettes';
+export { UnitToken, figureKind, type Kind, type UnitTokenProps } from './token';
 export { LeaderToken, LEADER_ATTACH_OFFSET, type LeaderTokenProps } from './leader';
 export { UnitIcon } from './icon';

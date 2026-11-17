@@ -1,334 +1,42 @@
-// Battle objectives (rules-reference §18.4): scenario data resolved into `ObjectiveDef`s, and their play. Captures (by
-// stopping on a hex: 011 Baecula, 114 Gabiene; at the start of the side's turn: Expansion #2), held banners (hold,
-// majority, section clear) and exits off the board (010 Castulo, Expansion #2). Expansion #3 adds ship markers (a capture
-// of any passable hex, nothing removed), exits over a side edge and leaders who score by exiting (`exit.leadersScore`), and a
-// removed camp leaves the hill under it. Banner totals and victory live in banners.ts.
-//
-// Hooks (the turn flow: flow.ts and the modules it builds on): `turnStartObjectives` before the card is played,
-// `turnEndObjectives` before the draw, `captureOnStop` where a unit ends its move or (at the end of its close-combat
-// sequence) a momentum advance it still stands on, and `updateHeld` (banners.ts; held banners, held.ts) after every
-// change of unit positions (moves, momentum advances, retreats, evades, removals; after the move's own losses) and
-// after every battle action.
-// Every banner scored goes through `gainBanner`, which brings the held banners up to date first.
-import { gainBanner, updateHeld } from './banners';
-import { turnEndHeld } from './held';
-import { hexId, onBoard } from './hex';
-import { attachedLeader, other, unitAt } from './query';
-import type { ObjectiveSetup, ScenarioSetup } from './setup';
-import { groundUnder, impassableTerrain, setTerrain } from './terrain';
-import { UNIT_STATS } from './units';
-import {
-  OBJECTIVE_MARKERS, ROWS,
-  type FlowCtx, type GameState, type HexId, type Leader, type ObjectiveDef, type ObjectiveOf, type ObjectiveState, type Side,
-  type TerrainType, type Unit,
-} from './types';
+// Objectives (RR §13.3, §13.4). Skeleton: no temporary objectives, no exits; kills score a banner (→ T13).
+import { gainBanner } from './banners';
+import { attachedLeader, other, pieceById } from './query';
+import type { FlowCtx, GameState, HexId, Leader, Side, Unit } from './types';
 
-// ---------------------------------------------------------------------------
-// setup
-// ---------------------------------------------------------------------------
+/** Banners decided at the start of `side`'s turn. Stub: nothing (→ T13). */
+export function turnStartObjectives(_s: GameState, _ctx: FlowCtx, _side: Side): void {}
 
-function checkSide(kind: string, side: unknown): Side {
-  if (side !== 'top' && side !== 'bottom') throw new Error(`${kind} objective: unknown side ${String(side)}`);
-  return side;
+/** Bring the held objectives up to date after a piece moved or was lost. Stub: nothing (→ T13). */
+export function updateHeld(_s: GameState, _ctx: FlowCtx): void {}
+
+/** May this piece step off the board from `hex`? Stub: false (→ T13). */
+export function exitAllowedFrom(_s: GameState, _piece: Unit | Leader, _hex: HexId): boolean {
+  return false;
 }
 
-/** Listed `[r, c]` hexes as ids, ascending and without repeats; `bad` names what is wrong with a hex (or null). */
-function listedHexes(kind: string, list: [number, number][], bad: (r: number, c: number, h: HexId) => string | null): HexId[] {
-  if (!Array.isArray(list)) throw new Error(`${kind} objective: hexes must be a list of [r, c]`);
-  const out = list.map(([r, c]) => {
-    if (!onBoard(r, c)) throw new Error(`${kind} objective: ${r},${c} is off the board`);
-    const h = hexId(r, c);
-    const why = bad(r, c, h);
-    if (why) throw new Error(`${kind} objective: ${r},${c} ${why}`);
-    return h;
-  });
-  return [...new Set(out)].sort((a, b) => a - b);
-}
-
-function needHexes(kind: string, hexes: HexId[]): HexId[] {
-  if (!hexes.length) throw new Error(`${kind} objective needs at least one hex`);
-  return hexes;
-}
-
-const anyHex = () => null;
-const atLeast = (v: unknown, min: number): v is number => Number.isInteger(v) && (v as number) >= min;
-
-/** The board the objectives are resolved against: terrain and fords (what is passable) of every hex. */
-interface Board {
-  terrain: TerrainType[];
-  fords: boolean[];
-}
-
-function resolveCapture(o: ObjectiveSetupOf<'capture'>, board: Board, players: GameState['players']): ObjectiveOf<'capture'> {
-  const { terrain, fords } = board;
-  const side = checkSide('capture', o.side);
-  const when = o.when ?? 'stop';
-  if (when !== 'stop' && when !== 'turnStart') throw new Error(`capture objective: unknown when ${String(when)}`);
-  const banners = o.banners ?? [1];
-  if (!Array.isArray(banners) || !banners.length || banners.some((b) => !atLeast(b, 0))) {
-    throw new Error('capture objective: banners must be a list of whole numbers (0 or more)');
+/** A piece (and a unit's attached leader) steps off the board: a `removed` event and no banner (T13 adds banners). */
+export function exitPiece(s: GameState, ctx: FlowCtx, pieceId: string): void {
+  const p = pieceById(s, pieceId);
+  if (!p) return;
+  const ids = [pieceId];
+  if ('key' in p) {
+    const l = attachedLeader(s, p);
+    if (l) ids.push(l.id);
   }
-  // a ship marker (313) lies on any passable hex and is only taken; a camp capture lists camps (or ramparts standing in for
-  // one, 215 Belgae: the Roman "unfinished camp"), by default every camp on the board
-  const marker: unknown = o.marker;
-  if (marker !== undefined && !OBJECTIVE_MARKERS.includes(marker as never)) throw new Error(`capture objective: unknown marker ${String(marker)}`);
-  const camps = marker !== undefined
-    ? listedHexes('capture', o.hexes ?? [], (_r, _c, h) => (impassableTerrain(terrain[h], fords[h]) ? 'is impassable' : null))
-    : o.hexes
-      ? listedHexes('capture', o.hexes, (_r, _c, h) => (terrain[h] === 'camp' || terrain[h] === 'rampart' ? null : 'is not a camp or rampart'))
-      : terrain.flatMap((t, h) => (t === 'camp' ? [h] : []));
-  const hexes = needHexes('capture', camps);
-  const together = o.together ?? 0;
-  if (together !== 0) {
-    if (when !== 'turnStart') throw new Error("capture objective: together needs when 'turnStart'");
-    if (!atLeast(together, 1) || together > hexes.length) {
-      throw new Error(`capture objective: together must be a whole number from 1 to the number of hexes (${hexes.length})`);
-    }
-    // one capture takes every hex at once, so only the first value could ever score
-    if (banners.length > 1) throw new Error('capture objective: together makes a single capture, so banners takes one value');
-  }
-  const remove = o.remove ?? false;
-  if (typeof remove !== 'boolean') throw new Error('capture objective: remove must be true or false');
-  if (marker !== undefined && remove) throw new Error('capture objective: a ship marker cannot be removed');
-  const text = marker !== undefined
-    ? `The ${players[side].army} army seizes a ship.`
-    : `The ${players[side].army} army captures a ${players[other(side)].army} camp!`;
-  return {
-    kind: 'capture', side, hexes, when, banners: [...banners], together, remove, ...(marker !== undefined ? { marker: marker as 'ship' } : {}),
-    text: o.text ?? text,
-  };
-}
-
-function resolveHold(o: ObjectiveSetupOf<'hold'>, players: GameState['players']): ObjectiveOf<'hold'> {
-  const side = checkSide('hold', o.side);
-  const hexes = needHexes('hold', listedHexes('hold', o.hexes ?? [], anyHex));
-  const max = o.max ?? hexes.length;
-  if (!atLeast(max, 1)) throw new Error('hold objective: max must be a whole number, 1 or more');
-  return { kind: 'hold', side, hexes, max, text: o.text ?? `The ${players[side].army} army holds an objective.` };
-}
-
-function resolveMajority(o: ObjectiveSetupOf<'majority'>): ObjectiveOf<'majority'> {
-  const sides: unknown = o.sides;
-  if (!Array.isArray(sides) || !sides.length || new Set(sides).size !== sides.length) {
-    throw new Error('majority objective: sides must list top and/or bottom, once each');
-  }
-  for (const side of sides) checkSide('majority', side);
-  const hexes = needHexes('majority', listedHexes('majority', o.hexes ?? [], anyHex));
-  if (!atLeast(o.banners, 1)) throw new Error('majority objective: banners must be a whole number, 1 or more');
-  if (o.when !== 'turnEnd' && o.when !== 'always') throw new Error(`majority objective: unknown when ${String(o.when)}`);
-  return {
-    kind: 'majority', sides: [...(sides as Side[])], hexes, banners: o.banners, when: o.when,
-    text: o.text ?? 'Control of the objective hexes.',
-  };
-}
-
-function resolveSectionClear(o: ObjectiveSetupOf<'sectionClear'>, players: GameState['players']): ObjectiveOf<'sectionClear'> {
-  const side = checkSide('sectionClear', o.side);
-  return { kind: 'sectionClear', side, text: o.text ?? `The ${players[side].army} army has cleared a section of the enemy.` };
-}
-
-function resolveExit(o: ObjectiveSetupOf<'exit'>, players: GameState['players']): ObjectiveOf<'exit'> {
-  const side = checkSide('exit', o.side);
-  const units = o.units ?? 'any';
-  if (units !== 'any' && units !== 'foot' && units !== 'cavalry') throw new Error(`exit objective: unknown units ${String(units)}`);
-  const leadersScore: unknown = o.leadersScore ?? false;
-  if (typeof leadersScore !== 'boolean') throw new Error('exit objective: leadersScore must be true or false');
-  const edge = (r: number, c: number) => r === 0 || r === ROWS - 1 || !onBoard(r, c - 1) || !onBoard(r, c + 1);
-  const hexes = listedHexes('exit', o.hexes ?? [], (r, c) => (edge(r, c) ? null : 'is not an edge hex'));
-  return {
-    kind: 'exit', side, hexes: needHexes('exit', hexes), units, leadersScore,
-    text: o.text ?? `${players[side].army} {unit} breaks through and exits the battlefield!`,
-  };
-}
-
-type ObjectiveSetupOf<K extends ObjectiveSetup['kind']> = Extract<ObjectiveSetup, { kind: K }>;
-
-/** Resolve and validate a scenario's objectives against its terrain and armies, filling in every default. */
-export function resolveObjectives(
-  setup: ScenarioSetup, terrain: TerrainType[], fords: boolean[], players: GameState['players'],
-): ObjectiveDef[] {
-  const list: unknown = setup.objectives ?? [];
-  if (!Array.isArray(list)) throw new Error('objectives must be a list');
-  return (list as ObjectiveSetup[]).map((o): ObjectiveDef => {
-    const def = resolveOne(o, { terrain, fords }, players);
-    const text: unknown = o.text;
-    if (text !== undefined && typeof text !== 'string') throw new Error(`${def.kind} objective: text must be a string`);
-    return def;
-  });
-}
-
-function resolveOne(o: ObjectiveSetup, board: Board, players: GameState['players']): ObjectiveDef {
-  switch (o.kind) {
-    case 'capture': return resolveCapture(o, board, players);
-    case 'hold': return resolveHold(o, players);
-    case 'majority': return resolveMajority(o);
-    case 'sectionClear': return resolveSectionClear(o, players);
-    case 'exit': return resolveExit(o, players);
-    default:
-      throw new Error(`unknown objective kind ${String((o as { kind?: unknown }).kind)}`);
+  for (const id of ids) {
+    s.units = s.units.filter((x) => x.id !== id);
+    s.leaders = s.leaders.filter((x) => x.id !== id);
+    delete s.turn.ordered[id];
+    ctx.emit({ t: 'removed', id, reason: 'exit' });
   }
 }
 
-/** The state of an objective before play. */
-export function newObjectiveState(): ObjectiveState {
-  return { taken: [], held: { top: 0, bottom: 0 }, sections: [] };
+/** An enemy unit was eliminated: its enemy scores a banner (T13 adds the kill weights). */
+export function scoreKill(s: GameState, ctx: FlowCtx, u: Unit): void {
+  gainBanner(s, ctx, other(u.side), 1, 'unit eliminated');
 }
 
-/** Is there a unit (not a lone leader) of `side` on hex `h`? */
-function unitOfSide(s: GameState, h: HexId, side: Side): boolean {
-  return unitAt(s, h)?.side === side;
-}
-
-// ---------------------------------------------------------------------------
-// capture
-// ---------------------------------------------------------------------------
-
-/** Capture objective `i` (an error for any other kind). */
-function captureObjective(s: GameState, i: number): ObjectiveOf<'capture'> {
-  const o = s.scenario.objectives[i];
-  if (o?.kind !== 'capture') throw new Error(`objective ${i} is not a capture objective`);
-  return o;
-}
-
-/** Index of the 'stop' capture objective that would take hex `h` for a unit of `side` stopping there now, or -1. */
-export function stopCaptureAt(s: GameState, side: Side, h: HexId): number {
-  const { objectives } = s.scenario;
-  const { objState } = s.special;
-  for (let i = 0; i < objectives.length; i++) {
-    const o = objectives[i];
-    if (o.kind === 'capture' && o.when === 'stop' && o.side === side && o.hexes.includes(h) && !objState[i].taken.includes(h)) return i;
-  }
-  return -1;
-}
-
-/** Would a unit of `side` ending its move on hex `h` capture it now (a 'stop' capture objective, hex not yet taken)? */
-export function capturableAt(s: GameState, side: Side, h: HexId): boolean {
-  return stopCaptureAt(s, side, h) >= 0;
-}
-
-/** Banners the next capture for capture objective `i` scores (`banners` in order, the last value repeating). */
-export function nextCaptureBanners(s: GameState, i: number): number {
-  const o = captureObjective(s, i);
-  return o.banners[Math.min(s.special.objState[i].taken.length, o.banners.length - 1)];
-}
-
-/**
- * One capture for capture objective `i`: `hexes` are taken (logged with the objective's text), removed when the
- * objective says so (open ground, or the hill under the hex, `terrainChanged`), then the capture's banners are scored
- * (permanent banners). A ship marker is only taken: the hex does not change.
- */
-function capture(s: GameState, ctx: FlowCtx, i: number, hexes: HexId[]) {
-  const o = captureObjective(s, i);
-  const n = nextCaptureBanners(s, i);
-  s.special.objState[i].taken.push(...hexes);
-  ctx.emit({ t: 'log', text: o.text, side: o.side });
-  if (o.remove) for (const h of hexes) setTerrain(s, ctx, h, groundUnder(s, h));
-  for (let k = 0; k < n; k++) gainBanner(s, ctx, o.side, o.marker === 'ship' ? 'ship taken' : 'camp captured');
-}
-
-/**
- * Unit `u` has ended its move on its hex, or a momentum advance there that it still stands on at the end of its
- * close-combat sequence: a 'stop' capture objective of its side takes the hex (logged with the objective's text) and
- * scores its banners. Passing through, retreating, evading or attacking without advancing never captures.
- */
-export function captureOnStop(s: GameState, ctx: FlowCtx, u: Unit) {
-  const i = stopCaptureAt(s, u.side, u.hex);
-  if (i >= 0) capture(s, ctx, i, [u.hex]);
-}
-
-/**
- * The start of `side`'s turn, before its card (X2 Q9d): each 'turnStart' capture objective of `side` takes every untaken
- * listed hex holding one of its units, one capture per hex in hex order. With `together: n` nothing happens until n
- * untaken listed hexes are occupied at once; then one capture (`banners[0]`) takes every untaken listed hex. The held
- * banners are brought up to date before and after. The battle may end here.
- */
-export function turnStartObjectives(s: GameState, ctx: FlowCtx, side: Side): void {
-  const { objectives } = s.scenario;
-  const { objState } = s.special;
-  updateHeld(s, ctx);
-  for (let i = 0; i < objectives.length; i++) {
-    const o = objectives[i];
-    if (o.kind !== 'capture' || o.when !== 'turnStart' || o.side !== side) continue;
-    const open = o.hexes.filter((h) => !objState[i].taken.includes(h));
-    const occupied = open.filter((h) => unitOfSide(s, h, side));
-    if (o.together) {
-      if (occupied.length >= o.together && !s.winner) capture(s, ctx, i, open);
-    } else {
-      for (const h of occupied) if (!s.winner) capture(s, ctx, i, [h]);
-    }
-  }
-  updateHeld(s, ctx);
-}
-
-// ---------------------------------------------------------------------------
-// turn end
-// ---------------------------------------------------------------------------
-
-/**
- * The end of `side`'s turn, before the draw (X2 Q9b–c): every `majority` 'turnEnd' objective goes to the side with more
- * units on its hexes (a tie: nobody), and each `sectionClear` objective of `side` scores every section without an enemy
- * unit (`turnEndHeld`). Then `held` events and the victory check, as `updateHeld`.
- */
-export function turnEndObjectives(s: GameState, ctx: FlowCtx, side: Side): void {
-  updateHeld(s, ctx, (st) => turnEndHeld(st, side));
-}
-
-// ---------------------------------------------------------------------------
-// exits
-// ---------------------------------------------------------------------------
-
-/** Does exit objective `o` let unit `u` leave? Its side, and its `units` filter: foot units or cavalry only (212). */
-export function exitAllows(o: ObjectiveOf<'exit'>, u: Unit): boolean {
-  if (o.side !== u.side) return false;
-  if (o.units === 'foot') return UNIT_STATS[u.type].foot;
-  if (o.units === 'cavalry') return UNIT_STATS[u.type].cavalry;
-  return true;
-}
-
-/** Does exit objective `o` let a lone leader `l` leave? Its side, and it scoring leaders (`leadersScore`, 317). */
-export function leaderExitAllows(o: ObjectiveOf<'exit'>, l: Leader): boolean {
-  return o.leadersScore && o.side === l.side;
-}
-
-/** Hexes lone leader `l` may step off the board from (those of the exit objectives that score leaders; usually none). */
-export function leaderExitHexes(s: GameState, l: Leader): HexId[] {
-  const out: HexId[] = [];
-  for (const o of s.scenario.objectives) if (o.kind === 'exit' && leaderExitAllows(o, l)) out.push(...o.hexes);
-  return out;
-}
-
-/** Hexes unit `u` may step off the board from (those of the exit objectives that let it leave; usually none). */
-export function exitHexes(s: GameState, u: Unit): HexId[] {
-  const out: HexId[] = [];
-  for (const o of s.scenario.objectives) if (o.kind === 'exit' && exitAllows(o, u)) out.push(...o.hexes);
-  return out;
-}
-
-/**
- * Unit `u`, standing on an exit hex of its side, steps off the board (the caller emits the `move` event). It and its
- * attached leader are removed, not eliminated (no banner for the enemy), and its side scores 1 banner, and 1 more for the
- * leader when the objective scores leaders (`leadersScore`, 317).
- */
-export function exitUnit(s: GameState, ctx: FlowCtx, u: Unit) {
-  const o = s.scenario.objectives.find((x): x is ObjectiveOf<'exit'> => x.kind === 'exit' && exitAllows(x, u) && x.hexes.includes(u.hex));
-  if (!o) throw new Error(`${u.id} cannot exit from hex ${u.hex}`);
-  const l = attachedLeader(s, u);
-  s.units = s.units.filter((x) => x.id !== u.id);
-  if (l) s.leaders = s.leaders.filter((x) => x.id !== l.id);
-  ctx.emit({ t: 'log', text: o.text.replaceAll('{unit}', UNIT_STATS[u.type].name), side: u.side });
-  gainBanner(s, ctx, u.side, 'unit exited'); // the held banners count the unit gone first
-  if (l && o.leadersScore) gainBanner(s, ctx, u.side, 'leader exited'); // a win at the unit's banner ends the battle first
-}
-
-/**
- * Lone leader `l` steps off the board from exit hex `hex` (the caller emits the `move` event; `hex` is the hex he left
- * the board from, which he does not have to end on): he is removed, not eliminated (no banner for the enemy), and his side
- * scores 1 banner. Needs an exit objective of his side that scores leaders and lists `hex`.
- */
-export function exitLeader(s: GameState, ctx: FlowCtx, l: Leader, hex: HexId) {
-  const o = s.scenario.objectives.find((x): x is ObjectiveOf<'exit'> => x.kind === 'exit' && leaderExitAllows(x, l) && x.hexes.includes(hex));
-  if (!o) throw new Error(`${l.id} cannot exit from hex ${hex}`);
-  s.leaders = s.leaders.filter((x) => x.id !== l.id);
-  ctx.emit({ t: 'log', text: o.text.replaceAll('{unit}', l.name), side: l.side });
-  gainBanner(s, ctx, l.side, 'leader exited');
+/** A leader was killed: his enemy scores a banner. */
+export function scoreLeaderKill(s: GameState, ctx: FlowCtx, l: Leader): void {
+  gainBanner(s, ctx, other(l.side), 1, 'leader killed');
 }

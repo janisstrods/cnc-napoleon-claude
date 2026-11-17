@@ -20,7 +20,7 @@ export { HistoryButton, nextPos, prevPos, type SlidePos } from './HistoryButton'
  */
 export function sideColors(sc: ScenarioInfo): Record<Side, MapColors> {
   const c = (side: Side): MapColors => {
-    const b = blockColors(sc.setup[side].blocks);
+    const b = blockColors(sc.setup[side].nation);
     return luminance(b.edge) > 0.65 ? { fill: b.edgeShade, dark: shade(b.edgeShade, 0.6) } : { fill: b.edge, dark: b.edgeShade };
   };
   return { top: c('top'), bottom: c('bottom') };

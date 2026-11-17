@@ -1,27 +1,16 @@
-{
-  "id": "000",
-  "name": "Drill",
-  "year": "1810",
-  "hidden": true,
-  "top": { "army": "Carthaginian", "blocks": "car", "look": "carthaginian", "commander": "Himilco", "cards": 5 },
-  "bottom": { "army": "Syracusan", "blocks": "grk", "look": "syracusan", "commander": "Daphnaeus", "cards": 5 },
-  "first": "bottom",
-  "banners": 3,
-  "terrain": [],
+{ "id": "000", "name": "Drill", "year": "1810", "hidden": true,
+  "top": { "army": "British", "nation": "BR", "commander": "Hill", "cards": 5 },
+  "bottom": { "army": "French", "nation": "FR", "commander": "Reynier", "cards": 5 },
+  "first": "bottom", "banners": 4, "rivers": "fordable",
+  "terrain": [
+    { "r": 2, "c": 2, "t": "hill" }, { "r": 2, "c": 3, "t": "hill" }, { "r": 5, "c": 9, "t": "forest" }, { "r": 6, "c": 9, "t": "forest" },
+    { "r": 2, "c": 9, "t": "town" }, { "r": 4, "c": 0, "t": "river" }, { "r": 4, "c": 1, "t": "river", "crossing": "bridge" },
+    { "r": 4, "c": 2, "t": "river" }, { "r": 2, "c": 6, "t": "fieldworks", "on": "plain", "sides": ["SW", "SE"] } ],
   "units": [
-    { "side": "top", "type": "MI", "r": 3, "c": 3 },
-    { "side": "top", "type": "LI", "r": 3, "c": 5 },
-    { "side": "top", "type": "MI", "r": 3, "c": 7 },
-    { "side": "top", "type": "MC", "r": 3, "c": 9 },
-    { "side": "bottom", "type": "MI", "r": 5, "c": 3 },
-    { "side": "bottom", "type": "LI", "r": 5, "c": 5 },
-    { "side": "bottom", "type": "MI", "r": 5, "c": 7 },
-    { "side": "bottom", "type": "MC", "r": 5, "c": 9 }
-  ],
-  "leaders": [
-    { "side": "top", "name": "Himilco", "r": 3, "c": 5 },
-    { "side": "bottom", "name": "Daphnaeus", "r": 5, "c": 5 }
-  ],
-  "reserves": [],
-  "reserveLeaders": []
-}
+    { "side": "top", "key": "BR/LN", "r": 2, "c": 6 }, { "side": "top", "key": "BR/LT", "r": 2, "c": 4 },
+    { "side": "top", "key": "BR/FA", "r": 2, "c": 3 }, { "side": "top", "key": "BR/HC", "r": 1, "c": 8 },
+    { "side": "top", "key": "BR/RI", "r": 2, "c": 9 },
+    { "side": "bottom", "key": "FR/LN", "r": 6, "c": 4 }, { "side": "bottom", "key": "FR/LN", "r": 6, "c": 6 },
+    { "side": "bottom", "key": "FR/LT", "r": 6, "c": 8 }, { "side": "bottom", "key": "FR/HC", "r": 7, "c": 3 },
+    { "side": "bottom", "key": "FR/FA", "r": 7, "c": 6 } ],
+  "leaders": [ { "side": "top", "name": "Hill", "r": 2, "c": 6 }, { "side": "bottom", "name": "Reynier", "r": 6, "c": 6 } ] }

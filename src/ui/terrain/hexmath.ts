@@ -1,5 +1,5 @@
 // Hex helpers for the terrain painters. Works in board SVG coordinates and also for "virtual"
-// off-board hexes (negative rows, column 13, ...), which painters use to run rivers and lakes
+// off-board hexes (negative rows, column 13, ...), which painters use to run rivers
 // under the frame. The board geometry itself (hex centres, row parity) is in ../geometry.
 import { ALL_HEXES, colOf, hexId, onBoard, rowOf } from '../../engine/hex';
 import { ROWS, type TerrainType } from '../../engine/types';
@@ -80,22 +80,9 @@ export function hexBoundaryDist(a: number): number {
   return RI / Math.cos(off);
 }
 
-/** City art: an impassable city wall (`'wall'`, 301) or walled town (`'town'`, 303, 304) on a `steep` hex. */
-export type CityArt = 'wall' | 'town';
-
-/** `art` if it is city art, else undefined. */
-export function cityArt(art: string | undefined): CityArt | undefined {
-  return art === 'wall' || art === 'town' ? art : undefined;
-}
-
-/**
- * What a hex's art (`terrainArtOf`) makes of its terrain, where it changes how the hex is drawn and named: `'coast'`, a
- * fordable river with coast art, is a coast played as a ford (217), painted as (fordable) sea; `'wall'` or `'town'`, a
- * `steep` hex with city art, an impassable city wall or walled town, which has its own painter. Undefined elsewhere.
- */
-export function hexVariant(t: TerrainType, art: string | undefined): 'coast' | CityArt | undefined {
-  if (t === 'river') return art === 'coast' ? 'coast' : undefined;
-  return t === 'steep' ? cityArt(art) : undefined;
+/** The terrain types painted as running water: the river and its crossings (a ford, a brook, a bridge). */
+export function isWater(t: TerrainType): boolean {
+  return t === 'river' || t === 'ford' || t === 'fordNoStop' || t === 'brook' || t === 'bridge';
 }
 
 export interface HexInfo {
@@ -105,18 +92,8 @@ export interface HexInfo {
   x: number;
   y: number;
   t: TerrainType;
+  /** A river hex with ford stones (`ford` and `fordNoStop`). */
   ford: boolean;
-  // Expansion #3 (set only when the board passes them)
-  /** A hill under the hex's camp or wall: painted as a hill beneath it. */
-  hillUnder?: boolean;
-  /** The hex's art where it differs from its terrain (`terrainArtOf`): 'wall' or 'town' on an impassable `steep` hex. */
-  art?: CityArt;
-}
-
-/** What a board knows of its hexes beyond terrain and fords (Expansion #3): hills under camps and walls, the hex art. */
-export interface BoardExtras {
-  hillUnder?: readonly boolean[];
-  art?: readonly (string | undefined)[];
 }
 
 /** Everything a painter needs to know about the board it paints. */
@@ -136,7 +113,7 @@ export interface PaintCtx {
   lonePorts?: [Dir, Dir];
 }
 
-export function boardCtx(terrain: readonly TerrainType[], fords: readonly boolean[], flipped: boolean, extras: BoardExtras = {}): PaintCtx {
+export function boardCtx(terrain: readonly TerrainType[], flipped: boolean): PaintCtx {
   const hexes: HexInfo[] = [];
   const byId = new Map<number, HexInfo>();
   for (const id of ALL_HEXES) {
@@ -144,10 +121,7 @@ export function boardCtx(terrain: readonly TerrainType[], fords: readonly boolea
     const c = colOf(id);
     const p = hexCenter(r, c, flipped);
     const t = terrain[id] ?? 'plain';
-    const h: HexInfo = { id, r, c, x: p.x, y: p.y, t: t === 'void' ? 'plain' : t, ford: !!fords[id] };
-    if (extras.hillUnder?.[id]) h.hillUnder = true;
-    const art = cityArt(extras.art?.[id]);
-    if (art) h.art = art;
+    const h: HexInfo = { id, r, c, x: p.x, y: p.y, t: t === 'void' ? 'plain' : t, ford: t === 'ford' || t === 'fordNoStop' };
     hexes.push(h);
     byId.set(id, h);
   }
@@ -170,13 +144,10 @@ export function boardCtx(terrain: readonly TerrainType[], fords: readonly boolea
   };
 }
 
-/** Context describing a single hex centred on (0, 0) (legend/tooltip icons); `hill`: a hill under it, `art`: its hex art. */
-export function iconCtx(t: TerrainType, ford: boolean, hill = false, art?: string): PaintCtx {
+/** Context describing a single hex centred on (0, 0) (legend/tooltip icons). */
+export function iconCtx(t: TerrainType): PaintCtx {
   const o = hexCenter(0, 0, false);
-  const h: HexInfo = { id: 0, r: 0, c: 0, x: 0, y: 0, t, ford };
-  if (hill) h.hillUnder = true;
-  const city = cityArt(art);
-  if (city) h.art = city;
+  const h: HexInfo = { id: 0, r: 0, c: 0, x: 0, y: 0, t, ford: t === 'ford' || t === 'fordNoStop' };
   const inHex = (x: number, y: number) => {
     const ax = Math.abs(x);
     const ay = Math.abs(y);

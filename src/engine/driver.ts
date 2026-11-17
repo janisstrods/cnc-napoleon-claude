@@ -14,8 +14,8 @@ export interface DriverOptions {
   snapshots?: boolean;
 }
 
-/** What `GameDriver.undo` takes back: a move, a placement (117, 308) or the card played with the orders it gave. */
-export type UndoStep = 'move' | 'placement' | 'card';
+/** What `GameDriver.undo` takes back: a move or the card played with the orders it gave. */
+export type UndoStep = 'move' | 'card';
 
 export class GameDriver {
   readonly initial: GameState;
@@ -76,14 +76,13 @@ export class GameDriver {
 
   /**
    * What `undo` would take back now, or null. A step is the last answer when it was a move (not the end of the movement),
-   * a leader placement (117, 308) or a forced placement (308); or the card played with the answers that followed it before
-   * anything moved: its orders and the command named for it (§18.5). Only the side deciding now takes back a step, all of
+   * or the card played with the answers that followed it before anything moved: its orders and the squares left (§6.3). Only the side deciding now takes back a step, all of
    * whose answers are its own, and only while no die has been rolled since the step began: nothing can be rolled again.
    */
   undoStep(): UndoStep | null {
     const i = this.undoFrom();
     if (i < 0) return null;
-    return this.kinds[i] === 'playCard' ? 'card' : this.kinds[i] === 'move' ? 'move' : 'placement';
+    return this.kinds[i] === 'playCard' ? 'card' : 'move';
   }
 
   canUndo(): boolean {
@@ -96,9 +95,9 @@ export class GameDriver {
     if (!n || !this.pending) return -1;
     let i = n - 1;
     // the orders a card gave and the command named for it go back with the card
-    while (i > 0 && (this.kinds[i] === 'orders' || this.kinds[i] === 'chooseCommand')) i--;
+    while (i > 0 && (this.kinds[i] === 'orders' || this.kinds[i] === 'leaveSquare')) i--;
     const k = this.kinds[i];
-    const last = i === n - 1 && ((k === 'move' && this.answers[i].kind === 'move') || k === 'placeLeader' || k === 'placeUnit');
+    const last = i === n - 1 && k === 'move' && this.answers[i].kind === 'move';
     if (!last && k !== 'playCard') return -1;
     for (let j = i; j < n; j++) if (this.sides[j] !== this.pending.side) return -1;
     return this.rngBefore[i] === this.state.rngCalls ? i : -1;

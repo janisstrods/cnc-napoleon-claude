@@ -1,5 +1,5 @@
-// Hills (shaded grassy mounds merging into ridges) and steep hills (raised rocky plateaus).
-import { addToGrid, blurGrid, contours, decimate, fillGrid, isoPath, loopArea, makeGrid } from './field';
+// Hills (shaded grassy mounds merging into ridges) and rugged hills (the same relief, steeper, darker and rocky).
+import { addToGrid, blurGrid, fillGrid, isoPath, makeGrid } from './field';
 import type { TerrainType } from '../../engine/types';
 import { fmt, polyPath, type PaintCtx, type Pt, type Rect } from './hexmath';
 import { fbm, rng } from './noise';
@@ -108,15 +108,10 @@ function relief(ctx: PaintCtx, hexes: Pt[], o: ReliefOpts): Relief {
   };
 }
 
-/**
- * Hills. `steep`: the very steep hills of 223 (rule `veryHills`, §18.6), still hills but rockier and darker: a steeper
- * relief in dark olive, bare rock on the steepest slopes, crags along the crest, boulders and scree. A camp or wall with a
- * hill under it (Expansion #3, `hillUnder`) is part of the hills, and its camp or wall is painted on top.
- */
-export function paintHills(ctx: PaintCtx, patternFill?: string, strength = 1, steep = false): JSX.Element | null {
-  const hills = ctx.hexes.filter((h) => h.t === 'hill' || h.hillUnder);
+/** Hills: shaded grassy mounds that merge into ridges where hills touch. */
+export function paintHills(ctx: PaintCtx, patternFill?: string, strength = 1): JSX.Element | null {
+  const hills = ctx.hexes.filter((h) => h.t === 'hill');
   if (!hills.length) return null;
-  if (steep) return paintVerySteep(ctx, hills, patternFill, strength);
   const r = relief(ctx, hills, {
     R0: 60,
     K: 34,
@@ -145,6 +140,13 @@ export function paintHills(ctx: PaintCtx, patternFill?: string, strength = 1, st
       <path d={r.outline} fill="none" stroke="rgba(66,64,24,0.45)" strokeWidth={1.1 * strength} />
     </g>
   );
+}
+
+/** Rugged hills (impassable): a darkened hill, a steeper relief in dark olive with bare rock on the steepest slopes and crags. */
+export function paintRugged(ctx: PaintCtx, patternFill?: string, strength = 1): JSX.Element | null {
+  const hills = ctx.hexes.filter((h) => h.t === 'rugged');
+  if (!hills.length) return null;
+  return paintVerySteep(ctx, hills, patternFill, strength);
 }
 
 function paintVerySteep(ctx: PaintCtx, hills: Pt[], patternFill: string | undefined, strength: number): JSX.Element {
@@ -245,121 +247,4 @@ export function boulder(c: Pt, r: number, R: () => number): { body: string; top:
   }
   const top = body.map((p) => ({ x: c.x + (p.x - c.x) * 0.7 - r * 0.18, y: c.y + (p.y - c.y) * 0.6 - r * 0.28 }));
   return { body: polyPath(body), top: polyPath(top) };
-}
-
-/**
- * Steep hills: a raised rocky plateau with a jagged rim, vertical cliff faces on the sides that
- * face the viewer, fallen boulders at the foot and outcrops on top.
- */
-export function paintSteep(ctx: PaintCtx): JSX.Element | null {
-  const hs = ctx.hexes.filter((h) => h.t === 'steep');
-  if (!hs.length) return null;
-  const g = regionGrid(ctx, 'steep', 3, 3, 0, 10, 23);
-  addToGrid(g, (x, y) => (fbm(x / 9, y / 9, 61, 2) - 0.5) * 0.34 + (fbm(x / 30, y / 30, 62) - 0.5) * 0.2);
-  const R = rng(778 + hs[0].id);
-  const lift = 10;
-  const lift2 = 19;
-  const foot = isoPath(g, 0.36, 30);
-  const tier = (level: number, dy: number, minArea: number) =>
-    contours(g, level)
-      .filter((l) => Math.abs(loopArea(l)) > minArea)
-      .map((l) => decimate(l, 4.5).map((p) => ({ x: p.x - dy * 0.15, y: p.y - dy })));
-  const topLoops = tier(0.58, lift, 60);
-  const top2Loops = tier(0.86, lift2, 40);
-  const top = topLoops.map((l) => polyPath(l)).join('');
-  const top2 = top2Loops.map((l) => polyPath(l)).join('');
-  // cliff striations: vertical strokes below the south-facing rims
-  let stria = '';
-  let striaLight = '';
-  const cliffs = (loops: Pt[][], h: number) => {
-    for (const loop of loops) {
-      const ccw = loopArea(loop) < 0;
-      for (let i = 0; i < loop.length; i++) {
-        const a = loop[i];
-        const b = loop[(i + 1) % loop.length];
-        const tx = b.x - a.x;
-        const ty = b.y - a.y;
-        const tl = Math.hypot(tx, ty) || 1;
-        let ny = -tx / tl;
-        if (ccw) ny = -ny;
-        if (ny < 0.2) continue;
-        for (const f of [0.25, 0.75]) {
-          const m = { x: a.x + tx * f, y: a.y + ty * f };
-          const L = h * (0.55 + R() * 0.5) * Math.min(1, ny + 0.25);
-          const seg = `M${fmt(m.x)},${fmt(m.y + 1)}l${fmt((R() - 0.5) * 1.5)},${fmt(L)}`;
-          if (R() < 0.35) striaLight += seg;
-          else stria += seg;
-        }
-      }
-    }
-  };
-  cliffs(topLoops, lift);
-  const s1 = stria;
-  const l1 = striaLight;
-  stria = '';
-  striaLight = '';
-  cliffs(top2Loops, lift2 - lift);
-  const stria2 = stria + striaLight;
-  stria = s1;
-  striaLight = l1;
-  // boulders at the foot and outcrops on top
-  const foots: { body: string; top: string }[] = [];
-  const tops: { body: string; top: string }[] = [];
-  for (const h of hs) {
-    for (let k = 0; k < 5; k++) {
-      const a = Math.PI * (0.05 + R() * 0.9) + (R() < 0.3 ? Math.PI : 0);
-      const d = 30 + R() * 10;
-      foots.push(boulder({ x: h.x + Math.cos(a) * d, y: h.y + Math.sin(a) * d * 0.95 }, 2.5 + R() * 2.5, R));
-    }
-    for (let k = 0; k < 4; k++) {
-      const a = R() * Math.PI * 2;
-      const d = 6 + R() * 18;
-      tops.push(boulder({ x: h.x + Math.cos(a) * d, y: h.y - lift + Math.sin(a) * d * 0.8 }, 4 + R() * 4, R));
-    }
-  }
-  let cracks = '';
-  let scrub = '';
-  for (const h of hs) {
-    for (let k = 0; k < 4; k++) {
-      const x = h.x + (R() - 0.5) * 50;
-      const y = h.y - lift + (R() - 0.5) * 40;
-      cracks += `M${fmt(x)},${fmt(y)}l${fmt(4 + R() * 4)},${fmt((R() - 0.5) * 5)}l${fmt(3 + R() * 3)},${fmt(2 + R() * 3)}`;
-    }
-    for (let k = 0; k < 5; k++) {
-      const a = R() * Math.PI * 2;
-      const d = 10 + R() * 22;
-      const x = h.x + Math.cos(a) * d;
-      const y = h.y - lift + Math.sin(a) * d * 0.8;
-      const sz = 2.4 + R() * 2.2;
-      scrub += `M${fmt(x - sz)},${fmt(y)}a${fmt(sz)},${fmt(sz * 0.8)} 0 1,1 ${fmt(2 * sz)},0a${fmt(sz)},${fmt(sz * 0.8)} 0 1,1 ${fmt(-2 * sz)},0`;
-    }
-  }
-  return (
-    <g className="steep">
-      <path d={foot} fill="rgba(34,28,14,0.25)" transform="translate(6 7)" />
-      <path d={foot} fill="#5f5240" stroke="#2e2519" strokeWidth={1.2} />
-      <path d={stria} fill="none" stroke="#3a3022" strokeWidth={1.3} strokeLinecap="round" />
-      <path d={striaLight} fill="none" stroke="#8d7d61" strokeWidth={1.1} strokeLinecap="round" opacity={0.8} />
-      {foots.map((b, i) => (
-        <g key={`f${i}`}>
-          <path d={b.body} fill="#5a4d3b" stroke="#2e2519" strokeWidth={0.7} />
-          <path d={b.top} fill="#a8997a" />
-        </g>
-      ))}
-      <path d={top} fill="#a29474" stroke="#2e2519" strokeWidth={1.3} strokeLinejoin="round" />
-      <path d={top} fill="none" stroke="#e3d6b2" strokeWidth={1.2} opacity={0.5} transform="translate(-0.8 -1)" />
-      <path d={top2} fill="#5f5240" transform={`translate(0 ${lift2 - lift})`} />
-      <path d={stria2} fill="none" stroke="#3a3022" strokeWidth={1.2} strokeLinecap="round" />
-      <path d={top2} fill="#b3a582" stroke="#2e2519" strokeWidth={1.2} strokeLinejoin="round" />
-      <path d={top2} fill="none" stroke="#efe3c0" strokeWidth={1.1} opacity={0.55} transform="translate(-0.8 -1)" />
-      <path d={cracks} fill="none" stroke="#5f5240" strokeWidth={0.9} strokeLinecap="round" opacity={0.8} />
-      <path d={scrub} fill={P.scrub} opacity={0.8} />
-      {tops.map((b, i) => (
-        <g key={`t${i}`}>
-          <path d={b.body} fill="#6f6049" stroke="#2e2519" strokeWidth={0.7} />
-          <path d={b.top} fill="#c7b995" />
-        </g>
-      ))}
-    </g>
-  );
 }

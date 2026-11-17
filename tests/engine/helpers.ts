@@ -17,12 +17,14 @@ export function drive(s: GameState): GameDriver {
   return new GameDriver(s);
 }
 
+const onTrack = (s: GameState, id: number): boolean => SIDES.some((side) => s.players[side].squareTrack.includes(id));
+
 /**
  * Put a copy of `kind` that no hand holds over the first card of `side`'s hand and return its id. Unlike the rules suite's
  * `giveCard`, the card replaced leaves the game (it does not go back on the deck).
  */
 export function replaceFirstCard(s: GameState, side: Side, kind: CardKind): number {
-  const id = CARD_LIST.findIndex((k, i) => k === kind && !s.players.top.hand.includes(i) && !s.players.bottom.hand.includes(i));
+  const id = CARD_LIST.findIndex((k, i) => k === kind && !s.players.top.hand.includes(i) && !s.players.bottom.hand.includes(i) && !onTrack(s, i));
   const fromDeck = s.deck.indexOf(id);
   if (fromDeck >= 0) s.deck.splice(fromDeck, 1);
   s.players[side].hand[0] = id;
@@ -33,7 +35,7 @@ export function replaceFirstCard(s: GameState, side: Side, kind: CardKind): numb
  * Make sure nobody holds First Strike: each copy in a hand is replaced by the first other deck card. Unlike the rules
  * suite's `noFirstStrike`, the First Strike cards leave the game (they do not go back on the deck).
  */
-export function dropFirstStrike(s: GameState) {
+export function dropFirstStrike(s: GameState): void {
   for (const side of SIDES) {
     const hand = s.players[side].hand;
     for (let i = 0; i < hand.length; i++) {

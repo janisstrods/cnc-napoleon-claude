@@ -1,16 +1,16 @@
 import { useId, type CSSProperties } from 'react';
-import type { Blocks } from '../../engine/types';
+import type { Nation } from '../../engine/codes';
 import { bannerCloth } from './theme';
 
 /**
- * A single swallow-tailed standard. `blockColor` (the block set of the army it belongs to) = colour of the cloth; omitted =
+ * A single swallow-tailed standard. `nation` (the nation of the army it belongs to) = colour of the cloth; omitted =
  * empty slot. `held`: a banner held through an objective (§18.4), which can still be lost: the cloth is hatched.
  */
-export function BannerIcon(p: { blockColor?: Blocks; held?: boolean; size?: number; className?: string; style?: CSSProperties }) {
+export function BannerIcon(p: { nation?: Nation; held?: boolean; size?: number; className?: string; style?: CSSProperties }) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   const w = p.size ?? 28;
   const h = (w * 66) / 40;
-  const c = p.blockColor ? bannerCloth(p.blockColor) : null;
+  const c = p.nation ? bannerCloth(p.nation) : null;
   const cloth = 'M7 10 H33 V55 L20 46 L7 55 Z';
   return (
     <svg className={p.className} style={p.style} viewBox="0 0 40 66" width={w} height={h} aria-hidden="true">
@@ -79,7 +79,7 @@ export const HELD_BANNER_TIP = 'Held while occupied — can be lost';
 
 /**
  * Victory banner track: `target` slots, the first `count` filled with captured banners.
- * `blockColor` is the block set of the army whose banners were captured (i.e. the opponent's), used for the cloth colour.
+ * `nation` is the nation of the army whose banners were captured (i.e. the opponent's), used for the cloth colour.
  * `held` of the `count` banners are held through objectives (§18.4; `count` is the banner total): they fill the last of
  * the filled slots, hatched, with a tooltip saying they can be lost.
  */
@@ -88,7 +88,7 @@ export function BannerTrack(p: {
   /** Banners of `count` held through objectives (hold, majority, section clear), not won for good. */
   held?: number;
   target: number;
-  blockColor: Blocks;
+  nation: Nation;
   label: string;
   bannerSize?: number;
   className?: string;
@@ -119,7 +119,7 @@ export function BannerTrack(p: {
           return (
           <div key={i} className={`kit-banners__slot ${i < count ? 'is-filled' : ''}${isHeld ? ' is-held' : ''}`} title={isHeld ? HELD_BANNER_TIP : undefined}>
             {i < count ? (
-              <BannerIcon blockColor={p.blockColor} held={isHeld} size={p.bannerSize} className="kit-banner" />
+              <BannerIcon nation={p.nation} held={isHeld} size={p.bannerSize} className="kit-banner" />
             ) : (
               <BannerIcon size={p.bannerSize} className="kit-banner kit-banner--empty" />
             )}

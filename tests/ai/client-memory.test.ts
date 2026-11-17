@@ -1,7 +1,6 @@
-// AI memory and worker handling, plus the illegal-answer fallback: restored from the Ancients regress and exp2 suites and
-// re-pointed at 000 (Plan 2A). Cheap and deterministic.
+// AI worker handling, plus the illegal-answer fallback, on the stub AI and the drill battle 000. Cheap and deterministic.
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { GameDriver, createGame, forceDice, newTurn, type Decision } from '../../src/engine';
+import { GameDriver, createGame, forceDice, type Decision } from '../../src/engine';
 import { scenarioById } from '../../src/scenarios';
 import { chooseAnswer, isLegal, newMemory, personalityById } from '../../src/ai';
 import { detOpts } from './helpers';
@@ -13,39 +12,6 @@ afterEach(() => {
 });
 
 failOnAiErrors();
-
-describe('memory and card keeping', () => {
-  it('with a fresh memory at the orders decision (resumed game) it re-plans for the card already played', () => {
-    const sc = scenarioById('000');
-    const d = new GameDriver(createGame(sc.setup, 5));
-    const side = d.pending!.side;
-    const mem = newMemory();
-    d.answer(chooseAnswer(d.state, d.pending!, detOpts(side, 9), mem).answer);
-    expect(d.pending?.kind).toBe('orders');
-    const fresh = newMemory();
-    const r = chooseAnswer(d.state, d.pending!, detOpts(side, 9), fresh);
-    expect(isLegal(d.state, d.pending!, r.answer)).toBe(true);
-    expect(fresh.plan?.turn).toBe(d.state.turn.number);
-    expect(fresh.plan?.card).toBe(d.state.turn.card);
-    expect(fresh.plan?.label).toContain('replanned');
-  });
-
-  it('tracks how long cards have been held and forgets it when the game goes back (undo/resume)', () => {
-    const sc = scenarioById('000');
-    const s = createGame(sc.setup, 3);
-    const side = s.active;
-    const mem = newMemory();
-    s.special.turnsDone[side] = 10;
-    chooseAnswer(s, { kind: 'playCard', side }, detOpts(side, 1, { difficulty: 'recruit' }), mem);
-    const held = s.players[side].hand.filter((c) => mem.cardSeen?.[c] === 10);
-    expect(held.length).toBe(s.players[side].hand.length);
-    s.special.turnsDone[side] = 4; // went back in time
-    s.turn = newTurn(2);
-    chooseAnswer(s, { kind: 'playCard', side }, detOpts(side, 1, { difficulty: 'recruit' }), mem);
-    expect(Object.values(mem.cardSeen ?? {}).every((v) => v === 4)).toBe(true);
-  });
-});
-
 
 describe('AiClient worker handling', () => {
   it('answers a timed-out request in-thread, replaces the stuck worker, and gives up on workers after two timeouts', async () => {
@@ -137,10 +103,9 @@ describe('AiClient worker handling', () => {
 
 describe('an AI answer replaced by the fallback', () => {
   it('is counted in the memory and reported with console.error (so failOnAiErrors fails on it)', () => {
-    // a placement decision with no hex to offer: the AI's answer cannot be legal, so the fallback answers instead
+    // a retreat with no destination to offer: the AI's answer cannot be legal, so the fallback answers instead
     const s = createGame(scenarioById('000').setup, 1);
-    const l = s.leaders.find((x) => x.side === s.active)!;
-    const d: Decision = { kind: 'placeLeader', side: s.active, leader: l.id, options: [] };
+    const d: Decision = { kind: 'retreat', side: s.active, unit: s.units[0].id, options: [], reason: 'retreat' };
     const mem = newMemory();
     expect(mem.fallbacks).toBe(0);
     const err = vi.spyOn(console, 'error').mockImplementation(() => {});

@@ -4,7 +4,7 @@ Browser game: TypeScript + Vite + React, pure rules engine in `src/engine`, AI i
 
 ## Status
 
-- **The engine, AI and UI are still the Ancients ones until Plan 2B.** This project was started from the Commands & Colors: Ancients edition (v1.6.2); its identity has changed (`ccn-` storage keys, `window.__ccn`, title, version 0.1.0).
+- **The engine is the Napoleonics skeleton (Plan 2B T1c); rules land task by task.** This project was started from the Commands & Colors: Ancients edition (v1.6.2); its identity has changed (`ccn-` storage keys, `window.__ccn`, title, version 0.1.0).
 - Ancients content (battles, texts, histories, golden fixtures, art and terrain hash pins, scenario-bound tests) was removed in Plan 2A.
 - `000` ("Drill") is the hidden drill battle and the only scenario: the picker and random battle skip `hidden` battles (the picker's tabs are empty), and Plan 2B rewrites `000.json` in the new format.
 - Plan 2 replaces the engine.
@@ -23,9 +23,6 @@ Browser game: TypeScript + Vite + React, pure rules engine in `src/engine`, AI i
 | `npm run build` | Type-check, then build the static site into `docs/` |
 
 Slow opt-in AI matches: `npx vite-node scripts/ai-match.ts -- --a tribune --b recruit --games 2` (see the file header for flags).
-AI-vs-AI balance runs with behaviour counters (still the Ancients AI): `npx vite-node scripts/ai-balance.ts -- --games 2`
-(see the file header). The old Ancients balance logs are in `design/ancients/exp1-ai-balance.md`, `exp2-ai-balance.md`
-and `exp3-ai-balance.md`.
 
 ## Publishing (GitHub Pages)
 
@@ -46,7 +43,7 @@ and `exp3-ai-balance.md`.
 
 - Battles: only the hidden drill battle `000` for now (Napoleonic battles return in Plan 6), data in
   `src/scenarios/data/<id>.json`, briefing texts in `src/scenarios/texts.ts` (empty).
-- Dev-only routes: `#/play/<scenario>/<top|bottom>/<recruit|tribune|consul>[/<seed>]` (e.g. `#/play/000/top/tribune`) and `#/gallery/art|terrain|kit|history`.
+- Dev-only routes: `#/play/<scenario>/<top|bottom>/<recruit|tribune|consul>[/<seed>]` (e.g. `#/play/000/top/tribune`) and `#/gallery/art|terrain|kit|history|figures`.
 - In dev, `window.__ccn` is the GameController. `__ccn.autoAnswer()` plays a random legal move for the human, and `__ccn.setSpeed(4)` speeds up animations.
 - Browser tests must be silent: before playing on a dev-server origin, run `localStorage.setItem('ccn-muted','1'); location.reload()`
   (the flag is per origin, so each port needs it).

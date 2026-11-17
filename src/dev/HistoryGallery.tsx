@@ -22,7 +22,7 @@ function scenarioFor(id: string): (ScenarioInfo & { standIn?: boolean }) | undef
   const e = CATALOGUE.find((b) => b.id === id);
   const base = SCENARIOS[0];
   if (!e || !base) return undefined;
-  return { ...base, id, name: e.name, year: e.date, standIn: true, setup: { ...base.setup, top: { ...base.setup.top, blocks: 'rom' }, bottom: { ...base.setup.bottom, blocks: 'grk' } } };
+  return { ...base, id, name: e.name, year: e.date, standIn: true, setup: { ...base.setup, top: { ...base.setup.top, nation: 'BR' }, bottom: { ...base.setup.bottom, nation: 'FR' } } };
 }
 
 function GameBoard({ sc }: { sc: ScenarioInfo }) {
@@ -34,7 +34,7 @@ function GameBoard({ sc }: { sc: ScenarioInfo }) {
         const { x, y } = hexCenterId(u.hex, false);
         return (
           <g key={u.id} transform={`translate(${x}, ${y})`}>
-            <UnitToken {...unitTokenProps(s, u, 'bottom')} />
+            <UnitToken {...unitTokenProps(u, 'bottom')} />
           </g>
         );
       })}

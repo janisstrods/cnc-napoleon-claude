@@ -18,16 +18,14 @@ import {
 } from '../ui/kit';
 
 const GROUPS: { group: CardGroup; title: string; blurb: string }[] = [
-  { group: 'section', title: 'Section cards', blurb: 'Bronze — order units in one or more battlefield sections.' },
-  { group: 'troop', title: 'Troop cards', blurb: 'Crimson — order units of one class, up to your Command.' },
-  { group: 'leadership', title: 'Leadership cards', blurb: 'Royal blue — a leader inspires a linked chain of units.' },
-  { group: 'tactic', title: 'Tactic cards', blurb: 'Tyrian purple — special manoeuvres and gambits.' },
+  { group: 'section', title: 'Section cards', blurb: 'Scout, Probe, Attack and Assault — order units in one battlefield section.' },
+  { group: 'tactic', title: 'Tactic cards', blurb: 'Special manoeuvres and gambits.' },
 ];
 
 const KINDS = Object.keys(CARD_DEFS) as CardKind[];
 
 function rollFaces(n: number): DieFace[] {
-  return Array.from({ length: n }, () => ALL_DIE_FACES[Math.floor(Math.random() * 6)]);
+  return Array.from({ length: n }, () => ALL_DIE_FACES[Math.floor(Math.random() * ALL_DIE_FACES.length)]);
 }
 
 function Heading({ children, sub }: { children: ReactNode; sub?: string }) {
@@ -72,11 +70,11 @@ function Label({ children }: { children: ReactNode }) {
 }
 
 export default function KitGallery() {
-  const [selected, setSelected] = useState<CardKind | null>('order3C');
+  const [selected, setSelected] = useState<CardKind | null>('attackC');
   const [hover, setHover] = useState<{ kind: CardKind; x: number; y: number } | null>(null);
   const [modal, setModal] = useState(() => window.location.hash.includes('modal'));
   const [rolling, setRolling] = useState(true);
-  const [faces, setFaces] = useState<DieFace[]>(['heavy', 'swords', 'flag', 'light', 'heavy']);
+  const [faces, setFaces] = useState<DieFace[]>(['infantry', 'sabre', 'flag', 'artillery', 'infantry']);
   const [banners, setBanners] = useState(3);
   const [hand, setHand] = useState<number | null>(2);
 
@@ -89,8 +87,8 @@ export default function KitGallery() {
     return () => window.clearTimeout(t);
   }, [rolling]);
 
-  const scoring = faces.map((f) => f === 'heavy' || f === 'swords');
-  const handKinds: CardKind[] = ['order2L', 'orderHeavy', 'inspiredC', 'clash', 'coordinated', 'darken'];
+  const scoring = faces.map((f) => f === 'infantry' || f === 'sabre');
+  const handKinds: CardKind[] = ['probeL', 'attackC', 'assaultR', 'bayonetCharge', 'bombard', 'elan'];
 
   return (
     <Tabletop style={{ position: 'fixed', inset: 0, overflow: 'auto', padding: '36px 48px 80px', boxSizing: 'border-box' }}>
@@ -133,19 +131,19 @@ export default function KitGallery() {
       <Heading sub="sm (hand) · md · lg (tooltip / detail) · card back">Sizes</Heading>
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 26, flexWrap: 'wrap' }}>
         <div>
-          <CardView kind="orderMounted" size="sm" />
+          <CardView kind="scoutL" size="sm" />
           <Label>sm</Label>
         </div>
         <div>
-          <CardView kind="outFlanked" size="sm" />
+          <CardView kind="probeC" size="sm" />
           <Label>sm</Label>
         </div>
         <div>
-          <CardView kind="inspiredL" size="sm" />
+          <CardView kind="attackR" size="sm" />
           <Label>sm</Label>
         </div>
         <div>
-          <CardView kind="mountedCharge" size="sm" />
+          <CardView kind="cavalryCharge" size="sm" />
           <Label>sm</Label>
         </div>
         <div>
@@ -153,7 +151,7 @@ export default function KitGallery() {
           <Label>back sm</Label>
         </div>
         <div>
-          <CardView kind="spartacus" size="md" />
+          <CardView kind="grandManoeuvre" size="md" />
           <Label>md</Label>
         </div>
         <div>
@@ -167,11 +165,11 @@ export default function KitGallery() {
           <Label>lg</Label>
         </div>
         <div>
-          <CardView kind="order4R" size="lg" />
+          <CardView kind="assaultC" size="lg" />
           <Label>lg</Label>
         </div>
         <div>
-          <CardView kind="inspiredC" size="lg" />
+          <CardView kind="leadership" size="lg" />
           <Label>lg</Label>
         </div>
         <div>
@@ -187,27 +185,27 @@ export default function KitGallery() {
       <Heading sub="selected · disabled · highlight · mirrored (Counter Attack view) · hover lifts">States</Heading>
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 26, flexWrap: 'wrap', paddingTop: 16 }}>
         <div>
-          <CardView kind="order3L" />
+          <CardView kind="attackL" />
           <Label>normal</Label>
         </div>
         <div>
-          <CardView kind="order3L" selected />
+          <CardView kind="attackL" selected />
           <Label>selected</Label>
         </div>
         <div>
-          <CardView kind="order3L" disabled />
+          <CardView kind="attackL" disabled />
           <Label>disabled</Label>
         </div>
         <div>
-          <CardView kind="order3L" highlight />
+          <CardView kind="attackL" highlight />
           <Label>highlight</Label>
         </div>
         <div>
-          <CardView kind="order3L" mirrored />
+          <CardView kind="attackL" mirrored />
           <Label>mirrored</Label>
         </div>
         <div>
-          <CardView kind="inspiredL" mirrored />
+          <CardView kind="flankAttack" mirrored />
           <Label>mirrored</Label>
         </div>
         <div style={{ marginLeft: 20 }}>
@@ -231,7 +229,7 @@ export default function KitGallery() {
                     kind={k}
                     size="sm"
                     selected={hand === i}
-                    disabled={k === 'darken'}
+                    disabled={k === 'elan'}
                     onClick={() => setHand(hand === i ? null : i)}
                   />
                 </div>
@@ -244,7 +242,7 @@ export default function KitGallery() {
 
       <Heading sub="ivory battle dice — plain · hit · flag · miss · rolling">Dice</Heading>
       <div style={{ display: 'flex', gap: 48, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'auto repeat(6, 64px)', gap: '14px 10px', alignItems: 'center' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'auto repeat(5, 64px)', gap: '14px 10px', alignItems: 'center' }}>
           <div />
           {ALL_DIE_FACES.map((f) => (
             <Label key={f}>{f}</Label>
@@ -255,7 +253,7 @@ export default function KitGallery() {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
           <DiceTray
-            title="Heavy Infantry attacks — 5 dice"
+            title="French Line Infantry attack — 4 dice"
             faces={faces}
             scoring={rolling ? undefined : scoring}
             rolling={rolling}
@@ -267,23 +265,23 @@ export default function KitGallery() {
             </Button>
           </div>
           <DiceTray
-            title="Light Bowmen fire — 2 dice"
-            subtitle="1 hit — the Auxilia lose a block"
-            faces={['light', 'flag']}
-            scoring={[true, false]}
+            title="British Rifles fire — 3 dice"
+            subtitle="1 hit — the French lose a block"
+            faces={['infantry', 'flag', 'cavalry']}
+            scoring={[true, false, false]}
             dieSize={40}
             style={{ width: 430 }}
           />
-          <DiceTray title="Rally — roll Command (4)" faces={['leader', 'medium', 'swords', 'heavy']} rolling style={{ width: 430 }} />
+          <DiceTray title="Rally — roll Command (4)" faces={['infantry', 'cavalry', 'artillery', 'sabre']} rolling style={{ width: 430 }} />
         </div>
       </div>
 
       <Heading sub="captured banners in the opponent's colours; slots up to the scenario target">Banner tracks</Heading>
       <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-        <BannerTrack label="Rome" count={banners} target={6} blockColor="car" />
-        <BannerTrack label="Carthage" count={2} target={6} blockColor="rom" />
-        <BannerTrack label="Syracuse" count={4} target={5} blockColor="rom" />
-        <BannerTrack label="Rome" count={5} target={5} blockColor="grk" />
+        <BannerTrack label="British" count={banners} target={6} nation="FR" />
+        <BannerTrack label="French" count={2} target={6} nation="BR" />
+        <BannerTrack label="Portuguese" count={4} target={5} nation="BR" />
+        <BannerTrack label="Spanish" count={5} target={5} nation="SP" />
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <Button variant="secondary" onClick={() => setBanners((b) => Math.min(6, b + 1))}>
             Capture
@@ -296,16 +294,16 @@ export default function KitGallery() {
       <div style={{ display: 'flex', gap: 22, marginTop: 18 }}>
         {(
           [
-            ['rome', 'rom'],
-            ['carthage', 'car'],
-            ['syracuse', 'grk'],
+            ['french', 'FR'],
+            ['british', 'BR'],
+            ['spanish', 'SP'],
           ] as const
-        ).map(([f, blocks]) => (
+        ).map(([f, nation]) => (
           <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {(['light', 'main', 'dark'] as const).map((t) => (
               <span
                 key={t}
-                style={{ width: 22, height: 22, borderRadius: 4, background: bannerCloth(blocks)[t], boxShadow: '0 0 0 1px rgba(0,0,0,.5)' }}
+                style={{ width: 22, height: 22, borderRadius: 4, background: bannerCloth(nation)[t], boxShadow: '0 0 0 1px rgba(0,0,0,.5)' }}
               />
             ))}
             <span style={{ fontFamily: 'var(--kit-font-title)', fontSize: 12, letterSpacing: '.14em', textTransform: 'uppercase', color: '#d8c49a' }}>{f}</span>
@@ -343,15 +341,15 @@ export default function KitGallery() {
         <Panel title="Battle Log" style={{ width: 340 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <div>
-              <b style={{ color: '#f0c46a' }}>Rome</b> plays <i>Order Three Units Center</i>.
+              <b style={{ color: '#f0c46a' }}>The British</b> play <i>Attack Centre</i>.
             </div>
-            <div>Heavy Infantry close combat — 5 dice: 2 hits, 1 flag.</div>
-            <div>Carthaginian Medium Infantry retreats 1 hex.</div>
-            <div style={{ color: '#f0c46a' }}>Rome captures a banner (3 / 6).</div>
+            <div>Line Infantry melee — 4 dice: 2 hits, 1 flag.</div>
+            <div>French Line Infantry retreats 1 hex.</div>
+            <div style={{ color: '#f0c46a' }}>The British capture a banner (3 / 6).</div>
           </div>
         </Panel>
         <Panel title="Orders" variant="parchment" style={{ width: 300 }}>
-          Select up to <b>3 units</b> in the <b>center</b> section. Leaders may be ordered separately.
+          Select up to <b>3 units</b> in the <b>centre</b> section. Leaders may be ordered separately.
           <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
             <Button>Confirm</Button>
             <Button variant="ghost" style={{ color: '#6a1512', boxShadow: 'inset 0 0 0 1px rgba(106,21,18,.4)' }}>
@@ -362,10 +360,10 @@ export default function KitGallery() {
         <div style={{ position: 'relative', width: 380, height: 170, borderRadius: 10, background: 'rgba(0,0,0,.2)', boxShadow: 'inset 0 0 0 1px rgba(226,189,114,.2)' }}>
           <div style={{ position: 'absolute', left: 28, top: 30, width: 14, height: 14, borderRadius: '50%', background: '#f0c46a' }} />
           <Tooltip x={35} y={37} position="absolute" offset={14}>
-            <div className="kit-tooltip__title">Heavy Infantry</div>
-            4 blocks · close combat 5 dice
+            <div className="kit-tooltip__title">French Line Infantry</div>
+            4 blocks · melee by its blocks
             <br />
-            <i style={{ color: '#d8c49a' }}>vs Medium Infantry: 1.7 expected hits</i>
+            <i style={{ color: '#d8c49a' }}>vs British Line Infantry: 1.3 expected hits</i>
           </Tooltip>
         </div>
       </div>
@@ -378,11 +376,11 @@ export default function KitGallery() {
 
       <Modal open={modal} title="Counter Attack" onClose={() => setModal(false)}>
         <p style={{ marginTop: 0 }}>
-          Your opponent played <b>Order Two Units Left</b>. Counter Attack issues the same order from your side of the field, with left and right swapped.
+          Your opponent played <b>Probe Left</b>. Counter Attack issues the same order from your side of the field, with left and right swapped.
         </p>
         <div style={{ display: 'flex', gap: 18, justifyContent: 'center', margin: '14px 0 18px' }}>
           <CardView kind="counterAttack" size="sm" />
-          <CardView kind="order2L" size="sm" mirrored />
+          <CardView kind="probeL" size="sm" mirrored />
         </div>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
           <Button onClick={() => setModal(false)}>Play it</Button>

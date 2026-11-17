@@ -1,6 +1,5 @@
 import { GameDriver, createGame, randomAnswer, type GameEvent, type GameState } from '../../src/engine';
 import { scenarioById } from '../../src/scenarios';
-import { PERSONALITIES, chooseAnswer, newMemory, type AiOptions } from '../../src/ai';
 import { mulberry32 } from '../support/rng';
 
 export interface Golden { id: string; hash: string; answers: number; winner: string }
@@ -9,13 +8,13 @@ export function fnv(str: string, h = 0x811c9dc5): number {
   for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
   return h >>> 0;
 }
-/** Behaviour-level digest of a state: deliberately independent of field names that the refactor renames (faction, elite). */
+/** Behaviour-level digest of a state. */
 export function digest(s: GameState) {
   return {
-    units: s.units.map((u) => [u.id, u.side, u.type, u.hex, u.blocks]),
+    units: s.units.map((u) => [u.id, u.side, u.key, u.hex, u.blocks, u.square ?? 0]),
     leaders: s.leaders.map((l) => [l.id, l.side, l.hex]),
     hands: [s.players.top.hand, s.players.bottom.hand],
-    command: [s.players.top.command, s.players.bottom.command],
+    tracks: [s.players.top.squareTrack, s.players.bottom.squareTrack],
     banners: [s.players.top.banners, s.players.bottom.banners],
     deck: s.deck, discard: s.discard, rng: s.rng, rngCalls: s.rngCalls, winner: s.winner,
   };
@@ -24,8 +23,7 @@ function hashEvents(h: number, evs: GameEvent[]): number { for (const e of evs) 
 
 /** Random-legal games: engine only. */
 function randomGame(scId: string, seed: number): Golden {
-  const sc = scenarioById(scId);
-  const d = new GameDriver(createGame(sc.setup, seed));
+  const d = new GameDriver(createGame(scenarioById(scId).setup, seed));
   const rnd = mulberry32(seed);
   let h = hashEvents(0x811c9dc5, d.drainEvents().map((q) => q.e));
   let steps = 0;
@@ -37,27 +35,9 @@ function randomGame(scId: string, seed: number): Golden {
   return { id: `rnd-${scId}-${seed}`, hash: h.toString(16), answers: d.answers.length, winner: String(d.state.winner) };
 }
 
-/** Deterministic AI-vs-AI games (recruit settings, small budget) — guards the AI-estimator rework. */
-function aiGame(scId: string, seed: number): Golden {
-  const sc = scenarioById(scId);
-  const d = new GameDriver(createGame(sc.setup, seed));
-  const mem = { top: newMemory(), bottom: newMemory() };
-  const opt = (side: 'top' | 'bottom'): AiOptions => ({ side, difficulty: 'recruit', personality: PERSONALITIES[5], seed: seed + (side === 'top' ? 1 : 2), deterministic: true, budgetScale: 0.2 });
-  let h = hashEvents(0x811c9dc5, d.drainEvents().map((q) => q.e));
-  let steps = 0;
-  while (!d.over && steps++ < 4000) {
-    const side = d.pending!.side;
-    const { answer } = chooseAnswer(d.state, d.pending!, opt(side), mem[side]);
-    if (!d.answer(answer)) throw new Error(`AI answer rejected in ai-${scId}-${seed}: ${d.lastError}`);
-    h = hashEvents(h, d.drainEvents().map((q) => q.e));
-  }
-  h = fnv(JSON.stringify(digest(d.state)), h);
-  return { id: `ai-${scId}-${seed}`, hash: h.toString(16), answers: d.answers.length, winner: String(d.state.winner) };
-}
-
 export const RANDOM_GAMES: [string, number][] = [['000', 11]];
-export const AI_GAMES: [string, number][] = [['000', 32]];
 
+/** The golden-game list (the AI games return with the Napoleonic AI). */
 export function goldenGames(): Golden[] {
-  return [...RANDOM_GAMES.map(([s, n]) => randomGame(s, n)), ...AI_GAMES.map(([s, n]) => aiGame(s, n))];
+  return RANDOM_GAMES.map(([s, n]) => randomGame(s, n));
 }

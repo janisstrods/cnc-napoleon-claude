@@ -3,43 +3,19 @@ import { memo, useId, useMemo } from 'react';
 import type { TerrainType } from '../../engine/types';
 import { BOARD_H, BOARD_W, hexCenter } from '../geometry';
 import { Frame, grassDefs, GrassBase, HexGrid, SectionDividers } from './base';
-import { paintDitches } from './ditch';
-import { paintBroken, paintCamps } from './ground';
-import { boardCtx, fieldOutline, hexVariant } from './hexmath';
-import { paintHills, paintSteep } from './hills';
-import { paintRamparts } from './rampart';
-import { paintCoastFords, paintSea } from './sea';
-import { paintForests, paintMarsh } from './vegetation';
-import { paintCityWalls, paintRomeWalls, paintSteepSlopes, paintTowns } from './walls';
-import { paintLakes, paintRivers } from './water';
+import { paintFieldWorks } from './fieldworks';
+import { paintQuarry } from './ground';
+import { boardCtx, fieldOutline } from './hexmath';
+import { paintHills, paintRugged } from './hills';
+import { paintTowns } from './towns';
+import { paintForests } from './vegetation';
+import { paintRivers } from './water';
 
 export interface BoardArtProps {
-  /**
-   * Length 117 (index r*13+c); 'plain' for open ground, 'void' for off-board slots. The board is drawn from the current
-   * arrays: a camp or rampart removed during play (`setTerrain`, §18.6) is open ground at once.
-   */
+  /** Length 117 (index r*13+c): `GameState.terrain`; 'plain' for open ground, 'void' for off-board slots. */
   terrain: readonly TerrainType[];
-  /** True where a river hex is fordable. */
-  fords: readonly boolean[];
-  /** Protected-hexside mask of each rampart hex (GameState.rampart: bit i = direction E, NE, NW, W, SW, SE); absent = none. */
-  rampart?: readonly number[];
-  /**
-   * Art of each hex where it differs from its terrain (`terrainArtOf(setup)`): `'coast'` = a coast played as a ford
-   * (217, §18.6), a fordable `river` in the rules drawn as sea shallows with a beach and ford stones. Absent = none.
-   */
-  art?: readonly (string | undefined)[];
-  /** The battle's hills are very steep (rule `veryHills`, 223): rockier, darker hills. */
-  steepHills?: boolean;
-  /**
-   * Expansion #3: a hill under the hex's camp or scalable wall (`GameState.hillUnder`, 308), painted as a hill with the camp
-   * or the wall standing on it. Absent = none.
-   */
-  hillUnder?: readonly boolean[];
-  /**
-   * Expansion #3, rule `steepSlopes` (308): a rock scarp along every hexside where a hill (or a hill under a camp or wall)
-   * meets a forest.
-   */
-  steepSlopes?: boolean;
+  /** Field Works hexsides of each hex (`GameState.works`: bit i = direction E, NE, NW, W, SW, SE); absent = none. */
+  works?: readonly number[];
   /** Board rotated 180 degrees. */
   flipped: boolean;
   /** Army name written on the frame at the top edge (already resolved for `flipped`). */
@@ -48,31 +24,11 @@ export interface BoardArtProps {
   bottomLabel?: string;
 }
 
-const NO_RAMPARTS: readonly number[] = [];
-const NO_ART: readonly (string | undefined)[] = [];
-const NO_HILLS: readonly boolean[] = [];
-
-/**
- * The terrain as painted: a fordable river hex with `'coast'` art is drawn as (fordable) sea; an impassable city wall or
- * town (`steep` with art 'wall' or 'town') is not a rocky plateau but ground for its own painter (`paintRomeWalls`,
- * `paintTowns`).
- */
-function paintedTerrain(terrain: readonly TerrainType[], art: readonly (string | undefined)[]): readonly TerrainType[] {
-  if (!art.some((a, i) => hexVariant(terrain[i], a))) return terrain;
-  return terrain.map((t, i) => {
-    const v = hexVariant(t, art[i]);
-    return v === 'coast' ? 'sea' : v ? 'plain' : t;
-  });
-}
+const NO_WORKS: readonly number[] = [];
 
 function BoardArtImpl({
   terrain,
-  fords,
-  rampart = NO_RAMPARTS,
-  art: hexArt = NO_ART,
-  steepHills = false,
-  hillUnder = NO_HILLS,
-  steepSlopes = false,
+  works = NO_WORKS,
   flipped,
   topLabel,
   bottomLabel,
@@ -80,40 +36,27 @@ function BoardArtImpl({
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const id = (s: string) => `ba${uid}-${s}`;
   const tKey = terrain.join(',');
-  const fKey = fords.map((f) => (f ? 1 : 0)).join('');
-  const rKey = rampart.join(',');
-  const aKey = hexArt.map((a) => a ?? '').join(',');
-  const hKey = hillUnder.map((b) => (b ? 1 : 0)).join('');
+  const wKey = works.join(',');
 
   const art = useMemo(() => {
-    const ctx = boardCtx(paintedTerrain(terrain, hexArt), fords, flipped, { hillUnder, art: hexArt });
+    const ctx = boardCtx(terrain, flipped);
     return {
       outline: fieldOutline(ctx),
       grid: <HexGrid ctx={ctx} />,
       features: (
         <>
-          {/* the sea first: its beach reaches into the land hexes, and the land features (and rivers) paint over it */}
-          {paintSea(ctx)}
-          {paintCoastFords(ctx)}
-          {paintBroken(ctx)}
-          {paintMarsh(ctx)}
-          {paintDitches(ctx)}
-          {paintHills(ctx, `url(#${id('tuftA')})`, 1, steepHills)}
-          {paintRivers(ctx, id)}
-          {paintLakes(ctx)}
-          {paintSteep(ctx)}
+          {paintQuarry(ctx)}
+          {paintHills(ctx, `url(#${id('tuftA')})`, 1)}
+          {paintRugged(ctx, `url(#${id('tuftA')})`, 1)}
+          {paintRivers(ctx)}
           {paintTowns(ctx)}
-          {paintRomeWalls(ctx)}
-          {paintCamps(ctx)}
-          {paintCityWalls(ctx)}
-          {paintRamparts(ctx, rampart)}
+          {paintFieldWorks(ctx, works)}
           {paintForests(ctx)}
-          {steepSlopes && paintSteepSlopes(ctx)}
         </>
       ),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tKey, fKey, rKey, aKey, hKey, steepHills, steepSlopes, flipped, uid]);
+  }, [tKey, wKey, flipped, uid]);
 
   const x1 = hexCenter(0, 4, flipped).x;
   const x2 = hexCenter(0, 8, flipped).x;
@@ -146,26 +89,18 @@ function sameArr<T>(a: readonly T[], b: readonly T[]): boolean {
 }
 
 /**
- * Do two sets of board-art props draw the same board? Arrays are compared by content, so a terrain change during play
- * (`setTerrain` replaces `GameState.terrain`/`rampart`) redraws the board, and a fresh copy of the same terrain does not.
+ * Do two sets of board-art props draw the same board? Arrays are compared by content, so a fresh copy of the same terrain
+ * does not redraw the board.
  */
 export function boardArtPropsEqual(a: BoardArtProps, b: BoardArtProps): boolean {
   return (
     a.flipped === b.flipped &&
     a.topLabel === b.topLabel &&
     a.bottomLabel === b.bottomLabel &&
-    !!a.steepHills === !!b.steepHills &&
-    !!a.steepSlopes === !!b.steepSlopes &&
-    sameArr(a.hillUnder ?? NO_HILLS, b.hillUnder ?? NO_HILLS) &&
     sameArr(a.terrain, b.terrain) &&
-    sameArr(a.fords, b.fords) &&
-    sameArr(a.rampart ?? NO_RAMPARTS, b.rampart ?? NO_RAMPARTS) &&
-    sameArr(a.art ?? NO_ART, b.art ?? NO_ART)
+    sameArr(a.works ?? NO_WORKS, b.works ?? NO_WORKS)
   );
 }
 
-/**
- * Static board art; re-renders only when the terrain, fords, ramparts, hex art, hills under camps and walls, hill style,
- * steep slopes, orientation or labels change.
- */
+/** Static board art; re-renders only when the terrain, the works, the orientation or the labels change. */
 export const BoardArt = memo(BoardArtImpl, boardArtPropsEqual);

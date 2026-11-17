@@ -1,7 +1,10 @@
 // Deterministic RNG (mulberry32). The state lives in GameState.rng so games replay exactly.
 import type { DieFace, GameState } from './types';
 
-export const DIE_FACES: DieFace[] = ['light', 'medium', 'heavy', 'leader', 'flag', 'swords'];
+/** The six faces of a die, rolled with `randInt(s, 6)`: two infantry faces (R16). */
+export const DIE_SIDES: readonly DieFace[] = ['infantry', 'infantry', 'cavalry', 'artillery', 'flag', 'sabre'];
+/** The five distinct faces, for display. */
+export const DIE_FACES: readonly DieFace[] = ['infantry', 'cavalry', 'artillery', 'flag', 'sabre'];
 
 /** Advance the generator stored in `s` and return a float in [0, 1). */
 export function random(s: { rng: number; rngCalls: number }): number {
@@ -32,7 +35,7 @@ export function rollDie(s: GameState): DieFace {
     s.rngCalls++;
     return forced.shift()!;
   }
-  return DIE_FACES[randInt(s, 6)];
+  return DIE_SIDES[randInt(s, 6)];
 }
 
 export function rollDice(s: GameState, n: number): DieFace[] {

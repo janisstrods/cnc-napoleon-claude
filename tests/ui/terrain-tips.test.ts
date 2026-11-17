@@ -1,114 +1,133 @@
-// Terrain tooltips (rules-reference §4, §7–§10, §16, §18.6, §18.7): every terrain says what it does to movement, combat and
-// line of sight; the variants of single battles (no-cap ford, coastal ford, very steep hills, ramparts, Expansion #3's
-// city walls, walled towns, camps and walls on hills and steep slopes) are worded for them.
+// Terrain tooltips (RR §4): one tip per terrain row, worded from TERRAIN_STATS, plus the Field Works of a works hex.
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { createGame, hexId, type GameState, type HexId, type TerrainType } from '../../src/engine';
-import { scenarioById } from '../../src/scenarios';
+import { TERRAIN_STATS, TERRAIN_TYPES, type ArmValues, type Reductions, type TerrainType } from '../../src/engine';
+import { terrainName } from '../../src/ui/terrain';
 import { TerrainTipBlock } from '../../src/ui/game/TerrainTipBlock';
 import { terrainTip, type TerrainTip } from '../../src/ui/game/terrainTips';
 import { H, build, type Pos } from '../rules/helpers';
 
-const game = (id: string) => createGame(scenarioById(id).setup, 1);
 const lines = (tip: TerrainTip | null) => tip!.lines.map((x) => `${x.kind}: ${x.text}`);
-/** The tip of a single terrain hex at (4, 6) on an otherwise empty board. */
-const tipOf = (t: TerrainType, extra: Partial<Pos> & { ford?: boolean } = {}) => {
-  const { ford, ...pos } = extra;
-  return terrainTip(build({ terrain: [{ at: [4, 6], t, ford }], ...pos }), H(4, 6), false);
-};
-/** The first hex of terrain `t` in `s` that passes `pred`. */
-function hexOf(s: GameState, t: TerrainType, pred: (h: HexId) => boolean = () => true): HexId {
-  const h = s.terrain.findIndex((x, i) => x === t && pred(i));
-  expect(h, t).toBeGreaterThanOrEqual(0);
-  return h;
+/** The tip of a single hex at (4, 6) of terrain `t` on an otherwise empty board (the state is edited: a setup cannot name every row). */
+function tipOf(t: TerrainType, extra: Partial<Pos> = {}): TerrainTip | null {
+  const s = build(extra);
+  s.terrain[H(4, 6)] = t;
+  return terrainTip(s, H(4, 6), false);
+}
+const WORKS_LOWER: Partial<Pos> = { terrain: [{ at: [4, 6], t: 'fieldworks', on: 'plain', sides: ['SW', 'SE'] }] };
+
+/** "infantry −1, artillery −1" for the non-zero entries of an arm row, or null. */
+function armsText(v: ArmValues): string | null {
+  const parts = (['infantry', 'cavalry', 'artillery'] as const).filter((a) => v[a] !== 0).map((a) => `${a} −${Math.abs(v[a])}`);
+  return parts.length ? parts.join(', ') : null;
+}
+/** The combat lines the table's reductions call for. */
+function reductionLines(r: Reductions, dir: 'into' | 'out of'): string[] {
+  const fire = armsText(r.fire);
+  const melee = armsText(r.melee);
+  return [...(fire ? [`combat: Fire ${dir} it: ${fire}`] : []), ...(melee ? [`combat: Melee ${dir} it: ${melee}`] : [])];
 }
 
-const STOPS = 'move: Stops every unit and lone leader entering it';
-const CLEAR = 'sight: Does not block line of sight';
-const BLOCKS = 'sight: Blocks line of sight';
-const HILL_SIGHT = 'sight: Blocks line of sight, unless firer and target stand on the same hill';
-const ADVANCE_OUT = 'combat: A unit here may advance out after combat only if it did not move this turn';
-const FORD = [STOPS, 'combat: Close combat in or out: max 2 dice. Firing out: max 1 die', ADVANCE_OUT, CLEAR];
-/** Camps, ramparts and walls protect only a defender (§4, §16, §18.7). */
-const DEFENDER_ONLY = 'combat: A unit attacking out of it is not protected against the battle back';
-const NO_HWM = 'move: Heavy war machines may not enter';
+const PAINTED = TERRAIN_TYPES.filter((t) => t !== 'plain' && t !== 'void');
 
-describe('terrain tooltips: each terrain', () => {
-  it('hill', () => {
-    const tip = tipOf('hill');
-    expect(tip!.name).toBe('Hill');
-    expect(lines(tip)).toEqual([
-      'move: No effect',
-      'combat: Battling up onto it from lower ground: max 2 dice',
-      'combat: Battling from it: foot max 3 dice, mounted max 2',
-      HILL_SIGHT,
-    ]);
+describe('terrain names', () => {
+  it('terrainName(t) is TERRAIN_STATS[t].name', () => {
+    for (const t of TERRAIN_TYPES) expect(terrainName(t), t).toBe(TERRAIN_STATS[t].name);
   });
-  it('forest', () => {
-    const tip = tipOf('forest');
-    expect(tip!.name).toBe('Forest');
-    expect(lines(tip)).toEqual([
-      STOPS,
-      'move: After entering it, only light foot, auxilia and warriors may battle that turn',
-      'combat: Close combat in or out: max 2 dice. Firing into it: max 1 die',
-      BLOCKS,
-    ]);
-  });
-  it('marsh', () => {
-    const tip = tipOf('marsh');
-    expect(tip!.name).toBe('Marsh');
-    expect(lines(tip)).toEqual([
-      `${STOPS}. Leaving it, a unit or lone leader moves only 1 hex`,
-      'move: A unit entering it (also by retreat or advance) rolls 1 die and loses a block on its own symbol; a lone leader dies on a helmet',
-      'combat: Close combat in or out: max 2 dice. Firing out: max 1 die',
-      ADVANCE_OUT,
-      CLEAR,
-    ]);
-  });
-  it('broken ground', () => {
-    const tip = tipOf('broken');
-    expect(tip!.name).toBe('Broken Ground');
-    expect(lines(tip)).toEqual([
-      'move: Stops mounted units and lone leaders entering it; a mounted unit that enters may not battle that turn',
-      'combat: Close combat in or out: max 2 dice',
-      CLEAR,
-    ]);
-  });
-  it('heavy war machines are mentioned only where one is on the board', () => {
-    const hwm: Partial<Pos> = { units: [{ side: 'bottom', type: 'HWM', at: [7, 6] }] };
-    expect(lines(tipOf('marsh', hwm))).toEqual([...lines(tipOf('marsh')).slice(0, 2), NO_HWM, ...lines(tipOf('marsh')).slice(2)]);
-    expect(lines(tipOf('broken', hwm))).toEqual([...lines(tipOf('broken')).slice(0, 1), NO_HWM, ...lines(tipOf('broken')).slice(1)]);
-    expect(lines(tipOf('forest', hwm))).toEqual(lines(tipOf('forest')));
-  });
-  it('rivers: a fordable river, and the impassable river, lake, sea and steep hills', () => {
-    const ford = tipOf('river', { ford: true });
-    expect(ford).toMatchObject({ name: 'Fordable River', t: 'river', ford: true });
-    expect(lines(ford)).toEqual(FORD);
-    for (const [t, name] of [['river', 'River'], ['lake', 'Lake'], ['sea', 'Sea']] as const) {
+});
+
+describe('terrain tooltips: each terrain row', () => {
+  it('has one tip, titled with its table name, with the swatch to paint', () => {
+    for (const t of PAINTED) {
       const tip = tipOf(t);
-      expect(tip!.name).toBe(name);
-      expect(lines(tip), t).toEqual(['move: Impassable', CLEAR]);
+      expect(tip, t).not.toBeNull();
+      expect(tip!.name, t).toBe(TERRAIN_STATS[t].name);
+      expect(tip!.t, t).toBe(t);
+      expect(tip!.lines.length, t).toBeGreaterThan(0);
     }
-    expect(tipOf('steep')!.name).toBe('Steep Hill');
-    expect(lines(tipOf('steep'))).toEqual(['move: Impassable', BLOCKS]);
   });
-  it('fortified camp and ditch', () => {
-    expect(tipOf('camp')!.name).toBe('Fortified Camp');
-    expect(lines(tipOf('camp'))).toEqual([
-      'move: No effect',
-      'combat: A unit here rolls 1 die fewer when it battles',
-      'combat: Foot defending here ignore 1 sword and may ignore 1 flag',
-      DEFENDER_ONLY,
-      BLOCKS,
+
+  it('lists every reduction of its row, into and out of it', () => {
+    for (const t of PAINTED) {
+      const st = TERRAIN_STATS[t];
+      const got = lines(tipOf(t));
+      for (const want of [...reductionLines(st.into, 'into'), ...reductionLines(st.out, 'out of')]) expect(got, `${t}: ${want}`).toContain(want);
+    }
+  });
+
+  it('forest: stops units, lets only light troops battle, takes dice from fire and melee, blocks sight', () => {
+    expect(lines(tipOf('forest'))).toEqual([
+      'move: Stops every unit and lone leader entering it',
+      'move: After entering it, only light troops may battle that turn',
+      'combat: Fire into it: infantry −1, artillery −1',
+      'combat: Melee into it: infantry −1, cavalry −2, artillery −1',
+      'combat: Fire out of it: artillery −1',
+      'combat: Melee out of it: cavalry −2, artillery −1',
+      'sight: Blocks line of sight',
     ]);
-    expect(tipOf('ditch')!.name).toBe('Ditch');
-    expect(lines(tipOf('ditch'))).toEqual([STOPS, 'combat: No effect', CLEAR]);
   });
-  it('open ground and off-board: no tip', () => {
+
+  it('town (and windmill and fortress, which share its row): heavy reductions, no square, cancels a cavalry charge', () => {
+    const got = lines(tipOf('town'));
+    expect(got).toContain('combat: Fire into it: infantry −2, artillery −1');
+    expect(got).toContain('combat: Melee into it: infantry −2, cavalry −3, artillery −1');
+    expect(got).toContain('move: A unit that enters it may not battle that turn');
+    expect(got).toContain('combat: No square can be formed here');
+    expect(got).toContain('sight: Blocks line of sight');
+    for (const t of ['windmill', 'fortress'] as const) expect(lines(tipOf(t)), t).toEqual(got);
+  });
+
+  it('ford, brook and sand quarry: their rows', () => {
+    expect(lines(tipOf('ford'))).toContain('combat: Melee into it: infantry −1, cavalry −1, artillery −1');
+    expect(lines(tipOf('ford'))).toContain('move: Stops every unit and lone leader entering it');
+    expect(lines(tipOf('fordNoStop'))).not.toContain('move: Stops every unit and lone leader entering it');
+    expect(lines(tipOf('brook'))).toContain('move: Stops every unit and lone leader entering it');
+    expect(lines(tipOf('sandQuarry'))).toContain('move: Closed to artillery');
+    expect(lines(tipOf('sandQuarry'))).toContain('combat: Fire into it: infantry −1, artillery −1');
+    expect(lines(tipOf('sandQuarry'))).toContain('combat: Melee into it: cavalry −2');
+  });
+
+  it('river and rugged hill are impassable; a hill says how it works between hills', () => {
+    expect(lines(tipOf('river'))).toContain('move: Impassable');
+    expect(lines(tipOf('river'))).toContain('combat: No melee into it');
+    expect(lines(tipOf('rugged'))).toContain('move: Impassable');
+    expect(lines(tipOf('hill')).some((l) => l.startsWith('combat: Melee up onto it'))).toBe(true);
+  });
+});
+
+describe('terrain tooltips: Field Works', () => {
+  it('a works hex on open ground is "Field works", with its sides, the works reductions and the flags it ignores', () => {
+    const tip = terrainTip(build(WORKS_LOWER), H(4, 6), false)!;
+    expect(tip.name).toBe('Field works');
+    const got = lines(tip);
+    expect(got[0]).toBe('combat: Field works along lower hexsides');
+    expect(got).toContain('combat: Fire into it: infantry −1');
+    expect(got).toContain('combat: Melee into it: infantry −1, cavalry −2');
+    expect(got).toContain('combat: Melee out of it: cavalry −2');
+    expect(got.at(-1)).toBe('combat: A unit crossing them stops there; infantry and artillery defending behind them ignore 1 flag');
+  });
+
+  it('on a flipped board the works turn by 180 degrees', () => {
+    expect(lines(terrainTip(build(WORKS_LOWER), H(4, 6), true))[0]).toBe('combat: Field works along upper hexsides');
+  });
+
+  it('works on a hill: the hill is named with them and keeps its own lines', () => {
+    const s = build({ terrain: [{ at: [4, 6], t: 'fieldworks', on: 'hill', sides: ['SW'] }] });
+    const tip = terrainTip(s, H(4, 6), false)!;
+    expect(tip.name).toBe('Hill with field works');
+    expect(lines(tip).some((l) => l.startsWith('combat: Melee up onto it'))).toBe(true);
+    expect(lines(tip).some((l) => l.startsWith('combat: Field works along'))).toBe(true);
+  });
+});
+
+describe('terrain tooltips: no tip', () => {
+  it('open ground without works and off the board have none', () => {
     expect(tipOf('plain')).toBeNull();
-    const s = game('000');
-    expect(terrainTip(s, s.terrain.indexOf('void'), false)).toBeNull();
+    const s = build({});
+    s.terrain[H(4, 6)] = 'void';
+    expect(terrainTip(s, H(4, 6), false)).toBeNull();
+    expect(terrainTip(s, -1, false)).toBeNull();
   });
 });
 
@@ -119,8 +138,16 @@ describe('terrain tooltips: the tooltip block', () => {
     expect(html).toContain('<svg');
     expect(html).toContain('>Forest<');
     expect(html.match(/class="tip-kind">Move</g)).toHaveLength(1); // two move lines, one label
-    expect(html.match(/class="tip-kind"><\/span>/g)).toHaveLength(1);
+    expect(html.match(/class="tip-kind">Combat</g)).toHaveLength(1);
     expect(html).not.toContain('tip-divided');
     expect(renderToStaticMarkup(createElement(TerrainTipBlock, { tip, alone: false }))).toContain('tip-divided');
+  });
+
+  it('every row has a swatch, and so has a Field Works hex', () => {
+    for (const t of PAINTED) {
+      expect(renderToStaticMarkup(createElement(TerrainTipBlock, { tip: tipOf(t)!, alone: true })), t).toContain('<svg');
+    }
+    const tip = terrainTip(build(WORKS_LOWER), H(4, 6), false)!;
+    expect(renderToStaticMarkup(createElement(TerrainTipBlock, { tip, alone: true }))).toContain('<svg');
   });
 });

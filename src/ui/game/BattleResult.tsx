@@ -86,7 +86,7 @@ export function BattleResult(p: {
       <div className="victory-score">
         {[human, other(human)].map((side) => {
           const pl = s.players[side];
-          const won = Math.max(0, bannerTotal(s, side)); // banners held through objectives count too (§18.4)
+          const won = Math.max(0, bannerTotal(s, side)); // banners held through objectives count too
           const empty = Math.max(0, s.bannersToWin - won);
           return (
             <div
@@ -101,7 +101,7 @@ export function BattleResult(p: {
               </span>
               <span className="victory-banners">
                 {Array.from({ length: won }, (_, i) => (
-                  <BannerIcon key={i} className="victory-banner is-won" blockColor={s.players[other(side)].blocks} size={18} />
+                  <BannerIcon key={i} className="victory-banner is-won" nation={s.players[other(side)].nation} size={18} />
                 ))}
                 {Array.from({ length: empty }, (_, i) => <EmptyBanner key={`e${i}`} />)}
               </span>

@@ -1,4 +1,4 @@
-// chooseAnswer catches any exception, logs `console.error('AI error', …)` and falls back to a safe legal answer, so a
+// chooseAnswer catches any exception, logs `console.error('AI error', …)` and falls back to a random legal answer, so a
 // crash inside the AI would otherwise pass unnoticed. Call failOnAiErrors() at the top level of a test file: every test
 // in it then fails if console.error was called.
 import { afterEach, beforeEach, expect, vi, type MockInstance } from 'vitest';

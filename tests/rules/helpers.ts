@@ -1,65 +1,53 @@
 // Independent QA helpers for the rules suite (tests/rules). Uses only the public engine API.
+// The kit's battles put the French army at the top and the British at the bottom: the opposite of every real battle,
+// so no test passes by an engine that assumes the British are on top.
 import { expect } from 'vitest';
 import {
-  CARD_LIST, GameDriver, UNIT_STATS, createGame, forceDice, forcedDiceLeft, hexId,
-  type Answer, type CardKind, type Decision, type DieFace, type GameEvent, type GameState, type ScenarioSetup, type Side, type TerrainSetup,
-  type TerrainType, type Unit, type UnitType,
+  ARMS, CARD_LIST, GameDriver, UNIT_STATS, createGame, forceDice, forcedDiceLeft, hexId,
+  type Answer, type CardKind, type Decision, type DefendChoice, type DieFace, type GameEvent, type GameState, type RollPurpose,
+  type RowKey, type ScenarioSetup, type Side, type TerrainSetup, type Unit, type UnitSetup, type LeaderSetup,
 } from '../../src/engine';
 
 /** A scenario entry placed `at: [r, c]` instead of by `r` and `c`. */
 type At<T> = Omit<T, 'r' | 'c'> & { at: [number, number] };
 
 /**
- * A QA battle: any `ScenarioSetup` fields (the rest take defaults: no pieces or terrain, `first: 'bottom'`, `banners: 99`,
- * no rules) plus shorthands. Pieces and terrain stand `at: [r, c]`; a unit's `blocks` sets its strength after the build; a
- * leader's name defaults to Ldr<i>; the armies are `topArmy` (Carthaginian) and `bottomArmy` (Roman), each holding `cards`
- * cards (5) unless `orderDice` gives the side dice orders (310 Utica P1, §18.10: `orders: 'dice'`, `cards: 0`). Every other
- * field passes through unchanged, so a new scenario field needs no change here.
+ * A QA battle: any `ScenarioSetup` field (the rest take defaults: no pieces or terrain, `first: 'bottom'`, `banners: 99`)
+ * plus shorthands. Pieces and terrain stand `at: [r, c]`; a unit's `blocks` sets its strength after the build (its
+ * `maxBlocks` keeps the row's blocks); a leader's name defaults to Ldr<i>. Both sides hold `cards` cards (5) unless
+ * `topCards` or `bottomCards` says otherwise.
  *
- * Ids: units and leaders share one id counter, in the order board units, board leaders, `placeLeaders`, `reserves`,
- * `reserveLeaders`, `placeUnits` (§18.5, §18.9). With n board units and no leaders the reserve units are u<n+1>..., each
- * leader before them takes a number first.
+ * Ids: units u1..un in order, then the leaders (use `leaderId`).
  */
 export type Pos = Partial<Omit<ScenarioSetup, 'top' | 'bottom' | 'units' | 'leaders' | 'terrain'>> & {
-  units?: (At<ScenarioSetup['units'][number]> & { blocks?: number })[];
-  leaders?: (Omit<At<ScenarioSetup['leaders'][number]>, 'name'> & { name?: string })[];
+  units?: (At<Omit<UnitSetup, 'blocks'>> & { blocks?: number })[];
+  leaders?: (Omit<At<LeaderSetup>, 'name'> & { name?: string })[];
   terrain?: At<TerrainSetup>[];
   cards?: number;
-  topArmy?: string;
-  bottomArmy?: string;
-  orderDice?: Partial<Record<Side, number>>;
+  topCards?: number;
+  bottomCards?: number;
 };
 
-/** A side of the QA battle: its cards, or its dice orders (`Pos.orderDice`). */
-function sideOf(p: Pos, side: Side, army: string, blocks: 'car' | 'rom', look: 'carthaginian' | 'roman', commander: string): ScenarioSetup['top'] {
-  const dice = p.orderDice?.[side];
-  if (dice === undefined) return { army, blocks, look, commander, cards: p.cards ?? 5 };
-  return { army, blocks, look, commander, cards: 0, orders: 'dice', orderDice: dice };
-}
-
-export const H = (r: number, c: number) => hexId(r, c);
+export const H = (r: number, c: number): number => hexId(r, c);
 
 /** The scenario data of a QA battle (`Pos`). */
 export function setupOf(p: Pos): ScenarioSetup {
-  const { units, leaders, terrain, cards: _cards, topArmy, bottomArmy, orderDice: _orderDice, ...rest } = p;
+  const { units, leaders, terrain, cards, topCards, bottomCards, ...rest } = p;
   return {
     id: 'qa',
     name: 'QA',
     ...rest,
-    top: sideOf(p, 'top', topArmy ?? 'Carthaginian', 'car', 'carthaginian', 'T'),
-    bottom: sideOf(p, 'bottom', bottomArmy ?? 'Roman', 'rom', 'roman', 'B'),
+    top: { army: 'French', nation: 'FR', commander: 'T', cards: topCards ?? cards ?? 5 },
+    bottom: { army: 'British', nation: 'BR', commander: 'B', cards: bottomCards ?? cards ?? 5 },
     first: p.first ?? 'bottom',
     banners: p.banners ?? 99,
     terrain: (terrain ?? []).map(({ at: [r, c], ...t }) => ({ ...t, r, c })),
     units: (units ?? []).map(({ at: [r, c], blocks: _blocks, ...u }) => ({ ...u, r, c })),
     leaders: (leaders ?? []).map(({ at: [r, c], name, ...l }, i) => ({ ...l, name: name ?? `Ldr${i}`, r, c })),
-    reserves: p.reserves ?? [],
-    reserveLeaders: p.reserveLeaders ?? [],
-    rules: p.rules ?? [],
   };
 }
 
-/** Build a state. Units get ids u1..un in order; leaders get the following L ids (use leaderId()). */
+/** Build a state (seed 4242). Units get ids u1..un in order; leaders get the following L ids (use `leaderId`). */
 export function build(p: Pos, seed = 4242): GameState {
   const s = createGame(setupOf(p), seed);
   (p.units ?? []).forEach((u, i) => {
@@ -73,9 +61,12 @@ export function leaderId(s: GameState, i: number): string {
   return s.leaders[i].id;
 }
 
-/** Remove one card id from wherever it is in the hands, replacing it with a harmless deck card. */
-function pull(s: GameState, id: number) {
-  for (const side of ['top', 'bottom'] as Side[]) {
+const onTrack = (s: GameState, id: number): boolean => SIDESLIST.some((side) => s.players[side].squareTrack.includes(id));
+const SIDESLIST: Side[] = ['top', 'bottom'];
+
+/** Take card `id` out of the deck, the discard and the hands (a hand's slot gets a harmless deck card). */
+function pull(s: GameState, id: number): void {
+  for (const side of SIDESLIST) {
     const hand = s.players[side].hand;
     const i = hand.indexOf(id);
     if (i >= 0) {
@@ -89,14 +80,17 @@ function pull(s: GameState, id: number) {
   if (x >= 0) s.discard.splice(x, 1);
 }
 
-/** Put a card of `kind` into `side`'s hand (replacing the first card, which goes back on the deck bottom). */
+/**
+ * Put a card of `kind` into `side`'s hand (replacing the first card, which goes to the bottom of the deck) and return
+ * its id. Cards move only between the deck, the discard and the hands, never off a square track.
+ */
 export function giveCard(s: GameState, side: Side, kind: CardKind): number {
   const hand = s.players[side].hand;
   const already = hand.find((c) => CARD_LIST[c] === kind);
   if (already !== undefined) return already;
-  const id = CARD_LIST.findIndex((k) => k === kind);
   const all = CARD_LIST.map((k, i) => (k === kind ? i : -1)).filter((i) => i >= 0);
-  const free = all.find((i) => !s.players.top.hand.includes(i) && !s.players.bottom.hand.includes(i)) ?? id;
+  const free = all.find((i) => !onTrack(s, i) && i !== s.turn.card && !s.players.top.hand.includes(i) && !s.players.bottom.hand.includes(i))
+    ?? all.find((i) => !onTrack(s, i) && i !== s.turn.card)!;
   pull(s, free);
   const old = hand[0];
   hand[0] = free;
@@ -105,8 +99,8 @@ export function giveCard(s: GameState, side: Side, kind: CardKind): number {
 }
 
 /** Make sure nobody holds First Strike (so no unexpected defend decisions). */
-export function noFirstStrike(s: GameState) {
-  for (const side of ['top', 'bottom'] as Side[]) {
+export function noFirstStrike(s: GameState): void {
+  for (const side of SIDESLIST) {
     const hand = s.players[side].hand;
     for (let i = 0; i < hand.length; i++) {
       if (CARD_LIST[hand[i]] === 'firstStrike') {
@@ -119,7 +113,7 @@ export function noFirstStrike(s: GameState) {
   }
 }
 
-export function must(d: GameDriver, a: Answer) {
+export function must(d: GameDriver, a: Answer): void {
   const ok = d.answer(a);
   if (!ok) throw new Error(`answer ${JSON.stringify(a)} rejected: ${d.lastError} (pending ${JSON.stringify(d.pending)})`);
 }
@@ -127,13 +121,14 @@ export function must(d: GameDriver, a: Answer) {
 /**
  * Start the active player's turn with a card of `kind`, ordering `pieces` (if the card asks for a selection).
  * The active player is s.active (set via Pos.first). Strips First Strike from both hands unless keepFS.
+ * `single` is La Grande Manoeuvre's "1 unit, normal rules" answer.
  */
-export function play(s: GameState, kind: CardKind, pieces?: string[], opts: { keepFS?: boolean } = {}): GameDriver {
+export function play(s: GameState, kind: CardKind, pieces?: string[], opts: { keepFS?: boolean; single?: boolean } = {}): GameDriver {
   if (!opts.keepFS) noFirstStrike(s);
   const card = giveCard(s, s.active, kind);
   const d = new GameDriver(s);
   must(d, { kind: 'playCard', card });
-  if (pieces && d.pending?.kind === 'orders') must(d, { kind: 'orders', pieces });
+  if (pieces && d.pending?.kind === 'orders') must(d, opts.single ? { kind: 'orders', pieces, single: true } : { kind: 'orders', pieces });
   return d;
 }
 
@@ -153,21 +148,21 @@ export function ev(d: GameDriver): GameEvent[] {
   return d.drainEvents().map((q) => q.e);
 }
 
-/** Dice count of the first 'combat' event with the given purpose. */
-export function combatDice(events: GameEvent[], purpose: string, attacker?: string): number | undefined {
-  const e = events.find((x) => x.t === 'combat' && x.purpose === purpose && (!attacker || x.attacker === attacker));
+/** Dice count of the first 'combat' event with the given purpose (and attacker). */
+export function combatDice(es: GameEvent[], purpose: RollPurpose, attacker?: string): number | undefined {
+  const e = es.find((x) => x.t === 'combat' && x.purpose === purpose && (!attacker || x.attacker === attacker));
   return e && e.t === 'combat' ? e.dice : undefined;
 }
 
-export function rolls(events: GameEvent[], purpose?: string): DieFace[][] {
-  return events.filter((x) => x.t === 'roll' && (!purpose || x.purpose === purpose)).map((x) => (x as { faces: DieFace[] }).faces);
+export function rolls(es: GameEvent[], purpose?: RollPurpose): DieFace[][] {
+  return es.filter((x) => x.t === 'roll' && (!purpose || x.purpose === purpose)).map((x) => (x as { faces: DieFace[] }).faces);
 }
 
 export function pendingKind(d: GameDriver): Decision['kind'] | null {
   return d.pending?.kind ?? null;
 }
 
-/** Faces helper: n copies of a face. */
+/** Faces helper: k copies of a face. */
 export function n(face: DieFace, k: number): DieFace[] {
   return Array(k).fill(face);
 }
@@ -175,25 +170,48 @@ export function n(face: DieFace, k: number): DieFace[] {
 export { forceDice, forcedDiceLeft };
 
 /** Play a card of `kind` for the active side of a running game and order `pieces` (hands are manipulated in place). */
-export function turn(d: GameDriver, kind: CardKind, pieces: string[]) {
+export function turn(d: GameDriver, kind: CardKind, pieces: string[]): void {
   const card = giveCard(d.state, d.state.active, kind);
   must(d, { kind: 'playCard', card });
   if (d.pending?.kind === 'orders') must(d, { kind: 'orders', pieces });
 }
 
 /** End the movement of the ordered pieces still to move. */
-export function endMoves(d: GameDriver) {
+export function endMoves(d: GameDriver): void {
   while (d.pending?.kind === 'move') must(d, { kind: 'endMove' });
 }
 
-/** Finish the active player's turn: end the movement, then the battles not fought. */
-export function endTurn(d: GameDriver) {
-  endMoves(d);
-  while (d.pending?.kind === 'battle') must(d, { kind: 'endBattle' });
+/**
+ * Finish the active player's turn: end the movement and the battles not fought, and answer anything else pending with the
+ * plainest legal answer ('stand', none, the first option, no) until the next player's card is asked for.
+ */
+export function endTurn(d: GameDriver): void {
+  for (let i = 0; i < 200 && d.pending && d.pending.kind !== 'playCard'; i++) {
+    const p = d.pending;
+    switch (p.kind) {
+      case 'move': must(d, { kind: 'endMove' }); break;
+      case 'battle': must(d, { kind: 'endBattle' }); break;
+      case 'orders': must(d, { kind: 'orders', pieces: [] }); break;
+      case 'leaveSquare':
+      case 'advance': must(d, { kind: 'yesno', yes: false }); break;
+      case 'combinedArms': must(d, { kind: 'select', ids: [] }); break;
+      case 'defend': must(d, { kind: 'defend', choice: 'stand' }); break;
+      case 'ignoreFlags': must(d, { kind: 'ignoreFlags', count: 0 }); break;
+      case 'retreat':
+      case 'leaderRetreat':
+      case 'scoutKeep':
+      case 'shortSupplyTarget': must(d, { kind: 'choose', index: 0 }); break;
+      case 'breakthroughExtra': must(d, { kind: 'hex', hex: p.required ? p.options[0] : null }); break;
+      case 'bonusMelee': must(d, { kind: 'hex', hex: null }); break;
+      case 'shortSupplyHex': must(d, { kind: 'hex', hex: p.options[0] }); break;
+      case 'elan':
+      case 'rally': must(d, { kind: 'assign', ids: p.faces.map(() => null) }); break;
+    }
+  }
 }
 
 /** Finish the active player's turn doing nothing with a plain section card (hands are manipulated in place). */
-export function passTurn(d: GameDriver, kind: CardKind = 'order2L') {
+export function passTurn(d: GameDriver, kind: CardKind = 'probeC'): void {
   turn(d, kind, []);
   endTurn(d);
 }
@@ -206,59 +224,58 @@ export function fromTurnStart(es: GameEvent[], side: Side): GameEvent[] {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// One close combat: a bottom attacker (u1) at (5,6) against a top defender (u2) at (4,6)
+// One melee: a bottom attacker (u1) at (5,6) against a top defender (u2) at (4,6)
 
-/** A class face that scores against neither unit type (nor is a flag, sword or helmet): a sure miss between them. */
-export function miss(a: UnitType, b: UnitType): DieFace {
-  return (['light', 'medium', 'heavy'] as const).find((c) => c !== UNIT_STATS[a].cls && c !== UNIT_STATS[b].cls)!;
+/** The first arm symbol of `ARMS` that matches neither unit's arm: a sure miss between them. */
+export function miss(a: RowKey, b: RowKey): DieFace {
+  return ARMS.find((arm) => arm !== UNIT_STATS[a].arm && arm !== UNIT_STATS[b].arm)!;
 }
 
-/** A `duel`: the card played (default `order4C`), the strengths at the start, the terrain under each unit. */
+/** A `duel`: the card played (default `attackC`), the strengths at the start, the terrain under each unit. */
 export interface DuelOpts {
   card?: CardKind;
   atkBlocks?: number;
   defBlocks?: number;
-  atkT?: TerrainType;
-  defT?: TerrainType;
-  atkFord?: boolean;
-  defFord?: boolean;
+  atkT?: Omit<TerrainSetup, 'r' | 'c'>;
+  defT?: Omit<TerrainSetup, 'r' | 'c'>;
+}
+
+/** Declare an attack, answering a following `combinedArms` with `o.guns ?? []` and a `defend` with `o.defend ?? 'stand'`. */
+export function attack(d: GameDriver, unit: string, hex: number, o: { defend?: DefendChoice; guns?: string[] } = {}): void {
+  must(d, { kind: 'attack', unit, target: hex });
+  if (d.pending?.kind === 'combinedArms') must(d, { kind: 'select', ids: o.guns ?? [] });
+  if (d.pending?.kind === 'defend') must(d, { kind: 'defend', choice: o.defend ?? 'stand' });
 }
 
 /** The attacker attacks the defender, which stands; every die misses. Returns the attack and battle-back dice. */
-export function duel(atk: UnitType, def: UnitType, o: DuelOpts = {}): { attack?: number; back?: number } {
-  const terrain: Pos['terrain'] = [];
-  if (o.atkT) terrain.push({ at: [5, 6], t: o.atkT, ford: o.atkFord });
-  if (o.defT) terrain.push({ at: [4, 6], t: o.defT, ford: o.defFord });
+export function duel(atk: RowKey, def: RowKey, o: DuelOpts = {}): { attack?: number; back?: number } {
+  const terrain: NonNullable<Pos['terrain']> = [];
+  if (o.atkT) terrain.push({ ...o.atkT, at: [5, 6] });
+  if (o.defT) terrain.push({ ...o.defT, at: [4, 6] });
   const s = build({
     units: [
-      { side: 'bottom', type: atk, at: [5, 6], blocks: o.atkBlocks },
-      { side: 'top', type: def, at: [4, 6], blocks: o.defBlocks },
+      { side: 'bottom', key: atk, at: [5, 6], blocks: o.atkBlocks },
+      { side: 'top', key: def, at: [4, 6], blocks: o.defBlocks },
     ],
     terrain,
   });
-  const card = o.card ?? 'order4C';
-  const d = play(s, card, card === 'clash' ? undefined : ['u1']);
-  if (d.pending?.kind === 'move') must(d, { kind: 'endMove' });
+  const d = play(s, o.card ?? 'attackC', ['u1']);
+  endMoves(d);
   expect(d.pending?.kind).toBe('battle');
   ev(d);
   forceDice(n(miss(atk, def), 30));
-  must(d, { kind: 'attack', unit: 'u1', target: H(4, 6) });
-  if (d.pending?.kind === 'defend') must(d, { kind: 'defend', choice: 'stand' });
+  attack(d, 'u1', H(4, 6));
   const e = ev(d);
-  return { attack: combatDice(e, 'close'), back: combatDice(e, 'battleBack') };
+  forceDice([]);
+  return { attack: combatDice(e, 'melee'), back: combatDice(e, 'battleBack') };
 }
 
-/** The attacker declares the attack (`extra` adds to the position); returns the driver at the defend decision. */
-export function attackOn(atk: UnitType, def: UnitType, extra: Pos = {}): GameDriver {
-  const s = build({ ...extra, units: [{ side: 'bottom', type: atk, at: [5, 6] }, { side: 'top', type: def, at: [4, 6] }, ...(extra.units ?? [])] });
-  const d = toBattle(s, 'order4C', ['u1']);
+/** The attacker declares the attack (`extra` adds to the position); returns the driver at the defend decision or after it resolved. */
+export function attackOn(atk: RowKey, def: RowKey, extra: Pos = {}): GameDriver {
+  const s = build({ ...extra, units: [{ side: 'bottom', key: atk, at: [5, 6] }, { side: 'top', key: def, at: [4, 6] }, ...(extra.units ?? [])] });
+  const d = toBattle(s, 'attackC', ['u1']);
   forceDice(n(miss(atk, def), 40)); // if the attack resolves at once (no defend decision), every die misses
   must(d, { kind: 'attack', unit: 'u1', target: H(4, 6) });
+  if (d.pending?.kind === 'combinedArms') must(d, { kind: 'select', ids: [] });
   return d;
-}
-
-/** Whether the defender may evade the attack. */
-export function canEvade(atk: UnitType, def: UnitType): boolean {
-  const d = attackOn(atk, def);
-  return d.pending?.kind === 'defend' && d.pending.canEvade;
 }
