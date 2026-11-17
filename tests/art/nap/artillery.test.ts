@@ -2,8 +2,7 @@ import { createElement as h } from 'react';
 import { describe, expect, it } from 'vitest';
 import { ARTILLERY, type ArtKey, type ArtilleryKey } from '../../../src/art/nap/keys';
 import { NapMiniature } from '../../../src/art/nap/token';
-import { NATION_LOOKS } from '../../../src/art/nap/nations';
-import { GUN_PIECE_BOX, SLOTS } from '../../../src/art/nap/slots';
+import { GUN_PIECE_BOX, ICON_BOX, ICON_STEP, standing } from '../../../src/art/nap/slots';
 import { FIGURE_SPECS } from '../../../src/art/nap/specs';
 import type { GunPiece, GunSpec } from '../../../src/art/nap/uniform';
 import { count, hueClass, shape, svg, token } from './helpers';
@@ -97,11 +96,8 @@ describe('artillery', () => {
     const CX = 29, CY = -28, R = 12;
     const hits: string[] = [];
     for (const k of ARTILLERY) for (const max of [3, 4] as const) for (let n = 1; n <= max; n++) {
-      const slots = SLOTS.gun[Math.min(n, 4) as 1 | 2 | 3 | 4];
-      const full = SLOTS.gun[max];
-      slots.forEach((sl, idx) => {
-        // the slot's index in the full list picks the piece, as the token does
-        const fi = n >= 2 ? idx + (full.length - slots.length) : full.length - 1;
+      for (const [sl, fi] of standing('gun', n, max)) {
+        // the paint index picks the piece, as the token does
         const p = spec(k).pieces[max - 1 - fi] ?? spec(k).pieces[0];
         const { box: [top, bottom, left, right], step } = GUN_PIECE_BOX[p];
         for (const flip of [1, -1]) for (const [t, b, l, r] of [[top, step.y, step.left, step.right], [step.y, bottom, left, right]]) {
@@ -110,12 +106,15 @@ describe('artillery', () => {
           const d = Math.hypot(Math.max(x0 - CX, 0, CX - x1), Math.max(sl.y + t * sl.s - CY, 0, CY - (sl.y + b * sl.s)));
           if (d < R) hits.push(`${k} ${n}/${max} ${p} flip${flip} d=${d.toFixed(1)}`);
         }
-      });
+      }
     }
     expect(hits).toEqual([]);
   });
 
-  it('uses the nations\' own looks', () => {
-    expect(NATION_LOOKS.FR.side.edge).not.toBe(NATION_LOOKS.BR.side.edge);
+  it('draws back to front: the slots are listed by increasing y', () => {
+    const ys = standing('gun', 4, 4).map(([sl]) => sl.y);
+    expect(ys).toEqual([...ys].sort((a, b) => a - b));
+    expect(GUN_PIECE_BOX.gun.box).toBe(ICON_BOX.gun);
+    expect(GUN_PIECE_BOX.gun.step).toBe(ICON_STEP.gun);
   });
 });
