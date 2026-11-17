@@ -14,11 +14,20 @@ TERRAIN = {"hill", "forest", "rugged", "town", "windmill", "fortress", "river", 
 
 def check(data, expected):
     P = []
-    ter = data.get("terrain", [])
-    units = data.get("units", [])
-    leaders = data.get("leaders", [])
+    required = {"terrain": ("r", "c", "t"), "units": ("r", "c", "side", "key"),
+                "leaders": ("r", "c", "side", "name"), "objectives": ("r", "c")}
+    clean = {}
+    for name, fields in required.items():
+        clean[name] = []
+        for i, e in enumerate(data.get(name, [])):
+            miss = [f for f in fields if not isinstance(e, dict) or f not in e]
+            if miss:
+                P.append(f"malformed {name}[{i}]: missing {', '.join(miss)}")
+            else:
+                clean[name].append(e)
+    ter, units, leaders = clean["terrain"], clean["units"], clean["leaders"]
 
-    for what, items in (("terrain", ter), ("unit", units), ("leader", leaders), ("objective", data.get("objectives", []))):
+    for what, items in (("terrain", ter), ("unit", units), ("leader", leaders), ("objective", clean["objectives"])):
         for it in items:
             if not hg.on_board(it["r"], it["c"]):
                 P.append(f"off board: {what} at {it['r']},{it['c']}")
@@ -76,17 +85,39 @@ def check(data, expected):
         else:
             if t.get("on", "plain") not in ("plain", "hill"):
                 P.append(f"bad 'on' {t['on']} at {t['r']},{t['c']}")
-            for sd in t.get("sides", []):
+            sides = t.get("sides", [])
+            for sd in sides:
                 if sd not in hg.HEX_DIRS:
                     P.append(f"invalid works side {sd!r} at {t['r']},{t['c']}")
+            for sd in sorted({x for x in sides if sides.count(x) > 1}):
+                P.append(f"duplicate works side {sd} at {t['r']},{t['c']}")
     for k, n in tkey.items():
         if n > 1:
             P.append(f"duplicate terrain {k[2]} at {k[0]},{k[1]}")
 
     rivers = {(t["r"], t["c"]) for t in ter if t["t"] == "river"}
+    linked = set()
     for r, c in sorted(rivers):
-        if not any(n in rivers for n in hg.neighbours(r, c)):
+        if any(n in rivers for n in hg.neighbours(r, c)):
+            linked.add((r, c))
+        else:
             P.append(f"isolated river hex at {r},{c}")
+    pieces, todo = [], set(linked)
+    while todo:
+        start = min(todo)
+        comp, stack = {start}, [start]
+        while stack:
+            h = stack.pop()
+            for n in hg.neighbours(*h):
+                if n in todo and n not in comp:
+                    comp.add(n)
+                    stack.append(n)
+        todo -= comp
+        pieces.append(sorted(comp))
+    want = data.get("riverPieces", 1)
+    if len(pieces) > want:
+        desc = "; ".join(" ".join(f"{r},{c}" for r, c in p) for p in pieces)
+        P.append(f"river splits into {len(pieces)} pieces (expected {want}; set riverPieces if intended): {desc}")
     return P
 
 

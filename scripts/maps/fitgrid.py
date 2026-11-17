@@ -12,7 +12,7 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import hexgrid as hg
 
-MAPS = "/Users/janisstrods/Gamemaking/cnc-napoleonics-research/maps"
+MAPS = hg.MAPS_DIR
 
 
 def ridge(path, blur=4):

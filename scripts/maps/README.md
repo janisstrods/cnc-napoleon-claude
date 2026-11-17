@@ -50,6 +50,8 @@ and on 001+007+015 together (`grids.json` holds the per-map fits):
 ```
 `side` is `top` or `bottom`. `key` is `NATION/CODE` (e.g. `BR/LN`). Top armies are BR, PT, AL; bottom is FR.
 `crossing` (`bridge`|`ford`) only on `river`; `on` (`plain`|`hill`) and `sides` (direction names) only on `fieldworks`.
+`riverPieces` (optional, default 1): the number of separate river pieces the battle has; check.py reports a river
+that splits into more pieces than this (a missing hex mid-river). Isolated single river hexes are always reported.
 A hex holds at most one unit and one leader. Leader keys are not units: leaders are counted per side against the
 survey's `*/LDR` rows (leaders carry no nation in the file).
 

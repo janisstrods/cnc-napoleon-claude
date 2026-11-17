@@ -3,8 +3,8 @@
   render.py design/data/001.json            -> map-work/render/001.png
   render.py design/data/001.json --crop 0-2 0-5 --scale 3
 
-Legend: terrain letter (H hill, F forest, G rugged, T town, W windmill, X fortress, R river, E fieldworks,
-Q sand quarry, Y walled farm) in a small tag at the hex's lower left; river crossings 'bridge' as a brown bar /
+Legend: terrain letter tags at the hex's upper left (H hill, F forest, G rugged, T town, W windmill, X fortress, R river, E fieldworks,
+Q sand quarry, Y walled farm) (units and leaders never cover that corner); river crossings 'bridge' as a brown bar /
 'ford' as a dotted bar; field-works sides as thick orange hexside lines; units as their key in a box coloured by
 side (top red, bottom blue); leaders as a yellow bar with the name; objectives as a thick green hex outline.
 """
@@ -45,7 +45,7 @@ def render(data, im, grid):
                 for i in range(-30, 30, 8):
                     d.rectangle([x + i, yy - 3, x + i + 4, yy + 3], fill=(240, 240, 240, 230))
         w = d.textlength(tag, font=fs)
-        bx, by = x - 38, y + 6 + 11 * [e for e in data["terrain"] if (e["r"], e["c"]) == (t["r"], t["c"])].index(t)
+        bx, by = x - 40, y - 36 + 11 * [e for e in data["terrain"] if (e["r"], e["c"]) == (t["r"], t["c"])].index(t)
         d.rectangle([bx, by, bx + w + 4, by + 12], fill=(0, 0, 0, 200))
         d.text((bx + 2, by), tag, fill=(255, 255, 255, 255), font=fs)
         for s in t.get("sides", []):

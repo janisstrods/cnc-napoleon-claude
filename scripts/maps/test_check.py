@@ -90,3 +90,34 @@ def test_bad_works_side():
     d["terrain"].append({"r": 5, "c": 5, "t": "fieldworks", "on": "plain", "sides": ["UP"]})
     p = problems(d)
     assert any("side" in x for x in p)
+
+
+def split_river():
+    d = base()
+    d["terrain"] = [{"r": 3, "c": c, "t": "river"} for c in (0, 1, 2, 4, 5, 6)]
+    return d
+
+
+def test_river_splits():
+    p = problems(split_river())
+    assert len(p) == 1 and "river splits into 2 pieces" in p[0]
+
+
+def test_river_pieces_declared():
+    d = split_river()
+    d["riverPieces"] = 2
+    assert problems(d) == []
+
+
+def test_malformed_entry():
+    d = base()
+    del d["units"][0]["key"]
+    del d["terrain"][0]["t"]
+    p = problems(d)
+    assert any("malformed" in x for x in p)
+
+
+def test_duplicate_works_side():
+    d = base()
+    d["terrain"].append({"r": 5, "c": 5, "t": "fieldworks", "on": "plain", "sides": ["E", "E"]})
+    assert any("duplicate works side" in x for x in problems(d))
