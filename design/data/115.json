@@ -1,93 +1,470 @@
 {
   "id": "115",
-  "grid": {"x0": 72.12, "y0": 133.12, "w": 87.0, "pitch": 75.38},
+  "grid": {
+    "x0": 72.12,
+    "y0": 133.12,
+    "w": 87.0,
+    "pitch": 75.38
+  },
   "terrain": [
-    {"r": 0, "c": 3, "t": "hill"},
-    {"r": 1, "c": 3, "t": "hill"},
-    {"r": 1, "c": 6, "t": "hill"},
-    {"r": 2, "c": 1, "t": "hill"},
-    {"r": 2, "c": 4, "t": "hill"},
-    {"r": 2, "c": 8, "t": "hill"},
-    {"r": 2, "c": 12, "t": "hill"},
-    {"r": 3, "c": 1, "t": "hill"},
-    {"r": 3, "c": 6, "t": "hill"},
-    {"r": 4, "c": 3, "t": "hill"},
-    {"r": 4, "c": 5, "t": "hill"},
-    {"r": 4, "c": 6, "t": "hill"},
-    {"r": 6, "c": 2, "t": "hill"},
-    {"r": 6, "c": 3, "t": "hill"},
-    {"r": 4, "c": 2, "t": "forest"},
-    {"r": 4, "c": 12, "t": "forest"},
-    {"r": 6, "c": 7, "t": "forest"},
-    {"r": 4, "c": 9, "t": "town", "art": "label: Albuera"},
-    {"r": 4, "c": 10, "t": "town", "art": "label: Albuera"},
-    {"r": 5, "c": 0, "t": "river"},
-    {"r": 5, "c": 1, "t": "river"},
-    {"r": 5, "c": 2, "t": "river"},
-    {"r": 6, "c": 5, "t": "river"},
-    {"r": 5, "c": 5, "t": "river"},
-    {"r": 5, "c": 6, "t": "river"},
-    {"r": 5, "c": 7, "t": "river"},
-    {"r": 5, "c": 8, "t": "river"},
-    {"r": 5, "c": 10, "t": "river"},
-    {"r": 4, "c": 11, "t": "river"},
-    {"r": 3, "c": 11, "t": "river"},
-    {"r": 5, "c": 3, "t": "river", "crossing": "ford"},
-    {"r": 6, "c": 4, "t": "river", "crossing": "ford"},
-    {"r": 5, "c": 9, "t": "river", "crossing": "bridge"}
+    {
+      "r": 0,
+      "c": 3,
+      "t": "hill"
+    },
+    {
+      "r": 1,
+      "c": 3,
+      "t": "hill"
+    },
+    {
+      "r": 1,
+      "c": 6,
+      "t": "hill"
+    },
+    {
+      "r": 2,
+      "c": 1,
+      "t": "hill"
+    },
+    {
+      "r": 2,
+      "c": 4,
+      "t": "hill"
+    },
+    {
+      "r": 2,
+      "c": 8,
+      "t": "hill"
+    },
+    {
+      "r": 2,
+      "c": 12,
+      "t": "hill"
+    },
+    {
+      "r": 3,
+      "c": 1,
+      "t": "hill"
+    },
+    {
+      "r": 3,
+      "c": 6,
+      "t": "hill"
+    },
+    {
+      "r": 4,
+      "c": 3,
+      "t": "hill"
+    },
+    {
+      "r": 4,
+      "c": 5,
+      "t": "hill"
+    },
+    {
+      "r": 4,
+      "c": 6,
+      "t": "hill"
+    },
+    {
+      "r": 6,
+      "c": 2,
+      "t": "hill"
+    },
+    {
+      "r": 6,
+      "c": 3,
+      "t": "hill"
+    },
+    {
+      "r": 4,
+      "c": 2,
+      "t": "forest"
+    },
+    {
+      "r": 4,
+      "c": 12,
+      "t": "forest"
+    },
+    {
+      "r": 6,
+      "c": 7,
+      "t": "forest"
+    },
+    {
+      "r": 4,
+      "c": 9,
+      "t": "town",
+      "art": "label: Albuera"
+    },
+    {
+      "r": 4,
+      "c": 10,
+      "t": "town",
+      "art": "label: Albuera"
+    },
+    {
+      "r": 5,
+      "c": 0,
+      "t": "river",
+      "crossing": "ford"
+    },
+    {
+      "r": 5,
+      "c": 1,
+      "t": "river",
+      "crossing": "ford"
+    },
+    {
+      "r": 5,
+      "c": 2,
+      "t": "river"
+    },
+    {
+      "r": 6,
+      "c": 5,
+      "t": "river"
+    },
+    {
+      "r": 5,
+      "c": 5,
+      "t": "river"
+    },
+    {
+      "r": 5,
+      "c": 6,
+      "t": "river"
+    },
+    {
+      "r": 5,
+      "c": 7,
+      "t": "river"
+    },
+    {
+      "r": 5,
+      "c": 8,
+      "t": "river"
+    },
+    {
+      "r": 5,
+      "c": 10,
+      "t": "river"
+    },
+    {
+      "r": 4,
+      "c": 11,
+      "t": "river"
+    },
+    {
+      "r": 3,
+      "c": 11,
+      "t": "river"
+    },
+    {
+      "r": 5,
+      "c": 3,
+      "t": "river",
+      "crossing": "ford"
+    },
+    {
+      "r": 6,
+      "c": 4,
+      "t": "river",
+      "crossing": "ford"
+    },
+    {
+      "r": 5,
+      "c": 9,
+      "t": "river",
+      "crossing": "bridge"
+    }
   ],
   "units": [
-    {"r": 0, "c": 8, "side": "top", "key": "BR/LN"},
-    {"r": 1, "c": 5, "side": "top", "key": "BR/LN"},
-    {"r": 1, "c": 7, "side": "top", "key": "BR/LN"},
-    {"r": 1, "c": 8, "side": "top", "key": "BR/LN"},
-    {"r": 2, "c": 7, "side": "top", "key": "BR/LN"},
-    {"r": 0, "c": 9, "side": "top", "key": "BR/LT"},
-    {"r": 4, "c": 9, "side": "top", "key": "BR/LT"},
-    {"r": 0, "c": 6, "side": "top", "key": "BR/HC"},
-    {"r": 2, "c": 8, "side": "top", "key": "BR/FA"},
-    {"r": 1, "c": 6, "side": "top", "key": "BR/HA"},
-    {"r": 3, "c": 2, "side": "top", "key": "SP/LN"},
-    {"r": 3, "c": 3, "side": "top", "key": "SP/LN"},
-    {"r": 3, "c": 4, "side": "top", "key": "SP/LN"},
-    {"r": 3, "c": 6, "side": "top", "key": "SP/LT"},
-    {"r": 3, "c": 5, "side": "top", "key": "SP/GR"},
-    {"r": 1, "c": 3, "side": "top", "key": "SP/LC"},
-    {"r": 2, "c": 11, "side": "top", "key": "PT/LN"},
-    {"r": 2, "c": 12, "side": "top", "key": "PT/LN"},
-    {"r": 2, "c": 10, "side": "top", "key": "PT/LT"},
-    {"r": 0, "c": 12, "side": "top", "key": "PT/LC"},
-    {"r": 5, "c": 0, "side": "bottom", "key": "FR/LN"},
-    {"r": 6, "c": 1, "side": "bottom", "key": "FR/LN"},
-    {"r": 6, "c": 2, "side": "bottom", "key": "FR/LN"},
-    {"r": 7, "c": 1, "side": "bottom", "key": "FR/LN"},
-    {"r": 7, "c": 2, "side": "bottom", "key": "FR/LN"},
-    {"r": 7, "c": 4, "side": "bottom", "key": "FR/LN"},
-    {"r": 7, "c": 10, "side": "bottom", "key": "FR/LN"},
-    {"r": 8, "c": 4, "side": "bottom", "key": "FR/LN"},
-    {"r": 5, "c": 1, "side": "bottom", "key": "FR/LT"},
-    {"r": 7, "c": 5, "side": "bottom", "key": "FR/LT"},
-    {"r": 6, "c": 11, "side": "bottom", "key": "FR/LT"},
-    {"r": 7, "c": 9, "side": "bottom", "key": "FR/GR"},
-    {"r": 4, "c": 0, "side": "bottom", "key": "FR/LC"},
-    {"r": 6, "c": 0, "side": "bottom", "key": "FR/LNC"},
-    {"r": 4, "c": 1, "side": "bottom", "key": "FR/HC"},
-    {"r": 6, "c": 3, "side": "bottom", "key": "FR/FA"},
-    {"r": 7, "c": 8, "side": "bottom", "key": "FR/FA"}
+    {
+      "r": 0,
+      "c": 8,
+      "side": "top",
+      "key": "BR/LN"
+    },
+    {
+      "r": 1,
+      "c": 5,
+      "side": "top",
+      "key": "BR/LN"
+    },
+    {
+      "r": 1,
+      "c": 7,
+      "side": "top",
+      "key": "BR/LN"
+    },
+    {
+      "r": 1,
+      "c": 8,
+      "side": "top",
+      "key": "BR/LN"
+    },
+    {
+      "r": 2,
+      "c": 7,
+      "side": "top",
+      "key": "BR/LN"
+    },
+    {
+      "r": 0,
+      "c": 9,
+      "side": "top",
+      "key": "BR/LT"
+    },
+    {
+      "r": 4,
+      "c": 9,
+      "side": "top",
+      "key": "BR/LT"
+    },
+    {
+      "r": 0,
+      "c": 6,
+      "side": "top",
+      "key": "BR/HC"
+    },
+    {
+      "r": 2,
+      "c": 8,
+      "side": "top",
+      "key": "BR/FA"
+    },
+    {
+      "r": 1,
+      "c": 6,
+      "side": "top",
+      "key": "BR/HA"
+    },
+    {
+      "r": 3,
+      "c": 2,
+      "side": "top",
+      "key": "SP/LN"
+    },
+    {
+      "r": 3,
+      "c": 3,
+      "side": "top",
+      "key": "SP/LN"
+    },
+    {
+      "r": 3,
+      "c": 4,
+      "side": "top",
+      "key": "SP/LN"
+    },
+    {
+      "r": 3,
+      "c": 6,
+      "side": "top",
+      "key": "SP/LT"
+    },
+    {
+      "r": 3,
+      "c": 5,
+      "side": "top",
+      "key": "SP/GR"
+    },
+    {
+      "r": 1,
+      "c": 3,
+      "side": "top",
+      "key": "SP/LC"
+    },
+    {
+      "r": 2,
+      "c": 11,
+      "side": "top",
+      "key": "PT/LN"
+    },
+    {
+      "r": 2,
+      "c": 12,
+      "side": "top",
+      "key": "PT/LN"
+    },
+    {
+      "r": 2,
+      "c": 10,
+      "side": "top",
+      "key": "PT/LT"
+    },
+    {
+      "r": 0,
+      "c": 12,
+      "side": "top",
+      "key": "PT/LC"
+    },
+    {
+      "r": 5,
+      "c": 0,
+      "side": "bottom",
+      "key": "FR/LN"
+    },
+    {
+      "r": 6,
+      "c": 1,
+      "side": "bottom",
+      "key": "FR/LN"
+    },
+    {
+      "r": 6,
+      "c": 2,
+      "side": "bottom",
+      "key": "FR/LN"
+    },
+    {
+      "r": 7,
+      "c": 1,
+      "side": "bottom",
+      "key": "FR/LN"
+    },
+    {
+      "r": 7,
+      "c": 2,
+      "side": "bottom",
+      "key": "FR/LN"
+    },
+    {
+      "r": 7,
+      "c": 4,
+      "side": "bottom",
+      "key": "FR/LN"
+    },
+    {
+      "r": 7,
+      "c": 10,
+      "side": "bottom",
+      "key": "FR/LN"
+    },
+    {
+      "r": 8,
+      "c": 4,
+      "side": "bottom",
+      "key": "FR/LN"
+    },
+    {
+      "r": 5,
+      "c": 1,
+      "side": "bottom",
+      "key": "FR/LT"
+    },
+    {
+      "r": 7,
+      "c": 5,
+      "side": "bottom",
+      "key": "FR/LT"
+    },
+    {
+      "r": 6,
+      "c": 11,
+      "side": "bottom",
+      "key": "FR/LT"
+    },
+    {
+      "r": 7,
+      "c": 9,
+      "side": "bottom",
+      "key": "FR/GR"
+    },
+    {
+      "r": 4,
+      "c": 0,
+      "side": "bottom",
+      "key": "FR/LC"
+    },
+    {
+      "r": 6,
+      "c": 0,
+      "side": "bottom",
+      "key": "FR/LNC"
+    },
+    {
+      "r": 4,
+      "c": 1,
+      "side": "bottom",
+      "key": "FR/HC"
+    },
+    {
+      "r": 6,
+      "c": 3,
+      "side": "bottom",
+      "key": "FR/FA"
+    },
+    {
+      "r": 7,
+      "c": 8,
+      "side": "bottom",
+      "key": "FR/FA"
+    }
   ],
   "leaders": [
-    {"r": 0, "c": 9, "side": "top", "name": "Cole"},
-    {"r": 1, "c": 7, "side": "top", "name": "Stewart"},
-    {"r": 2, "c": 5, "side": "top", "name": "Blake"},
-    {"r": 2, "c": 11, "side": "top", "name": "Harvey"},
-    {"r": 5, "c": 0, "side": "bottom", "name": "Girard"},
-    {"r": 7, "c": 2, "side": "bottom", "name": "Gazan"},
-    {"r": 7, "c": 4, "side": "bottom", "name": "Werle"},
-    {"r": 7, "c": 10, "side": "bottom", "name": "Godinot"}
+    {
+      "r": 0,
+      "c": 9,
+      "side": "top",
+      "name": "Cole"
+    },
+    {
+      "r": 1,
+      "c": 7,
+      "side": "top",
+      "name": "Stewart"
+    },
+    {
+      "r": 2,
+      "c": 5,
+      "side": "top",
+      "name": "Blake"
+    },
+    {
+      "r": 2,
+      "c": 11,
+      "side": "top",
+      "name": "Harvey"
+    },
+    {
+      "r": 5,
+      "c": 0,
+      "side": "bottom",
+      "name": "Girard"
+    },
+    {
+      "r": 7,
+      "c": 2,
+      "side": "bottom",
+      "name": "Gazan"
+    },
+    {
+      "r": 7,
+      "c": 4,
+      "side": "bottom",
+      "name": "Werle"
+    },
+    {
+      "r": 7,
+      "c": 10,
+      "side": "bottom",
+      "name": "Godinot"
+    }
   ],
   "objectives": [
-    {"r": 4, "c": 9, "note": "Albuera: temporary banner for the French (survey 115): ONE banner while a French unit holds EITHER Albuera hex at the start of the French turn; both hexes outlined blue on the map; BR/LT starts on 4,9"},
-    {"r": 4, "c": 10, "note": "Albuera: temporary banner for the French (survey 115): ONE banner while a French unit holds EITHER Albuera hex at the start of the French turn; both hexes outlined blue on the map; BR/LT starts on 4,9"}
+    {
+      "r": 4,
+      "c": 9,
+      "note": "Albuera: temporary banner for the French (survey 115): ONE banner while a French unit holds EITHER Albuera hex at the start of the French turn; both hexes outlined blue on the map; BR/LT starts on 4,9"
+    },
+    {
+      "r": 4,
+      "c": 10,
+      "note": "Albuera: temporary banner for the French (survey 115): ONE banner while a French unit holds EITHER Albuera hex at the start of the French turn; both hexes outlined blue on the map; BR/LT starts on 4,9"
+    }
   ],
   "notes": [
     "Units 20 + 17 and leaders 4 + 4, as the survey. Top is the Allied army by block colour: BR red (LN 0,8 1,5 1,7 1,8 2,7; LT 0,9 4,9; HC 0,6; HA 1,6; FA 2,8), SP yellow (LN 3,2 3,3 3,4; GR 3,5; LT 3,6; LC 1,3), PT brown (LN 2,11 2,12; LT 2,10; LC 0,12). Bottom FR blue. Both cavalry-light blocks at 1,3 (yellow) and 0,12 (brown) read at 6x.",
@@ -97,6 +474,7 @@
     "DOUBT: the page says river ford 2 AND bend ford 2 (four ford tiles); the map visibly shows only the two lighter bend tiles. The ford art covers the centre of its hex, and the centres of 5,0 (FR/LN stack) and 5,1 (FR/LT) are hidden under blocks; the visible river at both ends of those hexes is the plain dark art. Only the two visible tiles are recorded (map followed). Hex bend/straight breakdown agrees with the page: 6 bends (5,3 6,4 6,5 5,5 4,11 3,11), 8 straight incl. the bridge.",
     "Objectives 4,9 and 4,10: ONE French temporary banner if a French unit holds either hex at the start of the French turn (per the page and survey); recorded as two objective entries with the same note.",
     "Leaders: Cole (stacked with BR/LT 0,9), Stewart (BR/LN 1,7), Blake (lone SP horse block 2,5), Harvey (PT/LN 2,11); French Girard (FR/LN 5,0), Gazan (FR/LN 7,2), Werle (FR/LN 7,4), Godinot (FR/LN 7,10). Names read at 6x; Werle, Godinot and Harvey are probable readings of small rotated labels.",
-    "Guerrilla Action: in effect, British start with 0 counters (not map data). Stewart's Folly is a scenario rule, not map data."
+    "Guerrilla Action: in effect, British start with 0 counters (not map data). Stewart's Folly is a scenario rule, not map data.",
+    "Verifier correction (controller applied): 5,0 and 5,1 carry crossing ford (page: River 5 + Ford 2; the only straight hexes left for the two hidden fords; their centres are under blocks). In the river note, 5,10 is a bend and 4,11 straight (totals unchanged)."
   ]
 }
