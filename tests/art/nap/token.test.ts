@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createElement as h } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { ARM_OF, CODE_NAMES, codeOf } from '../../../src/engine/codes';
+import { ICON_BOX, SLOTS, type Formation } from '../../../src/art/nap/slots';
 import { ART_KEYS, ART_NATIONS, type ArtKey } from '../../../src/art/nap/keys';
 import { ArmGlyph } from '../../../src/art/nap/badge';
 import { NapLeaderToken, NapUnitIcon } from '../../../src/art/nap';
@@ -95,6 +96,27 @@ describe('NapUnitToken', () => {
     for (const nation of ART_NATIONS) for (const facing of ['left', 'right'] as const) for (const attached of [true, false]) {
       expect(svg(h(NapLeaderToken, { nation, facing, attached, name: 'Kellermann', showName: !attached }))).not.toMatch(BAD);
     }
+  });
+});
+
+describe('the attach corner', () => {
+  // An attached leader's medallion: centre (29, -28), radius 12 (a little over the drawn 12 for the outline).
+  const CX = 29, CY = -28, R = 12;
+  const drawing: Record<Formation, 'foot' | 'horse' | 'gun'> = { close: 'foot', loose: 'foot', horse: 'horse', gun: 'gun' };
+  it('stays clear of every figure box at every strength, in both facings', () => {
+    const hits: string[] = [];
+    for (const f of Object.keys(SLOTS) as Formation[]) {
+      const [top, bottom, left, right] = ICON_BOX[drawing[f]];
+      for (const n of [1, 2, 3, 4] as const) for (const flip of [1, -1]) for (const sl of SLOTS[f][n]) {
+        const x0 = sl.x + (flip > 0 ? left : -right) * sl.s;
+        const x1 = sl.x + (flip > 0 ? right : -left) * sl.s;
+        const y0 = sl.y + top * sl.s;
+        const y1 = sl.y + bottom * sl.s;
+        const d = Math.hypot(Math.max(x0 - CX, 0, CX - x1), Math.max(y0 - CY, 0, CY - y1));
+        if (d < R) hits.push(`${f} n${n} flip${flip} slot(${sl.x},${sl.y},${sl.s}) d=${d.toFixed(1)}`);
+      }
+    }
+    expect(hits).toEqual([]);
   });
 });
 

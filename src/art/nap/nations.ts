@@ -21,9 +21,8 @@ const side = (edge: string, banner: string): SideColours => ({ edge, edgeShade: 
 // booklet's instruction for 014-015).
 const FR_SIDE = side('#2c4f9e', '#3f73d8');
 const BR_SIDE = side('#b02a2a', '#d8453d');
-// The booklet's brown reads as a tawny amber here: every darker chocolate sits within dE 20 of the board's wood and roof
-// colours (palisade, hull, roofShade), which the nations test forbids; #a47200 is the nearest brown that clears them.
-const PT_SIDE = side('#a47200', '#d2a55a');
+// A true brown, as the booklet says; as dark as the ground colours (banks, mud, dirt) allow while still clearing dE 20.
+const PT_SIDE = side('#58300e', '#c08a4a');
 
 const SKIN = ['#e0b48c', '#d4a077', '#c98f66', '#e6c09a'] as const;
 const HAIR = ['#3a2616', '#5a3a1e', '#1f1710', '#7a5a30', '#4a3020'] as const;

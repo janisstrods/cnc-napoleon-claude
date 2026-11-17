@@ -70,11 +70,11 @@ export function NapBasePlate({ side, rx = 38, ry = 11.5, cy = 11 }: { side: Side
 }
 
 // ---------------------------------------------------------------------------------------------
-// Guard marker: a gilt staff planted at the back left of the base, topped with an eagle or a crown.
+// Guard marker: a gilt staff planted at the back of the base (left when facing right, mirrored with the facing; low and small enough to clear the attach corner), topped with an eagle or a crown.
 
-export function GuardMarker({ device }: { device: 'eagle' | 'crown' }) {
+export function GuardMarker({ device, flip = 1 }: { device: 'eagle' | 'crown'; flip?: number }) {
   return (
-    <g data-guard={device} transform="translate(-27.5 8) scale(0.88)">
+    <g data-guard={device} transform={`translate(${-33 * flip} 11) scale(0.7)`}>
       <ellipse cx={1} cy={0.6} rx={3} ry={1.1} fill="#000" opacity={0.3} />
       <path d="M0 0.4 L0 -34" stroke={OL} strokeWidth={2.4} strokeLinecap="round" />
       <path d="M0 0 L0 -34" stroke={METAL.gold} strokeWidth={1.3} />
@@ -110,17 +110,17 @@ function UnitTokenImpl({ unitKey, blocks, maxBlocks, facing, dimmed }: NapUnitTo
     <g data-nap>
       <g opacity={dimmed ? 0.6 : undefined} style={dimmed ? { filter: 'saturate(0.3) brightness(0.95)' } : undefined}>
         <NapBasePlate side={look.side} />
-        {guard && device !== 'none' ? <GuardMarker device={device} /> : null}
         <FacingRightCtx.Provider value={facing === 'right'}>
           {placed.map(([sl, idx]) => (
             <g key={idx} data-slot={idx}>
-              <ellipse cx={sl.x * flip + 1.6} cy={sl.y + 0.4} rx={(formation === 'close' || formation === 'loose' ? 7.5 : 15) * sl.s} ry={2.2 * sl.s} fill="#1a1208" opacity={0.42} />
-              <g transform={`translate(${sl.x * flip} ${sl.y}) scale(${sl.s * flip} ${sl.s})`}>
+              <ellipse cx={sl.x + 1.6 * flip} cy={sl.y + 0.4} rx={(formation === 'close' || formation === 'loose' ? 7.5 : 15) * sl.s} ry={2.2 * sl.s} fill="#1a1208" opacity={0.42} />
+              <g transform={`translate(${sl.x} ${sl.y}) scale(${sl.s * flip} ${sl.s})`}>
                 <NapMiniature unitKey={unitKey} i={idx} piece={spec.drawing === 'gun' ? spec.pieces[maxBlocks - 1 - idx] ?? spec.pieces[0] : undefined} />
               </g>
             </g>
           ))}
         </FacingRightCtx.Provider>
+        {guard && device !== 'none' ? <GuardMarker device={device} flip={flip} /> : null}
       </g>
       <g opacity={dimmed ? 0.8 : undefined}>
         <UnitBadge unitKey={unitKey} blocks={n} maxBlocks={maxBlocks} guard={guard} />

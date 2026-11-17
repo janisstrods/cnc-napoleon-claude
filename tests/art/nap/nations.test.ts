@@ -4,12 +4,21 @@ import { P } from '../../../src/ui/terrain/palette';
 import { deltaE, hueClass } from './helpers';
 import { rgb } from '../../../src/art/color';
 
-/** What a base edge is seen against: every solid colour of the terrain paint palette and the flocked top. */
-const SOLID = /^#[0-9a-f]{6}$/i;
-const BOARD: Record<string, string> = { baseTop: BASE_TOP };
-for (const [name, value] of Object.entries(P)) {
-  if (Array.isArray(value)) value.forEach((c, i) => SOLID.test(c) && (BOARD[`${name}[${i}]`] = c));
-  else if (SOLID.test(value)) BOARD[name] = value;
+/**
+ * What a base edge is seen against: the ground fills of the terrain palette (grass, field, road, forest floor, water, hill
+ * ground, banks, rock) and the flocked top. Structure colours (roofs, hulls, palisades, tufa, wood) are left out on purpose:
+ * a unit base carries a dark outline and stands on ground, not on a building, so a brown edge near a roof colour is no clash.
+ */
+const GROUND = [
+  'grass', 'grassTop', 'grassBottom', 'grassLight', 'grassDark', 'grassOchre', 'tuftDark', 'tuftLight', 'hill',
+  'forestFloor', 'leafDark', 'leafMid', 'leafLight', 'leafSun', 'water', 'waterDeep', 'waterDeeper', 'waterEdge', 'waterShallow',
+  'bank', 'verge', 'sand', 'sandDark', 'sandWet', 'mud', 'dirt', 'scrub', 'earth', 'earthLight', 'street', 'reed', 'reedDark', 'rock', 'rockMid',
+] as const;
+const BOARD: Record<string, string> = { baseTop: BASE_TOP, hexBorder: '#6b7a3a' };
+for (const name of GROUND) {
+  const value = P[name] as string | readonly string[];
+  if (Array.isArray(value)) value.forEach((c, i) => (BOARD[`${name}[${i}]`] = c));
+  else BOARD[name] = value as string;
 }
 const lum = (c: string) => { const [r, g, b] = rgb(c); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
 

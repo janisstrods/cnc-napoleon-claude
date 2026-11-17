@@ -7,8 +7,9 @@ const NAMES = [/['"`](FR|BR|PT|AL)(\/[A-Z]{2,3})?['"`]/, /['"`](LN|LT|RI|GR|YG|O
 const isName = (line: string) => NAMES.some((r) => r.test(line));
 const code = (src: string) => src.split('\n').filter((l) => !/^\s*(\/\/|\/\*|\*)/.test(l)).map((l) => l.replace(/\s\/\/.*$/, ''));
 
+/** Every module specifier imported or re-exported, including multi-line and side-effect imports. */
 function importsOf(src: string): string[] {
-  return [...src.matchAll(/(?:^|\n)\s*(?:import|export)\b[^'"\n;]*?from\s+['"]([^'"]+)['"]/g)].map((m) => m[1]);
+  return [...src.matchAll(/\bfrom\s+['"]([^'"]+)['"]/g), ...src.matchAll(/\bimport\s+['"]([^'"]+)['"]/g)].map((m) => m[1]);
 }
 
 describe('art/nap guards', () => {
@@ -33,6 +34,11 @@ describe('art/nap guards', () => {
       }
     }
     expect(bad).toEqual([]);
+  });
+
+  it('the import scan catches multi-line and side-effect imports', () => {
+    const src = "import {\n  a,\n  b,\n} from '../../ui/secret';\nimport './sideeffect';\nexport { c } from \"../x\";\nimport d from 'react';";
+    expect(importsOf(src)).toEqual(['../../ui/secret', '../x', 'react', './sideeffect']);
   });
 
   it('the name check hits and misses what it should', () => {
