@@ -53,6 +53,8 @@ Expansion #1 AI-vs-AI balance runs with behaviour counters: `npx vite-node scrip
 
 ## Where things live
 
+- `src/engine/codes.ts`: the Napoleonics vocabulary (nations, arms, unit codes, `UnitKey` = `Nation/UnitCode`, `isUnitKey`); imports nothing.
+- `src/scenarios/catalogue.ts`: `CATALOGUE` of every battle (base 001–015, Expansion #1 101–118) with name, date and box, transcribed or not; histories are checked against it.
 - One table per kind of thing: `UNIT_STATS` (`src/engine/units.ts`), `ELITES` (`elites.ts`), `TERRAIN_STATS` (`terrain.ts`)
   and `EXPANSIONS` (`expansions.ts`). A new unit type, elite or terrain is a row there, and the compiler then asks for its
   art (`FIGURE_KIND` and the slot tables in `src/art/token.tsx`; device, shield and helmet renderers in `src/art/parts.tsx`
