@@ -1,0 +1,157 @@
+// 004 Corunna, 16 January 1809. Top: the British army (Moore, then Hope); bottom: Soult's French 2nd Corps.
+import type { BattleHistory } from '../types';
+
+const history: BattleHistory = {
+  id: '004',
+  context: {
+    war: 'Peninsular War, 1807–1814',
+    text: [
+      "In the autumn of 1808 Sir John Moore led a British army from Portugal into Spain to help the Spanish against the French. Napoleon took Madrid in December and swung north against him, and Moore retreated through the Galician mountains in midwinter. The Emperor gave up the chase in early January and left Marshal Soult to follow.",
+      "Moore's army reached Corunna on 11 January, but the transports from Vigo did not arrive until the 14th. While the sick, the horses and most of the guns went aboard, Soult brought up his corps, and Moore took post on the ridge of Monte Moro to cover the embarkation.",
+    ],
+  },
+  sides: {
+    top: {
+      name: 'British army in Spain',
+      commanders: ['Sir John Moore (commanding)', 'Sir David Baird (right)', 'Sir John Hope (left)', 'Sir Edward Paget (reserve)'],
+      strength: 'c. 15,000 infantry and nine guns (Oman)',
+      forces: 'Four infantry divisions and a few light guns; the cavalry and most of the artillery were already embarked.',
+    },
+    bottom: {
+      name: 'French 2nd Corps',
+      commanders: ['Marshal Soult (commanding)', 'Mermet (left)', 'Merle (centre)', 'Delaborde (right)'],
+      strength: 'c. 16,000 to 20,000, with strong cavalry; sources differ widely',
+      forces: 'Three infantry divisions, three cavalry divisions and a battery of ten or eleven heavy guns.',
+    },
+  },
+  map: {
+    north: 0,
+    terrain: [
+      { kind: 'hills', points: [[250, 70], [560, 50], [860, 70], [880, 170], [560, 185], [270, 190]] },
+      { kind: 'hills', points: [[20, 240], [165, 250], [185, 400], [30, 410]] },
+      { kind: 'hills', points: [[190, 440], [500, 405], [890, 425], [910, 610], [170, 610]] },
+      { kind: 'river', points: [[945, -20], [965, 160], [935, 330], [965, 500], [945, 620]], width: 18, label: 'Mero' },
+      { kind: 'town', at: [90, 40], size: 24, label: 'Corunna' },
+      { kind: 'town', at: [360, 305], size: 14, label: 'Elviña' },
+      { kind: 'town', at: [690, 325], size: 12, label: 'Piedralonga' },
+      { kind: 'label', at: [470, 26], text: 'Eiris' },
+      { kind: 'label', at: [560, 100], text: 'Monte Moro' },
+      { kind: 'label', at: [90, 230], text: 'San Cristóbal' },
+      { kind: 'label', at: [620, 570], text: 'Peñasquedo heights' },
+    ],
+    units: [
+      { id: 'bentinck', side: 'top', kind: 'infantry', label: 'Bentinck', w: 100 },
+      { id: 'manning', side: 'top', kind: 'infantry', label: 'Manningham', w: 100 },
+      { id: 'leith', side: 'top', kind: 'infantry', label: 'Leith', w: 100 },
+      { id: 'hill', side: 'top', kind: 'infantry', label: 'Hill', w: 100 },
+      { id: 'warde', side: 'top', kind: 'guard', label: 'Warde (Guards)', w: 100 },
+      { id: 'ccraw', side: 'top', kind: 'infantry', label: 'C. Crawfurd', w: 100 },
+      { id: 'bguns', side: 'top', kind: 'artillery', label: 'Light guns' },
+      { id: 'paget', side: 'top', kind: 'light', label: 'Paget (reserve)', w: 90 },
+      { id: 'fraser', side: 'top', kind: 'infantry', label: 'Fraser', w: 90 },
+      { id: 'mermet', side: 'bottom', kind: 'infantry', label: 'Mermet', w: 120 },
+      { id: 'merle', side: 'bottom', kind: 'infantry', label: 'Merle', w: 120 },
+      { id: 'delab', side: 'bottom', kind: 'infantry', label: 'Delaborde', w: 120 },
+      { id: 'battery', side: 'bottom', kind: 'artillery', label: 'Great battery', w: 58 },
+      { id: 'lahou', side: 'bottom', kind: 'heavycavalry', label: 'La Houssaye', w: 76 },
+      { id: 'franc', side: 'bottom', kind: 'cavalry', label: 'Franceschi', w: 70 },
+    ],
+    phases: [
+      {
+        title: 'Positions, 15–16 January',
+        caption: 'Moore holds Monte Moro, Hope on the eastern half and Baird on the western, with Paget hidden at Eiris and Fraser at Corunna. Soult drags a heavy battery to the rocks above Elviña and masses Mermet opposite Baird.',
+        at: {
+          bentinck: [330, 218],
+          manning: [445, 218],
+          leith: [575, 218],
+          hill: [705, 218],
+          warde: [385, 150],
+          ccraw: [640, 150],
+          bguns: [520, 252],
+          paget: [470, 82],
+          fraser: [200, 118],
+          mermet: [335, 470],
+          merle: [510, 470],
+          delab: [725, 475],
+          battery: [262, 425],
+          lahou: [125, 480],
+          franc: [75, 545],
+        },
+      },
+      {
+        title: 'Soult attacks, about 2 pm',
+        caption: "At about two the French battery opens and Mermet's columns take Elviña. Baird is wounded; Moore sends the 42nd and 50th forward. Paget marches out westward to meet the cavalry and Mermet's flanking brigade, with Fraser close behind.",
+        at: {
+          mermet: [345, 378],
+          lahou: [155, 360],
+          franc: [88, 290],
+          paget: [232, 236],
+          fraser: [135, 172],
+        },
+        arrows: [
+          { side: 'bottom', points: [[335, 448], [346, 425], [350, 402]] },
+          { side: 'bottom', points: [[290, 445], [250, 370], [240, 305]] },
+          { side: 'bottom', points: [[135, 450], [150, 400], [165, 345]] },
+          { side: 'bottom', points: [[78, 520], [80, 420], [90, 305]] },
+          { side: 'top', points: [[430, 88], [340, 125], [275, 190], [236, 226]] },
+          { side: 'top', points: [[200, 125], [160, 150], [138, 168]] },
+        ],
+      },
+      {
+        title: 'Elviña and Moore’s fall',
+        caption: 'Elviña changes hands. Moore, bringing up the Guards, is struck down by a cannon ball. Manningham halts Merle’s columns, Paget drives back the cavalry, and at Piedralonga Foy’s voltigeurs and Hill’s companies fight over the hamlet.',
+        at: {
+          bentinck: [332, 258],
+          warde: [395, 212],
+          manning: [445, 262],
+          hill: [705, 230],
+          mermet: [352, 372],
+          merle: [505, 365],
+          delab: [700, 372],
+          lahou: [150, 410],
+          paget: [228, 300],
+        },
+        broken: ['mermet', 'lahou'],
+        arrows: [
+          { side: 'top', points: [[332, 232], [334, 280]] },
+          { side: 'top', points: [[445, 238], [465, 292]] },
+          { side: 'top', points: [[250, 215], [232, 285]] },
+          { side: 'bottom', points: [[515, 440], [508, 395]] },
+          { side: 'bottom', points: [[725, 448], [706, 400]] },
+          { side: 'bottom', points: [[168, 345], [152, 405]], style: 'retreat' },
+        ],
+      },
+      {
+        title: 'Dusk and embarkation',
+        caption: 'At dusk the French fall back to their own heights and Paget halts below them. Hope withdraws the army from nine o’clock, leaving pickets and fires; it embarks on the 17th while Soult’s guns fire on the transports.',
+        at: {
+          paget: [232, 372],
+          mermet: [358, 446],
+          merle: [510, 460],
+          delab: [720, 468],
+          lahou: [140, 450],
+          franc: [80, 420],
+        },
+        arrows: [
+          { side: 'top', points: [[560, 172], [400, 108], [230, 62], [128, 48]], style: 'retreat' },
+          { side: 'bottom', points: [[355, 395], [352, 428]], style: 'retreat' },
+        ],
+      },
+    ],
+  },
+  outcome: {
+    winner: 'top',
+    result: 'The British beat off Soult and embark, but Moore dies',
+    losses: 'British perhaps 700 to 900 killed and wounded; French uncertain, about 900 to 1,500 (Oman 1,500; Napier’s 3,000 is thought too high).',
+    text: [
+      "Moore lived long enough to learn that the attack had failed. He was buried on the ramparts of Corunna at dawn on the 17th. Four transports ran aground when Soult's guns opened on the harbour; the rearguard sailed on the 18th.",
+      "The retreat had cost the army perhaps 5,000 men. Soult took Corunna and Ferrol, then turned towards Portugal, while Napoleon went home to face Austria. Opinion in Britain was at first harsh on Moore, but Oman held that the battle redeemed the army's honour.",
+    ],
+  },
+  sources: [
+    'Charles Oman, A History of the Peninsular War, vol. 1 (1902), pp. 581–96',
+    'W. F. P. Napier, History of the War in the Peninsula, vol. 1, Book IV (the battle of Corunna)',
+  ],
+};
+
+export default history;
