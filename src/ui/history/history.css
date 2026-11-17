@@ -127,7 +127,9 @@
 .hm-road { fill: none; stroke: #8a6e3c; stroke-width: 4; stroke-dasharray: 10 7; stroke-linecap: round; opacity: .8; }
 .hm-town rect { fill: #dcc89c; stroke: #5a4630; stroke-width: 3; }
 .hm-town .hm-tower { fill: #5a4630; }
-.hm-camp { fill: rgba(220, 200, 156, .55); stroke: #5a4630; stroke-width: 3; stroke-dasharray: 7 4; }
+.hm-farm rect { fill: #dcc89c; stroke: #5a4630; stroke-width: 3; }
+.hm-farm .hm-farm-yard { fill: #b9a374; stroke-width: 2; }
+.hm-redoubt { fill: rgba(150, 120, 80, .45); stroke: #5a4630; stroke-width: 3; stroke-linejoin: miter; }
 .hm-label {
   font-family: var(--kit-font-body);
   font-style: italic;

@@ -3,6 +3,7 @@ import type { BattleHistory } from '../../src/history/types';
 
 const history: BattleHistory = {
   id: '007',
+  date: '2 August 1808',
   context: {
     war: 'Second Punic War, 218–201 BC',
     text: [
@@ -28,21 +29,22 @@ const history: BattleHistory = {
     north: 180,
     terrain: [
       { kind: 'river', points: [[935, -30], [962, 140], [925, 330], [968, 470], [945, 640]], width: 20, label: 'Aufidus' },
+      { kind: 'redoubt', at: [150, 300], label: 'Redoubt' },
       { kind: 'town', at: [860, 52], size: 18, label: 'Cannae' },
     ],
     units: [
-      { id: 'numid', side: 'top', kind: 'lighthorse', label: 'Numidians', w: 76, h: 18 },
-      { id: 'libL', side: 'top', kind: 'foot', label: 'Libyans', w: 90, h: 44 },
-      { id: 'gs1', side: 'top', kind: 'warband', w: 100, h: 28 },
-      { id: 'gs2', side: 'top', kind: 'warband', label: 'Gauls & Spaniards', w: 100, h: 28 },
-      { id: 'gs3', side: 'top', kind: 'warband', w: 100, h: 28 },
-      { id: 'libR', side: 'top', kind: 'foot', label: 'Libyans', w: 90, h: 44 },
-      { id: 'hasd', side: 'top', kind: 'horse', label: "Hasdrubal's horse", w: 84, h: 24 },
-      { id: 'allcav', side: 'bottom', kind: 'horse', label: 'Allied horse', w: 80, h: 22 },
-      { id: 'inf1', side: 'bottom', kind: 'foot', w: 96, h: 56 },
-      { id: 'inf2', side: 'bottom', kind: 'foot', label: 'Roman & allied foot', w: 96, h: 56 },
-      { id: 'inf3', side: 'bottom', kind: 'foot', w: 96, h: 56 },
-      { id: 'rcav', side: 'bottom', kind: 'horse', label: 'Roman horse', w: 72, h: 22 },
+      { id: 'numid', side: 'top', kind: 'cavalry', label: 'Numidians', w: 76, h: 18 },
+      { id: 'libL', side: 'top', kind: 'infantry', label: 'Libyans', w: 90, h: 44 },
+      { id: 'gs1', side: 'top', kind: 'infantry', w: 100, h: 28 },
+      { id: 'gs2', side: 'top', kind: 'infantry', label: 'Gauls & Spaniards', w: 100, h: 28 },
+      { id: 'gs3', side: 'top', kind: 'infantry', w: 100, h: 28 },
+      { id: 'libR', side: 'top', kind: 'infantry', label: 'Libyans', w: 90, h: 44 },
+      { id: 'hasd', side: 'top', kind: 'cavalry', label: "Hasdrubal's horse", w: 84, h: 24 },
+      { id: 'allcav', side: 'bottom', kind: 'cavalry', label: 'Allied horse', w: 80, h: 22 },
+      { id: 'inf1', side: 'bottom', kind: 'infantry', w: 96, h: 56 },
+      { id: 'inf2', side: 'bottom', kind: 'infantry', label: 'Roman & allied foot', w: 96, h: 56 },
+      { id: 'inf3', side: 'bottom', kind: 'infantry', w: 96, h: 56 },
+      { id: 'rcav', side: 'bottom', kind: 'cavalry', label: 'Roman horse', w: 72, h: 22 },
     ],
     phases: [
       {
