@@ -9,7 +9,7 @@ const history: BattleHistory = {
     war: 'Peninsular War: third French invasion of Portugal, 1810–1811',
     text: [
       "In 1810 Masséna's Army of Portugal took Ciudad Rodrigo, then Almeida (27 August), and marched on Coimbra and Lisbon. Wellington fell back before it, stripping the country of food, until he reached the Serra do Bussaco, a long ridge above the Mondego, and decided to stand.",
-      'He posted his men on the reverse slope, out of sight of the French guns. Masséna, expecting little resistance, opened the attack on 27 September with Reynier\'s II Corps against the southern part of the ridge, at the pass of San Antonio de Cantaro. Ney\'s separate assault is told in 008.',
+      'He posted his men on the reverse slope, out of sight of the French guns. Masséna, expecting little resistance, opened the attack on 27 September with Reynier\'s II Corps against the ridge\'s right-centre, south of Ney\'s attack, at the pass of San Antonio de Cantaro. Ney\'s separate assault is told in 008.',
     ],
   },
   sides: {
@@ -32,9 +32,9 @@ const history: BattleHistory = {
       { kind: 'hills', points: [[-40, -40], [1040, -40], [1040, 160], [860, 180], [660, 150], [470, 170], [260, 150], [60, 175], [-40, 165]] },
       { kind: 'river', points: [[30, 640], [48, 460], [22, 300], [46, 120], [30, -40]], width: 16, label: 'Mondego' },
       { kind: 'road', points: [[620, 650], [600, 500], [585, 360], [570, 250], [562, 160]] },
-      { kind: 'label', at: [450, 590], text: 'Road from Mortágua' },
+      { kind: 'label', at: [290, 585], text: 'Road from Mortágua' },
       { kind: 'label', at: [150, 148], text: 'Serra do Bussaco' },
-      { kind: 'town', at: [680, 395], size: 20, label: 'San Antonio de Cantaro' },
+      { kind: 'town', at: [720, 420], size: 20, label: 'San Antonio de Cantaro' },
       { kind: 'label', at: [500, 168], text: 'Pass' },
       { kind: 'label', at: [900, 330], text: 'To the convent (008)' },
     ],
@@ -48,7 +48,7 @@ const history: BattleHistory = {
       { id: 'a88', side: 'top', kind: 'infantry', label: '88th Foot', w: 70, h: 28 },
       { id: 'thom', side: 'top', kind: 'artillery', label: "Thompson's guns", w: 56, h: 26 },
       { id: 'drag', side: 'top', kind: 'heavycavalry', label: 'Heavy dragoons', w: 80, h: 24 },
-      { id: 'heud', side: 'bottom', kind: 'infantry', label: "Heudelet's division", w: 100, h: 34 },
+      { id: 'heud', side: 'bottom', kind: 'infantry', label: "47th Line (reserve)", w: 100, h: 34 },
       { id: 'h31', side: 'bottom', kind: 'light', label: '31st Léger', w: 66, h: 26 },
       { id: 'merle', side: 'bottom', kind: 'infantry', label: "Merle's division", w: 100, h: 34 },
       { id: 'merleL', side: 'bottom', kind: 'light', label: "Merle's light inf.", w: 76, h: 26 },
@@ -60,7 +60,7 @@ const history: BattleHistory = {
     phases: [
       {
         title: 'Dawn on the ridge',
-        caption: "Wellington's divisions wait behind the crest, Picton's at the pass of San Antonio and Leith's to the south. Below, Reynier's two divisions form on the Mortágua road, with Foy's brigade in reserve.",
+        caption: "Wellington's divisions wait behind the crest, Picton's at the pass of San Antonio and Leith's to the south. Below, Reynier's two divisions form on the Mortágua road, with Foy's brigade following.",
         at: {
           lus: [140, 95],
           spry: [260, 122],
@@ -83,9 +83,8 @@ const history: BattleHistory = {
       },
       {
         title: 'Up through the mist',
-        caption: "Fog hides the French climb. Merle's columns drift left towards the pass, where the 8th Portuguese are driven back; Heudelet's 31st Léger is halted on the road by Arentschildt's guns.",
+        caption: "Fog hides the French climb. Merle's columns drift left towards the gap between the 45th and 88th; Heudelet's 31st Léger is halted on the road by Arentschildt's guns.",
         at: {
-          heud: [440, 330],
           h31: [545, 255],
           merle: [610, 215, -8],
           merleL: [715, 270],
@@ -93,7 +92,6 @@ const history: BattleHistory = {
         },
         arrows: [
           { side: 'bottom', points: [[665, 440], [640, 330], [615, 240]] },
-          { side: 'bottom', points: [[440, 440], [440, 370]] },
           { side: 'bottom', points: [[540, 450], [545, 300]] },
         ],
       },
@@ -116,7 +114,7 @@ const history: BattleHistory = {
       },
       {
         title: 'Foy and the 9th',
-        caption: "Foy's seven fresh battalions climb an hour later and briefly reach the crest. Leith's reserves, led by the 9th Foot, hit them in the flank and drive them off. Reynier has lost over 2,000 men.",
+        caption: "Foy's seven fresh battalions climb perhaps an hour later and briefly reach the crest, scattering the 8th and 9th Portuguese. Leith's reserves, led by the 9th Foot, hit them in the flank and drive them off. Reynier has lost over 2,000 men.",
         at: {
           nine: [470, 190, 20],
           foy: [510, 250],

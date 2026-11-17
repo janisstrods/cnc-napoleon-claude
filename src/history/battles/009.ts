@@ -9,7 +9,7 @@ const history: BattleHistory = {
     war: 'Peninsular War: Masséna\'s retreat from Portugal, March 1811',
     text: [
       "Masséna spent the winter of 1810–11 before the Lines of Torres Vedras, living off a ruined countryside. Out of food, he began to withdraw from Santarém in the first days of March, aiming for the Mondego at Coimbra and then the Spanish frontier. Wellington followed, cautiously and short of supplies.",
-      "Marshal Ney commanded the rearguard. After a sharp action at Pombal on 11 March, he made a stand on 12 March on a plateau before Redinha, covering the single bridge behind it, to give the army time to cross the Mondego.",
+      "Marshal Ney commanded the rearguard. After a sharp action at Pombal on 11 March, he made a stand on 12 March on a plateau before Redinha, covering the single bridge behind it, to give Masséna time while he probed for a crossing of the Mondego at Coimbra.",
     ],
   },
   sides: {
@@ -17,7 +17,7 @@ const history: BattleHistory = {
       name: 'British and Portuguese',
       commanders: ['Wellington (commanding)', 'Picton (3rd Division)', 'Erskine (Light Division)', 'Cole (4th) and Pack (Portuguese)'],
       strength: 'perhaps 45,000 in the army (Oman); only part engaged',
-      forces: "3rd, 4th and Light Divisions, Pack's Portuguese brigade, cavalry and horse artillery; 1st and 6th Divisions close behind.",
+      forces: "3rd, 4th and Light Divisions, Pack's Portuguese brigade, cavalry and horse artillery; 1st and 5th Divisions close behind.",
     },
     bottom: {
       name: 'French rearguard (VI Corps)',
@@ -34,7 +34,8 @@ const history: BattleHistory = {
       { kind: 'label', at: [200, 400], text: 'Wooded heights' },
       { kind: 'label', at: [810, 400], text: 'Wooded heights' },
       { kind: 'hills', points: [[230, 520], [560, 505], [900, 515], [905, 660], [230, 660]] },
-      { kind: 'river', points: [[-40, 440], [180, 455], [380, 462], [520, 450], [700, 465], [860, 452], [1040, 440]], width: 16, label: 'River Anços' },
+      { kind: 'river', points: [[-40, 440], [180, 455], [380, 462], [520, 450], [700, 465], [860, 452], [1040, 440]], width: 16 },
+      { kind: 'label', at: [830, 432], text: 'River Anços' },
       { kind: 'road', points: [[490, -30], [492, 150], [494, 300], [497, 440], [520, 540], [545, 650]] },
       { kind: 'label', at: [660, 588], text: 'To Condeixa' },
       { kind: 'town', at: [497, 452], size: 22, label: 'Redinha' },
@@ -53,7 +54,7 @@ const history: BattleHistory = {
       { id: 'skirR', side: 'bottom', kind: 'light', label: 'French light troops', w: 90, h: 26 },
       { id: 'guns', side: 'bottom', kind: 'artillery', label: 'French guns', w: 56, h: 26 },
       { id: 'fcav', side: 'bottom', kind: 'cavalry', label: 'French hussars', w: 76, h: 22 },
-      { id: 'brisse', side: 'bottom', kind: 'infantry', label: "Brisse's brigade", w: 84, h: 28 },
+      { id: 'brisse', side: 'bottom', kind: 'infantry', label: "Mermet's rearguard", w: 84, h: 28 },
       { id: 'march', side: 'bottom', kind: 'infantry', label: "Marchand's division", w: 110, h: 32 },
       { id: 'hg', side: 'bottom', kind: 'artillery', label: 'Heavy battery', w: 60, h: 26 },
     ],
@@ -99,7 +100,7 @@ const history: BattleHistory = {
       },
       {
         title: 'Three guns sound',
-        caption: "About 2 p.m. three signal guns open the Allied advance in line. Ney, watching his flanks, pulls Mermet back through the burning village and over the bridge; Brisse's brigade holds Redinha while the guns are saved.",
+        caption: "About 2 p.m. three signal guns open the Allied advance in line. Ney pulls Mermet back through the burning village and over the bridge; a rearguard holds the village while Ney oversees the crossing.",
         at: {
           pic: [215, 300],
           pack: [425, 240],
@@ -116,9 +117,9 @@ const history: BattleHistory = {
         },
         gone: ['fcav'],
         arrows: [
-          { side: 'top', points: [[215, 250], [215, 280]] },
-          { side: 'top', points: [[800, 255], [800, 285]] },
-          { side: 'top', points: [[570, 215], [570, 242]] },
+          { side: 'top', points: [[215, 240], [215, 287]] },
+          { side: 'top', points: [[800, 245], [800, 297]] },
+          { side: 'top', points: [[570, 200], [570, 252]] },
           { side: 'bottom', points: [[525, 330], [525, 372]], style: 'retreat' },
           { side: 'bottom', points: [[370, 340], [395, 392]], style: 'retreat' },
         ],
@@ -161,7 +162,7 @@ const history: BattleHistory = {
     'Charles Oman, A History of the Peninsular War, vol. 4 (1911), pp. 136–152 (Pombal, Redinha, Condeixa, Casal Novo)',
     'W. F. P. Napier, History of the War in the Peninsula, Book XII, ch. 3 (Pombal and Redinha)',
     "J. Rickard, 'Combat of Redinha, 12 March 1811', historyofwar.org",
-    "britishbattles.com, 'Battle of Redinha (or Pombal)'",
+    "britishbattles.com, 'Battle of Redinha or Pombal'",
   ],
 };
 
