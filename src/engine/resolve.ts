@@ -1,21 +1,31 @@
-// Applying a roll's hits and flags to a unit (RR §10). Skeleton: hits, the leader hooks, every flag accepted, the
-// retreat and its losses (→ T6a).
+// Applying a roll's hits and flags to a unit (RR §10): hits, the leader hooks, the flags a unit may ignore, the retreat
+// and its losses.
 import { damage } from './casualties';
 import { ask, type Gen } from './decisions';
 import { leaderCasualtyCheck, leaderLosesUnit } from './leaders';
 import { relocate } from './movement';
 import { updateHeld } from './objectives';
-import { attachedLeader } from './query';
+import { attachedLeader, supportCount } from './query';
 import { retreatOptions } from './retreat';
+import { sideRuleFlagIgnores } from './scenarioRules';
+import { worksFlagIgnore } from './terrain';
 import { statsOf, retreatDistance } from './units';
 import type { FlowCtx, GameState, Unit } from './types';
 
 export interface RollOutcome { hits: number; flags: number; bounce: boolean }
 export interface Applied { eliminated: boolean; left: boolean }
 
-/** Flags the target may ignore (RR §10.2). Skeleton: 0. */
-export function flagIgnores(_s: GameState, _target: Unit, _attacker: Unit, _leaderOk: boolean): number {
-  return 0;
+/**
+ * Flags the target may ignore (RR §10.2, R22, R23): 1 for an attached leader (`leaderOk`: he was not just killed), 1 for
+ * two or more adjacent friendly pieces (never for a unit in square), field works across the attacker's side, the unit's
+ * own flag-ignore, and the scenario's side rule on its terrain.
+ */
+export function flagIgnores(s: GameState, target: Unit, attacker: Unit, leaderOk: boolean): number {
+  return (leaderOk && attachedLeader(s, target) ? 1 : 0)
+    + (target.square === undefined && supportCount(s, target) >= 2 ? 1 : 0)
+    + worksFlagIgnore(s, target, attacker.hex)
+    + statsOf(s, target).flagIgnore
+    + sideRuleFlagIgnores(s, target);
 }
 
 export function* applyOutcome(s: GameState, ctx: FlowCtx, target: Unit, o: RollOutcome, attacker: Unit, reason: string): Gen<Applied> {

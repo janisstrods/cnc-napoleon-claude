@@ -32,8 +32,10 @@ export function removeUnit(s: GameState, ctx: FlowCtx, u: Unit, reason: string):
   delete s.turn.ordered[u.id];
   ctx.emit({ t: 'eliminated', id: u.id });
   log(ctx, `${u.id} is eliminated (${reason}).`, u.side);
-  scoreKill(s, ctx, u);
+  // updateHeld first: the objective is lost before the kill banner and its victory check (R64, R66). scoreKill's own
+  // updateHeld (objectives.ts) is then a no-op, kept there for its other callers.
   updateHeld(s, ctx);
+  scoreKill(s, ctx, u);
 }
 
 /** Remove `n` blocks (hits beyond the blocks are lost). Returns true when the unit is eliminated (and removed). */
