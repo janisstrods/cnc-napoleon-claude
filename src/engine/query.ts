@@ -18,8 +18,8 @@ export function leaderAt(s: GameState, h: HexId): Leader | undefined {
 }
 
 /**
- * The pieces by hex, for the rules that look at a hex and its neighbours (`at` parameters): the AI passes its occupancy
- * table (ai/board.ts `Occ`, one lookup per hex); without one the rules scan the state (`unitAt`, `leaderAt`). A hex
+ * The pieces by hex, for the rules that look at a hex and its neighbours (`at` parameters): a caller that asks about many hexes (the AI, the
+ * UI) passes an occupancy table built once (one lookup per hex); without one the rules scan the state (`unitAt`, `leaderAt`). A hex
  * holds at most one unit and one leader, so both find the same pieces.
  */
 export interface PieceIndex {
