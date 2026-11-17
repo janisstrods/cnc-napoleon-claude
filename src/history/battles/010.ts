@@ -19,7 +19,7 @@ const history: BattleHistory = {
       name: 'British and Portuguese',
       commanders: ['Wellington (army commander)', 'Pakenham (3rd Division, for the sick Picton)', 'Wallace, Campbell, Power (brigades)', "D'Urban (Portuguese cavalry)"],
       strength: 'Army c. 50,000; 3rd Division c. 5,800 and c. 500 Portuguese horse (Oman)',
-      forces: "Wallace's and Campbell's British brigades, Power's Portuguese, Douglas's battery, D'Urban's Portuguese horse and five squadrons of Arentschildt's hussars.",
+      forces: "Wallace's and Campbell's British brigades, Power's Portuguese, Douglas's battery, D'Urban's Portuguese horse and five squadrons under Arentschildt (14th Light Dragoons and 1st KGL Hussars).",
     },
     bottom: {
       name: 'French (Army of Portugal)',
@@ -48,7 +48,7 @@ const history: BattleHistory = {
     units: [
       { id: 'wallace', side: 'top', kind: 'infantry', label: 'Wallace', w: 84 },
       { id: 'power', side: 'top', kind: 'infantry', label: 'Power', w: 84 },
-      { id: 'campb', side: 'top', kind: 'infantry', label: 'Campbell', w: 84 },
+      { id: 'campb', side: 'top', kind: 'infantry', label: 'J. Campbell', w: 84 },
       { id: 'douglas', side: 'top', kind: 'artillery', label: "Douglas's battery" },
       { id: 'durban', side: 'top', kind: 'cavalry', label: "D'Urban" },
       { id: 'arent', side: 'top', kind: 'cavalry', label: 'Arentschildt' },
@@ -78,7 +78,7 @@ const history: BattleHistory = {
           wallace: [190, 70],
           power: [190, 105],
           campb: [330, 100],
-          douglas: [265, 122],
+          douglas: [265, 140],
           durban: [330, 52],
           arent: [430, 52],
           leith: [560, 100],
@@ -119,7 +119,7 @@ const history: BattleHistory = {
       },
       {
         title: 'Thomières broken',
-        caption: "The French columns charge, waver and break; Thomières is killed and his guns are taken. Curto's chasseurs come late and are driven off by Arentschildt. The 1st Line covers the wreck as it flees east.",
+        caption: "The French columns charge, waver and break; Thomières is killed and his guns are taken. Curto's chasseurs come late and are driven off by Arentschildt. The 1st Line probably covers the wreck as it flees east.",
         at: {
           t101: [335, 440],
           t62: [435, 440],
@@ -172,16 +172,16 @@ const history: BattleHistory = {
   outcome: {
     winner: 'top',
     result: 'Decisive allied victory on the French left',
-    losses: "3rd Division about 500; Thomières' division about 2,130 of 4,500. Whole battle: allies 5,173, French c. 14,000 plus stragglers (Oman).",
+    losses: "3rd Division about 500; Thomières' division about 2,130 of 4,500. Whole battle: allies 5,173 (Wellington's return; Oman's tables c. 4,760), French c. 14,000 plus stragglers (Oman).",
     text: [
       "In well under an hour the French left ceased to exist as a fighting force. Thomières was dead, two eagles and some twenty guns were taken, and Marmont had been carried off wounded. Clausel, who took over after Bonnet was hit, tried a counterstroke in the centre and failed; 011 tells it.",
       "Night and Foy's rearguard saved the French from annihilation. They crossed the Tormes at Alba, and 012 tells the next day's fight at García Hernández. Wellington entered Madrid on 12 August, and King Joseph, marching to relieve Marmont with about 14,000 men, turned back.",
     ],
   },
   sources: [
-    'Charles Oman, A History of the Peninsular War, vol. 5 (1914), section 33, chs. 6–7, pp. 418–472, and the strength tables in the appendix',
+    'Charles Oman, A History of the Peninsular War, vol. 5 (1914), section 33, chs. 6–7, pp. 418–474, and the strength tables in the appendix',
     'W. F. P. Napier, History of the War in the Peninsula, vol. 4, book 18, chs. 3–4',
-    "Wellington to Bathurst, 24 July 1812, Wellington's Dispatches (Gurwood), vol. 9, pp. 301–307",
+    "Wellington to Bathurst, 24 July 1812, Wellington's Dispatches (Gurwood), vol. 9, pp. 301–308",
   ],
 };
 

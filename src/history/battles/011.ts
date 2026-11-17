@@ -22,7 +22,7 @@ const history: BattleHistory = {
     },
     bottom: {
       name: 'French (Army of Portugal)',
-      commanders: ['Foy (1st Division)', 'Ferey (3rd Division)', 'Clausel (in command from about 6 pm)', 'Bonnet (wounded; the Arapile)'],
+      commanders: ['Foy (1st Division)', 'Ferey (3rd Division)', 'Clausel (in command from before 6 pm)', 'Bonnet (wounded; the Arapile)'],
       strength: 'Army c. 48,500; Foy and Ferey held the French right (Oman)',
       forces: "Foy's division with a regiment of Boyer's dragoons and Ferey's four regiments; then Bonnet, Clausel and Sarrut rallying behind them.",
     },
@@ -97,7 +97,7 @@ const history: BattleHistory = {
           light: [800, 290],
           first: [670, 190],
         },
-        gone: ['screen'],
+        gone: ['screen', 'aten'],
         arrows: [
           { side: 'bottom', points: [[760, 575], [600, 545], [430, 470]] },
           { side: 'top', points: [[880, 195], [840, 250], [805, 285]] },
@@ -153,9 +153,9 @@ const history: BattleHistory = {
     ],
   },
   sources: [
-    'Charles Oman, A History of the Peninsular War, vol. 5 (1914), section 33, chs. 6–7, pp. 418–472',
+    'Charles Oman, A History of the Peninsular War, vol. 5 (1914), section 33, chs. 6–7, pp. 418–474',
     'W. F. P. Napier, History of the War in the Peninsula, vol. 4, book 18, chs. 3–4',
-    "Wellington to Bathurst, 24 July 1812, Wellington's Dispatches (Gurwood), vol. 9, pp. 301–307",
+    "Wellington to Bathurst, 24 July 1812, Wellington's Dispatches (Gurwood), vol. 9, pp. 301–308",
   ],
 };
 

@@ -35,7 +35,7 @@ const history: BattleHistory = {
       { kind: 'hills', points: [[270, 280], [380, 270], [440, 310], [400, 350], [290, 350]] },
       { kind: 'town', at: [225, 345], size: 20, label: 'García Hernández' },
       { kind: 'label', at: [80, 40], text: 'from Alba de Tormes' },
-      { kind: 'label', at: [760, 592], text: 'to Peñaranda' },
+      { kind: 'label', at: [700, 590], text: "to Peñaranda (Chauvel's brigade, 6 miles on)" },
     ],
     units: [
       { id: 'a11', side: 'top', kind: 'cavalry', label: '11th Light Dragoons', w: 66 },
@@ -52,7 +52,6 @@ const history: BattleHistory = {
       { id: 'f6', side: 'bottom', kind: 'light', label: '6th Léger', w: 100, h: 22 },
       { id: 'f39', side: 'bottom', kind: 'infantry', label: '39th Line', w: 80 },
       { id: 'f69', side: 'bottom', kind: 'infantry', label: '69th Line (square)', w: 56, h: 46 },
-      { id: 'chauvel', side: 'bottom', kind: 'cavalry', label: "Chauvel's hussars", w: 70 },
     ],
     phases: [
       {
@@ -114,11 +113,10 @@ const history: BattleHistory = {
           f6: [760, 440],
           f69: [900, 550],
           f39: [780, 505],
-          chauvel: [905, 455],
           light: [180, 40],
           f76b: [640, 418],
         },
-        broken: ['f6', 'f76b'],
+        broken: ['f6'],
         arrows: [
           { side: 'top', points: [[620, 350], [640, 395], [655, 425]] },
           { side: 'top', points: [[680, 400], [740, 470], [750, 470]] },
@@ -132,14 +130,14 @@ const history: BattleHistory = {
     result: 'Allied cavalry victory; Foy escapes with the rest',
     losses: "German dragoons 127 of about 770; French about 1,100, mostly prisoners (Oman). Wellington's dispatch reported three battalions taken.",
     text: [
-      "Wellington had never seen a more gallant charge, and Foy agreed. Oman calls it the most dashing success of any allied cavalry in the war, won by squadron leaders without orders from above. Napier added that cavalry alone could not beat veteran infantry except by surprise.",
+      "Wellington had never seen a more gallant charge, and Foy agreed. Oman, following Foy, calls it the most dashing success of any allied cavalry in the war, won by squadron leaders on their own initiative. Napier added that cavalry alone could not beat veteran infantry except by surprise.",
       "Foy marched on and met Chauvel's cavalry from the Army of the North six miles away. The pursuit slackened, Clausel reached Arévalo, and Wellington entered Madrid on 12 August. The German regiments kept the battle honour on their guidons.",
     ],
   },
   sources: [
     'Charles Oman, A History of the Peninsular War, vol. 5 (1914), section 33, ch. 8, pp. 475–482',
     'W. F. P. Napier, History of the War in the Peninsula, vol. 4, book 18, ch. 4',
-    "Wellington to Bathurst, 24 July 1812, Wellington's Dispatches (Gurwood), vol. 9, pp. 301–307",
+    "Wellington to Bathurst, 24 July 1812, Wellington's Dispatches (Gurwood), vol. 9, pp. 301–308",
   ],
 };
 
