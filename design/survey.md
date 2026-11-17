@@ -7,7 +7,7 @@ Compiled 2026-11-17. Sources: the 15 scenario pages on commandsandcolors.net (pa
 - **Codes.** Nations: FR French, BR British, PT Portuguese, AL Allied (Dutch-Belgian and German; battles 014 and 015 only), SP Spanish (not used in 001-015). Infantry: LN line, LT light, RI rifle, GR grenadier, YG Young Guard, OG Old Guard, GG Guard Grenadier, ML militia. Cavalry: LC light, LNC lancer, HC heavy, CU cuirassier, GLC Guard light, GHC Guard heavy. Artillery: FA foot, HA horse, GA Guard foot. Leader: LDR. Units are written nation/code, e.g. BR/LN. Every unit in 001-015 fits this list, so nothing new is flagged for unit codes.
 - **Page code translations.** The pages use LI for line infantry in some files, RL for rifle, MI for militia and GFA for Guard foot artillery. They are translated to LN, RI, ML and GA here. The pages draw the Allied units of 014 and 015 with Portuguese icons; the booklet says to use brown Portuguese blocks for them. They are listed as AL here.
 - **Top and bottom** come from the map banner. In all 15 battles the British side is the top army (red banner at the top) and the French the bottom (blue banner). The page table lists the British army first, which agrees. Who moves first is stated on the page (a start icon beside the army box) and in the booklet text; the two agree on all 15. The map images carry no move-first marker.
-- **Hands.** Each map shows two portraits with two numbers: the command cards, then the optional Tactician cards. They match the pages in all 15 battles. Only the first number is the hand size; Tactician cards are optional.
+- **Hands.** Each map shows two portraits with two numbers: the command cards, then the optional Tactician cards. They match the page text wherever the page gives a number (the booklet text gives command cards only and no Tactician counts; for 003 the British Tactician line on the page is misspelt "Optonal 5", and the 5 is also on the map). Only the first number is the hand size; Tactician cards are optional.
 - **Unit counts.** Three sources. The page table was parsed from the page HTML and compared by script with my own count of every map image. The booklet text has no unit table, but its map diagram (a schematic of the same layout) was checked by eye for leaders, objectives and unit types. Each entry gives non-leader units and leaders separately for each side.
 - **Leaders** are named from the map block labels, cross-checked against the booklet diagram. "Commander" is the name in the page and booklet text, which is often not a leader block on the map.
 - **Terrain counts** are the page counts. I checked each map by eye and found no difference except where noted. They are not hex-exact; exact placement comes with the transcription.
@@ -142,14 +142,14 @@ Compiled 2026-11-17. Sources: the 15 scenario pages on commandsandcolors.net (pa
 - **Terrain (page counts):** Entrenchment (flat) 2, Forest 2, Hill 9, River 3, River bend 2, River bend with bridge (exit hex) 1, Town (Almeida fortress) 2, Town with windmill 1.
 - **Objectives:**
   - Exit (BR): any ordered Anglo-Portuguese unit, whatever its strength, that leaves the board by the bridge hex scores one banner for BR. Leaders do not score. Exit hex outlined in red at the top, left of centre.
-  - Loss (FR): if an Anglo-Portuguese unit is eliminated on the bridge hex, FR gets one banner.
+  - Loss (FR): the text says that if an Anglo-Portuguese unit is eliminated on the bridge hex, the French player receives one banner. OPEN RULINGS QUESTION: it is not stated whether this is the one banner in total for that unit or an extra banner on top of the normal kill banner. Needs a ruling before transcription.
 - **Special rules (paraphrased):**
   - Anglo-Portuguese units cannot leave by the bridge as a retreat; a unit that cannot retreat takes one block of damage per hex it could not move.
   - The Coa is impassable except at the bridge.
   - Almeida is a town; Anglo-Portuguese units there may ignore one flag.
 - **Layout (indicative):** British (top) deploy in two rows with two Portuguese LT on entrenchment hexes in the centre-left; Almeida fortress is in the top right corner (two town hexes with the FA on one). The bridge and exit are top left of centre. French (bottom) in the lower left and centre, with HC/GR line on the baseline and two LC in the lower right. The town-with-windmill hex is right of centre.
 - **New needs:**
-  - Exit-hex banner objective with a leader exclusion.
+  - Exit-hex banner objective with a leader exclusion. Open question: does an elimination on the exit hex give FR one banner in total or one extra (see Objectives).
   - Forced-retreat-off-bridge damage rule.
   - Fortress treated as town plus ignore one flag (BR/PT only).
   - Entrenchment (flat) tile occupied by PT/LT at setup.
@@ -211,7 +211,7 @@ Compiled 2026-11-17. Sources: the 15 scenario pages on commandsandcolors.net (pa
   - Top: BR/LN 2, BR/LT 1, BR/GR 1, BR/GG 1, BR/LC 2, BR/FA 1, BR/HA 1, BR/LDR 3; PT/LN 3, PT/LT 1, PT/LDR 1. **Total 13 units + 4 leaders.**
   - Bottom: FR/LN 7, FR/LT 1, FR/LC 1, FR/FA 1, FR/HA 1, FR/LDR 3. **Total 11 units + 3 leaders.**
   - Page vs map: unit rows agree. The page table puts all four top-side leaders in the British row (BR/LDR 4, no PT leader); the map and booklet put Pack with the Portuguese LN stack (BR/LDR 3, PT/LDR 1). The side total is the same. Followed the map and booklet: Pack commanded Portuguese troops, and the page FAQ raises the same point.
-- **Terrain (page counts):** Forest (page count blank; about 9 on the map), Hill 17, River (Ancos) 7, River bend 3, River bend with bridge 1, Town 2.
+- **Terrain (page counts):** Forest 9, Hill 17, River (Ancos) 7, River bend 3, River with bridge 1, Town 2.
 - **Objectives:**
   - None beyond killing units.
 - **Special rules (paraphrased):**
@@ -437,7 +437,7 @@ Leader rows follow the map (so 009 shows BR 3 and PT 1; the page has BR 4). Only
 | Kill banners only (no extra objective) | 002, 004, 005, 007, 008, 009, 010, 011 | 1 per unit eliminated |
 | Single held hex, temporary, counted at the start of the owner's turn | 001 (2 hexes, BR), 013 (2 hexes, BR), 014 (1 hex, FR), 015 (3 hexes, FR) | 1 each |
 | Joint held hexes, temporary (both needed, lost together) | 003 (2 town hexes, FR) | 2 for the pair |
-| Exit hex (leaders excluded), with a banner to the enemy if a unit is eliminated on the hex | 006 (BR exit, FR bonus) | 1 per unit that exits; 1 to FR per unit eliminated there |
+| Exit hex (leaders excluded), with a banner to the enemy if a unit is eliminated on the hex (ruling needed) | 006 (BR exit, FR bonus) | 1 per unit that exits; 1 to FR per unit eliminated there (OPEN: one in total, or one in addition to the normal kill banner) |
 | Elimination weighting | 012 (BR: first French infantry 1, later infantry 2 each) | 1 then 2 |
 
 Kill banners apply in every battle; the table lists the extra objective, if any. 001, 003, 006, 012, 013, 014 and 015 also score kills the normal way.
@@ -448,7 +448,8 @@ Kill banners apply in every battle; the table lists the extra objective, if any.
 |---|---|
 | Temporary held-hex banner (turn start) | 001, 003 (joint), 013, 014, 015 |
 | River or stream fordable (as the base ford) | 001, 003, 004, 007 |
-| Fordable in every hex and entering does not stop movement | 011, 013 (any hex fordable; the ford hex does not stop), 014 |
+| Fordable in every hex and entering does not stop movement | 011, 014 |
+| Fordable in every hex; only the ford hex lets a unit keep moving | 013 |
 | Brook stops movement but gives no battle penalty | 005 |
 | River impassable except at the bridge | 006, 009, 010 |
 | Exit-hex banner, no retreat off the bridge, loss banner | 006 |
@@ -472,20 +473,19 @@ Kill banners apply in every battle; the table lists the extra objective, if any.
 ## 3. Discrepancies
 
 1. 009: page puts Pack in the British leader row (BR/LDR 4, PT/LDR 0); map and booklet put him with a Portuguese LN stack. Followed the map and booklet (BR 3, PT 1). The page FAQ raises the same question.
-2. 009: the page terrain table lists Forest with no count. The map shows about nine forest hexes. Use the map when transcribing.
-3. 014 and 015: the pages use Portuguese icons for the Dutch, Nassau, Brunswick and Hanover units. The booklet says to use brown Portuguese blocks and the Portuguese reference card, with an extra retreat rule. They are AL here.
-4. 015: the Impetuous British Cavalry rule differs between booklet and page. Booklet: the unit must break through, advance one extra hex, must not step back onto its start hex, and must also advance after a successful bonus combat. Page: the same idea, with the extra hex toward the French edge and a Borg clarification that it applies to British (red) blocks only. Follow the page, a later ruling than the 2012 booklet.
-5. 015: the page proposes replacing Hougomont and La Haye Sainte with Walled Farm tiles (ignore one flag). The booklet has no such tile. Treat as optional; record the standard rule first.
-6. 015: Perponcher (a Dutch general) sits in a red British LN stack on the map and booklet, and the page table has no Allied leader. Counted as a BR leader (BR/LDR 3, AL none). The rules effect is the same; the block colour is a transcription choice.
-7. 006: page and booklet name Marshal Ney as French commander, but no Ney block is on the map; the French leaders are Ferey, Loison and Mermet. Commander names are text only.
-8. 005: the booklet lists four French commanders (King Joseph, Jourdan, Victor, Sebastiani); the page lists King Joseph; the map has Ruffin, Sebastiani and Merlin. Three leaders on the map and in the page table. Follow the map.
-9. 013: the page names Hill as British commander, but the map has Stewart (BR) and Buchan and Da Costa (PT). The page FAQ says the French leaders are missing from the map; the map and the booklet both show Harispe and Villatte. Follow the map and booklet; the FAQ looks out of date.
-10. 010 and 011: the commanders in the text (Marmont and Clausel) are not on the map; the French leaders are Thomières and Maucune (010) and Ferey and Foy (011).
-11. 012: the page says "Eagles" in one place where the booklet says "Victory Banners". Treated as banners.
-12. 004: the page table icon for the rifle unit is titled "Light Infantry" but is the rifle icon, and the map block reads Rifle Light. Counted as BR/RI 1 with BR/LT 2.
-13. 005: the map title reads "Talavera (French attack on British)"; page and booklet say only "Talavera".
-14. 011: the booklet title reads "British Attack on French Right"; the page reads "Attack on the French Right".
-15. 001 and 002: the booklet diagram shows two French leaders (Delaborde and one unnamed, beside an LN). The map names only Delaborde. The page table has LDR 2. Counted as 2 each.
-16. Leader names read from small map labels, checked against the booklet where it names them: Craufurd or Crauford (006, 008), Sydney (006; may be Sydenham), Champalimaud (007; the booklet spells it Champlemond), Gleichen (012), Soult on the 007 HC stack (the booklet agrees), Brock or Bock (011; 012 reads Bock). Spellings follow the booklet.
-17. Place and title spellings: the page spells Reyner (007) where the booklet says Reynier; the pages and booklet use Vimiero and Rolica, while the research list uses Vimeiro and Roliça.
-18. The booklet text has no unit tables, only its schematic map. Compared by eye, no unit-count difference from the page tables or the maps was found in any of the 15 battles.
+2. 014 and 015: the pages use Portuguese icons for the Dutch, Nassau, Brunswick and Hanover units. The booklet says to use brown Portuguese blocks and the Portuguese reference card, with an extra retreat rule. They are AL here.
+3. 015: the Impetuous British Cavalry rule differs between booklet and page. Booklet: the unit must break through, advance one extra hex, must not step back onto its start hex, and must also advance after a successful bonus combat. Page: the same idea, with the extra hex toward the French edge, and an unattributed page FAQ that says it applies to British (red) blocks only. Follow the page, the later text than the 2012 booklet.
+4. 015: the page proposes replacing Hougomont and La Haye Sainte with Walled Farm tiles (ignore one flag). The booklet has no such tile, and the page FAQ says the scenario as designed gives buildings no ignore-flag effect. Treat the Walled Farm as optional; record the standard rule first.
+5. 015: Perponcher (a Dutch general) sits in a red British LN stack on the map and booklet, and the page table has no Allied leader. Counted as a BR leader (BR/LDR 3, AL none). The rules effect is the same; the block colour is a transcription choice.
+6. 006: page and booklet name Marshal Ney as French commander, but no Ney block is on the map; the French leaders are Ferey, Loison and Mermet. Commander names are text only.
+7. 005: the booklet lists four French commanders (King Joseph, Jourdan, Victor, Sebastiani); the page lists King Joseph; the map has Ruffin, Sebastiani and Merlin. Three leaders on the map and in the page table. Follow the map.
+8. 013: the page names Hill as British commander, but the map has Stewart (BR) and Buchan and Da Costa (PT). The page FAQ says the French leaders are missing from the map; the map and the booklet both show Harispe and Villatte. Follow the map and booklet; the FAQ looks out of date.
+9. 010 and 011: the commanders in the text (Marmont and Clausel) are not on the map; the French leaders are Thomières and Maucune (010) and Ferey and Foy (011).
+10. 012: the page says "Eagles" in one place where the booklet says "Victory Banners". Treated as banners.
+11. 004: the page table icon for the rifle unit is titled "Light Infantry" but is the rifle icon, and the map block reads Rifle Light. Counted as BR/RI 1 with BR/LT 2.
+12. 005: the map title reads "Talavera (French attack on British)"; page and booklet say only "Talavera".
+13. 011: the booklet title reads "British Attack on French Right"; the page reads "Attack on the French Right".
+14. 001 and 002: the booklet diagram shows two French leaders (Delaborde and one unnamed, beside an LN). The map names only Delaborde. The page table has LDR 2. Counted as 2 each.
+15. Leader names read from small map labels, checked against the booklet where it names them: Craufurd or Crauford (006, 008), Sydney (006; may be Sydenham), Champalimaud (007; the booklet spells it Champlemond), Gleichen (012), Soult on the 007 HC stack (the booklet agrees), Brock or Bock (011; 012 reads Bock). Spellings follow the booklet.
+16. Place and title spellings: the page spells Reyner (007) where the booklet says Reynier; the pages and booklet use Vimiero and Rolica, while the research list uses Vimeiro and Roliça.
+17. The booklet text has no unit tables, only its schematic map. Compared by eye, no unit-count difference from the page tables or the maps was found in any of the 15 battles.
