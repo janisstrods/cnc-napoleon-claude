@@ -35,7 +35,7 @@ const history: BattleHistory = {
       { kind: 'hills', points: [[270, 280], [380, 270], [440, 310], [400, 350], [290, 350]] },
       { kind: 'town', at: [225, 345], size: 20, label: 'García Hernández' },
       { kind: 'label', at: [80, 40], text: 'from Alba de Tormes' },
-      { kind: 'label', at: [700, 590], text: "to Peñaranda (Chauvel's brigade, 6 miles on)" },
+      { kind: 'label', at: [700, 590], text: "to Peñaranda; Chauvel 6 mi. on" },
     ],
     units: [
       { id: 'a11', side: 'top', kind: 'cavalry', label: '11th Light Dragoons', w: 66 },
