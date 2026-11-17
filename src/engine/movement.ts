@@ -35,10 +35,11 @@ export function unitMoves(s: GameState, id: string): MoveTarget[] {
   const op = s.turn.ordered[id];
   if (!u || !op || u.hex < 0 || op.moveDone || op.attachedThisTurn) return [];
   const st = statsOf(s, u);
-  const max = Math.max(0, ...moveOptions(s, u, op).map((o) => o.max));
   const hasLeader = !!attachedLeader(s, u);
+  const opts = moveOptions(s, u, op);
+  const max = Math.max(0, ...opts.map((o) => o.max));
   const battleAt = (d: number, h: HexId): boolean =>
-    moveOptions(s, u, op).some((o) => o.max >= d && o.battle) && (d === 0 || u.blocks >= st.battleAfterMoveMinBlocks) && !noBattleAfterEntering(s, h, st);
+    opts.some((o) => o.max >= d && o.battle) && (d === 0 || u.blocks >= st.battleAfterMoveMinBlocks) && !noBattleAfterEntering(s, h, st);
   const out: MoveTarget[] = [];
   const slot = new Map<HexId, number>();  // hex -> index in `out`
   const expanded = new Set<HexId>([u.hex]);  // hexes whose onward moves are queued (a hex is entered stopping or not by path)
@@ -121,7 +122,7 @@ export function leaderMoves(s: GameState, id: string): MoveTarget[] {
       if (!stopTerrain && !expanded.has(h)) {
         expanded.add(h);
         queue.push({ hex: h, path });
-        if (!o && !v) exits(path);
+        exits(path);
       }
     }
   }
@@ -145,8 +146,10 @@ export function applyMove(s: GameState, ctx: FlowCtx, pieceId: string, target: M
   ctx.emit({ t: 'move', id: pieceId, path: target.path });
   if (op.isLeader) {
     const l = leaderById(s, pieceId)!;
-    if (target.hex === OFF_BOARD) exitPiece(s, ctx, pieceId);
-    else {
+    if (target.hex === OFF_BOARD) {
+      l.hex = target.path[target.path.length - 2];  // stand on the exit hex when exitPiece runs (T13 reads it)
+      exitPiece(s, ctx, pieceId);
+    } else {
       l.hex = target.hex;
       if (target.attach) {
         ctx.emit({ t: 'attach', leader: l.id, unit: target.attach });
@@ -159,8 +162,10 @@ export function applyMove(s: GameState, ctx: FlowCtx, pieceId: string, target: M
     const ldr = attachedLeader(s, u);
     const lo = ldr ? s.turn.ordered[ldr.id] : undefined;
     if (lo) lo.moveDone = true;
-    if (target.hex === OFF_BOARD) exitPiece(s, ctx, pieceId);
-    else {
+    if (target.hex === OFF_BOARD) {
+      relocate(s, u, target.path[target.path.length - 2]);  // stand on the exit hex when exitPiece runs (T13 reads it)
+      exitPiece(s, ctx, pieceId);
+    } else {
       relocate(s, u, target.hex);
       op.noBattle = noBattleAfterEntering(s, target.hex, statsOf(s, u));
       if (target.attach) {

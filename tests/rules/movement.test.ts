@@ -1,5 +1,6 @@
 // Rules: RR §6.2, §7.1, §7.2 (design/rules-reference.md)
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import type { GameState as GS, HexId } from '../../src/engine';
 import { OFF_BOARD, battleReady, canBattleAfterMove, fireDice, pieceMoves, type CardKind, type GameState, type MoveTarget } from '../../src/engine';
 import { H, build, ev, forceDice, must, leaderId, play, type Pos } from './helpers';
 
@@ -12,6 +13,13 @@ const hexes = (m: MoveTarget[]) => new Set(m.map((t) => t.hex));
 const B = (key: string, r: number, c: number) => ({ side: 'bottom' as const, key: key as never, at: [r, c] as [number, number] });
 const T = (key: string, r: number, c: number) => ({ side: 'top' as const, key: key as never, at: [r, c] as [number, number] });
 const one = (key: string, extra: Pos = {}) => moves({ units: [B(key, 6, 6)], ...extra });
+
+// Exit hexes for the exit tests below (T13 owns the real `exitAllowedFrom`; here it is a table).
+const exitHexes = new Set<HexId>();
+vi.mock('../../src/engine/objectives', async (orig) => ({
+  ...(await orig<typeof import('../../src/engine/objectives')>()),
+  exitAllowedFrom: (_s: GS, _p: unknown, h: HexId) => exitHexes.has(h),
+}));
 
 describe('movement', () => {
   it('allowances (§7.1)', () => {
@@ -31,7 +39,6 @@ describe('movement', () => {
     const ha = reach(one('BR/HA'));
     expect(ha.get(H(5, 6))).toBe(true);
     expect(ha.get(H(4, 6))).toBe(false);
-    expect(reach(moves({ units: [B('BR/HA', 6, 6)] , })).get(H(5, 6))).toBe(true);
     const ha1 = reach(moves({ units: [{ ...B('BR/HA', 6, 6), blocks: 1 }] }));
     expect(ha1.get(H(5, 6))).toBe(false); // R12
     const s = build({ leaders: [{ side: 'bottom', at: [6, 6] }] });
@@ -117,9 +124,11 @@ describe('movement', () => {
     expect(hexes(moves({ units: [B('BR/LC', 6, 6)], terrain: river })).has(H(5, 6))).toBe(false);
     const rugged: Pos['terrain'] = [{ at: [5, 6], t: 'rugged' }];
     expect(hexes(moves({ units: [B('BR/LC', 6, 6)], terrain: rugged })).has(H(5, 6))).toBe(false);
-    const s = build({ leaders: [{ side: 'bottom', at: [6, 6] }], terrain: river });
-    const d = play(s, 'probeC', [leaderId(s, 0)]);
-    expect(hexes(pieceMoves(d.state, leaderId(s, 0))).has(H(5, 6))).toBe(false);
+    for (const terrain of [river, rugged]) {
+      const s = build({ leaders: [{ side: 'bottom', at: [6, 6] }], terrain });
+      const d = play(s, 'probeC', [leaderId(s, 0)]);
+      expect(hexes(pieceMoves(d.state, leaderId(s, 0))).has(H(5, 6))).toBe(false);
+    }
     const sq: Pos['terrain'] = [{ at: [5, 6], t: 'sandQuarry' }];
     const ln = moves({ units: [B('BR/LN', 6, 6)], terrain: sq });
     expect(ln.find((x) => x.hex === H(5, 6))?.stops).toBe(true);
@@ -165,8 +174,11 @@ describe('movement', () => {
     s.units[0].square = 1;
     const d = play(s, 'probeC', ['u1']);
     expect(pieceMoves(d.state, 'u1')).toEqual([]);
-    s.turn.ordered[leaderId(s, 0)] = { ...s.turn.ordered.u1, id: leaderId(s, 0), isLeader: true, moved: 0, moveDone: false };
-    expect(pieceMoves(d.state, leaderId(s, 0))).toEqual([]);
+    const lid = leaderId(s, 0);
+    d.state.turn.ordered[lid] = { ...d.state.turn.ordered.u1, id: lid, isLeader: true, moved: 0, moveDone: false };
+    expect(pieceMoves(d.state, lid)).toEqual([]);
+    d.state.units[0].square = undefined;  // control: the same leader moves once the unit is out of square
+    expect(pieceMoves(d.state, lid).length).toBeGreaterThan(0);
   });
 
   it('an unmoved La Grande Manoeuvre unit may not battle (R62)', () => {
@@ -216,8 +228,7 @@ describe('movement', () => {
     });
   });
 
-  // needs T2 (rebase): the dice value 3 is T2's moving-fire rule; the movement half (moved === 2) is asserted below
-  it.skip('"moved" is hexes moved this turn; a Force March unit that moved 2 fires its moving dice ([Interp R73])', () => {
+  it('"moved" is hexes moved this turn; a Force March unit that moved 2 fires its moving dice ([Interp R73])', () => {
     const s = build({ units: [B('BR/GR', 6, 6), T('FR/LN', 2, 6)] });
     const d = play(s, 'forceMarch', ['u1']);
     must(d, { kind: 'move', piece: 'u1', to: H(4, 6) });
@@ -250,6 +261,37 @@ describe('movement', () => {
       const m = pieceMoves(d.state, leaderId(s, 0));
       expect(hexes(m).has(H(3, 6))).toBe(true);
       expect(m.filter((t) => t.hex === H(4, 6)).length).toBe(1);
+    });
+  });
+
+  describe('exits (RR §7.2, R67; the exit table is mocked, T13 owns the rule)', () => {
+    const withExit = <T,>(hs: HexId[], f: () => T): T => { exitHexes.clear(); hs.forEach((h) => exitHexes.add(h)); try { return f(); } finally { exitHexes.clear(); } };
+    const lm = (p: Pos) => { const s = build(p); const d = play(s, 'probeC', [leaderId(s, 0)]); return { d, lid: leaderId(s, 0), m: pieceMoves(d.state, leaderId(s, 0)) }; };
+    it('a unit is offered one OFF_BOARD target, even when the exit is reached by a stopping path first', () => {
+      // exit hex (4,6) is entered from (5,6) across the works (stops) first, from (5,5) without stopping later
+      const works: Pos['terrain'] = [{ at: [4, 6], t: 'fieldworks', on: 'plain', sides: ['SE'] }];
+      const m = withExit([H(4, 6)], () => moves({ units: [B('BR/LC', 6, 6), T('FR/LN', 4, 7)], terrain: works }));
+      expect(m.filter((t) => t.hex === OFF_BOARD).length).toBe(1);
+    });
+    it('a leader standing on an exit hex may step off; one passing a friendly unit on it may exit', () => {
+      const a = withExit([H(6, 6)], () => lm({ leaders: [{ side: 'bottom', at: [6, 6] }] }));
+      expect(a.m.some((t) => t.hex === OFF_BOARD)).toBe(true);
+      const b = withExit([H(5, 6)], () => lm({ units: [B('BR/LN', 5, 6)], leaders: [{ side: 'bottom', at: [6, 6] }] }));
+      expect(b.m.some((t) => t.hex === OFF_BOARD)).toBe(true);
+    });
+    it('the exiting piece stands on the exit hex when exitPiece runs', () => {
+      const s = build({ units: [B('BR/LC', 6, 6)] });
+      const d = play(s, 'probeC', ['u1']);
+      exitHexes.add(H(5, 6));
+      const t = pieceMoves(d.state, 'u1').find((x) => x.hex === OFF_BOARD)!;
+      expect(t.path).toEqual([H(6, 6), H(5, 6), OFF_BOARD]);
+      const u1 = d.state.units[0];
+      let seen = u1.hex;
+      Object.defineProperty(u1, 'hex', { get: () => seen, set: (v) => { seen = v; }, configurable: true });
+      must(d, { kind: 'move', piece: 'u1', to: OFF_BOARD });
+      expect(seen).toBe(H(5, 6));
+      expect(d.state.units.some((x) => x.id === 'u1')).toBe(false);
+      exitHexes.clear();
     });
   });
 });
