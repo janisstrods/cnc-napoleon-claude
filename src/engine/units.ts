@@ -1,0 +1,226 @@
+// Unit type table (rules-reference §2; Expansion #1 types §15).
+import type { ExpansionNumber } from './expansions';
+import type { TerrainType, Unit, UnitClass, UnitType } from './types';
+
+export type EvadeRule = 'always' | 'vsFootHeavyMounted' | 'vsFootElephant' | 'never';
+
+export interface UnitStats {
+  type: UnitType;
+  name: string;
+  /** The box that brings the type (0: the base game); the rules reference describes it in that box's tab. */
+  expansion: ExpansionNumber;
+  cls: UnitClass;
+  /** Symbol drawn with a white border (AX, WA). */
+  whiteBorder: boolean;
+  foot: boolean;
+  /** Infantry: every foot type except war machines (LI, LB, LS, AX, WA, MI, HI; 116 Fright at First Sight, §17.4). */
+  infantry: boolean;
+  mounted: boolean;
+  /** Cavalry proper (LC, MC, HC, LBC); elephants, chariots and camels are mounted but not cavalry. */
+  cavalry: boolean;
+  chariot: boolean;
+  blocks: number;
+  /** Normal maximum movement. */
+  move: number;
+  /** Maximum hexes it may move and still battle (normal orders). */
+  moveBattle: number;
+  /** Close combat dice when attacking (EL: 0 = special table). */
+  cc: number;
+  /** Close combat dice when battling back / First Strike. */
+  ccBack: number;
+  /** Ranged weapon range in hexes (0 = none). */
+  range: number;
+  /** Hexes retreated per flag. */
+  retreat: number;
+  /** Scores hits with sword symbols in close combat. */
+  swordHits: boolean;
+  evade: EvadeRule;
+  /** Rolls close combat by the elephant table (dice = what the target would roll). */
+  elephantTable: boolean;
+  /** Dice an elephant rolls against this unit type. */
+  elephantDiceAgainst: number;
+  /** Ignores every sword hit in close combat (and swords against it are not re-rolled by elephants). */
+  ignoreAllSwords: boolean;
+  /** Sword hits ignored in close combat (HCH and BCH 1). */
+  swordIgnore: number;
+  /** Strikers of these types make this unit retreat +1 hex per flag (elephants and camels scare cavalry and chariots). */
+  frightenedBy: UnitType[];
+  /**
+   * When a cavalry or chariot unit rolls against it in close combat: ignores 1 hit of this class (null = none; EL red
+   * square, CAM blue triangle) and, with `vsMountedIgnoreFlag`, 1 flag (EL only).
+   */
+  vsMountedIgnoreHit: UnitClass | 'any' | null;
+  vsMountedIgnoreFlag: boolean;
+  /** After an initial successful close combat: momentum advance plus 1 more hex. */
+  momentumExtraHex: boolean;
+  /** +1 die and may ignore 1 flag at full strength (warriors, Barbarian chariots). */
+  fullStrengthBonus: boolean;
+  /** Moves 1, or 2 if it then close combats; also eligible for the bonus close combat after momentum, like mounted units (warriors). */
+  chargeMove: boolean;
+  /** Cannot fire after moving this many hexes (AX 2; 99 = no limit). */
+  noFireAfterMove: number;
+  /** Light foot: may pass through friends with Order Light Troops / Move-Fire-Move. */
+  lightFoot: boolean;
+  /** May battle after entering a forest. */
+  forestFighter: boolean;
+  /** Cannot be rallied. */
+  noRally: boolean;
+  /** Gains nothing from leaders (no helmet hits, no bolster, no support received). */
+  noLeaderBenefit: boolean;
+  /** Double Time: max hexes (null = no change). */
+  doubleTimeMove: number | null;
+  /** Mounted Charge: may move 3 and battle. */
+  mountedChargeMove: boolean;
+  /**
+   * Terrain it may not enter (HWM: broken ground, marsh). Movement and momentum advances skip these hexes; retreat and
+   * evade paths treat them as blocked, so a retreat hex it cannot enter is unfulfilled (1 block lost).
+   */
+  forbiddenTerrain: TerrainType[];
+  /** Never makes a momentum advance, so never a bonus close combat either, even with a leader or under any card (HWM). */
+  noMomentum: boolean;
+  /** After surviving the evade roll it makes the evade move and is then removed from the board, no banner (HWM: abandoned). */
+  evadeRemoves: boolean;
+}
+
+/** Fields a table row may leave out: it then has none of these abilities, and comes with the base game. */
+type OptionalAbilities = Pick<UnitStats,
+  | 'expansion' | 'elephantTable' | 'ignoreAllSwords' | 'swordIgnore' | 'frightenedBy' | 'vsMountedIgnoreHit' | 'vsMountedIgnoreFlag'
+  | 'momentumExtraHex' | 'fullStrengthBonus' | 'chargeMove' | 'noFireAfterMove' | 'lightFoot' | 'forestFighter' | 'noRally'
+  | 'noLeaderBenefit' | 'doubleTimeMove' | 'mountedChargeMove' | 'forbiddenTerrain' | 'noMomentum' | 'evadeRemoves'>;
+
+const noAbilities = (): OptionalAbilities => ({
+  expansion: 0,
+  elephantTable: false,
+  ignoreAllSwords: false,
+  swordIgnore: 0,
+  frightenedBy: [],
+  vsMountedIgnoreHit: null,
+  vsMountedIgnoreFlag: false,
+  momentumExtraHex: false,
+  fullStrengthBonus: false,
+  chargeMove: false,
+  noFireAfterMove: 99,
+  lightFoot: false,
+  forestFighter: false,
+  noRally: false,
+  noLeaderBenefit: false,
+  doubleTimeMove: null,
+  mountedChargeMove: false,
+  forbiddenTerrain: [],
+  noMomentum: false,
+  evadeRemoves: false,
+});
+
+const U = (s: Omit<UnitStats, keyof OptionalAbilities> & Partial<OptionalAbilities>): UnitStats => ({ ...noAbilities(), ...s });
+
+export const UNIT_STATS: Record<UnitType, UnitStats> = {
+  LI: U({ type: 'LI', name: 'Light Infantry', cls: 'light', whiteBorder: false, foot: true, infantry: true, mounted: false, cavalry: false, chariot: false, blocks: 4, move: 2, moveBattle: 2, cc: 2, ccBack: 2, range: 2, retreat: 2, swordHits: false, evade: 'always',
+    elephantDiceAgainst: 2, lightFoot: true, forestFighter: true }),
+  LB: U({ type: 'LB', name: 'Light Bow Infantry', cls: 'light', whiteBorder: false, foot: true, infantry: true, mounted: false, cavalry: false, chariot: false, blocks: 4, move: 2, moveBattle: 2, cc: 2, ccBack: 2, range: 3, retreat: 2, swordHits: false, evade: 'always',
+    elephantDiceAgainst: 2, lightFoot: true, forestFighter: true }),
+  LS: U({ type: 'LS', name: 'Light Sling Infantry', cls: 'light', whiteBorder: false, foot: true, infantry: true, mounted: false, cavalry: false, chariot: false, blocks: 4, move: 2, moveBattle: 2, cc: 2, ccBack: 2, range: 3, retreat: 2, swordHits: false, evade: 'always',
+    elephantDiceAgainst: 2, lightFoot: true, forestFighter: true }),
+  AX: U({ type: 'AX', name: 'Auxilia', cls: 'light', whiteBorder: true, foot: true, infantry: true, mounted: false, cavalry: false, chariot: false, blocks: 4, move: 2, moveBattle: 1, cc: 3, ccBack: 3, range: 2, retreat: 1, swordHits: true, evade: 'never',
+    elephantDiceAgainst: 3, noFireAfterMove: 2, lightFoot: true, forestFighter: true, doubleTimeMove: 2 }),
+  WA: U({ type: 'WA', name: 'Warriors', cls: 'medium', whiteBorder: true, foot: true, infantry: true, mounted: false, cavalry: false, chariot: false, blocks: 4, move: 2, moveBattle: 2, cc: 3, ccBack: 3, range: 0, retreat: 2, swordHits: true, evade: 'never',
+    elephantDiceAgainst: 3, fullStrengthBonus: true, chargeMove: true, forestFighter: true, doubleTimeMove: 3 }),
+  MI: U({ type: 'MI', name: 'Medium Infantry', cls: 'medium', whiteBorder: false, foot: true, infantry: true, mounted: false, cavalry: false, chariot: false, blocks: 4, move: 1, moveBattle: 1, cc: 4, ccBack: 4, range: 0, retreat: 1, swordHits: true, evade: 'never',
+    elephantDiceAgainst: 4, doubleTimeMove: 2 }),
+  HI: U({ type: 'HI', name: 'Heavy Infantry', cls: 'heavy', whiteBorder: false, foot: true, infantry: true, mounted: false, cavalry: false, chariot: false, blocks: 4, move: 1, moveBattle: 1, cc: 5, ccBack: 5, range: 0, retreat: 1, swordHits: true, evade: 'never',
+    elephantDiceAgainst: 5, doubleTimeMove: 2 }),
+  LC: U({ type: 'LC', name: 'Light Cavalry', cls: 'light', whiteBorder: false, foot: false, infantry: false, mounted: true, cavalry: true, chariot: false, blocks: 3, move: 4, moveBattle: 4, cc: 2, ccBack: 2, range: 2, retreat: 4, swordHits: false, evade: 'always',
+    elephantDiceAgainst: 2, frightenedBy: ['EL', 'CAM'], momentumExtraHex: true }),
+  MC: U({ type: 'MC', name: 'Medium Cavalry', cls: 'medium', whiteBorder: false, foot: false, infantry: false, mounted: true, cavalry: true, chariot: false, blocks: 3, move: 3, moveBattle: 3, cc: 3, ccBack: 3, range: 0, retreat: 3, swordHits: true, evade: 'vsFootHeavyMounted',
+    elephantDiceAgainst: 3, frightenedBy: ['EL', 'CAM'], momentumExtraHex: true }),
+  HC: U({ type: 'HC', name: 'Heavy Cavalry', cls: 'heavy', whiteBorder: false, foot: false, infantry: false, mounted: true, cavalry: true, chariot: false, blocks: 3, move: 2, moveBattle: 2, cc: 4, ccBack: 4, range: 0, retreat: 2, swordHits: true, evade: 'vsFootElephant',
+    elephantDiceAgainst: 4, frightenedBy: ['EL', 'CAM'], momentumExtraHex: true, mountedChargeMove: true }),
+  EL: U({ type: 'EL', name: 'Elephants', cls: 'heavy', whiteBorder: false, foot: false, infantry: false, mounted: true, cavalry: false, chariot: false, blocks: 2, move: 2, moveBattle: 2, cc: 0, ccBack: 0, range: 0, retreat: 1, swordHits: true, evade: 'never',
+    elephantDiceAgainst: 3, elephantTable: true, ignoreAllSwords: true, vsMountedIgnoreHit: 'heavy', vsMountedIgnoreFlag: true,
+    noRally: true, noLeaderBenefit: true, mountedChargeMove: true }),
+  HCH: U({ type: 'HCH', name: 'Heavy Chariots', cls: 'heavy', whiteBorder: false, foot: false, infantry: false, mounted: true, cavalry: false, chariot: true, blocks: 2, move: 2, moveBattle: 2, cc: 4, ccBack: 3, range: 0, retreat: 2, swordHits: true, evade: 'vsFootElephant',
+    elephantDiceAgainst: 3, swordIgnore: 1, frightenedBy: ['EL', 'CAM'], noRally: true, mountedChargeMove: true }),
+  // Expansion #1 (§15). Camels: 3 dice attacking, 2 battling back and on First Strike; ignore 1 blue triangle from horses.
+  LBC: U({ type: 'LBC', name: 'Light Bow Cavalry', expansion: 1, cls: 'light', whiteBorder: false, foot: false, infantry: false, mounted: true, cavalry: true, chariot: false, blocks: 3, move: 4, moveBattle: 4, cc: 2, ccBack: 2, range: 3, retreat: 4, swordHits: false, evade: 'always',
+    elephantDiceAgainst: 2, frightenedBy: ['EL', 'CAM'], momentumExtraHex: true }),
+  CAM: U({ type: 'CAM', name: 'Camels', expansion: 1, cls: 'medium', whiteBorder: false, foot: false, infantry: false, mounted: true, cavalry: false, chariot: false, blocks: 3, move: 3, moveBattle: 3, cc: 3, ccBack: 2, range: 0, retreat: 3, swordHits: true, evade: 'vsFootHeavyMounted',
+    elephantDiceAgainst: 3, vsMountedIgnoreHit: 'medium', vsMountedIgnoreFlag: false }),
+  // Heavy war machines: move 1 and then no battle at all (moveBattle 0, so close combat only when it did not move); no fire
+  // after moving; evade only along a legal path, then abandoned (no banner).
+  HWM: U({ type: 'HWM', name: 'Heavy War Machines', expansion: 1, cls: 'heavy', whiteBorder: false, foot: true, infantry: false, mounted: false, cavalry: false, chariot: false, blocks: 2, move: 1, moveBattle: 0, cc: 2, ccBack: 2, range: 6, retreat: 1, swordHits: false, evade: 'always',
+    elephantDiceAgainst: 2, noFireAfterMove: 1, forbiddenTerrain: ['broken', 'marsh'], noMomentum: true, evadeRemoves: true }),
+  // Expansion #2 (§18). Barbarian light chariots: a light chariot (not cavalry, so no extra momentum hex) with the warrior
+  // bonus (+1 die and 1 flag ignored at full strength), 1 sword ignored like all chariots, no rally.
+  BCH: U({ type: 'BCH', name: 'Barbarian Chariots', expansion: 2, cls: 'light', whiteBorder: true, foot: false, infantry: false, mounted: true, cavalry: false, chariot: true, blocks: 3, move: 3, moveBattle: 3, cc: 2, ccBack: 2, range: 0, retreat: 3, swordHits: true, evade: 'always',
+    elephantDiceAgainst: 2, swordIgnore: 1, fullStrengthBonus: true, frightenedBy: ['EL', 'CAM'], noRally: true }),
+};
+
+export const UNIT_TYPES = Object.keys(UNIT_STATS) as UnitType[];
+
+/** Elephants roll this many dice against (or battling back against) a unit of type t. */
+export function elephantDiceVs(t: UnitType): number {
+  return UNIT_STATS[t].elephantDiceAgainst;
+}
+
+/** Can a unit of type `defender` evade a close combat from `attacker`? */
+export function canEvadeType(defender: UnitType, attacker: UnitType): boolean {
+  const d = UNIT_STATS[defender];
+  const a = UNIT_STATS[attacker];
+  switch (d.evade) {
+    case 'always':
+      return true;
+    case 'never':
+      return false;
+    case 'vsFootHeavyMounted':
+      return a.foot || (a.mounted && a.cls === 'heavy');
+    case 'vsFootElephant':
+      return a.foot || a.elephantTable;
+  }
+}
+
+/**
+ * The terrain a unit type may not enter (movement, momentum, retreat and evade): its `forbiddenTerrain`, plus the city wall
+ * for every type that is not infantry (mounted units and war machines, §18.7). Do not modify the result.
+ */
+const BARRED = {} as Record<UnitType, readonly TerrainType[]>;
+for (const t of UNIT_TYPES) {
+  const own = UNIT_STATS[t].forbiddenTerrain;
+  BARRED[t] = UNIT_STATS[t].infantry ? own : [...own, 'wall'];
+}
+
+/**
+ * May a unit of type `t` not enter terrain `terrain` (movement, momentum, retreat and evade)? Its `forbiddenTerrain` (war
+ * machines: broken ground, marsh), and a city wall for mounted units and war machines (§18.7).
+ */
+export function forbidsTerrain(t: UnitType, terrain: TerrainType): boolean {
+  const barred = BARRED[t];
+  return barred.length > 0 && barred.includes(terrain); // most types bar nothing (the AI's searches ask constantly)
+}
+
+/** Normal close-combat dice of a unit (used for leader escape): attacking dice, no terrain, no card bonus. */
+export function escapeDice(u: Unit): number {
+  const st = UNIT_STATS[u.type];
+  if (st.elephantTable) return 1;
+  let d = st.cc;
+  if (st.fullStrengthBonus && u.blocks === u.maxBlocks) d += 1;
+  return d;
+}
+
+/**
+ * May the unit make a bonus close combat after a winning charge (momentum advance)? Charge-movers (warriors) and
+ * mounted units always; other foot only with an attached leader; never a unit without momentum (war machines). Callers
+ * add terrain and card restrictions.
+ */
+export function bonusCombatEligible(st: UnitStats, hasAttachedLeader: boolean): boolean {
+  if (st.noMomentum) return false;
+  return st.chargeMove || st.mounted || (st.foot && hasAttachedLeader);
+}
+
+/** Light foot (LI, LB, LS, AX): may pass through friends with Order Light Troops / Move-Fire-Move. */
+export function isLightFoot(u: Unit): boolean {
+  return UNIT_STATS[u.type].lightFoot;
+}
+
+/** Do `striker`'s flags make `target` retreat +1 hex per flag? */
+export function frightens(striker: Unit, target: Unit): boolean {
+  return UNIT_STATS[target.type].frightenedBy.includes(striker.type);
+}

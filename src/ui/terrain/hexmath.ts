@@ -1,0 +1,263 @@
+// Hex helpers for the terrain painters. Works in board SVG coordinates and also for "virtual"
+// off-board hexes (negative rows, column 13, ...), which painters use to run rivers and lakes
+// under the frame. The board geometry itself (hex centres, row parity) is in ../geometry.
+import { ALL_HEXES, colOf, hexId, onBoard, rowOf } from '../../engine/hex';
+import { ROWS, type TerrainType } from '../../engine/types';
+import { BOARD_H, BOARD_MARGIN, BOARD_W, clampCol, HEX_R, HEX_W, hexCenter, parity } from '../geometry';
+
+export interface Pt {
+  x: number;
+  y: number;
+}
+export interface Rect {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
+/** Hex inradius (centre to edge midpoint). */
+export const RI = HEX_W / 2;
+
+/** Logical neighbour directions (as seen on an unflipped board): 0 E, 1 SE, 2 SW, 3 W, 4 NW, 5 NE. */
+export type Dir = 0 | 1 | 2 | 3 | 4 | 5;
+export const DIRS: Dir[] = [0, 1, 2, 3, 4, 5];
+
+export function neighborRC(r: number, c: number, d: Dir): [number, number] {
+  const odd = parity(r) === 1;
+  switch (d) {
+    case 0:
+      return [r, c + 1];
+    case 3:
+      return [r, c - 1];
+    case 1:
+      return [r + 1, odd ? c + 1 : c];
+    case 2:
+      return [r + 1, odd ? c : c - 1];
+    case 4:
+      return [r - 1, odd ? c : c - 1];
+    case 5:
+      return [r - 1, odd ? c + 1 : c];
+  }
+}
+
+/** Offset coordinates of the hex containing board point (x, y) (may be off-board). */
+export function pixelToRC(x: number, y: number, flipped: boolean): [number, number] {
+  if (flipped) {
+    x = BOARD_W - x;
+    y = BOARD_H - y;
+  }
+  const px = x - (BOARD_MARGIN + HEX_W / 2);
+  const py = y - (BOARD_MARGIN + HEX_R);
+  const qf = ((Math.sqrt(3) / 3) * px - py / 3) / HEX_R;
+  const rf = ((2 / 3) * py) / HEX_R;
+  const sf = -qf - rf;
+  let q = Math.round(qf);
+  let rr = Math.round(rf);
+  const s = Math.round(sf);
+  const dq = Math.abs(q - qf);
+  const dr = Math.abs(rr - rf);
+  const ds = Math.abs(s - sf);
+  if (dq > dr && dq > ds) q = -rr - s;
+  else if (dr > ds) rr = -q - s;
+  const col = q + (rr - (rr & 1)) / 2;
+  return [rr, col];
+}
+
+/** Corner i (0 = top, clockwise, screen space) of a pointy-top hex. */
+export function corner(p: Pt, i: number, r = HEX_R): Pt {
+  const a = (Math.PI / 180) * (60 * i - 90);
+  return { x: p.x + r * Math.cos(a), y: p.y + r * Math.sin(a) };
+}
+
+/** Distance from a hex centre to its boundary along screen angle `a` (radians). */
+export function hexBoundaryDist(a: number): number {
+  // Edge normals of a pointy-top hex are at 0, 60, 120, ... degrees; `off` is the angle between
+  // the ray and the nearest edge normal (0..30 degrees).
+  const sector = Math.PI / 3;
+  const rel = (((a % sector) + sector) % sector) - sector / 2;
+  const off = sector / 2 - Math.abs(rel);
+  return RI / Math.cos(off);
+}
+
+/** City art: an impassable city wall (`'wall'`, 301) or walled town (`'town'`, 303, 304) on a `steep` hex. */
+export type CityArt = 'wall' | 'town';
+
+/** `art` if it is city art, else undefined. */
+export function cityArt(art: string | undefined): CityArt | undefined {
+  return art === 'wall' || art === 'town' ? art : undefined;
+}
+
+/**
+ * What a hex's art (`terrainArtOf`) makes of its terrain, where it changes how the hex is drawn and named: `'coast'`, a
+ * fordable river with coast art, is a coast played as a ford (217), painted as (fordable) sea; `'wall'` or `'town'`, a
+ * `steep` hex with city art, an impassable city wall or walled town, which has its own painter. Undefined elsewhere.
+ */
+export function hexVariant(t: TerrainType, art: string | undefined): 'coast' | CityArt | undefined {
+  if (t === 'river') return art === 'coast' ? 'coast' : undefined;
+  return t === 'steep' ? cityArt(art) : undefined;
+}
+
+export interface HexInfo {
+  id: number;
+  r: number;
+  c: number;
+  x: number;
+  y: number;
+  t: TerrainType;
+  ford: boolean;
+  // Expansion #3 (set only when the board passes them)
+  /** A hill under the hex's camp or wall: painted as a hill beneath it. */
+  hillUnder?: boolean;
+  /** The hex's art where it differs from its terrain (`terrainArtOf`): 'wall' or 'town' on an impassable `steep` hex. */
+  art?: CityArt;
+}
+
+/** What a board knows of its hexes beyond terrain and fords (Expansion #3): hills under camps and walls, the hex art. */
+export interface BoardExtras {
+  hillUnder?: readonly boolean[];
+  art?: readonly (string | undefined)[];
+}
+
+/** Everything a painter needs to know about the board it paints. */
+export interface PaintCtx {
+  flipped: boolean;
+  hexes: HexInfo[];
+  get(r: number, c: number): HexInfo | undefined;
+  /** Centre of any hex (virtual ones included). */
+  center(r: number, c: number): Pt;
+  /** Terrain at a point; off-board points take the terrain of the nearest board hex. */
+  terrainAt(x: number, y: number): TerrainType;
+  /** Area painters may sample (whole board incl. frame). */
+  bounds: Rect;
+  /** Distance a feature extends past the playing area (rivers run under the frame). */
+  ext: number;
+  /** Optional fixed river ports for a lone river hex (icons). */
+  lonePorts?: [Dir, Dir];
+}
+
+export function boardCtx(terrain: readonly TerrainType[], fords: readonly boolean[], flipped: boolean, extras: BoardExtras = {}): PaintCtx {
+  const hexes: HexInfo[] = [];
+  const byId = new Map<number, HexInfo>();
+  for (const id of ALL_HEXES) {
+    const r = rowOf(id);
+    const c = colOf(id);
+    const p = hexCenter(r, c, flipped);
+    const t = terrain[id] ?? 'plain';
+    const h: HexInfo = { id, r, c, x: p.x, y: p.y, t: t === 'void' ? 'plain' : t, ford: !!fords[id] };
+    if (extras.hillUnder?.[id]) h.hillUnder = true;
+    const art = cityArt(extras.art?.[id]);
+    if (art) h.art = art;
+    hexes.push(h);
+    byId.set(id, h);
+  }
+  const get = (r: number, c: number) => (onBoard(r, c) ? byId.get(hexId(r, c)) : undefined);
+  return {
+    flipped,
+    hexes,
+    get,
+    center: (r, c) => hexCenter(r, c, flipped),
+    terrainAt(x, y) {
+      let [r, c] = pixelToRC(x, y, flipped);
+      if (!onBoard(r, c)) {
+        r = Math.max(0, Math.min(ROWS - 1, r));
+        c = clampCol(r, c);
+      }
+      return byId.get(hexId(r, c))?.t ?? 'plain';
+    },
+    bounds: { x0: 0, y0: 0, x1: BOARD_W, y1: BOARD_H },
+    ext: BOARD_MARGIN + 30,
+  };
+}
+
+/** Context describing a single hex centred on (0, 0) (legend/tooltip icons); `hill`: a hill under it, `art`: its hex art. */
+export function iconCtx(t: TerrainType, ford: boolean, hill = false, art?: string): PaintCtx {
+  const o = hexCenter(0, 0, false);
+  const h: HexInfo = { id: 0, r: 0, c: 0, x: 0, y: 0, t, ford };
+  if (hill) h.hillUnder = true;
+  const city = cityArt(art);
+  if (city) h.art = city;
+  const inHex = (x: number, y: number) => {
+    const ax = Math.abs(x);
+    const ay = Math.abs(y);
+    return ax <= RI && ax * 0.5 + ay * (Math.sqrt(3) / 2) <= RI;
+  };
+  return {
+    flipped: false,
+    hexes: [h],
+    get: (r, c) => (r === 0 && c === 0 ? h : undefined),
+    center: (r, c) => {
+      const p = hexCenter(r, c, false);
+      return { x: p.x - o.x, y: p.y - o.y };
+    },
+    terrainAt: (x, y) => (inHex(x, y) ? t : 'plain'),
+    bounds: { x0: -70, y0: -70, x1: 70, y1: 70 },
+    ext: 20,
+    lonePorts: [2, 5],
+  };
+}
+
+/** Screen direction of the logical neighbour direction d. */
+export function screenDir(d: Dir, flipped: boolean): Dir {
+  return (flipped ? (d + 3) % 6 : d) as Dir;
+}
+
+/** The two screen-corner indices of the edge facing screen direction sd. */
+export function edgeCorners(sd: Dir): [number, number] {
+  return [(sd + 1) % 6, (sd + 2) % 6];
+}
+
+export const fmt = (n: number) => (Math.round(n * 10) / 10).toString();
+
+/** Path through `pts` in straight segments: a polygon, or (`close` false) an open polyline. */
+export function polyPath(pts: Pt[], close = true): string {
+  return `M${pts.map((p) => `${fmt(p.x)},${fmt(p.y)}`).join('L')}${close ? 'Z' : ''}`;
+}
+
+/**
+ * SVG path (one closed subpath per loop) of the boundary of a set of hexes: `cells` (offset coordinates and centre, in
+ * the order the loops are started from) and `inside`, the set's membership test; every hexside of a cell whose neighbour
+ * is not inside is on the boundary.
+ */
+export function hexOutline(cells: Iterable<Pt & { r: number; c: number }>, inside: (r: number, c: number) => boolean, flipped: boolean): string {
+  type E = { a: Pt; b: Pt; used: boolean };
+  const edges: E[] = [];
+  const key = (p: Pt) => `${Math.round(p.x * 2)},${Math.round(p.y * 2)}`;
+  const at = new Map<string, E[]>();
+  for (const h of cells) {
+    for (const d of DIRS) {
+      const [nr, nc] = neighborRC(h.r, h.c, d);
+      if (inside(nr, nc)) continue;
+      const [i, j] = edgeCorners(screenDir(d, flipped));
+      const e: E = { a: corner(h, i), b: corner(h, j), used: false };
+      edges.push(e);
+      for (const p of [e.a, e.b]) {
+        const k = key(p);
+        const l = at.get(k);
+        if (l) l.push(e);
+        else at.set(k, [e]);
+      }
+    }
+  }
+  let d = '';
+  for (const start of edges) {
+    if (start.used) continue;
+    start.used = true;
+    const pts: Pt[] = [start.a, start.b];
+    let cur = start.b;
+    for (;;) {
+      const next = (at.get(key(cur)) ?? []).find((e) => !e.used);
+      if (!next) break;
+      next.used = true;
+      cur = key(next.a) === key(cur) ? next.b : next.a;
+      pts.push(cur);
+    }
+    d += polyPath(pts);
+  }
+  return d;
+}
+
+/** SVG path of the outer boundary of all hexes in ctx (the playing field outline). */
+export function fieldOutline(ctx: PaintCtx): string {
+  return hexOutline(ctx.hexes, (r, c) => !!ctx.get(r, c), ctx.flipped);
+}

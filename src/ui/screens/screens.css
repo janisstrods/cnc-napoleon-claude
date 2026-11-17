@@ -1,0 +1,332 @@
+/* ---------- main menu */
+.menu-root {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(80% 60% at 50% 38%, rgba(255, 196, 120, .16) 0%, rgba(0, 0, 0, 0) 60%),
+    radial-gradient(150% 120% at 50% 50%, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, .65) 100%),
+    var(--kit-woodgrain),
+    linear-gradient(180deg, #33200f 0%, #241509 100%);
+  color: var(--kit-parchment);
+  font-family: var(--kit-font-body);
+}
+.menu-hero { text-align: center; display: flex; flex-direction: column; align-items: center; animation: fadein .6s ease-out; }
+.menu-emblem { position: relative; width: 150px; height: 150px; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, .7)); margin-bottom: -6px; }
+.menu-emblem-swords { position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%); }
+.menu-armies { margin: -10px 0 4px; filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .55)); }
+.menu-notice { max-width: 420px; margin: 0 0 14px; padding: 8px 12px; border: 1px solid #e0745c; border-radius: 8px; background: rgba(120, 30, 20, .35); font-size: 15px; }
+.menu-title {
+  font-family: var(--kit-font-title);
+  font-weight: 700;
+  font-size: 58px;
+  letter-spacing: .08em;
+  margin: 0;
+  background: var(--kit-gold-metal);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .7));
+}
+.menu-sub {
+  font-family: var(--kit-font-title);
+  font-size: 30px;
+  letter-spacing: .6em;
+  margin: 2px 0 0 .6em;
+  color: #c7372c;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, .8);
+}
+.menu-tag { font-style: italic; font-size: 18px; color: rgba(240, 227, 194, .75); margin: 12px 0 0; }
+.menu-buttons { display: flex; flex-direction: column; gap: 12px; min-width: 300px; }
+.menu-buttons .kit-btn { font-size: 18px; padding: 10px 22px; }
+.menu-version {
+  position: absolute; right: 14px; bottom: 10px; text-align: right;
+  font-size: 14px; letter-spacing: .02em; color: rgba(240, 227, 194, .55);
+}
+.menu-build { font-size: 12px; color: rgba(240, 227, 194, .4); }
+.credits p { font-size: 15px; line-height: 1.45; margin: 0 0 10px; }
+@keyframes fadein { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* ---------- scenario select */
+.select-root {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  /* minmax(0, ...): the detail column may not outgrow the window (its choose row wraps instead) */
+  grid-template-columns: 330px minmax(0, 1fr);
+  gap: 16px;
+  padding: 14px;
+  background:
+    radial-gradient(150% 120% at 50% 50%, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, .6) 100%),
+    var(--kit-woodgrain),
+    linear-gradient(180deg, #33200f 0%, #241509 100%);
+  color: var(--kit-parchment);
+  font-family: var(--kit-font-body);
+}
+.select-list { display: flex; flex-direction: column; min-height: 0; }
+.select-head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.select-head h2 { font-family: var(--kit-font-title); font-weight: 400; letter-spacing: .08em; margin: 0; color: var(--kit-bronze-light); font-size: 22px; white-space: nowrap; }
+/* under the battle list, level with To Battle! across the screen */
+.select-list .random-btn.kit-btn { flex: none; margin-top: 8px; }
+.random-btn .kit-btn__label { display: inline-flex; align-items: center; gap: 7px; }
+/* a small ivory battle die; it tumbles onto a new face at every pick */
+.random-die {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 22%;
+  background: radial-gradient(110% 110% at 28% 18%, #fffdf7 0%, #f8f1df 40%, #ebe0c4 78%, #d9caa5 100%);
+  box-shadow: inset 0 -2px 3px rgba(150, 122, 72, .42), inset 0 0 0 1px rgba(120, 95, 55, .45), 0 2px 0 #bba984, 0 3px 4px rgba(0, 0, 0, .45);
+  transform: rotate(-8deg);
+  transition: transform .15s;
+}
+.random-die svg { width: 17px; height: 17px; }
+.random-btn:hover .random-die { transform: rotate(8deg); }
+.random-die.is-rolled { animation: random-die-roll .45s cubic-bezier(.2, .9, .3, 1.2); }
+@keyframes random-die-roll {
+  from { transform: translateY(-6px) rotate(-280deg) scale(.6); }
+  to { transform: rotate(-8deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .random-die, .random-die.is-rolled { transition: none; animation: none; }
+}
+.select-tabs { display: flex; flex-wrap: wrap; gap: 10px 6px; margin-bottom: 8px; }
+/* room above the first row for the medal badges */
+.select-tabs:has(.tab-medals) { padding-top: 4px; }
+.select-tabs button {
+  /* four boxes share the 330px list column: two to a row, each label on one line with its battle count beside it */
+  flex: 1 1 auto;
+  padding: 5px 6px;
+  font-family: var(--kit-font-title);
+  font-size: 11.5px;
+  letter-spacing: .02em;
+  white-space: nowrap;
+  color: rgba(240, 227, 194, .8);
+  background: rgba(20, 12, 6, .55);
+  border: 1px solid rgba(226, 189, 114, .25);
+  border-radius: 8px;
+  cursor: pointer;
+  line-height: 1.2;
+  position: relative;
+}
+.select-tabs button:hover { border-color: rgba(226, 189, 114, .55); }
+.select-tabs button:focus-visible { outline: 2px solid var(--kit-gold); outline-offset: 2px; }
+.select-tabs button.active { color: #fbe7a6; border-color: var(--kit-gold); background: linear-gradient(180deg, rgba(142, 27, 27, .6), rgba(60, 30, 14, .7)); }
+.select-tabs small { margin-left: 4px; font-family: var(--kit-font-body); font-size: 12px; letter-spacing: 0; opacity: .65; }
+/* the box's medals won, as a badge on the tab's corner: the tabs keep their width (two to a row) */
+.tab-medals {
+  position: absolute; top: -9px; right: -4px; z-index: 1;
+  display: inline-flex; align-items: center; gap: 1px; height: 14px; padding: 0 5px 0 3px;
+  font-family: var(--kit-font-body); font-size: 10.5px; line-height: 1; letter-spacing: 0; color: var(--kit-gold);
+  background: #2a1a0c; border: 1px solid rgba(232, 196, 90, .65); border-radius: 8px;
+}
+.select-scroll {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 6px 28px 0;
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 36px), transparent);
+  mask-image: linear-gradient(180deg, #000 calc(100% - 36px), transparent);
+}
+.scen-item {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  gap: 0 8px;
+  text-align: left;
+  padding: 8px 10px;
+  background: rgba(20, 12, 6, .55);
+  border: 1px solid rgba(226, 189, 114, .2);
+  border-radius: 8px;
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, transform .15s;
+}
+.scen-item:hover { background: rgba(60, 36, 18, .7); border-color: rgba(226, 189, 114, .5); }
+.scen-item.active { background: linear-gradient(90deg, rgba(142, 27, 27, .55), rgba(60, 30, 14, .7)); border-color: var(--kit-gold); box-shadow: inset 4px 0 0 var(--kit-gold); }
+.scen-num { grid-row: span 2; font-family: var(--kit-font-title); font-size: 19px; color: var(--kit-bronze-light); align-self: center; text-align: center; }
+.scen-name { font-family: var(--kit-font-title); font-size: 15px; letter-spacing: .03em; }
+.scen-year { font-size: 13px; color: rgba(240, 227, 194, .6); font-style: italic; }
+.scen-hint { grid-column: 2; font-size: 13px; color: rgba(240, 227, 194, .65); }
+/* the battle's two medals (bottom army, top army) under the year */
+.scen-medals { grid-column: 3; grid-row: 2; align-self: center; justify-self: end; }
+
+/*
+ * The briefing takes the height it needs, but never more than leaves the map preview its minimum and the choose row (with
+ * To Battle!) its own: a long briefing scrolls inside the parchment instead of pushing them off the screen.
+ */
+.select-detail {
+  display: grid;
+  grid-template-rows: minmax(0, max-content) minmax(max(160px, 27vh), 1fr) auto;
+  gap: 10px;
+  min-height: 0;
+}
+.brief { color: var(--kit-ink); min-height: 0; display: flex; flex-direction: column; }
+.brief > .kit-panel__inner { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.brief .kit-panel__body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.brief-head { flex: none; }
+/* the last lines fade out (over a bottom padding, so a briefing that fits loses nothing): there is more to scroll to */
+.brief-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  margin-right: -10px;
+  padding: 0 10px 12px 0;
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 16px), transparent);
+  mask-image: linear-gradient(180deg, #000 calc(100% - 16px), transparent);
+}
+.brief-scroll::-webkit-scrollbar { width: 6px; }
+.brief-scroll::-webkit-scrollbar-thumb { background: rgba(110, 26, 20, .35); border-radius: 3px; }
+.brief-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.brief-history.kit-btn { flex: none; padding: 4px 14px; font-size: 13px; margin-top: 2px; }
+.brief-title { font-family: var(--kit-font-title); font-size: 26px; color: #6e1a14; letter-spacing: .04em; }
+.brief-title span { font-size: 16px; color: var(--kit-ink-soft); font-style: italic; font-family: var(--kit-font-body); }
+.brief-blurb { font-size: 16.5px; line-height: 1.4; margin: 4px 0 8px; }
+.brief-facts { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 14px; color: var(--kit-ink-soft); font-weight: 600; }
+.brief-special { margin: 8px 0 0; padding-left: 20px; font-size: 14.5px; line-height: 1.35; }
+.brief-options { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; padding-top: 7px; border-top: 1px solid rgba(110, 26, 20, .25); }
+.brief-options-label { font-family: var(--kit-font-title); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: #6e1a14; }
+.opt-toggle { position: relative; display: flex; align-items: center; gap: 10px; font-size: 14.5px; line-height: 1.3; cursor: pointer; }
+.opt-toggle input { position: absolute; opacity: 0; pointer-events: none; }
+.opt-switch { flex: none; position: relative; width: 34px; height: 18px; border-radius: 9px; background: rgba(90, 70, 50, .35); border: 1px solid rgba(110, 26, 20, .45); transition: background .15s; }
+.opt-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: #f6ead0; box-shadow: 0 1px 2px rgba(0, 0, 0, .4); transition: transform .15s; }
+.opt-toggle.on .opt-switch { background: #8e1b1b; }
+.opt-toggle.on .opt-switch::after { transform: translateX(16px); }
+.opt-toggle input:focus-visible + .opt-switch { outline: 2px solid var(--kit-gold); outline-offset: 2px; }
+.opt-text i { font-size: 13px; color: var(--kit-ink-soft); }
+.preview-wrap { min-height: 0; display: flex; justify-content: center; }
+.preview-svg { width: 100%; height: 100%; filter: drop-shadow(0 10px 20px rgba(0, 0, 0, .6)); }
+.choose-row { display: flex; align-items: stretch; gap: 10px 14px; flex-wrap: wrap; }
+.choose-group:first-child .choice { flex: 0 0 auto; min-width: max-content; }
+.choose-group:nth-child(2) .choice { flex: 1 1 0; max-width: 180px; }
+@media (max-width: 1400px) { .choose-group:nth-child(2) .choice small { display: none; } }
+/* wrap only when the groups do not fit even at their narrowest, then grow back towards their natural width */
+.choose-group { display: flex; gap: 8px; align-items: stretch; flex: 1 1 min-content; max-width: max-content; }
+.choose-label { writing-mode: vertical-rl; transform: rotate(180deg); font-family: var(--kit-font-title); font-size: 11px; letter-spacing: .15em; color: rgba(226, 189, 114, .7); text-align: center; }
+.choice {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-width: 120px;
+  max-width: 200px;
+  padding: 8px 12px;
+  text-align: left;
+  background: rgba(20, 12, 6, .55);
+  border: 1px solid rgba(226, 189, 114, .25);
+  border-radius: 8px;
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
+}
+.choice b { font-family: var(--kit-font-title); font-weight: 400; font-size: 15px; letter-spacing: .03em; }
+.choice small { font-size: 12.5px; color: rgba(240, 227, 194, .65); }
+.choice.active { border-color: var(--kit-gold); background: linear-gradient(180deg, rgba(142, 27, 27, .6), rgba(60, 30, 14, .7)); }
+/* a side's medal, or the metal an opponent level gives, in the button's top-right corner */
+.choice.has-medal { position: relative; padding-right: 28px; }
+.choice-medal { position: absolute; top: 6px; right: 6px; }
+.start-btn { margin-left: auto; font-size: 20px !important; padding: 10px 30px !important; align-self: center; }
+
+/* ---------- rules */
+.rules { display: flex; flex-direction: column; gap: 10px; color: var(--kit-ink); max-height: 72vh; }
+/* a battle's special rules (in play) can be long (308 has ten): they scroll on their own, so the tabs stay in view */
+.rules-battle { flex: 0 1 auto; min-height: 0; max-height: 30vh; overflow-y: auto; padding: 8px 12px; background: rgba(142, 27, 27, .07); border: 1px solid rgba(142, 27, 27, .3); border-left: 4px solid #8e1b1b; border-radius: 6px; }
+.rules-battle h3 { font-family: var(--kit-font-title); font-weight: 400; color: #6e1a14; margin: 0 0 4px; font-size: 17px; }
+.rules-battle ul { margin: 0; padding-left: 20px; }
+.rules-battle li { font-size: 15.5px; line-height: 1.42; }
+.rules-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.rules-tabs button {
+  font-family: var(--kit-font-title);
+  font-size: 13px;
+  letter-spacing: .05em;
+  padding: 5px 12px;
+  border-radius: 14px;
+  border: 1px solid #b0823a;
+  background: #f6ead0;
+  color: #4a3420;
+  cursor: pointer;
+}
+.rules-tabs button.active { background: #8e1b1b; color: #fbe7a6; border-color: #e8c45a; }
+.rules-body { overflow-y: auto; padding-right: 6px; }
+.rules-text h3 { font-family: var(--kit-font-title); font-weight: 400; color: #6e1a14; margin: 12px 0 4px; font-size: 17px; }
+.rules-text p, .rules-text li { font-size: 15.5px; line-height: 1.42; }
+.dice-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; font-size: 15px; }
+.dice-legend span { display: flex; align-items: center; gap: 8px; }
+.rules-units { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.unit-card { display: flex; gap: 8px; align-items: center; background: rgba(255, 255, 255, .35); border: 1px solid rgba(176, 130, 58, .35); border-radius: 8px; padding: 6px; }
+.unit-card-title { font-family: var(--kit-font-title); font-size: 14.5px; color: #4a2010; }
+.unit-card-line { font-size: 14px; line-height: 1.3; }
+.muted { color: #7a6448; }
+.cls { font-family: var(--kit-font-body); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; padding: 1px 6px; border-radius: 8px; color: #fff; }
+.cls-light { background: var(--kit-die-light); }
+.cls-medium { background: var(--kit-die-medium); }
+.cls-heavy { background: var(--kit-die-heavy); }
+.terrain-table { border-collapse: collapse; width: 100%; font-size: 15px; }
+.terrain-table th { text-align: left; font-family: var(--kit-font-title); font-weight: 400; color: #6e1a14; padding: 6px 10px 6px 0; vertical-align: top; white-space: nowrap; }
+.terrain-table td { padding: 6px 0; border-bottom: 1px solid rgba(176, 130, 58, .3); line-height: 1.35; }
+.rules-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.rules-card { display: flex; gap: 10px; align-items: center; }
+
+.persona { display: flex; flex-direction: column; gap: 3px; max-width: 230px; padding: 6px 10px; background: rgba(20, 12, 6, .55); border: 1px solid rgba(226, 189, 114, .25); border-radius: 8px; }
+.persona-name { font-family: var(--kit-font-title); font-size: 14px; letter-spacing: .03em; }
+.persona select {
+  appearance: none; -webkit-appearance: none;
+  background: rgba(20, 12, 6, .7) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0 L5 6 L10 0' fill='%23e2bd72'/></svg>") no-repeat right 8px center;
+  color: var(--kit-parchment); border: 1px solid rgba(226, 189, 114, .5); border-radius: 6px;
+  font-family: var(--kit-font-body); font-size: 14px; padding: 3px 24px 3px 8px; cursor: pointer;
+}
+.persona small { font-size: 12px; color: rgba(240, 227, 194, .65); line-height: 1.2; }
+@media (max-width: 1400px) { .persona small { display: none; } }
+.rules-note { font-size: 14px; font-style: italic; color: #7a6448; margin: 10px 0 0; }
+.rules-sub { font-family: var(--kit-font-body); font-size: 12.5px; letter-spacing: 0; margin-top: 2px; white-space: normal; }
+.rules-text .rules-units { margin: 4px 0 8px; }
+.rules-text table.terrain-table { margin-bottom: 4px; }
+
+/* ---------- medals (record.ts): metal discs; the rings take the colour of the background they sit on */
+.medal { display: block; flex: none; }
+.medal-ring { stroke: rgba(226, 189, 114, .6); fill: rgba(10, 6, 2, .35); }
+.medal.is-none .medal-ring { stroke: rgba(226, 189, 114, .32); fill: none; }
+.medal.is-faint { opacity: .4; filter: saturate(.6); }
+.medal-pair { display: inline-flex; gap: 3px; }
+.kit-parchment .medal-ring { stroke: rgba(110, 70, 30, .6); fill: rgba(110, 70, 30, .1); }
+.kit-parchment .medal.is-none .medal-ring { stroke: rgba(110, 70, 30, .35); fill: none; }
+
+/* ---------- Triumphs: the medal tally (menu, dialog) and the record of every battle */
+.tally { display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 12px; font-size: 15px; }
+.tally-n { display: inline-flex; align-items: center; gap: 4px; font-family: var(--kit-font-title); font-weight: 700; }
+.tally-fought { font-style: italic; }
+.tally.is-small { gap: 2px 9px; font-size: 13px; font-family: var(--kit-font-body); letter-spacing: 0; color: var(--kit-ink-soft); }
+.tally.is-small .medal { width: 14px; height: 14px; }
+.menu-tally { margin-top: 14px; color: rgba(240, 227, 194, .82); }
+/* the battles scroll; the intro, tally and the save/load row stay in view */
+.triumphs { display: flex; flex-direction: column; gap: 10px; max-height: calc(100vh - 175px); color: var(--kit-ink); }
+.triumphs-intro { margin: 0; font-size: 15.5px; line-height: 1.4; }
+.triumphs-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 18px; }
+.triumphs-legend { display: flex; flex-wrap: wrap; gap: 3px 12px; margin: 0; padding: 0; list-style: none; font-size: 13.5px; color: var(--kit-ink-soft); }
+.triumphs-legend li { display: inline-flex; align-items: center; gap: 4px; }
+.triumphs-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-right: 6px; }
+.triumphs-box h3 {
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 12px;
+  margin: 8px 0 6px; padding-bottom: 3px; border-bottom: 1px solid rgba(176, 130, 58, .4);
+  font-family: var(--kit-font-title); font-weight: 400; font-size: 17px; color: #6e1a14;
+}
+.triumphs-box:first-child h3 { margin-top: 0; }
+.triumphs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(205px, 1fr)); gap: 5px; }
+.tri-cell {
+  display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: center; gap: 6px;
+  padding: 4px 7px; text-align: left; cursor: pointer;
+  background: rgba(255, 255, 255, .32); border: 1px solid rgba(176, 130, 58, .38); border-radius: 6px;
+  color: inherit; font: inherit;
+}
+.tri-cell:hover { background: rgba(255, 255, 255, .55); border-color: #8e1b1b; }
+.tri-cell:focus-visible { outline: 2px solid #8e1b1b; outline-offset: 1px; }
+.tri-num { font-family: var(--kit-font-title); font-size: 14px; color: #8a5a20; text-align: center; }
+.tri-name { overflow: hidden; font-size: 14.5px; line-height: 1.25; white-space: nowrap; text-overflow: ellipsis; }
+.triumphs-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding-top: 8px; border-top: 1px solid rgba(176, 130, 58, .4); }
+.triumphs-foot .kit-btn { padding: 5px 16px; font-size: 14px; }
+.triumphs-note { flex: 1 1 260px; margin: 0; font-size: 13.5px; font-style: italic; line-height: 1.35; color: var(--kit-ink-soft); }
