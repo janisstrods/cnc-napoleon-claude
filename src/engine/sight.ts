@@ -48,7 +48,8 @@ export function lineOfSight(s: GameState, from: HexId, to: HexId, opts: { hillBa
     return true;
   };
   const [plus, minus] = lineBetween(from, to);
-  return !plus.some((h, i) => obstructed(h, i === 0)) || !minus.some((h, i) => obstructed(h, i === 0));
+  // Blocked only where the hexes on both sides of the line are obstructed, step by step (R49); a step on a hex centre has one hex.
+  return !plus.some((h, i) => obstructed(h, i === 0) && (minus[i] === h || obstructed(minus[i], i === 0)));
 }
 
 /** May `u` fire at the enemy unit on `targetHex`? Units only; range from `baseFireDice`; not when adjacent to an enemy unit. */

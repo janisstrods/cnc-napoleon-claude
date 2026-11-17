@@ -1,7 +1,7 @@
 // Rules: RR §8.1, §8.3, §8.4 (design/rules-reference.md)
 import { describe, expect, it } from 'vitest';
 import { canFireAt, clearSight, fireTargets, lineOfSight } from '../../src/engine/sight';
-import { H, build, u, type Pos } from './helpers';
+import { H, build, must, play, u, type Pos } from './helpers';
 import type { RowKey } from '../../src/engine';
 
 type PU = NonNullable<Pos['units']>[number];
@@ -30,12 +30,10 @@ describe('range (RR §8.1)', () => {
   // needs T2 (rebase): baseFireDice ignores `moved` in the skeleton; re-enable after rebasing onto T2
   it.skip('horse artillery that moved 1 hex fires 3 hexes, not 4 (§8.1)', () => {
     const at = (d: number): boolean => {
-      const s = build({ units: [bot('BR/HA', [6, 6]), top('FR/LN', [6 - d, 6])] });
-      s.turn.ordered['u1'] = {
-        id: 'u1', isLeader: false, startHex: H(7, 6), moved: 1, moveDone: true, battled: false, cardMods: true,
-        stopEntered: false, noBattle: false, attachedThisTurn: false, bonusMeleeDone: false, stayInSquare: false,
-      };
-      return canFireAt(s, u(s, 'u1')!, H(6 - d, 6));
+      const s = build({ units: [bot('BR/HA', [7, 6]), top('FR/LN', [6 - d, 6])] });
+      const dr = play(s, 'probeC', ['u1']);
+      must(dr, { kind: 'move', piece: 'u1', to: H(6, 6) });
+      return canFireAt(dr.state, u(dr, 'u1')!, H(6 - d, 6));
     };
     expect(at(4)).toBe(false);
     expect(at(3)).toBe(true);
@@ -80,7 +78,7 @@ describe('line of sight (RR §8.3)', () => {
     expect(blocked({ units: [top('FR/LN', [5, 5])] })).toBe(true);
     expect(blocked({ units: [bot('BR/LN', [5, 5])] })).toBe(true);
     expect(blocked({ leaders: [{ side: 'bottom', at: [5, 5] }] })).toBe(true);
-    expect(blocked({ terrain: [{ at: [4, 6], t: 'forest' }] })).toBe(false);
+    expect(blocked({ units: [top('FR/LN', [4, 6])], terrain: [{ at: [4, 6], t: 'forest' }] })).toBe(false);
   });
 
   it('forest, town and rugged hill block; works, river, ford, bridge and sand quarry do not', () => {
@@ -98,6 +96,13 @@ describe('line of sight (RR §8.3)', () => {
     expect(lineOfSight(s([[3, 5]]), H(4, 6), H(2, 6))).toBe(true);
     expect(lineOfSight(s([[3, 6]]), H(4, 6), H(2, 6))).toBe(true);
     expect(lineOfSight(s([[3, 5], [3, 6]]), H(4, 6), H(2, 6))).toBe(false);
+  });
+
+  it('a hexside is judged hex pair by hex pair along the line (R49)', () => {
+    const s = (pcs: [number, number][]) => build({ units: pcs.map((at) => bot('BR/LN', at)) });
+    expect(lineOfSight(s([[0, 1], [2, 2]]), H(0, 0), H(2, 3))).toBe(true);
+    expect(lineOfSight(s([[0, 1], [1, 0]]), H(0, 0), H(2, 3))).toBe(false);
+    expect(lineOfSight(s([[1, 1]]), H(0, 0), H(2, 3))).toBe(false);
   });
 
   it('the side edge obstructs ([Interp R50])', () => {
