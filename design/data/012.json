@@ -1,0 +1,248 @@
+{
+ "id": "012",
+ "grid": {
+  "x0": 73.88,
+  "y0": 129.88,
+  "w": 87.0,
+  "pitch": 75.5
+ },
+ "terrain": [
+  {
+   "r": 1,
+   "c": 11,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 12,
+   "t": "hill"
+  },
+  {
+   "r": 7,
+   "c": 1,
+   "t": "hill"
+  },
+  {
+   "r": 7,
+   "c": 2,
+   "t": "hill"
+  },
+  {
+   "r": 7,
+   "c": 3,
+   "t": "hill"
+  },
+  {
+   "r": 7,
+   "c": 4,
+   "t": "hill"
+  },
+  {
+   "r": 6,
+   "c": 3,
+   "t": "forest"
+  },
+  {
+   "r": 6,
+   "c": 5,
+   "t": "forest"
+  },
+  {
+   "r": 7,
+   "c": 5,
+   "t": "forest"
+  },
+  {
+   "r": 5,
+   "c": 0,
+   "t": "town",
+   "art": "label: Garcia Hernandez (village, upper hex)"
+  },
+  {
+   "r": 6,
+   "c": 0,
+   "t": "town",
+   "art": "label: Garcia Hernandez (village, lower hex)"
+  }
+ ],
+ "units": [
+  {
+   "r": 1,
+   "c": 1,
+   "side": "top",
+   "key": "BR/LC"
+  },
+  {
+   "r": 1,
+   "c": 2,
+   "side": "top",
+   "key": "BR/LC"
+  },
+  {
+   "r": 1,
+   "c": 3,
+   "side": "top",
+   "key": "BR/LC"
+  },
+  {
+   "r": 1,
+   "c": 4,
+   "side": "top",
+   "key": "BR/LC"
+  },
+  {
+   "r": 1,
+   "c": 5,
+   "side": "top",
+   "key": "BR/LC"
+  },
+  {
+   "r": 1,
+   "c": 6,
+   "side": "top",
+   "key": "BR/LC"
+  },
+  {
+   "r": 2,
+   "c": 7,
+   "side": "top",
+   "key": "BR/HC"
+  },
+  {
+   "r": 2,
+   "c": 8,
+   "side": "top",
+   "key": "BR/HC"
+  },
+  {
+   "r": 2,
+   "c": 9,
+   "side": "top",
+   "key": "BR/HC"
+  },
+  {
+   "r": 2,
+   "c": 10,
+   "side": "top",
+   "key": "BR/HC"
+  },
+  {
+   "r": 3,
+   "c": 8,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 3,
+   "c": 9,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 4,
+   "c": 7,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 5,
+   "c": 7,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 7,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 9,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 10,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 11,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 11,
+   "side": "bottom",
+   "key": "FR/FA"
+  },
+  {
+   "r": 8,
+   "c": 1,
+   "side": "bottom",
+   "key": "FR/LC"
+  },
+  {
+   "r": 8,
+   "c": 2,
+   "side": "bottom",
+   "key": "FR/LC"
+  },
+  {
+   "r": 8,
+   "c": 3,
+   "side": "bottom",
+   "key": "FR/HC"
+  },
+  {
+   "r": 8,
+   "c": 4,
+   "side": "bottom",
+   "key": "FR/HC"
+  }
+ ],
+ "leaders": [
+  {
+   "r": 1,
+   "c": 4,
+   "side": "top",
+   "name": "Anson"
+  },
+  {
+   "r": 2,
+   "c": 7,
+   "side": "top",
+   "name": "Bock"
+  },
+  {
+   "r": 2,
+   "c": 10,
+   "side": "top",
+   "name": "Gleichen"
+  },
+  {
+   "r": 8,
+   "c": 3,
+   "side": "bottom",
+   "name": "Curto"
+  },
+  {
+   "r": 7,
+   "c": 8,
+   "side": "bottom",
+   "name": "Foy"
+  }
+ ],
+ "objectives": [],
+ "notes": [
+  "SQUARE AT START: the two FR/LT units on 3,8 and 3,9 start in square (a square marker sits at the upper left of each block: yellow marker with a figure on 3,8, red marker with the number 2 on 3,9). Record each as in square at game start; per survey the FR player draws two random cards from the hand onto the Infantry in Square track (FR plays with four cards).",
+  "note: FR/LT at 3,8 in square at start (marker 1, yellow).",
+  "note: FR/LT at 3,9 in square at start (marker 2, red).",
+  "Elimination scoring (BR only): first French infantry eliminated scores one banner, each further French infantry two; other French units one (survey). No objective hexes.",
+  "Leaders: Anson on BR/LC 1,4; Bock on BR/HC 2,7; Gleichen on BR/HC 2,10; Curto on FR/HC 8,3; Foy alone on 7,8. All names read at 7x zoom."
+ ]
+}

@@ -1,0 +1,407 @@
+{
+ "id": "009",
+ "grid": {
+  "x0": 74.38,
+  "y0": 130.38,
+  "w": 87.0,
+  "pitch": 75.5
+ },
+ "terrain": [
+  {
+   "r": 0,
+   "c": 8,
+   "t": "hill"
+  },
+  {
+   "r": 0,
+   "c": 9,
+   "t": "hill"
+  },
+  {
+   "r": 1,
+   "c": 0,
+   "t": "hill"
+  },
+  {
+   "r": 1,
+   "c": 1,
+   "t": "hill"
+  },
+  {
+   "r": 1,
+   "c": 4,
+   "t": "hill"
+  },
+  {
+   "r": 1,
+   "c": 5,
+   "t": "hill"
+  },
+  {
+   "r": 1,
+   "c": 6,
+   "t": "hill"
+  },
+  {
+   "r": 1,
+   "c": 9,
+   "t": "hill"
+  },
+  {
+   "r": 1,
+   "c": 10,
+   "t": "hill"
+  },
+  {
+   "r": 4,
+   "c": 4,
+   "t": "hill"
+  },
+  {
+   "r": 4,
+   "c": 5,
+   "t": "hill"
+  },
+  {
+   "r": 4,
+   "c": 6,
+   "t": "hill"
+  },
+  {
+   "r": 4,
+   "c": 9,
+   "t": "hill"
+  },
+  {
+   "r": 5,
+   "c": 0,
+   "t": "hill"
+  },
+  {
+   "r": 5,
+   "c": 9,
+   "t": "hill"
+  },
+  {
+   "r": 6,
+   "c": 0,
+   "t": "hill"
+  },
+  {
+   "r": 8,
+   "c": 0,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 2,
+   "t": "forest"
+  },
+  {
+   "r": 3,
+   "c": 10,
+   "t": "forest"
+  },
+  {
+   "r": 4,
+   "c": 2,
+   "t": "forest"
+  },
+  {
+   "r": 4,
+   "c": 3,
+   "t": "forest"
+  },
+  {
+   "r": 4,
+   "c": 10,
+   "t": "forest"
+  },
+  {
+   "r": 4,
+   "c": 11,
+   "t": "forest"
+  },
+  {
+   "r": 6,
+   "c": 11,
+   "t": "forest"
+  },
+  {
+   "r": 7,
+   "c": 7,
+   "t": "forest"
+  },
+  {
+   "r": 7,
+   "c": 10,
+   "t": "forest"
+  },
+  {
+   "r": 6,
+   "c": 4,
+   "t": "town"
+  },
+  {
+   "r": 7,
+   "c": 3,
+   "t": "town"
+  },
+  {
+   "r": 2,
+   "c": 0,
+   "t": "river"
+  },
+  {
+   "r": 3,
+   "c": 0,
+   "t": "river"
+  },
+  {
+   "r": 4,
+   "c": 1,
+   "t": "river"
+  },
+  {
+   "r": 5,
+   "c": 1,
+   "t": "river"
+  },
+  {
+   "r": 6,
+   "c": 2,
+   "t": "river",
+   "crossing": "bridge"
+  },
+  {
+   "r": 7,
+   "c": 2,
+   "t": "river"
+  },
+  {
+   "r": 8,
+   "c": 3,
+   "t": "river"
+  },
+  {
+   "r": 8,
+   "c": 4,
+   "t": "river"
+  },
+  {
+   "r": 8,
+   "c": 5,
+   "t": "river"
+  },
+  {
+   "r": 8,
+   "c": 6,
+   "t": "river"
+  },
+  {
+   "r": 8,
+   "c": 7,
+   "t": "river"
+  }
+ ],
+ "units": [
+  {
+   "r": 0,
+   "c": 0,
+   "side": "top",
+   "key": "BR/LC"
+  },
+  {
+   "r": 0,
+   "c": 2,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 1,
+   "c": 1,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 0,
+   "c": 5,
+   "side": "top",
+   "key": "BR/GG"
+  },
+  {
+   "r": 0,
+   "c": 6,
+   "side": "top",
+   "key": "BR/GR"
+  },
+  {
+   "r": 0,
+   "c": 11,
+   "side": "top",
+   "key": "BR/LC"
+  },
+  {
+   "r": 1,
+   "c": 6,
+   "side": "top",
+   "key": "BR/FA"
+  },
+  {
+   "r": 1,
+   "c": 9,
+   "side": "top",
+   "key": "BR/HA"
+  },
+  {
+   "r": 1,
+   "c": 10,
+   "side": "top",
+   "key": "BR/LT"
+  },
+  {
+   "r": 1,
+   "c": 2,
+   "side": "top",
+   "key": "PT/LN"
+  },
+  {
+   "r": 1,
+   "c": 4,
+   "side": "top",
+   "key": "PT/LN"
+  },
+  {
+   "r": 1,
+   "c": 5,
+   "side": "top",
+   "key": "PT/LN"
+  },
+  {
+   "r": 0,
+   "c": 9,
+   "side": "top",
+   "key": "PT/LT"
+  },
+  {
+   "r": 4,
+   "c": 3,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 4,
+   "c": 4,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 4,
+   "c": 5,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 5,
+   "c": 4,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 5,
+   "c": 7,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 4,
+   "c": 10,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 6,
+   "c": 3,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 0,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 6,
+   "c": 10,
+   "side": "bottom",
+   "key": "FR/LC"
+  },
+  {
+   "r": 5,
+   "c": 0,
+   "side": "bottom",
+   "key": "FR/FA"
+  },
+  {
+   "r": 5,
+   "c": 9,
+   "side": "bottom",
+   "key": "FR/HA"
+  }
+ ],
+ "leaders": [
+  {
+   "r": 0,
+   "c": 2,
+   "side": "top",
+   "name": "Picton"
+  },
+  {
+   "r": 0,
+   "c": 5,
+   "side": "top",
+   "name": "Cole"
+  },
+  {
+   "r": 1,
+   "c": 10,
+   "side": "top",
+   "name": "Erskine"
+  },
+  {
+   "r": 1,
+   "c": 5,
+   "side": "top",
+   "name": "Pack"
+  },
+  {
+   "r": 4,
+   "c": 4,
+   "side": "bottom",
+   "name": "Mermet"
+  },
+  {
+   "r": 4,
+   "c": 10,
+   "side": "bottom",
+   "name": "Loison"
+  },
+  {
+   "r": 6,
+   "c": 1,
+   "side": "bottom",
+   "name": "Marchand"
+  }
+ ],
+ "objectives": [],
+ "notes": [
+  "Units 13 + 11 and leaders 4 + 3 as the survey. Hill 17, forest 9 (page value; the map agrees), town 2 (Redinha 6,4 and 7,3), river 11 hexes (7 straight, 3 bend, 1 bridge) as the page.",
+  "Ancos River enters at the left edge (2,0), runs down to 7,2 and turns east along the bottom row to 8,7; one piece. Impassable except at the bridge on 6,2 (straight river with a bridge, crossing 'bridge').",
+  "Hill 4,4 sits under the FR/LN stack; its hill rays are visible around the block (scan 0.11, just under the 0.12 flag threshold). Needed for the page count of 17.",
+  "Pack is a PT leader on the PT/LN stack 1,5 (BR LDR 3, PT LDR 1 per map and booklet; the page puts him in the British row).",
+  "Leaders: Picton with BR/LN 0,2; Cole with BR/GG 0,5; Erskine with BR/LT 1,10; Mermet with FR/LN 4,4; Loison with FR/LN 4,10; Marchand alone at 6,1 (leader block with no unit). Mermet's label is small and blurred (reads Marmet/Mermet); spelling follows the survey.",
+  "Forest 4,3 and 4,10 lie under the FR/LT and FR/LN blocks (trees visible around them, scan forest 0.24)."
+ ],
+ "riverPieces": 1
+}

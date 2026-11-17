@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createGame } from '../engine';
 import { SCENARIOS, type ScenarioInfo } from '../scenarios';
+import { CATALOGUE } from '../scenarios/catalogue';
 import { hasHistory, loadHistory, type BattleHistory } from '../history';
 import { validateHistory } from '../history/validate';
 import { UnitToken } from '../art';
@@ -13,6 +14,16 @@ import { boardArtProps, unitTokenProps } from '../ui/game/boardProps';
 import { MapSlide, OutcomeSlide, RoadSlide, SLIDE_TITLES, sideColors } from '../ui/history/HistoryDialog';
 import { BattleMap } from '../ui/history/BattleMap';
 import '../ui/history/history.css';
+
+/** The scenario of a battle; a battle not yet transcribed gets a stand-in (red top army, blue bottom army, as in the Napoleonic base game) so its history can still be read. */
+function scenarioFor(id: string): (ScenarioInfo & { standIn?: boolean }) | undefined {
+  const real = SCENARIOS.find((s) => s.id === id);
+  if (real) return real;
+  const e = CATALOGUE.find((b) => b.id === id);
+  const base = SCENARIOS[0];
+  if (!e || !base) return undefined;
+  return { ...base, id, name: e.name, year: e.date, standIn: true, setup: { ...base.setup, top: { ...base.setup.top, blocks: 'rom' }, bottom: { ...base.setup.bottom, blocks: 'grk' } } };
+}
 
 function GameBoard({ sc }: { sc: ScenarioInfo }) {
   const s = useMemo(() => createGame(sc.setup, 1), [sc]);
@@ -35,7 +46,7 @@ const page: React.CSSProperties = { minHeight: '100vh', background: '#2a1a10', p
 const sheet: React.CSSProperties = { width: 900, margin: '0 auto 16px', padding: '18px 22px', borderRadius: 10, background: '#f0e3c2', color: '#2b1d12' };
 const h2: React.CSSProperties = { fontFamily: 'var(--kit-font-title)', color: '#6e1a14', margin: '0 0 8px', fontSize: 18 };
 
-function Battle({ sc }: { sc: ScenarioInfo }) {
+function Battle({ sc }: { sc: ScenarioInfo & { standIn?: boolean } }) {
   const [h, setH] = useState<BattleHistory | null>(null);
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
@@ -48,8 +59,8 @@ function Battle({ sc }: { sc: ScenarioInfo }) {
   return (
     <>
       <div style={sheet}>
-        <h2 style={h2}>{sc.id} {sc.name}, {sc.year}{h.date ? ` (history: ${h.date})` : ''}: game board (top: {sc.setup.top.army}, bottom: {sc.setup.bottom.army})</h2>
-        <GameBoard sc={sc} />
+        <h2 style={h2}>{sc.id} {sc.name}, {sc.year}{h.date ? ` (history: ${h.date})` : ''}: game board{sc.standIn ? '' : ` (top: ${sc.setup.top.army}, bottom: ${sc.setup.bottom.army})`}</h2>
+        {sc.standIn ? <p>(Not transcribed yet: no game board.)</p> : <GameBoard sc={sc} />}
         {problems.length > 0 && <pre style={{ color: '#a01010', whiteSpace: 'pre-wrap' }}>{problems.join('\n')}</pre>}
       </div>
       <div style={sheet} className="kit-modal__body">
@@ -77,7 +88,7 @@ function Battle({ sc }: { sc: ScenarioInfo }) {
 /** Contact sheet: every phase of every battle's map, two to a row (#/gallery/history/maps[/<first id>-<last id>]). */
 function MapSheet({ range }: { range?: string }) {
   const [lo, hi] = (range ?? '000-999').split('-');
-  const ids = SCENARIOS.filter((s) => hasHistory(s.id) && s.id >= lo && s.id <= (hi ?? lo));
+  const ids = CATALOGUE.filter((s) => hasHistory(s.id) && s.id >= lo && s.id <= (hi ?? lo));
   const [all, setAll] = useState<BattleHistory[] | null>(null);
   useEffect(() => {
     Promise.all(ids.map((s) => loadHistory(s.id))).then(setAll);
@@ -86,11 +97,11 @@ function MapSheet({ range }: { range?: string }) {
   return (
     <>
       {all.map((h) => {
-        const sc = SCENARIOS.find((s) => s.id === h.id)!;
+        const sc = scenarioFor(h.id)!;
         const colors = sideColors(sc);
         return (
           <div key={h.id} style={{ ...sheet, padding: '10px 14px' }}>
-            <h2 style={{ ...h2, fontSize: 15 }}>{h.id} {sc.name}: top {sc.setup.top.army}, bottom {sc.setup.bottom.army}</h2>
+            <h2 style={{ ...h2, fontSize: 15 }}>{h.id} {sc.name}{sc.standIn ? '' : `: top ${sc.setup.top.army}, bottom ${sc.setup.bottom.army}`}</h2>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               {h.map.phases.map((ph, i) => (
                 <div key={i}>
@@ -109,14 +120,14 @@ function MapSheet({ range }: { range?: string }) {
 export default function HistoryGallery() {
   const id = window.location.hash.split('/')[3];
   if (id === 'maps') return <div style={page}><MapSheet range={window.location.hash.split('/')[4]} /></div>;
-  const sc = id ? SCENARIOS.find((s) => s.id === id) : undefined;
+  const sc = id ? scenarioFor(id) : undefined;
   if (sc) return <div style={page}><Battle sc={sc} /></div>;
   return (
     <div style={page}>
       <div style={sheet}>
         <h2 style={h2}>Battle histories</h2>
         <ul>
-          {SCENARIOS.map((s) => (
+          {CATALOGUE.map((s) => (
             <li key={s.id}>
               {hasHistory(s.id) ? <a href={`#/gallery/history/${s.id}`}>{s.id} {s.name}</a> : <span style={{ opacity: 0.5 }}>{s.id} {s.name} (none yet)</span>}
             </li>
