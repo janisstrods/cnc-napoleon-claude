@@ -26,16 +26,21 @@ the target's hex but not the battling unit's). I / C / A = infantry / cavalry / 
   From the **bottom** player's view: Left = `x2 <= 8`, Centre = `8 <= x2 <= 16`, Right = `x2 >= 16`.
   Hexes with x2 = 8 or 16 (even rows, c = 4 and c = 8) lie on a dotted line and belong to both the flank and the
   centre section. The **top** player's Left is the bottom player's Right and vice versa.
+* **Neighbours** ("odd-r"): a hex (r, c) on an **even** row touches (r, c−1), (r, c+1), (r−1, c−1), (r−1, c),
+  (r+1, c−1), (r+1, c); a hex on an **odd** row touches (r, c−1), (r, c+1), (r−1, c), (r−1, c+1), (r+1, c),
+  (r+1, c+1). Neighbours off the board (c < 0, c beyond the row's last hex, r < 0 or r > 8) do not exist. The board
+  has 5 even rows × 13 + 4 odd rows × 12 = 113 hexes.
 * **Distance** is hex distance (the number of hex steps). Adjacent = distance 1.
 * **Retreat neighbours:** the two hexes adjacent to a hex on its own-side row (for the top army, the two neighbours in
-  row r−1; for the bottom army, in row r+1). A hex on the board edge may have only one, or none.
+  row r−1; for the bottom army, in row r+1). A hex on the board edge may have only one, or none. Examples (top army):
+  (4,5) → {(3,4), (3,5)}; (2,0) → {(1,0)}; any hex of row 0 → none.
 * No unit or leader may leave the board except where §11.3 (a leader retreating off his own baseline) or a scenario
   objective (§13.4) allows it.
 
 ## 2. Units
 
 A unit is a group of blocks in one hex; its arm is **infantry**, **cavalry** or **artillery**, which decides which die
-symbol hits it (§3). Blocks never split or merge. A leader is one block and is **not a unit** (§2.6, §11).
+symbol hits it (§3). Blocks never split or merge. A leader is one block and is **not a unit** (§2.7, §11).
 
 ### 2.1 Unit classes used by rules and cards
 
@@ -52,6 +57,8 @@ symbol hits it (§3). Blocks never split or merge. A leader is one block and is 
 | Foot artillery movement (1 & no battle, or 0 & battle) | FA, GA | §7 |
 | Guard artillery (+3 on Bombard) | GA | §12 |
 | No sabre hits against units | ML, RI | §3 |
+
+Leaders of every nation (`FR/LDR`, `BR/LDR`, `PT/LDR`, `AL/LDR`) all use §2.7.
 
 French lancers (`FR/LNC`) and Guard light cavalry (`FR/GLC`) are not in the base box and no base battle uses them
 (R7); they have no rows here.
@@ -95,9 +102,9 @@ French lancers (`FR/LNC`) and Guard light cavalry (`FR/GLC`) are not in the base
 
 | Code | Unit | Blocks | Move | Melee dice | Standing fire | Moving fire | Range | Retreat / flag | Flags ignored | Sabre hits | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| LN | Line infantry | 4 | 0–1 & battle | b | b | ⌊b/2⌋ | 2 | 1 | 0 | yes | 0 dice at 1 block after moving: cannot fire (R5). |
+| LN | Line infantry | 4 | 0–1 & battle | b | b | ⌊b/2⌋ | 2 | 1 | 0 | yes | Moving fire 0 at 1 block: cannot fire, whatever card ordered it (R5, R15). |
 | LT | Light infantry | 3 | 0–1 & battle, or 2 & no battle | b | b+1 | ⌊b/2⌋+1 | 2 | 1 | 0 | yes | |
-| ML | Militia | 4 | 0–1 & battle | b | b | ⌊b/2⌋ | 2 | **3** | 0 | **no** | |
+| ML | Militia | 4 | 0–1 & battle | b | b | ⌊b/2⌋ | 2 | **3** | 0 | **no** | Moving fire 0 at 1 block: cannot fire, whatever card ordered it (R15). |
 | LC | Light cavalry | 3 | 0–3 & battle | b | — | — | — | 1 | 0 | yes | |
 | HC | Heavy cavalry | 3 | 0–2 & battle | b+1 | — | — | — | 1 | 0 | yes | |
 | FA | Foot artillery | 3 | 1 & no battle, or 0 & battle | §2.5 | §2.5 | cannot battle | 5 | 1 | 0 | yes | |
@@ -108,16 +115,17 @@ Portuguese units and leaders, and AL leaders attach to any unit of that side (R1
 
 | Code | Unit | Blocks | Move | Melee dice | Standing fire | Moving fire | Range | Retreat / flag | Flags ignored | Sabre hits | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| LN | Line infantry | 4 | 0–1 & battle | b | b | ⌊b/2⌋ | 2 | **2** | 0 | yes | 0 dice at 1 block after moving: cannot fire. |
+| LN | Line infantry | 4 | 0–1 & battle | b | b | ⌊b/2⌋ | 2 | **2** | 0 | yes | Moving fire 0 at 1 block: cannot fire, whatever card ordered it (R15). |
 | LT | Light infantry | 3 | 0–1 & battle, or 2 & no battle | b | b+1 | ⌊b/2⌋+1 | 2 | 1 | 0 | yes | |
-| ML | Militia | 4 | 0–1 & battle | b | b | ⌊b/2⌋ | 2 | **3** | 0 | **no** | |
+| ML | Militia | 4 | 0–1 & battle | b | b | ⌊b/2⌋ | 2 | **3** | 0 | **no** | Moving fire 0 at 1 block: cannot fire, whatever card ordered it (R15). |
 | LC | Light cavalry | 3 | 0–3 & battle | b | — | — | — | 1 | 0 | yes | |
 | FA | Foot artillery | 3 | 1 & no battle, or 0 & battle | §2.5 | §2.5 | cannot battle | 5 | 1 | 0 | yes | |
 
 ### 2.5 Infantry fire dice by blocks (the formulas above, worked out)
 
-"S" = standing (did not move), "M" = moved 1 hex. Columns are the unit's current blocks. A 0 means the unit cannot fire.
-These are base dice before cards and terrain (§3.2).
+"S" = standing (did not move), "M" = moved (1 hex; 2 hexes only under Force March, R73). Columns are the unit's current
+blocks. These are base dice before cards and terrain (§3.2). A 0 (PT/LN, PT/ML, AL/LN, AL/ML at 1 block, moved) means
+the unit cannot fire, whatever card ordered it: no card bonus creates the shot (R5, R15).
 
 | Unit | 5 | 4 | 3 | 2 | 1 |
 |---|---|---|---|---|---|
@@ -145,7 +153,8 @@ PT/LT, this table wins (R5).
 ### 2.6 Artillery dice by range
 
 Artillery dice do not equal blocks; they come from this table and change only at 1 block (R11). r1 is adjacent, which
-is always melee; r2–r5 are fire. "—" = may not battle at that range.
+is always melee; r2–r5 are fire. "—" = 0 base dice, so the unit cannot battle at that range; no card bonus (Bombard,
+Élan, Leadership, Fire and Hold) creates the shot **[Interp R15]**.
 
 | Unit | Blocks | r1 (melee) | r2 | r3 | r4 | r5 |
 |---|---|---|---|---|---|---|
@@ -160,7 +169,11 @@ is always melee; r2–r5 are fire. "—" = may not battle at that range.
 | FA, GA moved; HA moved 2 | any | — | — | — | — | — |
 
 * GA's +1 is in melee only (R11).
-* Cards add dice (§12) but never extend these ranges: a 1-block FA cannot fire at r5 even under Bombard (R11).
+* Cards add dice (§12) only to a shot the unit could already make, never at a "—" cell: a 1-block FA cannot fire at r5,
+  nor a moved HA at r4, under any card (R11, R15).
+* The rows govern **declaration**. A unit reduced after it declared keeps its battle and rolls the value for its new
+  block count: an HA that moved 1 hex, declared a melee and was cut to 1 block by First Strike still melees with 2 dice
+  (R12).
 * A battle back is made on the opponent's turn, when the artillery has not moved that turn: it uses the "did not move"
   rows.
 
@@ -200,7 +213,7 @@ helmet or leader face.
 
 Work out each battling unit's dice in this order (R5, R31):
 
-1. **Base:** infantry fire = blocks (standing) or the halved value (moved 1 hex; §2.5); infantry melee = blocks;
+1. **Base:** infantry fire = blocks (standing) or the halved value (moved 1 hex, or 1–2 under Force March, R73; §2.5); infantry melee = blocks;
    cavalry melee = blocks; artillery = §2.6.
 2. **Unit type bonus** from §2 (for example +1 for `FR/LT` fire, +1 for `HC` melee, +1 for `FR/LN` melee against
    infantry). For moving fire the bonus is added after halving.
@@ -211,8 +224,12 @@ Work out each battling unit's dice in this order (R5, R31):
 5. **Terrain reductions** (§4), subtracted after the cap (R31).
 6. **Floor at 0.**
 
-A unit may declare fire or melee only if this total (plus any Combined Arms artillery dice) is at least 1. If its dice
-fall to 0 after declaration (a square formed, First Strike losses), the attack still goes ahead with no dice, has no
+**Zero base dice:** base fire dice are the §2.5 or §2.6 cell for that target, type bonus included. If that cell is 0
+or "—", the unit cannot fire at that target, and no card (Élan, Leadership, Fire and Hold, Bombard) creates the shot
+**[Interp R15]**.
+
+Otherwise, a unit may declare fire or melee only if this total (plus any Combined Arms artillery dice) is at least 1.
+If its dice fall to 0 after declaration (a square formed, First Strike losses), the attack still goes ahead with no dice, has no
 effect, and still counts as the unit's battle for the turn; a 0-die melee against a lone leader does not make him
 retreat **[Interp R15]**.
 
@@ -258,7 +275,11 @@ First Strike works its reductions as if it were the attacker: its own hex is "ou
   (R42).
 * A unit that entered a forest by moving 2 hexes (LT, RI, YG) cannot battle anyway (§7).
 * Terrain in the target's own hex never blocks line of sight (R44).
-* Scenario rules change some of these per battle (fords, streams, the Portina Brook): §14 and R47.
+* Scenario rules change some of these per battle (fords, streams, the Portina Brook): §14 and R47, R83.
+* Map tile names: river bends, river ends (stream sources) and Y junctions are River hexes (art only); the 013 ford tile
+  is a fordable river hex (§14.13); an entrenchment is Field Works (on open ground or on a hill); the 006 Fortress of
+  Almeida is a Town (R84); a town with windmill is Town / Windmill. Walled Farm tiles are not used in the base game
+  (R72).
 
 ### 4.2 Battle dice reductions
 
@@ -271,7 +292,7 @@ cannot be on the terrain.
 | Town / Windmill | −2 / −1 | −2 / −3 / −1 | 0 / −1 | 0 / −3 / −1 | A cavalry unit loses its Cavalry Charge dice when battling into or out of a town (R60). |
 | Field Works (across a works hexside only) | −1 / 0 | −1 / −2 / 0 | 0 / 0 | 0 / −2 / 0 | "Out" applies only when battling out across a works hexside. Cavalry Charge dice are kept (R46). No effect through an open hexside. |
 | Fordable river | 0 / 0 | −1 / −1 / −1 | −1 / −1 | −1 / −1 / −1 | |
-| Sand quarry | −1 / −1 | 0 / −2 / −1 | 0 / n/a | 0 / −2 / n/a | 4th-edition values (R71). |
+| Sand quarry | −1 / −1 | 0 / −2 / 0 | 0 / n/a | 0 / −2 / n/a | 4th-edition values; artillery −1 only when firing into it (R71). |
 | Open, Bridge | 0 | 0 | 0 | 0 | |
 
 **Hill** reductions depend on the relation between the two hexes, counted once per battle (R3, R43). A Field Works hill
@@ -288,17 +309,20 @@ hex is a hill hex.
 
 Total reduction = "out" value of the battling unit's hex + "into" value of the target's hex + the hill relation value,
 each for the battling unit's arm and for fire or melee (R3). Example: cavalry in a forest meleeing infantry in a town
-rolls −2 −3 = −5. A unit in a ford attacking another ford hex takes both penalties (R47).
+rolls −2 −3 = −5. A unit in a ford attacking another ford hex takes both penalties (R47). The rule that Field Works
+"do not stack" limits only the target hex's terrain and never cancels the battling unit's "out of" value: infantry on a
+fordable river attacking across a works hexside rolls −1 −1 = −2 **[Interp R3]**.
 
-**Field Works on a hill** (R45): when the battle crosses a works hexside of a Field Works hill hex (into it, or out of
-it across a works hexside), use the Field Works value and **ignore the hill relation** (so cavalry hill to hill across
-works rolls −2). When it comes through an open hexside the hill relation applies and the works give nothing. Field Works
+**Field Works on a hill** (R45, R79): when the battle crosses a works hexside of a Field Works hill hex, use the Field
+Works value and **ignore the hill relation**: attacking into it (so cavalry hill to hill across works rolls −2), and
+also battling out of it across a works hexside (only the works "out" values: cavalry −2, infantry and artillery 0)
+**[Interp R79]**. When it comes through an open hexside the hill relation applies and the works give nothing. Field Works
 on open ground add to the hill relation like any other terrain (R3).
 
 ### 4.4 Field Works hexsides
 
 * Each Field Works tile protects only the hexsides drawn on it (its works hexsides); the others are open (R46).
-* **Across a works hexside:** let D be the works hex and N the hex across one of its works hexsides. A hex A is across
+* **Across a works hexside** **[Interp R46]**: let D be the works hex and N the hex across one of its works hexsides. A hex A is across
   that hexside when the angle at D's centre between the directions D→N and D→A is at most 30°. That is the closed 60°
   wedge projecting out from the hexside: N itself, and every hex further out between (and on) the two lines from D's
   centre through that hexside's corners. A hex beside N (60° off) is not in the wedge. For melee this means exactly:
@@ -397,7 +421,7 @@ Cards change these (§12): Bayonet Charge, Force March, Cavalry Charge, Bombard,
 * Move one ordered unit or leader at a time; finish it before starting the next. Each moves at most once per turn.
 * A unit may not enter or pass through a hex holding any other unit (friend or foe) or an enemy leader.
 * A unit without an attached leader may enter a hex holding a lone friendly leader; it stops there and the leader
-  attaches. A unit with an attached leader may not enter it (two leaders may never share a hex).
+  attaches. A unit with an attached leader may not enter it, and so cannot pass through it either (R80).
 * A lone or detached leader may pass through hexes with friendly units (with or without a leader) and lone friendly
   leaders; he may not end on another friendly leader (lone or attached); he may stop on a friendly unit without a
   leader and attach (§6.2). He may not enter an enemy unit's or enemy leader's hex except by escape (§11.4).
@@ -415,7 +439,7 @@ Cards change these (§12): Bayonet Charge, Force March, Cavalry Charge, Bombard,
 
 * Only infantry and artillery fire. Cavalry and leaders never fire.
 * The target must be an enemy **unit** at distance ≥ 2 and within range: infantry 2, RI 3, FA / GA 5, HA 4 (3 after
-  moving 1 hex). Range counts the target's hex but not the firer's (= hex distance).
+  moving 1 hex), and artillery only where its §2.6 cell is not "—" (a 1-block FA / GA reaches r4, a 1-block HA r3). Range counts the target's hex but not the firer's (= hex distance).
 * A lone leader can never be fired at (R6).
 * A unit adjacent to any enemy unit may not fire at all; if it battles it must melee an adjacent enemy unit. An
   adjacent lone enemy leader does not prevent fire.
@@ -469,10 +493,12 @@ rest of the line is checked normally. The target may be at any elevation, includ
 ### 9.2 Sequence
 
 1. **Declare** the attacking unit, the target and any Combined Arms artillery (§9.6), before any dice.
-2. **Defender's reaction** — at most one of:
-   * **First Strike** (§12.3) if he holds it and the attacker is not battling back;
-   * **Retire and Reform** (§9.4) if the target is cavalry attacked by infantry;
+2. **Defender's reaction** — at most one per melee (R77) **[Interp R77]**. The attacker asks first about Retire and
+   Reform or forming square, then about First Strike:
+   * **Retire and Reform** (§9.4) if the target is cavalry attacked by infantry; a cavalry unit that declares it cannot
+     then play First Strike in that melee;
    * **Form square** (§9.5) if the target is infantry attacked by cavalry and it may form square;
+   * **First Strike** (§12.3) if he holds it, took neither option above, and the attacker is not battling back;
    * none.
    A square attacked by cavalry always fires first (§9.5) without any choice.
 3. **Dice** (§3.2), then **roll**, **score hits** (§3.1), **remove blocks**, **leader casualty check** (§11.1),
@@ -564,9 +590,9 @@ flags (R30).
 ### 9.6 Combined Arms
 
 * **Who:** when an ordered infantry or cavalry unit declares a melee against an enemy unit, one or more ordered
-  artillery units of the same player may combine with it. The target must be an enemy unit, not a lone leader. Each
+  artillery units of the same player may combine with it. The target must be an enemy unit, never a lone leader (R76). Each
   artillery unit must not yet have battled this turn, must be able to battle (§2.6, §7.1), be within its range of the
-  target, and have a **clear** line of sight: no unit or leader of either side and no sight-blocking terrain in any
+  target at a cell that is not "—" (R15), and have a **clear** line of sight: no unit or leader of either side and no sight-blocking terrain in any
   intermediate hex, under the hexside rule (R39). Unlike ordinary fire, a hill battery may **not** fire over an adjacent
   lower friendly unit **[Interp R39]**. An artillery unit adjacent to the target always qualifies. An artillery unit
   adjacent to some other enemy unit may join only a Combined Arms attack on an adjacent enemy (R39).
@@ -628,9 +654,10 @@ flags (R30).
   board. Other terrain is ignored (no stopping).
 * **Leaders stop retreats:** a unit without an attached leader may retreat onto a lone friendly leader; he attaches and
   the retreat ends there (remaining hexes are cancelled, not lost). A unit with an attached leader may pass through a
-  lone friendly leader's hex but may not end its retreat there, as for Retire and Reform **[Interp R34]**.
-* Each retreat hex that cannot be completed costs 1 block. If a path completing the full distance exists, the unit
-  must take one; otherwise it moves as far as it can and loses 1 block per hex short.
+  lone friendly leader's hex but may not end its retreat there (R75).
+* Each retreat hex that cannot be completed costs 1 block. If any legal path completes the full distance, the owner
+  must take one (his choice among them); otherwise he takes a path going as far as possible and the unit loses 1 block
+  per hex short (R74).
 * An attached leader retreats with his unit. Block losses from a failed retreat trigger a leader casualty check unless
   the same roll already caused one (§11.1).
 * A unit in square never moves: every retreat hex costs 1 block (R33).
@@ -692,7 +719,7 @@ After surviving the 1-die check he retreats 1–3 hexes (§11.3) (R19).
   the distance and path (R25).
 * Non-impassable terrain has no effect. He may pass through hexes with friendly units (attached or not) and lone
   friendly leaders; he may stop and attach to a friendly unit that has no leader; he may not end on another friendly
-  leader or on an enemy unit or leader; he passes enemy units only by escape (§11.4). A hex holding only a lone enemy
+  leader or on an enemy unit or leader; he passes enemy units only by escape (§11.4), which the owner may choose even when a free path exists. A hex holding only a lone enemy
   leader can be passed through with no roll (R24).
 * Retreating off his own baseline, forced or by choice, removes him with no banner for the enemy (R25).
 
@@ -702,7 +729,8 @@ After surviving the 1-die check he retreats 1–3 hexes (§11.3) (R19).
   Otherwise flags have no effect and he must retreat 1–3 hexes (§11.3). There is no battle back. The attacker may then
   take ground or break through, and cavalry that broke through may make its bonus melee. A lone leader can never be
   fired at (R6).
-* **Escape** (R24): when the leader's retreat path must enter a hex with an enemy unit, he moves onto it and that enemy
+* **Escape** (R24): when the leader's chosen retreat path enters a hex with an enemy unit (the owner may choose such a
+  path even when a free one exists), he moves onto it and that enemy
   unit rolls (§3.3: normal melee dice, own type bonus and formation cap, no terrain, no cards). Any sabre kills him
   (even from ML or RI). If he survives he continues; a second enemy-occupied hex means a second escape roll; if a third
   hex is also enemy-occupied he is eliminated. Each elimination gives the enemy a banner.
@@ -742,13 +770,13 @@ extra dice, no extra movement and none of the card's limits **[Interp R57]**.
 | Card | Count | Effect |
 |---|---|---|
 | Bayonet Charge | 2 | Order up to 4 infantry units. They may move up to 2 hexes and still melee (LT, RI, YG included). They may not fire. Guard infantry (YG, OG, GG) melee with +1 die. Fallback: no infantry units. |
-| Bombard | 2 | Order up to 4 artillery units. Each either moves up to 3 hexes and does not battle, or does not move and battles (fire, or melee if adjacent) with +2 dice (GA +3). HA has only these two choices **[Interp R59]**. Movement obeys terrain; range is not extended (R59, R11). Fallback: no artillery units. |
+| Bombard | 2 | Order up to 4 artillery units. Each either moves up to 3 hexes and does not battle, or does not move and battles (fire, or melee if adjacent) with +2 dice (GA +3). HA has only these two choices **[Interp R59]**. Movement obeys terrain. The +2 (GA +3) is added only to a shot the unit could already make, never at a "—" cell (R59) **[Interp R15]**. Fallback: no artillery units. |
 | Cavalry Charge | 3 | Order up to 4 cavalry and/or horse artillery units. Ordered cavalry rolls +1 die in every battle this turn (GHC +2), bonus melee included. HC, CU, GHC may move up to 3 hexes and still battle; LC moves its normal 3. HA moves and battles normally with no extra die. The bonus is lost battling into or out of a town / windmill, kept across Field Works (R60). Fallback: no cavalry and no horse artillery units. |
 | Counter-Attack | 2 | Becomes a copy of the card the opponent played in Phase 1 of his last turn (§12.5). |
 | Élan | 1 | Roll dice equal to Command. Each infantry, cavalry or artillery symbol orders 1 unit of that arm (HA is artillery); each flag orders any 1 unit or leader, and a flag-ordered leader may detach; sabres order nothing. Unused results are lost. Ordered units roll +1 die in every battle this turn, bonus melee and Combined Arms share included. Draw phase: reshuffle (§12.4) (R53). |
 | Fire and Hold | 2 | Order up to 4 infantry and/or artillery units that are not adjacent to an enemy unit when ordered. They fire with +1 die and may not move before or after. A square with no enemy cavalry adjacent may come out of square and then fires with standing dice +1; one that stays in square fires 1 die. A unit that has an enemy retreat next to it before it fires cannot fire and may not melee instead (R58). Fallback: no infantry or artillery units. |
 | First Strike | 2 | Reactive (§12.3). May also be played as one's own turn card, ordering nothing (R63). |
-| Force March | 2 | Order **all** infantry units in one section (player's choice). LT, RI, GR, Guard infantry (YG, OG, GG) and any infantry unit with an attached leader may move up to 2 hexes and battle. Other infantry (LN, ML without a leader) may stay, move 1 hex and battle, or move 2 hexes and not battle. A unit that moved 1 or 2 hexes fires with moving dice (§2.5). Fallback: no infantry units. |
+| Force March | 2 | Order **all** infantry units in one section (player's choice). LT, RI, GR, Guard infantry (YG, OG, GG) and any infantry unit with an attached leader may move up to 2 hexes and battle. Other infantry (LN, ML without a leader) may stay, move 1 hex and battle, or move 2 hexes and not battle. A unit that moved 1 or 2 hexes fires with moving dice (§2.5), so `BR/LN` loses its +1 **[Interp R73]**. Fallback: no infantry units. |
 | Give Them the Cold Steel | 1 | Order every unit of the player adjacent to an enemy unit at the moment the card is played (lone leaders are not ordered). They may not move before melee and may not fire; each melee gets +1 die. After a successful melee, infantry may take ground and cavalry may break through and make a bonus melee with its standard dice (no +1). An ordered artillery unit adjacent to the same target may join a Combined Arms attack, and both units get the +1. A unit no longer adjacent when its turn to battle comes cannot battle (R61). |
 | Leadership | 2 | Order every leader. A unit whose leader stays attached is also ordered; ordered units roll +1 die in each battle they make this turn, bonus melee included (R20) **[Interp R20]**. A leader may detach (his former unit is then not ordered); a leader that joins a unit does not order it. Fallback: no leaders. |
 | La Grande Manoeuvre | 1 | Either order up to 4 units or leaders (not units in square) to move up to 4 hexes each with no battle, obeying all terrain movement rules; ordered leaders may detach. Or order 1 unit of the player's choice under its own normal rules (it may be a square) (R62). |
@@ -769,7 +797,8 @@ Counts: 2 + 2 + 3 + 2 + 1 + 2 + 2 + 2 + 1 + 2 + 1 + 1 + 1 = 22.
 * An infantry unit whose owner plays First Strike may not form square against that melee, and the attacking cavalry
   cannot Retire and Reform from the First Strike roll. When an infantry unit attacks cavalry and the cavalry plays First
   Strike, the infantry may not form square against it (§9.4, §9.5).
-* At the end of that turn its player draws his replacement before the active player draws (R63).
+* A defender may play more than one First Strike in a turn (one per melee). At the end of that turn he draws one
+  replacement per First Strike played, all before the active player draws (R63, R78) **[Interp R78]**.
 
 ### 12.4 Draw phase details
 
@@ -777,7 +806,8 @@ Counts: 2 + 2 + 3 + 2 + 1 + 2 + 2 + 2 + 1 + 2 + 1 + 1 + 1 = 22.
 * **Scout** (R51): the played Scout goes to the discard pile, then the player draws 2 cards, keeps 1 and discards the
   other face up **[Interp R51]**. If the deck runs out between the two draws, the discard pile (now including the
   Scout) is shuffled into a new deck. Scout gives the 2-card draw even when it ordered no unit.
-* **First Strike:** a player who played First Strike this turn draws his replacement first (R51, R63).
+* **First Strike:** a player who played First Strike this turn draws his replacements first, one per First Strike
+  (R51, R63, R78).
 * **Élan** (R53): the played Élan is discarded, the discard pile is shuffled together with the draw deck, then the draws
   happen (First Strike player first); the Élan can be drawn straight back. Square-track cards are never shuffled in. A
   Scout discard of an unplayed Élan does not reshuffle.
@@ -819,9 +849,9 @@ Counts: 2 + 2 + 3 + 2 + 1 + 2 + 2 + 2 + 1 + 2 + 1 + 1 + 1 = 22.
 
 * **Turn start:** if the objective's side has a unit on the hex at the start of **its own** turn (before playing a
   card), it gains the banner (R66).
-* **Loss:** the banner is lost the instant the hex is vacated by movement, retreat, Retire and Reform or elimination,
-  on either player's turn. If during that same turn another ordered unit of the same side moves onto the hex, the banner
-  is held again at once (R66).
+* **Loss:** the banner is lost the instant the unit leaves the hex (move, retreat, Retire and Reform, take ground or
+  breakthrough, Short Supply) or is eliminated, on either player's turn. It stays lost even if another unit of that side
+  enters the hex later that turn; it can be regained only at a later start of that side's own turn (R66).
 * A banner never accumulates: holding a hex for several turns still gives 1.
 * A banner gained at turn start that reaches the target wins at once.
 
@@ -849,7 +879,7 @@ Each objective is one record in the scenario data. Fields are listed per type.
 | `timing` | `turnStart`. |
 | `banners` | 2 (003), gained and lost together. |
 | Gain | Units of `side` on **every** hex of the group at the start of `side`'s turn. |
-| Lose | All its banners the instant **any** hex of the group is empty of `side`'s units (same-turn reoccupation per §13.3). |
+| Lose | Both banners the instant **either** hex holds no unit of `side`; they come back only at a later start of `side`'s turn with every hex held (R66; booklet 003: "immediately lost"). |
 
 **`exit`** — breakthrough exit (006 only; R67).
 
@@ -858,9 +888,9 @@ Each objective is one record in the scenario data. Fields are listed per type.
 | `side` | The side whose units may exit (006: British side, i.e. BR, PT). |
 | `hex` | The exit hex (006: the bridge hex). |
 | `banners` | 1 permanent per unit exited, whatever its strength. |
-| Gain | A unit of `side` that **started its turn** on `hex` is ordered and uses its move to step off the map from `hex` (1 hex of movement, so FA and GA can exit); it is removed and does not battle **[Interp R67]**. |
-| `leadersScore` | false: an exiting leader gives nothing to either side. |
-| `retreatOff` | false: retreats never carry a unit off; each blocked hex costs 1 block, and a unit eliminated there gives the enemy its banner (R67). |
+| Gain | During its normal move, an ordered unit of `side` steps off the board from `hex`; stepping off costs 1 hex of its allowance, so it may reach `hex` and exit in one move if its allowance permits (FA and GA, moving 1, must start on `hex`). No start-of-turn requirement. A unit whose move has already been stopped (terrain, a joined leader) cannot step off. It is removed and does not battle **[Interp R67]**. |
+| `leadersScore` | false: a leader may exit the same way but gives nothing to either side. |
+| `retreatOff` | false: retreats never carry a unit off; each blocked hex costs 1 block. A unit eliminated on `hex` gives the enemy only the ordinary kill banner, not an extra one (R67). |
 
 No other edge exits exist in the base game (R67).
 
@@ -876,12 +906,147 @@ No other edge exits exist in the base game (R67).
 
 ## 14. Base-scenario special rules
 
-This section is a stub: Task 6 fills it from `design/survey.md`, one subsection per battle 001–015. Until then the
-rulings that already fix the rules side of the base battles are: fords and streams per battle (R47), the 006 exit and
-fortress (R67, R23), the 012 starting squares and weighted kills (R65; the booklet puts both French light infantry
-units in square at setup, with two random cards on the track and French Command 4), the temporary objectives of 001,
-003, 013, 014 and 015 (R66), the Allied contingents of 014–015 (R10), and the FAQ clarifications for 005, 009, 013
-and 015 (R72).
+Each battle's rules, as data a scenario file carries. Setups (terrain, units, leaders) come from the verified
+transcriptions in `design/data/NNN.json`; hexes are given as (r, c) in the §1 grid, from those files, and the
+transcription notes are in `design/data/notes-*.md`. In all 15 battles the **top** army is the British side (BR with PT,
+or with AL at 014–015) and the **bottom** army is the French (FR). Only the Command card number on the maps is a hand
+size; the Tactician numbers are ignored (R86). Every battle also scores the ordinary banners of §13.2.
+
+**Fields used below.**
+* `hand`: Command cards dealt to top / bottom; `first`: the side that takes the first turn; `banners`: the target for
+  both sides.
+* `objectives`: records of §13.4 (`tempHex`, `tempGroup`, `exit`, `killWeight`).
+* `rivers`: how the map's River hexes behave: `impassable` (§4.1 River; bridge hexes cross), `fordable` (every River
+  hex is a Fordable river hex: stop on entry, its battle reductions, §4.1–§4.2), `fordableNoStop` (fordable river whose
+  entry does not stop movement, R83), `brook` (005 only, R83).
+* `sideRules`: rules that fall on one side, naming it.
+* `setup`: anything placed at the start beyond units, leaders and terrain.
+
+| Battle | hand (top / bottom) | first | banners | objectives | rivers | other |
+|---|---|---|---|---|---|---|
+| 001 | 6 / 5 | top | 5 | 2 × `tempHex` (top) | fordable | — |
+| 002 | 6 / 5 | top | 5 | — | — (no river) | rugged hills |
+| 003 | 6 / 5 | bottom | 6 | `tempGroup` (bottom, 2 banners) | fordable | — |
+| 004 | 5 / 5 | bottom | 6 | — | fordable | — |
+| 005 | 6 / 5 | bottom | 7 | — | brook | Field Works on a hill |
+| 006 | 4 / 4 | top | 6 | `exit` (top) | impassable | fortress, windmill, Field Works |
+| 007 | 6 / 5 | bottom | 6 | — | fordable | — |
+| 008 | 6 / 5 | bottom | 7 | — | — (no river) | — |
+| 009 | 6 / 5 | top | 6 | — | impassable | — |
+| 010 | 6 / 5 | bottom | 6 | — | impassable | — |
+| 011 | 6 / 5 | top | 6 | — | fordableNoStop | — |
+| 012 | 6 / 6 | bottom | 6 | `killWeight` (top) | — (no river) | squares at setup |
+| 013 | 6 / 5 | top | 6 | 2 × `tempHex` (top) | fordable, ford tile no stop | — |
+| 014 | 6 / 5 | bottom | 9 | `tempHex` (bottom) | fordableNoStop | Allied contingent |
+| 015 | 6 / 6 | bottom | 8 | 3 × `tempHex` (bottom) | — (no river) | Allied contingent, impetuous cavalry, sand quarry |
+
+### 14.1 001 Roliça (French First Position)
+
+* `objectives`: `tempHex` × 2, `side` top, `timing` turnStart, `banners` 1 each, `hex` (8,2) and (8,11): the two hill
+  hexes on the French baseline (`design/data/001.json`). Any unit of the British side (BR or PT) holds them **[Interp R81]**.
+* `rivers`: fordable (the whole river, R47).
+
+### 14.2 002 Roliça (French Second Position)
+
+* No special rules or objectives. The rugged hills are impassable and block line of sight (§4.1).
+
+### 14.3 003 Vimiero
+
+* `objectives`: `tempGroup`, `side` bottom, `timing` turnStart, `banners` 2, `hexes` (1,3) and (1,4): the two Vimiero
+  town hexes (`design/data/003.json`). Both must hold French units at the start of the French turn; both banners go the
+  instant either hex holds no French unit (R66). A BR/LN starts on (1,3).
+* `rivers`: fordable (the Maceiro River, R47).
+
+### 14.4 004 Corunna
+
+* `rivers`: fordable (all streams, both pieces, the junction and the stream ends included, R47).
+
+### 14.5 005 Talavera
+
+* `rivers`: brook. The Portina Brook's River hexes stop movement on entry (units and leaders), cause no battle
+  reductions, allow squares and do not block line of sight; a unit that entered one this turn may not take ground or
+  break through (R47, R83).
+* Field Works on a hill at (2,0), works hexsides SW, SE, E (`design/data/005.json`; a BR/FA starts on it): §4.3–§4.4,
+  R45, R79.
+
+### 14.6 006 River Côa
+
+* `hand` 4 / 4.
+* `objectives`: `exit`, `side` top (BR, PT), `hex` (0,4): the bridge hex on the British baseline; the unit steps off the
+  top edge of the board from it (`design/data/006.json`). 1 permanent banner per unit exited, whatever its strength;
+  leaders may exit but score nothing; no start-of-turn requirement; FA moving 1 must start on the hex (§13.4, R67).
+* `retreatOff` false: a British-side unit on the bridge hex that must retreat stays and loses 1 block per hex it cannot
+  complete; if eliminated, the French gain only the ordinary kill banner (R67).
+* `rivers`: impassable except at the bridge hex (0,4) (R47).
+* `sideRules`: the two Fortress of Almeida hexes (0,11) and (0,12) are Town hexes; a British-side unit (BR or PT) on one
+  may ignore 1 flag whenever flags are rolled against it; French units there get nothing (R84). The windmill hex (4,10)
+  is Town / Windmill.
+* Field Works on open ground: (2,4) with works hexsides W, SW, SE, and (2,5) with SW, SE, E; a PT/LT starts on each.
+
+### 14.7 007 Bussaco (Reynier's Assault)
+
+* `rivers`: fordable (the stream, R47).
+
+### 14.8 008 Bussaco (Ney's Assault)
+
+* No special rules or objectives.
+
+### 14.9 009 Combat at Redinha
+
+* `rivers`: impassable except at the bridge hex (6,2) (the Ancos River, R47).
+* Pack is a Portuguese leader stacked with a PT/LN (R72); any friendly leader may attach to any friendly unit (R10).
+
+### 14.10 010 Salamanca (Attack on the French Left)
+
+* `rivers`: impassable except at the bridge hex (4,1) (the Azan River, R47).
+
+### 14.11 011 Salamanca (Attack on the French Right)
+
+* `rivers`: fordableNoStop. Every Pela Gracia River hex is a fordable river whose entry does not stop movement (units and
+  leaders); its fordable-river battle reductions apply; entering it does not bar taking ground or breakthrough **[Interp R83]**.
+  Bridge hex (3,10) (R47).
+
+### 14.12 012 García Hernández
+
+* `hand` 6 / 6.
+* `setup`: the two FR/LT units at (3,8) and (3,9) start in square, with French square counters 1 and 2. After the
+  French hand is dealt, 2 random cards (seeded RNG) go face down on the French square track: the French start with 4
+  cards in hand, Command 4. Normal square rules apply from then on (R85, R26–R33).
+* `objectives`: `killWeight`, `side` top, `enemyArm` infantry, `first` 1, `later` 2: the first French infantry unit
+  eliminated gives the British 1 banner, each later one 2; French cavalry, artillery and leaders give 1 as usual (R65).
+  The French score kills normally.
+
+### 14.13 013 Combat at Aire
+
+* `objectives`: `tempHex` × 2, `side` top, `timing` turnStart, `banners` 1 each, `hex` (7,0) Nauzeilles and (8,11)
+  Seminary, both town hexes (`design/data/013.json`). Any unit of the British side (BR or PT) holds them **[Interp R81]**.
+* `rivers`: fordable. Every River Grave hex is a fordable river (stop on entry), except the ford tile hex (2,8), which has
+  the same battle effects but does not stop movement **[Interp R83]**. Bridge hexes (3,1) and (3,10) (R47).
+* The French leaders Harispe and Villatte, missing from the older map, are placed as lone leaders (setup per
+  `design/data/013.json`, R72).
+
+### 14.14 014 Quatre Bras
+
+* `objectives`: `tempHex`, `side` bottom, `timing` turnStart, `banners` 1, `hex` (1,5): the Quatre Bras town hex
+  (`design/data/014.json`).
+* `rivers`: fordableNoStop (the whole stream, as at 011). Bridge hexes (5,4) and (5,10) (R47, R83).
+* `sideRules` (top): the Nassau, Hanover and Dutch units are `AL` units (brown blocks): Portuguese card values, except
+  that `AL/LN` retreats 2 hexes per flag (§2.4, R10).
+
+### 14.15 015 Waterloo
+
+* `hand` 6 / 6.
+* `objectives`: `tempHex` × 3, `side` bottom, `timing` turnStart, `banners` 1 each, `hex` (3,5) La Haye Sainte, (4,1)
+  Hougoumont, (4,12) Papelotte (`design/data/015.json`). All three are ordinary Town hexes with no flag-ignore **[Interp R72]**.
+* `sideRules` (top): the Nassau, Brunswick, Hanover and Dutch units are `AL` units, as at 014 (§2.4, R10).
+* `sideRules` (top): **impetuous British cavalry** (R72, R82) **[Interp R82]**. For `BR/LC`, `BR/HC`, `BR/GHC` only (not `AL/LC`), after
+  a successful attacking melee:
+  * after the initial melee the unit **must** move into the vacated hex, then **must** move 1 more hex if a legal one
+    exists: a vacant hex it may enter, adjacent to the vacated hex in the row next toward the French baseline (row + 1),
+    and not its original hex; the Allied player chooses between two; none if the vacated hex stopped its movement;
+  * the bonus melee stays optional; after a successful bonus melee it **must** move into that vacated hex (no extra hex);
+  * never in a battle back or after First Strike.
+* Sand quarry at (2,6) (§4, R71); a BR/RI starts on it.
 
 ## 15. Expansion #1 (reserved)
 
