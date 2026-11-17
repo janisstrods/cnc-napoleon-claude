@@ -11,7 +11,7 @@ const history: BattleHistory = {
     war: 'Peninsular War: the Spanish risings, 1809',
     text: [
       "After Zaragoza fell in February 1809, Aragon was held by Suchet's III Corps, but risings and a new Spanish field force pressed its outposts back. General Blake, newly given command of the forces of Aragon, Valencia and Catalonia, gathered an 'Army of the Right' and seized Alcañiz, south of the Ebro.",
-      "Suchet reached Zaragoza on 19 May and took over from Junot a corps that was short of pay and confidence. On 21 May he took Musnier's division out to meet Laval's brigade, and on 23 May he found Blake on three hills east of Alcañiz, the Guadalope behind him.",
+      "Suchet reached Zaragoza on 19 May and took over from Junot a corps that was short of pay and confidence. On 21 May he took Musnier's division out to meet Laval's brigade, and on 23 May he found Blake on three hills beside Alcañiz (east of the town in Oman; other accounts say west), the Guadalope behind him.",
     ],
   },
   sides: {
