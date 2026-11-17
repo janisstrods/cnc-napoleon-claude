@@ -2,7 +2,7 @@ import { createElement as h } from 'react';
 import { describe, expect, it } from 'vitest';
 import { makeFig } from '../../../src/art/nap/draw';
 import { Headgear } from '../../../src/art/nap/headgear';
-import { NapLeaderToken, ribbonWidth } from '../../../src/art/nap/leader';
+import { NapLeaderToken, ribbonLines, ribbonWidth } from '../../../src/art/nap/leader';
 import { ART_NATIONS, type ArtNation } from '../../../src/art/nap/keys';
 import { NATION_LOOKS } from '../../../src/art/nap/nations';
 import { LEADER_SPECS } from '../../../src/art/nap/specs/leaders';
@@ -57,16 +57,23 @@ describe('leaders', () => {
     }
   });
 
-  it('long names fit the ribbon, and the rendered ribbon is as wide as ribbonWidth says', () => {
-    expect(ribbonWidth('Prince of Orange')).toBeGreaterThanOrEqual('Prince of Orange'.length * 5.7);
+  it('long names wrap onto two lines; the ribbon is at most 80 wide and each line has 5.7 a letter; the rect matches ribbonWidth', () => {
+    expect(ribbonLines('Prince of Orange')).toEqual(['Prince of', 'Orange']);
+    expect(ribbonLines('Brunswick')).toEqual(['Brunswick']);
     expect(ribbonWidth('Ney')).toBeGreaterThanOrEqual(22);
-    for (const name of ['Ney', 'Kellermann', 'Prince of Orange']) {
+    for (const name of ['Ney', 'Brunswick', 'Kellermann', 'Prince of Orange']) {
+      expect(ribbonWidth(name), name).toBeLessThanOrEqual(80);
+      for (const l of ribbonLines(name)) expect(ribbonWidth(name), name).toBeGreaterThanOrEqual(l.length * 5.7);
       const out = leader('BR', false, 'right', name, true);
       const m = /<rect data-ribbon[^>]*? width="([\d.]+)"/.exec(out);
       expect(m, name).not.toBeNull();
       expect(Number(m![1])).toBeCloseTo(ribbonWidth(name), 5);
-      expect(out).toContain(`>${name}<`);
+      for (const l of ribbonLines(name)) expect(out).toContain(`>${l}<`);
     }
+  });
+
+  it('the attached piece is identical in both facings (never mirrored, always lit from the upper left)', () => {
+    for (const n of ART_NATIONS) expect(leader(n, true, 'left'), n).toBe(leader(n, true, 'right'));
   });
 
   it('with showName false, or no name, no ribbon text is drawn', () => {

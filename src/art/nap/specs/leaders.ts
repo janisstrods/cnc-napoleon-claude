@@ -34,13 +34,14 @@ export const LEADER_SPECS: Record<ArtNation, LeaderSpec> = {
     horse: 'bay',
     flag: { kind: 'union', colours: [CLOTH.britishRed, CLOTH.white, CLOTH.frenchBlue] },
   },
-  // Portuguese general: blue coat with scarlet facings and gold, crimson sash, bicorne athwart. The blue-and-white national
-  // cockade is drawn white outermost so that it reads against the dark felt. Chestnut horse. Flag: blue over white, the cockade colours.
+  // Portuguese general: blue coat with scarlet facings and gold, crimson sash, bicorne athwart. The national cockade of
+  // 1808-14 was blue and red (the blue-and-white one dates from 1821), drawn red outermost so that it reads against the dark
+  // felt. Chestnut horse. Flag: blue over red, matching the cockade (a readability device, as for every nation).
   PT: {
     dress: gen({ coat: CLOTH.portugueseBlue, facings: CLOTH.scarlet, sash: CLOTH.crimson }),
-    head: { kind: 'bicorne', cords: METAL.gold, pompoms: [CLOTH.white, CLOTH.portugueseBlue] },
+    head: { kind: 'bicorne', cords: METAL.gold, pompoms: [CLOTH.scarlet, CLOTH.portugueseBlue] },
     horse: 'chestnut',
-    flag: { kind: 'horizontal', colours: [CLOTH.portugueseBlue, CLOTH.white] },
+    flag: { kind: 'horizontal', colours: [CLOTH.portugueseBlue, CLOTH.scarlet] },
   },
   // Dutch-Belgian general: blue coat with gold, orange sash and orange cockade (the House of Orange). Black horse. Flag: the
   // Netherlands' red, white and blue (the 1815 colours; orange is on the sash).

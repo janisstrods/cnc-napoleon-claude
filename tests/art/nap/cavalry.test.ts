@@ -6,10 +6,10 @@ import { CAVALRY, type ArtKey, type CavalryKey } from '../../../src/art/nap/keys
 import { NATION_LOOKS } from '../../../src/art/nap/nations';
 import { Rider } from '../../../src/art/nap/rider';
 import { FIGURE_SPECS } from '../../../src/art/nap/specs';
-import type { HorseSpec } from '../../../src/art/nap/uniform';
+import { CAVALRY_SPECS } from '../../../src/art/nap/specs/cavalry';
 import { count, fig, hueClass, shape, svg, token } from './helpers';
 
-const spec = (k: ArtKey) => FIGURE_SPECS[k] as HorseSpec;
+const spec = (k: CavalryKey) => CAVALRY_SPECS[k];
 /** The four figures of a key, concatenated, colours stripped: the drawing alone. */
 const s = (k: ArtKey) => shape([0, 1, 2, 3].map((i) => fig(k, i)).join(''));
 const all = (k: ArtKey) => [0, 1, 2, 3].map((i) => fig(k, i)).join('');

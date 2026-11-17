@@ -1,6 +1,6 @@
 // Leader pieces: a portrait medallion when attached to a unit, and a mounted general with a small national flag on his own base
 // when alone. Data decides everything (the LeaderSpec's dress, headgear, horse and flag); nothing here knows a nation.
-import { memo, type ReactNode } from 'react';
+import { memo, useId, type ReactNode } from 'react';
 import { darken, lighten } from '../color';
 import { FacingRightCtx, Hi, Line2, OL, OW, Paint, Shape, makeFig } from './draw';
 import { HeadOn } from './foot';
@@ -119,10 +119,12 @@ export function LeaderBust({ spec, n }: { spec: LeaderSpec; n: NationLook }) {
   const f = makeFig(n, 0);
   const { dress } = spec;
   const gold = dress.lace ?? METAL.gold;
+  const clip = useId();
   return (
     <g data-bust>
+      <defs><clipPath id={clip}><circle r={7.8} /></clipPath></defs>
       <circle r={7.8} fill={PARCHMENT} />
-      <g clipPath="url(#nap-bust-clip)">
+      <g clipPath={`url(#${clip})`}>
         <Shape d="M-10 12 L-9 5.2 Q-5 3.2 -2.2 3 L2.2 3 Q5 3.2 9 5.2 L10 12 Z" f={dress.coat} sw={0.6} />
         <Paint d="M-10 12 L-9 5.2 Q-5 3.2 -2.2 3 L-1.5 3 L-2 12 Z" f={darken(dress.coat, 0.4)} o={0.5} mx={0} />
         {dress.sash ? <path d="M-9 4.6 L9.5 9.6" stroke={dress.sash} strokeWidth={2.2} /> : null}
@@ -145,9 +147,6 @@ export function LeaderBust({ spec, n }: { spec: LeaderSpec; n: NationLook }) {
 function Medallion({ spec, n }: { spec: LeaderSpec; n: NationLook }) {
   return (
     <g>
-      <defs>
-        <clipPath id="nap-bust-clip"><circle r={7.8} /></clipPath>
-      </defs>
       <circle r={10.9} fill={METAL.gold} stroke={OL} strokeWidth={OW + 0.3} />
       <circle r={9.2} fill={n.side.banner} stroke={darken(METAL.gold, 0.4)} strokeWidth={0.5} />
       <LeaderBust spec={spec} n={n} />
@@ -159,17 +158,31 @@ function Medallion({ spec, n }: { spec: LeaderSpec; n: NationLook }) {
 // ---------------------------------------------------------------------------------------------
 // The name ribbon
 
-/** The ribbon's width for a name: about 5.7 units a letter at 7 pt, a little padding, and never narrower than 22. */
+/** The ribbon's lines: a name of more than 13 characters wraps at the space nearest its middle. */
+export function ribbonLines(name: string): string[] {
+  if (name.length <= 13) return [name];
+  const mid = name.length / 2;
+  let best = -1;
+  for (let k = 0; k < name.length; k++) if (name[k] === ' ' && (best < 0 || Math.abs(k - mid) < Math.abs(best - mid))) best = k;
+  return best < 0 ? [name] : [name.slice(0, best), name.slice(best + 1)];
+}
+
+const LINE_H = 8.5;
+/** The ribbon's width: about 5.7 units a letter at 7 pt on the longest line, a little padding, never under 22, capped at 80. */
 export function ribbonWidth(name: string): number {
-  return Math.max(22, name.length * 5.7 + 4);
+  return Math.min(80, Math.max(22, Math.max(...ribbonLines(name).map((l) => l.length)) * 5.7 + 4));
 }
 
 export function NameRibbon({ name, y }: { name: string; y: number }) {
   const w = ribbonWidth(name);
+  const lines = ribbonLines(name);
+  const h = lines.length * LINE_H + 1.5;
   return (
     <g data-ribbon-group>
-      <rect data-ribbon x={-w / 2} y={y} width={w} height={10} rx={2} fill="#17110c" fillOpacity={0.93} />
-      <text x={0} y={y + 7.2} textAnchor="middle" textLength={w - 6} lengthAdjust="spacingAndGlyphs" fontFamily="Cinzel, Georgia, serif" fontWeight={700} fontSize={7} fill="#fbf1d6">{name}</text>
+      <rect data-ribbon x={-w / 2} y={y} width={w} height={h} rx={2} fill="#17110c" fillOpacity={0.93} />
+      {lines.map((l, k) => (
+        <text key={k} x={0} y={y + 7 + k * LINE_H} textAnchor="middle" textLength={Math.min(w - 6, l.length * 5.7)} lengthAdjust="spacingAndGlyphs" fontFamily="Cinzel, Georgia, serif" fontWeight={700} fontSize={7} fill="#fbf1d6">{l}</text>
+      ))}
     </g>
   );
 }
@@ -183,7 +196,8 @@ function NapLeaderTokenImpl({ nation, facing, attached, name, showName }: NapLea
   if (attached) {
     return (
       <g data-leader="attached">
-        <FacingRightCtx.Provider value={facing === 'right'}>
+        {/* the medallion is never mirrored, so it is always lit from the upper left: value true in both facings */}
+        <FacingRightCtx.Provider value>
           <Medallion spec={spec} n={n} />
         </FacingRightCtx.Provider>
       </g>
@@ -197,7 +211,7 @@ function NapLeaderTokenImpl({ nation, facing, attached, name, showName }: NapLea
           <MountedGeneral spec={spec} n={n} />
         </g>
       </FacingRightCtx.Provider>
-      {showName && name ? <NameRibbon name={name} y={30} /> : null}
+      {showName && name ? <NameRibbon name={name} y={24} /> : null}
     </g>
   );
 }
