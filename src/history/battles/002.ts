@@ -8,7 +8,7 @@ const history: BattleHistory = {
   context: {
     war: 'Peninsular War, 1807–1814',
     text: [
-      "Wellesley's first attempt to envelop Delaborde on the hill of Roliça had failed that morning (see 001). The French had stepped back to the heights above Columbeira, the line Delaborde had meant to hold from the start: a short front of about three-quarters of a mile, steep, covered with thickets and cut by four ravines.",
+      "Wellesley's first attempt to envelop Delaborde on the hill of Roliça had failed that morning (see 001). The French had stepped back to the heights above Columbeira, the line Delaborde had meant to hold from the start: a steep, scrubby ridge less than a mile wide, with four deep ravines running up its face.",
       "Delaborde was hoping that Loison would reach him. Wellesley repeated his manoeuvre, sending Trant and Ferguson on long flank marches while the brigades of Hill, Nightingale and Fane deployed before the heights. The centre was meant to wait for the flanks to take effect; it did not.",
     ],
   },
@@ -40,7 +40,7 @@ const history: BattleHistory = {
       { kind: 'town', at: [690, 555], size: 14, label: 'Zambugeira' },
       { kind: 'label', at: [110, 450], text: 'Western heights' },
       { kind: 'label', at: [900, 190], text: 'Sierra de Baragueda' },
-      { kind: 'label', at: [900, 505], text: 'Columbeira heights' },
+      { kind: 'label', at: [900, 560], text: 'Columbeira heights' },
     ],
     units: [
       { id: 'trant', side: 'top', kind: 'infantry', label: 'Trant (Portuguese)', w: 84 },
@@ -63,10 +63,10 @@ const history: BattleHistory = {
     phases: [
       {
         title: 'The second position',
-        caption: 'Two batteries open on the heights from the foot of Roliça hill. Trant and Ferguson begin another wide sweep, while the centre brigades deploy in front of the ravines. Delaborde holds the crest with four battalions.',
+        caption: 'Two batteries open on the heights from the slope of Roliça hill, by a windmill. Trant and Ferguson begin another wide sweep, while the centre brigades deploy in front of the ravines. Delaborde holds the crest with four battalions.',
         at: {
           trant: [200, 300],
-          r5: [300, 292],
+          r5: [285, 292],
           r29: [405, 296],
           r9: [405, 252],
           r82: [520, 290],
@@ -74,7 +74,7 @@ const history: BattleHistory = {
           ferg: [835, 290],
           res: [520, 222],
           cav: [650, 240],
-          guns: [455, 232],
+          guns: [440, 208],
           l70: [500, 448],
           leg2: [300, 442],
           leg4: [610, 440],
@@ -133,13 +133,13 @@ const history: BattleHistory = {
           l70: [510, 535],
           leg2: [400, 565],
           leg4: [585, 565],
-          swiss: [330, 570],
+          swiss: [250, 565],
           chass: [730, 490],
         },
         gone: ['fguns'],
         arrows: [
           { side: 'bottom', points: [[500, 470], [505, 525], [492, 600]], style: 'retreat' },
-          { side: 'bottom', points: [[330, 450], [340, 520], [370, 590]], style: 'retreat' },
+          { side: 'bottom', points: [[280, 450], [265, 520], [255, 585]], style: 'retreat' },
           { side: 'bottom', points: [[610, 460], [620, 530], [600, 600]], style: 'retreat' },
           { side: 'top', points: [[770, 380], [750, 430], [700, 480]] },
         ],
@@ -149,10 +149,10 @@ const history: BattleHistory = {
   outcome: {
     winner: 'top',
     result: 'British victory; Delaborde retires in good order',
-    losses: 'British about 475, 190 of them in the 29th, Lake killed; French about 600 and three guns (Oman). Sources differ by a few dozen.',
+    losses: 'British about 475, 190 of them in the 29th, Lake killed; French about 600–700 and three guns (Foy says one). Sources differ.',
     text: [
       "The British put only five and a half battalions, some 4,600 men, into the fight. Delaborde's rearguard reached Cazal da Sprega, where Wellesley halted, then fell back to Montechique, fifteen miles from Lisbon, and joined Junot at Torres Vedras on 19 August.",
-      "On the 18th Wellesley heard that reinforcements were off the coast and marched to cover their landing near the Maceira, camping at Vimeiro. That let Junot and Loison pass inland to Torres Vedras. Roliça was the first clash of British and French troops in the Peninsular War; it did not shake the army's confidence. The armies met again at Vimeiro (003).",
+      "On the 18th Wellesley heard that reinforcements were off the coast and marched to cover their landing near the Maceira, camping at Vimeiro. That let Junot and Loison pass inland to Torres Vedras. Roliça was the first battle fought by British troops in the Peninsular War; it did not shake the army's confidence. The armies met again at Vimeiro (003).",
     ],
   },
   sources: [

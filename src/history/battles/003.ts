@@ -106,7 +106,7 @@ const history: BattleHistory = {
       },
       {
         title: 'Junot turns the left',
-        caption: "Junot deploys opposite Vimeiro hill and sends Brennier and Solignac on a long sweep round the British left. Seeing this, Wellesley marches four brigades north to the Lourinhã ridge; only Hill stays on the southern heights.",
+        caption: "Junot deploys opposite Vimeiro hill and sends Brennier, then Solignac, on a long sweep round the British left. Seeing this, Wellesley marches four brigades north to the Lourinhã ridge; only Hill stays on the southern heights.",
         at: {
           charl: [385, 432],
           thom: [468, 432],
@@ -166,7 +166,7 @@ const history: BattleHistory = {
         arrows: [
           { side: 'bottom', points: [[790, 430], [815, 395], [835, 335]] },
           { side: 'bottom', points: [[965, 480], [950, 420], [905, 335]] },
-          { side: 'bottom', points: [[830, 420], [760, 475], [690, 520]], style: 'rout' },
+          { side: 'bottom', points: [[835, 350], [920, 318], [990, 296]], style: 'rout' },
           { side: 'bottom', points: [[450, 500], [330, 540], [180, 570]], style: 'retreat' },
         ],
       },
@@ -175,7 +175,7 @@ const history: BattleHistory = {
   outcome: {
     winner: 'top',
     result: 'British victory; Junot beaten but not pursued',
-    losses: 'British and Portuguese about 720; French at least 1,800 (Foy and Thiébault admit as much) and 13 of 23 guns. Brennier was taken.',
+    losses: 'British and Portuguese about 720 (Oman; some returns are higher); French at least 1,800 (Foy and Thiébault admit as much) and 13 of 23 guns. Brennier was taken.',
     text: [
       "Burrard halted the army at the moment of victory, and Dalrymple, who arrived next morning, delayed a march too. Kellermann rode in under a flag of truce on 22 August, and the armistice led to the Convention of Cintra, settled on 30 August: Junot's 25,000-odd men left Portugal in British ships with their arms.",
       "The Convention was hated in Britain. A court of inquiry in November and December 1808 blamed none of the generals, but Burrard and Dalrymple never held field command again, while Wellesley, cleared, returned to command in Portugal in April 1809.",

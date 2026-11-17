@@ -9,7 +9,7 @@ const history: BattleHistory = {
     war: 'Peninsular War, 1807–1814',
     text: [
       "Junot's French corps occupied Portugal at the end of 1807, under the Treaty of Fontainebleau. Spain rose against Napoleon in May 1808 and Portugal followed in June. In July, Dupont's surrender at Bailén shook the French hold on the Peninsula. Sir Arthur Wellesley's British army landed at Mondego Bay from 1 August and marched south along the coast towards Lisbon.",
-      "Junot's troops were scattered in garrisons, so he sent General Delaborde with about 4,000 men to delay the British while his other columns gathered. On 17 August Wellesley found Delaborde on the isolated hill of Roliça and planned to envelop both flanks. This history covers that first position; the fighting on the Columbeira heights is told in 002.",
+      "Junot's troops were scattered in garrisons, so he sent General Delaborde with fewer than 5,000 men to delay the British while his other columns gathered. Wellesley found Delaborde on the isolated hill of Roliça on the 16th and at dawn on the 17th set out to envelop both flanks. This history covers that first position; the fighting on the Columbeira heights is told in 002.",
     ],
   },
   sides: {
@@ -36,12 +36,12 @@ const history: BattleHistory = {
       { kind: 'road', points: [[522, 40], [520, 200], [504, 320], [500, 440], [500, 535], [478, 640]] },
       { kind: 'town', at: [522, 40], size: 24, label: 'Óbidos' },
       { kind: 'town', at: [540, 452], size: 15, label: 'Roliça' },
-      { kind: 'town', at: [360, 588], size: 14, label: 'Columbeira' },
-      { kind: 'town', at: [636, 580], size: 14, label: 'Zambugeira' },
+      { kind: 'town', at: [360, 550], size: 14, label: 'Columbeira' },
+      { kind: 'town', at: [636, 552], size: 14, label: 'Zambugeira' },
       { kind: 'label', at: [110, 450], text: 'Western heights' },
       { kind: 'label', at: [905, 470], text: 'Sierra de Baragueda' },
-      { kind: 'label', at: [740, 562], text: 'Columbeira ridge' },
-      { kind: 'label', at: [525, 600], text: 'to Torres Vedras' },
+      { kind: 'label', at: [770, 548], text: 'Columbeira ridge' },
+      { kind: 'label', at: [500, 592], text: 'to Torres Vedras' },
     ],
     units: [
       { id: 'trant', side: 'top', kind: 'infantry', label: 'Trant (Portuguese)', w: 84 },
@@ -119,7 +119,7 @@ const history: BattleHistory = {
           l70: [505, 525],
           leg2: [410, 512],
           leg4: [590, 515],
-          swiss: [290, 525],
+          swiss: [250, 515],
           chass: [660, 478],
           fguns: [455, 478],
         },
@@ -134,10 +134,10 @@ const history: BattleHistory = {
   outcome: {
     winner: 'top',
     result: 'Delaborde slips the net; the British take the ground',
-    losses: "Small, as far as the sources show; the day's totals, about 475 British and 600 French, are given in 002.",
+    losses: "Small, as far as the sources show; the day's totals, about 475 British and 600 French, belong to the second position.",
     text: [
-      "Delaborde gave the order only when Trant and Ferguson appeared on his flanks and Fane's riflemen were already skirmishing with his tirailleurs. His battalions slipped away to the wooded heights above Columbeira, a mile behind, and the envelopment closed on empty ground.",
-      'Half the morning had been spent for nothing, and Wellesley had to rearrange his columns to attack the second position, which Delaborde had meant to hold all along. He needed only to delay the British until Loison arrived, though Loison was still some fifteen miles away at Cercal. The second phase of the day is told in 002.',
+      "The French had been drilled for a quick exit. Only when Trant and Ferguson were in sight on either flank did Delaborde give the word, and his battalions were a mile away on the Columbeira heights before the British centre closed.",
+      'Half the morning was gone, and Wellesley had to redeploy before he could attack the ridge Delaborde had meant to hold all along. Delaborde needed only to gain time for Loison, who was in fact still some fifteen miles off at Cercal.',
     ],
   },
   sources: [
