@@ -90,15 +90,12 @@
     {"r": 7, "c": 1, "side": "bottom", "name": "Villatte"},
     {"r": 7, "c": 5, "side": "bottom", "name": "Sebastiani"}
   ],
-  "objectives": [
-    {"r": 0, "c": 0, "note": "Marker 'Exit->' on the map: Spanish exit objective of survey 102 (ordered Spanish units may leave by the Spanish baseline; banners only after the third exit; leaders score nothing). The rule applies to the whole top edge; the marker hexes only show where the map prints the sign."},
-    {"r": 0, "c": 12, "note": "Marker '<-Exit' on the map: same Spanish exit objective as 0,0."}
-  ],
+  "objectives": [],
   "notes": [
     "Units 15 + 16 and leaders 4 + 3, as the survey.",
     "Hill 29, forest 6 as the survey (hill list from scan.py, all 29 agree with the crops; hills under blocks show as the ring of rays). River 10 hexes (survey: river 4 + bend 5 + bend with bridge 1) in one piece from 0,3 down to 8,4: 0,3 1,2 2,3 3,3 3,4 4,5 5,4 6,4 7,4 8,4.",
     "The bridge is on 3,3 (crossing: bridge), drawn across the river at the hex centre. The whole river is fordable by the scenario rule; no other crossings are recorded.",
-    "Objectives 0,0 and 0,12 are the 'Exit->' and '<-Exit' markers printed on the Spanish baseline. They mark the Spanish exit rule (survey 102), which concerns the whole Spanish baseline, not these two hexes; recorded so a renderer can show the signs.",
+    "Exit (scenario rule, not an objective hex): any ordered Spanish unit on a top-row hex (0,0 to 0,12) may move off the board; banners only after the third exit; leaders score nothing. The Exit signs printed in 0,0 and 0,12 are art only.",
     "Leaders (names are rotated side labels read at 5x): top Riquelme stacked with SP/LN at 1,5, Ray stacked with SP/LN at 4,7, lone horse leaders Carbajal at 1,10 (on a hill; reading 'Carbajal' is probable) and Mendizabal at 3,1. Bottom Leval 6,11, Villatte 7,1, Sebastiani 7,5, each stacked with FR/LN.",
     "Guerrilla Action: in effect, Spanish start with 0 counters, French none (not map data; recorded here only)."
   ]
