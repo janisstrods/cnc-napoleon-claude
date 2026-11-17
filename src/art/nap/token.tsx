@@ -5,11 +5,11 @@ import { darken } from '../color';
 import { UnitBadge } from './badge';
 import { FacingRightCtx, OL } from './draw';
 import { FootFigure } from './foot';
-import { GunPieceFigure } from './gun';
+import { GunPieceFigure, GunTeamFigure } from './gun';
 import { artNationOf, type ArtKey } from './keys';
 import { BASE_TOP, NATION_LOOKS, METAL, type SideColours } from './nations';
 import { MountedFigure } from './rider';
-import { ICON_BOX, formationOf, standing } from './slots';
+import { ICON_BOX, TEAM_SLOT, formationOf, standing } from './slots';
 import { FIGURE_SPECS } from './specs';
 import type { GunPiece } from './uniform';
 
@@ -111,6 +111,14 @@ function UnitTokenImpl({ unitKey, blocks, maxBlocks, facing, dimmed }: NapUnitTo
       <g opacity={dimmed ? 0.6 : undefined} style={dimmed ? { filter: 'saturate(0.3) brightness(0.95)' } : undefined}>
         <NapBasePlate side={look.side} />
         <FacingRightCtx.Provider value={facing === 'right'}>
+          {spec.drawing === 'gun' && spec.team ? (
+            <g data-team-slot>
+              <ellipse cx={TEAM_SLOT.x + 1.6 * flip} cy={TEAM_SLOT.y + 0.4} rx={34 * TEAM_SLOT.s} ry={2.2 * TEAM_SLOT.s} fill="#1a1208" opacity={0.42} />
+              <g transform={`translate(${TEAM_SLOT.x} ${TEAM_SLOT.y}) scale(${TEAM_SLOT.s * flip} ${TEAM_SLOT.s})`}>
+                <GunTeamFigure spec={spec} n={look} />
+              </g>
+            </g>
+          ) : null}
           {placed.map(([sl, idx]) => (
             <g key={idx} data-slot={idx}>
               <ellipse cx={sl.x + 1.6 * flip} cy={sl.y + 0.4} rx={(formation === 'close' || formation === 'loose' ? 7.5 : 15) * sl.s} ry={2.2 * sl.s} fill="#1a1208" opacity={0.42} />

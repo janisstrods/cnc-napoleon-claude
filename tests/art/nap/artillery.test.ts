@@ -2,7 +2,9 @@ import { createElement as h } from 'react';
 import { describe, expect, it } from 'vitest';
 import { ARTILLERY, type ArtKey, type ArtilleryKey } from '../../../src/art/nap/keys';
 import { NapMiniature } from '../../../src/art/nap/token';
-import { GUN_PIECE_BOX, ICON_BOX, ICON_STEP, standing } from '../../../src/art/nap/slots';
+import { GUN_PIECE_BOX, ICON_BOX, ICON_STEP, TEAM_BANDS, TEAM_SLOT, standing } from '../../../src/art/nap/slots';
+import { GunTeamFigure } from '../../../src/art/nap/gun';
+import { NATION_LOOKS } from '../../../src/art/nap/nations';
 import { FIGURE_SPECS } from '../../../src/art/nap/specs';
 import type { GunPiece, GunSpec } from '../../../src/art/nap/uniform';
 import { count, hueClass, shape, svg, token } from './helpers';
@@ -30,15 +32,52 @@ describe('artillery', () => {
     }
   });
 
-  it('foot guns have a gun and two crew; horse guns have a driver as well, at 3 and 4 blocks', () => {
-    for (const k of FOOT) {
+  it('every gun has a gun and two crew at 3 blocks and four pieces at 4 (the horse teams are not block pieces)', () => {
+    for (const k of ARTILLERY) {
       const out = token(k, { blocks: 3, maxBlocks: 3 });
       expect(count(out, 'data-piece='), k).toBe(3);
       expect(out).toContain('data-piece="gun"');
       expect(out).not.toContain('data-piece="driver"');
+      expect(count(token(k, { blocks: 4, maxBlocks: 4 }), 'data-piece='), k).toBe(4);
     }
+  });
+
+  it('every horse-artillery key shows a limber and a pair of draught horses at 4, 3, 2 and 1 blocks, in both facings', () => {
+    expect(HORSE.length).toBeGreaterThan(0);
+    for (const k of HORSE) for (const facing of ['right', 'left'] as const) for (let b = 1; b <= 4; b++) {
+      const out = token(k, { blocks: b, maxBlocks: 4, facing });
+      const label = `${k} ${facing} ${b}`;
+      expect(count(out, 'data-limber='), label).toBe(1);
+      expect(count(out, 'data-horse="light"'), label).toBe(2);
+      expect(count(out, 'data-rider'), label).toBe(1);
+      expect(out, label).toContain(spec(k).carriage);
+    }
+  });
+
+  it('foot guns, Guard guns included, show no team', () => {
+    for (const k of FOOT) {
+      expect(spec(k).team, k).toBeUndefined();
+      const out = token(k);
+      for (const a of ['data-team', 'data-limber', 'data-horse=', 'data-rider']) expect(out, `${k} ${a}`).not.toContain(a);
+    }
+    for (const k of HORSE) expect(spec(k).team, k).toBe(true);
+  });
+
+  it('the team is not a block piece: its markup is the same at every strength', () => {
+    const team = (out: string) => out.slice(out.indexOf('<g data-team-slot'), out.indexOf('<g data-slot='));
+    for (const k of HORSE) for (const facing of ['right', 'left'] as const) {
+      const full = team(token(k, { blocks: 4, maxBlocks: 4, facing }));
+      expect(full.length, k).toBeGreaterThan(500);
+      for (const [b, m] of [[3, 3], [2, 3], [1, 3]] as const) expect(team(token(k, { blocks: b, maxBlocks: m, facing })), `${k} ${facing} ${b}/${m}`).toBe(full);
+      for (const b of [3, 2, 1]) expect(team(token(k, { blocks: b, maxBlocks: 4, facing })), `${k} ${facing} ${b}`).toBe(full);
+    }
+  });
+
+  it('the team is drawn before every piece, so the crew and the gun stand in front of it', () => {
     for (const k of HORSE) {
-      for (const m of [3, 4]) expect(count(token(k, { blocks: m, maxBlocks: m }), 'data-piece="driver"'), `${k} ${m}`).toBe(1);
+      const out = token(k);
+      expect(out.indexOf('data-team-slot'), k).toBeGreaterThan(-1);
+      expect(out.indexOf('data-team-slot'), k).toBeLessThan(out.indexOf('data-slot='));
     }
   });
 
@@ -49,7 +88,8 @@ describe('artillery', () => {
   it('the Guard gunners wear bearskins and the Royal Horse Artillery Tarleton helmets', () => {
     for (const p of ['gun', 'rammer', 'linstock', 'ammo'] as const) expect(piece('FR/GA', p)).toContain('data-head="bearskin"');
     expect(piece('BR/HA', 'rammer')).toContain('data-head="tarleton"');
-    expect(piece('BR/HA', 'driver')).toContain('data-head="tarleton"');
+    expect(token('BR/HA')).toContain('data-head="tarleton"');
+    expect(count(svg(h(GunTeamFigure, { spec: spec('BR/HA'), n: NATION_LOOKS.BR })), 'data-head="tarleton"')).toBe(1);
     expect(piece('FR/FA', 'rammer')).toContain('data-head="shako"');
     expect(piece('BR/FA', 'rammer')).toContain('data-head="stovepipe"');
     expect(piece('PT/FA', 'rammer')).toContain('data-head="barretina"');
@@ -80,11 +120,13 @@ describe('artillery', () => {
     for (const k of ARTILLERY.filter((x) => x !== 'FR/GA')) expect(token(k), k).not.toContain('data-guard');
   });
 
-  it('a mounted driver sits on a light draught horse in collar and traces', () => {
-    const out = piece('FR/HA', 'driver');
-    expect(out).toContain('data-horse="light"');
-    expect(out).toContain('data-part="harness"');
-    expect(out).toContain('data-rider');
+  it('the team is a limber hooked to two light draught horses in collar and traces, the near one ridden', () => {
+    const out = svg(h(GunTeamFigure, { spec: spec('FR/HA'), n: NATION_LOOKS.FR }));
+    expect(count(out, 'data-limber=')).toBe(1);
+    expect(count(out, 'data-horse="light"')).toBe(2);
+    expect(count(out, 'data-part="harness"')).toBe(2);
+    expect(count(out, 'data-rider')).toBe(1);
+    expect(out).not.toMatch(/NaN|undefined|Infinity/);
   });
 
   it('every piece of every key renders in both facings without junk', () => {
@@ -107,6 +149,18 @@ describe('artillery', () => {
           if (d < R) hits.push(`${k} ${n}/${max} ${p} flip${flip} d=${d.toFixed(1)}`);
         }
       }
+    }
+    expect(hits).toEqual([]);
+  });
+
+  it('the team clears the leader attach corner in both facings (measured bands, stroke included)', () => {
+    const CX = 29, CY = -28, R = 12;
+    const hits: string[] = [];
+    for (const flip of [1, -1]) for (const [t, b, l, r] of TEAM_BANDS) {
+      const x0 = TEAM_SLOT.x + (flip > 0 ? l : -r) * TEAM_SLOT.s;
+      const x1 = TEAM_SLOT.x + (flip > 0 ? r : -l) * TEAM_SLOT.s;
+      const d = Math.hypot(Math.max(x0 - CX, 0, CX - x1), Math.max(TEAM_SLOT.y + t * TEAM_SLOT.s - CY, 0, CY - (TEAM_SLOT.y + b * TEAM_SLOT.s)));
+      if (d < R) hits.push(`flip${flip} band ${t}..${b} d=${d.toFixed(1)}`);
     }
     expect(hits).toEqual([]);
   });

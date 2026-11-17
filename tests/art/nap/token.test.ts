@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createElement as h } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { ARM_OF, CODE_NAMES, codeOf } from '../../../src/engine/codes';
-import { SLOTS, iconRects, type Formation } from '../../../src/art/nap/slots';
+import { SLOTS, TEAM_BANDS, iconRects, type Formation } from '../../../src/art/nap/slots';
 import { ART_KEYS, ART_NATIONS, type ArtKey } from '../../../src/art/nap/keys';
 import { ArmGlyph } from '../../../src/art/nap/badge';
 import { NapLeaderToken, NapUnitIcon } from '../../../src/art/nap';
@@ -136,6 +136,29 @@ describe('the attach corner and the Guard marker', () => {
         expect(d, `${k} ${facing}`).toBeGreaterThanOrEqual(R);
       }
     }
+  });
+});
+
+describe('the attach corner and the horse-artillery team', () => {
+  // The team's placement is read from the markup (translate and a facing-signed scale on the group after the team's shadow), so a
+  // nudge in token.tsx is what this checks; its extent is TEAM_BANDS (measured in the figure's own frame, stroke included).
+  const CX = 29, CY = -28, R = 12;
+  it('keeps the team clear of the leader medallion in both facings', () => {
+    for (const k of ['FR/HA', 'BR/HA'] as const) for (const facing of ['right', 'left'] as const) for (const b of [4, 1]) {
+      const out = token(k, { facing, blocks: b });
+      const m = /<g data-team-slot[^>]*>.*?<g transform="translate\(([-\d.]+) ([-\d.]+)\) scale\(([-\d.]+) ([\d.]+)\)"><g data-team/.exec(out);
+      expect(m, `${k} ${facing}`).not.toBeNull();
+      const [tx, ty, sx, sy] = m!.slice(1).map(Number);
+      expect(Math.sign(sx), `${k} ${facing}`).toBe(facing === 'right' ? 1 : -1);
+      for (const [t, bt, l, r] of TEAM_BANDS) {
+        const x0 = tx + Math.min(l * sx, r * sx), x1 = tx + Math.max(l * sx, r * sx);
+        const d = Math.hypot(Math.max(x0 - CX, 0, CX - x1), Math.max(ty + t * sy - CY, 0, CY - (ty + bt * sy)));
+        expect(d, `${k} ${facing} band ${t}`).toBeGreaterThanOrEqual(R);
+      }
+    }
+  });
+  it('draws no team for a foot gun or any other arm', () => {
+    for (const k of ['FR/FA', 'FR/GA', 'BR/FA', 'FR/LN', 'FR/HC']) expect(token(k as ArtKey)).not.toContain('data-team');
   });
 });
 

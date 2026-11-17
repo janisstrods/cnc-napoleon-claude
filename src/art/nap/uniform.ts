@@ -75,7 +75,7 @@ export interface HorseSpec {
   stub?: true;
 }
 
-export type GunPiece = 'gun' | 'rammer' | 'linstock' | 'ammo' | 'driver';
+export type GunPiece = 'gun' | 'rammer' | 'linstock' | 'ammo';
 export interface GunSpec {
   drawing: 'gun';
   crew: { dress: Dress; head: Headwear };
@@ -84,6 +84,8 @@ export interface GunSpec {
   /** [0] = front piece, removed last. */
   pieces: readonly [GunPiece, GunPiece, GunPiece, GunPiece];
   guard?: true;
+  /** Horse artillery: a limber hooked to two draught horses with a mounted driver stands behind the gun at every strength. */
+  team?: true;
   stub?: true;
 }
 

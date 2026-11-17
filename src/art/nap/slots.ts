@@ -26,8 +26,42 @@ const FULL: Record<Formation, readonly [Slot, Slot, Slot, Slot]> = {
   // narrow head columns (right about 9), so they could stand further right, but token.test.ts checks every slot against the
   // gun box, which keeps x -2 or less at these heights. Piece k of a unit stands in slot (max - 1 - k) of the full list, so
   // the same pieces keep the same places as it is depleted.
-  gun: [{ x: -28, y: 3, s: 0.95 }, { x: -14, y: 4, s: 0.95 }, { x: -2, y: 9, s: 0.98 }, { x: -4, y: 18, s: 1 }],
+  gun: [{ x: -32, y: 12, s: 0.95 }, { x: -11, y: 13, s: 0.95 }, { x: -2, y: 15, s: 0.98 }, { x: -4, y: 18, s: 1 }],
 };
+/** The horse-artillery limber team, behind the gun (drawn by the token before the pieces, at every strength). */
+export const TEAM_SLOT: Slot = { x: -12, y: -6, s: 0.75 };
+/**
+ * The horse-artillery team in its own frame (facing right, hooves and wheels at y 0), as bands of 2 units from the top down,
+ * [top, bottom, left, right], stroke included: measured by rasterising GunTeamFigure at 4 px per unit for FR/HA and BR/HA
+ * (the union), then rounded outwards. The team is wide, with a tall rider and horse heads at the right and a low limber at
+ * the left, so a single box or step would not do; tests/art/nap/artillery.test.ts checks every band against the attach
+ * corner in both facings.
+ */
+export const TEAM_BANDS: readonly Rect[] = [
+  [-43.8, -42, 0.0, 3.0],
+  [-42, -40, -1.5, 3.0],
+  [-40, -38, -3.0, 4.0],
+  [-38, -36, -3.0, 4.0],
+  [-36, -34, -2.5, 5.5],
+  [-34, -32, -2.5, 20.0],
+  [-32, -30, -4.0, 21.5],
+  [-30, -28, -4.5, 23.0],
+  [-28, -26, -4.5, 24.5],
+  [-26, -24, -8.5, 25.5],
+  [-24, -22, -38.0, 26.0],
+  [-22, -20, -37.5, 26.0],
+  [-20, -18, -37.0, 24.5],
+  [-18, -16, -38.5, 20.5],
+  [-16, -14, -39.5, 15.5],
+  [-14, -12, -40.0, 18.0],
+  [-12, -10, -40.0, 19.0],
+  [-10, -8, -40.0, 20.0],
+  [-8, -6, -39.5, 20.5],
+  [-6, -4, -38.5, 20.5],
+  [-4, -2, -37.0, 15.5],
+  [-2, 0, -36.0, 15.0],
+  [0, 1.8, -33.5, 10.0],
+];
 const SINGLE: Record<Formation, Slot> = {
   close: { x: -4, y: 18, s: FF },
   loose: { x: -4, y: 18, s: FF },
@@ -110,7 +144,6 @@ export const GUN_PIECE_BOX: Record<GunPiece, { box: Rect; step: { y: number; rig
   rammer: { box: [-43.2, 1.4, -9.7, 19.2], step: { y: -20, right: 8.9, left: -4.7 } },
   linstock: { box: [-43.4, 1.4, -7.4, 7.9], step: { y: -23, right: 7.9, left: -5.5 } },
   ammo: { box: [-43.2, 1.4, -7.7, 10.9], step: { y: -20, right: 8.9, left: -4.7 } },
-  driver: { box: [-37.9, 1.4, -13.9, 16.9], step: { y: -23, right: 12.5, left: -3.9 } },
 };
 
 /** The rectangles a figure occupies: the whole box, or the two bands of its stepped profile (above and below the step). */
