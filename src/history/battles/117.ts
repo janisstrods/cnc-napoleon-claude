@@ -1,0 +1,142 @@
+// 117 San Marcial, 31 August 1813. Top: Freire's Spanish Army of Galicia on the San Marcial heights; bottom: Soult's French right column under Reille, with Villatte's reserve.
+// Drawn with the Spaniards at the top, so the French stand to the north of the Bidassoa at the bottom: north points down, west (the sea, Irun and the Hermitage) is on the right and
+// east (Biriatou and Vera) on the left. This history follows the assault on the heights; Clausel's attack at Vera is only touched on. Places and distances are schematic.
+import type { BattleHistory } from '../types';
+
+const history: BattleHistory = {
+  id: '117',
+  date: '31 August 1813',
+  context: {
+    war: 'Peninsular War, 1807–1814',
+    text: [
+      "By late August 1813 the French had been driven from nearly all Spain. Wellington was besieging San Sebastián for the second time, with his army strung along the Pyrenees and the Bidassoa. Marshal Soult, who had rallied the beaten armies behind the frontier river, judged himself bound to make one more attempt to relieve the place.",
+      "He chose the lower Bidassoa, where the Spaniards of Freire's Army of Galicia held the San Marcial heights above the fords. Reille's divisions were to storm the heights while Clausel crossed higher up near Vera to take them in the rear. A storm of rain broke over both fronts in the afternoon.",
+    ],
+  },
+  sides: {
+    top: {
+      name: 'Spanish Army of Galicia',
+      commanders: ['Freire (Army of Galicia)', 'Porlier, Losada, Barcena (divisions)', 'Longa (Cantabrians)', 'Wellington (watching)'],
+      strength: "Freire's three divisions about 10,000 bayonets; Spaniards under 15,000 with Longa (Oman); Napier says 6,000 on the crest",
+      forces: "Galician infantry in columns behind an old trench on the slope, Longa's Cantabrians on the spur behind, three battalions in Irun, and about a dozen guns.",
+    },
+    bottom: {
+      name: 'French Army of Spain, right column',
+      commanders: ['Marshal Soult (commanding)', 'Reille (right column)', 'Lamartinière and Maucune (divisions)', 'Villatte (reserve)'],
+      strength: 'About 45,000 in nine divisions; Reille’s three and Villatte’s reserve attacked here (Oman)',
+      forces: "Lamartinière's and Maucune's divisions, Villatte's reserve with King Joseph's Guards and German regiments, 36 guns on the north bank and Foy's division behind.",
+    },
+  },
+  map: {
+    north: 180,
+    terrain: [
+      { kind: 'hills', points: [[-20, -10], [480, -10], [500, 150], [-20, 170]], label: 'Peña de Aya' },
+      { kind: 'hills', points: [[300, 215], [870, 225], [890, 335], [290, 345]] },
+      { kind: 'label', at: [340, 358], text: 'San Marcial heights' },
+      { kind: 'river', points: [[-30, 420], [140, 405], [270, 425], [420, 445], [560, 450], [680, 470], [790, 500], [900, 515], [1040, 520]], width: 16, label: 'Bidassoa' },
+      { kind: 'road', points: [[700, 610], [730, 520], [800, 430], [940, 340], [960, 200], [980, -20]], label: 'Road to Oyarzun' },
+      { kind: 'town', at: [945, 335], size: 22, label: 'Irun' },
+      { kind: 'label', at: [810, 218], text: 'Hermitage' },
+      { kind: 'label', at: [235, 452], text: 'Biriatou fords' },
+      { kind: 'label', at: [690, 492], text: 'Behobie bridge (burnt)' },
+      { kind: 'label', at: [250, 585], text: 'Louis XIV hill (Soult)' },
+      { kind: 'label', at: [930, 570], text: 'Hendaye' },
+    ],
+    units: [
+      { id: 'porlier', side: 'top', kind: 'infantry', label: 'Porlier', w: 62 },
+      { id: 'losada', side: 'top', kind: 'infantry', label: 'Losada', w: 90 },
+      { id: 'barcena', side: 'top', kind: 'infantry', label: 'Barcena', w: 90 },
+      { id: 'longa', side: 'top', kind: 'infantry', label: 'Longa (Cantabrians)', w: 90 },
+      { id: 'irun', side: 'top', kind: 'infantry', label: 'Irun (3 bns)', w: 66 },
+      { id: 'sguns', side: 'top', kind: 'artillery', label: 'Spanish guns', w: 44 },
+      { id: 'lamart', side: 'bottom', kind: 'infantry', label: 'Lamartinière', w: 90 },
+      { id: 'maucune', side: 'bottom', kind: 'infantry', label: 'Maucune', w: 90 },
+      { id: 'villatte', side: 'bottom', kind: 'infantry', label: 'Villatte (reserve)', w: 90 },
+      { id: 'guy', side: 'bottom', kind: 'guard', label: 'Guy (Guard)', w: 90 },
+      { id: 'foy', side: 'bottom', kind: 'infantry', label: 'Foy (reserve)', w: 80 },
+      { id: 'fguns', side: 'bottom', kind: 'artillery', label: 'French guns (36)', w: 44 },
+    ],
+    phases: [
+      {
+        title: 'Crossing in the haze',
+        caption: "At six, in thick haze, Lamartinière's division wades the fords by Biriatou unseen, and Maucune follows. Villatte's reserve waits by the burnt Behobie bridge for the tide to fall. The Spaniards hold the heights and Irun.",
+        at: {
+          porlier: [800, 290],
+          losada: [600, 290],
+          barcena: [400, 290],
+          longa: [150, 140],
+          irun: [925, 285],
+          sguns: [520, 245],
+          lamart: [280, 392],
+          maucune: [360, 500],
+          villatte: [720, 530],
+          guy: [810, 545],
+          foy: [640, 575],
+          fguns: [450, 515],
+        },
+        arrows: [{ side: 'bottom', points: [[270, 480], [272, 440], [278, 400]] }],
+      },
+      {
+        title: 'First assault repulsed',
+        caption: "About nine, Lamartinière storms the central slope and Pinoteau's brigade of Maucune's division the Hermitage end. The brush breaks their order; Freire's columns charge from behind the old trench and roll them downhill to the river.",
+        at: {
+          lamart: [520, 335],
+          maucune: [770, 335],
+        },
+        arrows: [
+          { side: 'bottom', points: [[300, 395], [420, 360], [510, 338]] },
+          { side: 'bottom', points: [[720, 440], [750, 385], [770, 342]] },
+          { side: 'top', points: [[600, 300], [580, 330], [560, 370]] },
+          { side: 'top', points: [[800, 300], [790, 340], [780, 380]] },
+        ],
+      },
+      {
+        title: 'Noon: the Hermitage',
+        caption: "At noon Soult attacks again with Villatte's rested reserve added. The French left and centre give way, but Guy's Guard brigade takes part of the crest and Porlier's men are pushed from the Hermitage until a Spanish counter-attack drives the French back.",
+        at: {
+          lamart: [430, 395],
+          maucune: [640, 395],
+          villatte: [775, 318],
+          guy: [835, 262],
+          porlier: [715, 262],
+        },
+        broken: ['lamart', 'maucune'],
+        arrows: [
+          { side: 'bottom', points: [[760, 440], [775, 370], [790, 320]] },
+          { side: 'bottom', points: [[830, 340], [822, 300], [815, 272]] },
+          { side: 'top', points: [[700, 250], [760, 245], [810, 255]] },
+        ],
+      },
+      {
+        title: 'Withdrawal in the storm',
+        caption: "The French fall back in disorder, some into the river. Soult, his assaults broken and Foy sent to steady his alarmed left, abandons a third attempt and pulls everyone over the Bidassoa after dark through the rain. San Sebastián had fallen that day.",
+        at: {
+          porlier: [800, 290],
+          losada: [600, 290],
+          barcena: [400, 290],
+        },
+        broken: ['guy'],
+        gone: ['lamart', 'maucune', 'villatte', 'guy', 'foy'],
+        arrows: [
+          { side: 'bottom', points: [[790, 330], [790, 400], [760, 480]], style: 'retreat' },
+          { side: 'bottom', points: [[500, 380], [500, 440], [490, 500]], style: 'retreat' },
+        ],
+      },
+    ],
+  },
+  outcome: {
+    winner: 'top',
+    result: "Spanish victory on the heights; Soult's relief of San Sebastián fails",
+    losses: "Soult reported 3,808 French casualties for the whole day (Oman thinks the true figure higher); Allies 2,524, of whom 1,679 Spaniards. Napier gives about 3,600 and 2,600.",
+    text: [
+      "Clausel's column, caught by the rising Bidassoa, lost General Vandermaesen in a night fight at the Vera bridge, and Soult withdrew to his old lines. San Sebastián's castle surrendered on 8 September, and Wellington praised the Galicians in his dispatch.",
+      "Soult now stayed on the defensive, and on 7 October Wellington crossed the Bidassoa into France. Oman and Napier differ in detail, and over whether Wellington rode up during the Hermitage fight or declined to lend the 4th Division to Freire.",
+    ],
+  },
+  sources: [
+    'Charles Oman, A History of the Peninsular War, vol. 7 (1930), section XXXIX, ch. 3, pp. 37–62 (positions pp. 40–44, assaults pp. 46–48, losses pp. 57–58; the passage of the Bidassoa on 7 October at p. 110)',
+    'W. F. P. Napier, History of the War in the Peninsula, vol. 6 (1840), Book XXII, ch. 3, pp. 223–35 (assaults pp. 226–28, losses p. 234)',
+  ],
+};
+
+export default history;
