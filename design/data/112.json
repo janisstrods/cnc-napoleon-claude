@@ -1,0 +1,301 @@
+{
+ "id": "112",
+ "grid": {
+  "x0": 77.25,
+  "y0": 135.88,
+  "w": 87.0,
+  "pitch": 75.5
+ },
+ "terrain": [
+  {
+   "r": 0,
+   "c": 2,
+   "t": "forest"
+  },
+  {
+   "r": 0,
+   "c": 3,
+   "t": "forest"
+  },
+  {
+   "r": 1,
+   "c": 2,
+   "t": "forest"
+  },
+  {
+   "r": 1,
+   "c": 3,
+   "t": "forest"
+  },
+  {
+   "r": 6,
+   "c": 2,
+   "t": "forest"
+  },
+  {
+   "r": 7,
+   "c": 3,
+   "t": "forest"
+  },
+  {
+   "r": 8,
+   "c": 3,
+   "t": "forest"
+  },
+  {
+   "r": 8,
+   "c": 4,
+   "t": "forest"
+  },
+  {
+   "r": 1,
+   "c": 8,
+   "t": "town",
+   "art": "Ocana"
+  },
+  {
+   "r": 2,
+   "c": 8,
+   "t": "town",
+   "art": "Ocana"
+  },
+  {
+   "r": 2,
+   "c": 9,
+   "t": "town",
+   "art": "Ocana"
+  }
+ ],
+ "units": [
+  {
+   "r": 1,
+   "c": 1,
+   "side": "top",
+   "key": "SP/HC"
+  },
+  {
+   "r": 1,
+   "c": 5,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 1,
+   "c": 6,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 1,
+   "c": 7,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 2,
+   "c": 8,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 2,
+   "c": 9,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 2,
+   "c": 11,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 2,
+   "c": 12,
+   "side": "top",
+   "key": "SP/LC"
+  },
+  {
+   "r": 3,
+   "c": 0,
+   "side": "top",
+   "key": "SP/LC"
+  },
+  {
+   "r": 3,
+   "c": 1,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 3,
+   "c": 2,
+   "side": "top",
+   "key": "SP/LT"
+  },
+  {
+   "r": 3,
+   "c": 3,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 3,
+   "c": 4,
+   "side": "top",
+   "key": "SP/FA"
+  },
+  {
+   "r": 3,
+   "c": 5,
+   "side": "top",
+   "key": "SP/GR"
+  },
+  {
+   "r": 3,
+   "c": 6,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 6,
+   "c": 3,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 6,
+   "c": 4,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 6,
+   "c": 5,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 6,
+   "c": 6,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 6,
+   "c": 7,
+   "side": "bottom",
+   "key": "FR/FA"
+  },
+  {
+   "r": 6,
+   "c": 8,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 6,
+   "c": 9,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 6,
+   "c": 10,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 0,
+   "side": "bottom",
+   "key": "FR/LNC"
+  },
+  {
+   "r": 7,
+   "c": 1,
+   "side": "bottom",
+   "key": "FR/HC"
+  },
+  {
+   "r": 7,
+   "c": 10,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 1,
+   "side": "bottom",
+   "key": "FR/HC"
+  },
+  {
+   "r": 8,
+   "c": 5,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 6,
+   "side": "bottom",
+   "key": "FR/LT"
+  }
+ ],
+ "leaders": [
+  {
+   "r": 0,
+   "c": 7,
+   "side": "top",
+   "name": "Zerain?"
+  },
+  {
+   "r": 1,
+   "c": 1,
+   "side": "top",
+   "name": "Freire?"
+  },
+  {
+   "r": 2,
+   "c": 11,
+   "side": "top",
+   "name": "Zayas"
+  },
+  {
+   "r": 3,
+   "c": 5,
+   "side": "top",
+   "name": "Giron"
+  },
+  {
+   "r": 6,
+   "c": 6,
+   "side": "bottom",
+   "name": "Leval"
+  },
+  {
+   "r": 7,
+   "c": 1,
+   "side": "bottom",
+   "name": "Milhaud"
+  },
+  {
+   "r": 7,
+   "c": 9,
+   "side": "bottom",
+   "name": "Dessolles"
+  },
+  {
+   "r": 8,
+   "c": 5,
+   "side": "bottom",
+   "name": "Girard"
+  }
+ ],
+ "objectives": [],
+ "notes": [
+  "Counts equal the survey (SP 15 + 4 leaders, FR 14 + 4). Grid is the map's own offset fit (77.25, 135.88).",
+  "Lone leaders (horse block, no unit) at 0,7 (top) and 7,9 (bottom). Town Ocana: 1,8 2,8 2,9 (SP/LN in 2,8 and 2,9).",
+  "Spanish names 0,7 and 1,1 are barely legible (Zerain?, Freire?)."
+ ]
+}
