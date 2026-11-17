@@ -15,15 +15,15 @@ const FF = 1.26; // front-rank scale (foot)
 // first, so every strength from 2 to 4 is the tail of this list and a surviving figure keeps its slot; the one-block
 // slot is the exception: it is centred (and takes the paint of the last front-rank figure).
 const FULL: Record<Formation, readonly [Slot, Slot, Slot, Slot]> = {
-  close: [{ x: -27, y: 5, s: FB }, { x: -9, y: 5, s: FB }, { x: -21, y: 18, s: FF }, { x: -6, y: 18, s: FF }],
-  loose: [{ x: -29, y: 6.5, s: FB }, { x: -9.5, y: 3.5, s: FB }, { x: -22, y: 18.5, s: FF }, { x: -6.5, y: 16.5, s: FF }],
-  horse: [{ x: -26, y: 7, s: 0.88 }, { x: -4, y: 7, s: 0.88 }, { x: -15, y: 20.5, s: 0.96 }, { x: 15, y: 20.5, s: 0.96 }],
+  close: [{ x: -27, y: 5, s: FB }, { x: -9, y: 5, s: FB }, { x: -18.5, y: 18, s: FF }, { x: -3.5, y: 18, s: FF }],
+  loose: [{ x: -29, y: 6.5, s: FB }, { x: -9.5, y: 3.5, s: FB }, { x: -19.5, y: 18.5, s: FF }, { x: -3.5, y: 16.5, s: FF }],
+  horse: [{ x: -27, y: 8, s: 0.87 }, { x: -5, y: 8, s: 0.87 }, { x: -17, y: 20.5, s: 0.96 }, { x: 4, y: 20.5, s: 0.96 }],
   // gun: the front piece (the gun itself) stands front centre; each further piece stands behind, staggered.
   gun: [{ x: -22, y: 5, s: 0.95 }, { x: 20, y: 6, s: 0.95 }, { x: -17, y: 15, s: 1 }, { x: 2, y: 18.5, s: 1.05 }],
 };
 const SINGLE: Record<Formation, Slot> = {
-  close: { x: -6, y: 18, s: FF },
-  loose: { x: -6, y: 18, s: FF },
+  close: { x: -4, y: 18, s: FF },
+  loose: { x: -4, y: 18, s: FF },
   horse: { x: 0, y: 20.5, s: 0.96 },
   gun: FULL.gun[3],
 };
@@ -60,12 +60,14 @@ export function standing(f: Formation, n: number, max: number): readonly (readon
 
 /**
  * Measured extents of one figure (top, bottom, left, right), stroke included, for centring and scaling icons. The foot box is
- * the union over every French pose (getBBox, Task 2): top = the bearskin plume, left = the pack, right = a levelled bayonet
- * (aim 17.3 before stroke, about 17.7 with it; rounded up).
+ * the union over every foot figure, French, British, Portuguese and Allied (Task 3), measured by rasterising each figure
+ * (every key, all four paint indices) at 4 px per unit and scanning for ink, so stroke is included and rotated groups are not
+ * over-inflated: top = the grenadier plumes (-43.25), left = the kneeling far foot of the caçadores and rifles (-10.75), bottom =
+ * the shoe (1.25), right = a levelled bayonet (16.5). Each is rounded up a little.
  */
 export const ICON_BOX: Record<FigureSpec['drawing'], readonly [top: number, bottom: number, left: number, right: number]> = {
-  foot: [-43.6, 0.4, -8.4, 18.2],
-  horse: [-38, 0.4, -19, 20],
+  foot: [-43.6, 1.3, -10.8, 16.6],
+  horse: [-57.8, 1.8, -19.1, 23.3],
   gun: [-22, 0.4, -20, 22],
 };
 
@@ -73,15 +75,24 @@ type Rect = readonly [top: number, bottom: number, left: number, right: number];
 
 /**
  * The box as a stepped profile, for the attach-corner test. Levelled weapons (bayonets at aim and charge) reach the full
- * width only below y -24; above that line there are heads, headgear and the port-arms bayonet, which stay inside a narrower column (measured 12.7 before
- * stroke, at the port bayonet tip; heads and headgear reach only about 7.5). A new foot figure, such as the rifles, must keep its
+ * width only below y -24; above that line there are heads, headgear and the port-arms bayonet, which stay inside a narrower column (measured 13.5 with stroke at the port bayonet tip, the same for
+ * every foot figure; heads and headgear reach only about 8.8, the rifles' kneeling aim 7). A horse figure measures the same way, with its own
+ * left edge for the upper band (`left`). A new foot figure, such as the rifles, must keep its
  * wide parts below the step and its head and headgear inside the column (or re-measure both).
  */
-export const ICON_STEP: Record<FigureSpec['drawing'], { y: number; right: number } | undefined> = { foot: { y: -24, right: 13.4 }, horse: undefined, gun: undefined };
+export const ICON_STEP: Record<FigureSpec['drawing'], { y: number; right: number; left?: number } | undefined> = {
+  foot: { y: -24, right: 13.5 },
+  // Horse: below y -33.5 the horse's head and neck (right 23.3, the heavy horse's nose) and its tail (left -19.1). Above it,
+  // measured over all 11 keys and four figures (Chrome getPointAtLength samples in each figure's own frame, stroke half-widths
+  // added): riders' heads and headgear, raised sabres and swords (the forward-leaning pose reaches right 12.4) and lances, in the
+  // narrow column from -8.5 (a mane or plume behind the head) to 12.4 (rounded outward). `left` is that column's own left edge.
+  horse: { y: -33.5, right: 12.6, left: -8.7 },
+  gun: undefined,
+};
 
 /** The rectangles a figure occupies: the whole box, or the two bands of its stepped profile (above and below the step). */
 export function iconRects(d: FigureSpec['drawing']): readonly Rect[] {
   const [top, bottom, left, right] = ICON_BOX[d];
   const st = ICON_STEP[d];
-  return st ? [[top, st.y, left, st.right], [st.y, bottom, left, right]] : [[top, bottom, left, right]];
+  return st ? [[top, st.y, st.left ?? left, st.right], [st.y, bottom, left, right]] : [[top, bottom, left, right]];
 }
