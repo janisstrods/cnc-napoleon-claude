@@ -19,7 +19,7 @@
         "vite",
         "preview",
         "--base",
-        "/cnc-claude/",
+        "/cnc-napoleonics/",
         "--port",
         "4173",
         "--strictPort"

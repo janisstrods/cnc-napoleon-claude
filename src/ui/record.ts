@@ -3,7 +3,7 @@
 // browser's storage and in exported files; pure apart from loading and saving.
 import type { Side } from '../engine';
 import type { Difficulty } from './game/controller';
-import { storage } from './storage';
+import { storage, storageKey } from './storage';
 
 export type Outcome = 'won' | 'lost' | 'draw';
 export type Medal = 'bronze' | 'silver' | 'gold';
@@ -137,7 +137,7 @@ export function parseRecord(raw: unknown): BattleRecord | null {
   return out;
 }
 
-const KEY = 'cca-record-v1';
+const KEY = storageKey('record-v1');
 
 /** The stored record (empty when there is none, it cannot be read, or storage is unavailable). */
 export function loadRecord(): BattleRecord {
@@ -162,7 +162,7 @@ export function recordFinished(battleId: string, side: Side, level: Difficulty, 
   return isMedal(now) && now !== sideStanding(before, battleId, side) ? now : null;
 }
 
-const FILE_MARK = 'cca-triumphs';
+const FILE_MARK = storageKey('triumphs');
 
 /** The record as a file to download: its name (dated by the local day) and JSON text. */
 export function exportRecord(rec: BattleRecord, now = new Date()): { name: string; text: string } {

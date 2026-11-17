@@ -2,7 +2,7 @@
 // choices). Pure apart from the tab and the choices remembered in storage.
 import { EXPANSIONS, type Expansion, type GameOptions, type Side } from '../../engine';
 import type { ScenarioInfo } from '../../scenarios';
-import { storage } from '../storage';
+import { storage, storageKey } from '../storage';
 
 export interface PickerTab {
   id: Expansion;
@@ -43,7 +43,7 @@ export function randomPick(
   return { battle, side: rand() < 0.5 ? 'bottom' : 'top' };
 }
 
-const TAB_KEY = 'cca-battle-tab';
+const TAB_KEY = storageKey('battle-tab');
 
 /** The tab shown last time (the base game when none is stored or the value is unknown). */
 export function loadPickerTab(): Expansion {
@@ -89,7 +89,7 @@ export function offeredOptions(sc: ScenarioInfo): OptionId[] {
   return (Object.keys(OPTIONAL_RULES) as OptionId[]).filter((id) => o[id] !== undefined);
 }
 
-const OPTIONS_KEY = 'cca-options';
+const OPTIONS_KEY = storageKey('options');
 
 /** The player's last choice per optional rule (only known rules with a boolean value survive). */
 export function loadOptionChoices(): GameOptions {

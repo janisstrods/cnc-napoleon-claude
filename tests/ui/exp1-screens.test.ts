@@ -61,9 +61,9 @@ describe('battle picker tabs', () => {
     const m = stubStorage();
     expect(loadPickerTab()).toBe('base');
     savePickerTab('exp1');
-    expect(m.get('cca-battle-tab')).toBe('exp1');
+    expect(m.get('ccn-battle-tab')).toBe('exp1');
     expect(loadPickerTab()).toBe('exp1');
-    m.set('cca-battle-tab', 'nonsense');
+    m.set('ccn-battle-tab', 'nonsense');
     expect(loadPickerTab()).toBe('base');
   });
 
@@ -84,7 +84,7 @@ describe('battle picker tabs', () => {
 
   it('the tabs are ARIA tabs: the selected one is in the tab order and labels the battle list it controls', () => {
     const m = stubStorage();
-    m.set('cca-battle-tab', 'exp1');
+    m.set('ccn-battle-tab', 'exp1');
     const html = renderToStaticMarkup(createElement(ScenarioSelect, { onBack: () => {}, onStart: () => {} }));
     const tabs = [...html.matchAll(/<button[^>]*role="tab"[^>]*>/g)].map((x) => x[0]);
     expect(tabs).toHaveLength(4);
@@ -125,16 +125,16 @@ describe('optional rules in the briefing', () => {
     expect(html(false)).toContain(OPTIONAL_RULES.tacticalFlexibility.name);
   });
 
-  it('a remembered choice overrides the default and is kept per option in cca-options', () => {
+  it('a remembered choice overrides the default and is kept per option in ccn-options', () => {
     const m = stubStorage();
     expect(loadOptionChoices()).toEqual({});
     const c = saveOptionChoice({}, 'tacticalFlexibility', false);
-    expect(JSON.parse(m.get('cca-options')!)).toEqual({ tacticalFlexibility: false });
+    expect(JSON.parse(m.get('ccn-options')!)).toEqual({ tacticalFlexibility: false });
     expect(loadOptionChoices()).toEqual({ tacticalFlexibility: false });
     expect(chosenOptions(scenarioById('124'), c)).toEqual({ tacticalFlexibility: false });
-    m.set('cca-options', JSON.stringify({ tacticalFlexibility: 'no', bogus: true }));
+    m.set('ccn-options', JSON.stringify({ tacticalFlexibility: 'no', bogus: true }));
     expect(loadOptionChoices()).toEqual({});
-    m.set('cca-options', '{not json');
+    m.set('ccn-options', '{not json');
     expect(loadOptionChoices()).toEqual({});
   });
 });
@@ -165,7 +165,7 @@ describe('optional rules reach the engine on start and on restore', () => {
     } finally {
       c.dispose();
     }
-    expect(m.has('cca-autosave-v1')).toBe(true);
+    expect(m.has('ccn-autosave-v1')).toBe(true);
     const saved = loadSaved()!;
     expect(saved.config.options).toEqual({ tacticalFlexibility: false });
     expect(saved.answers.length).toBeGreaterThan(0);

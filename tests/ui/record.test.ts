@@ -105,11 +105,11 @@ describe('battle record', () => {
     expect(loadRecord()).toEqual({});
     const r = addResult({}, '108', 'bottom', 'tribune', 'won');
     saveRecord(r);
-    expect(JSON.parse(m.get('cca-record-v1')!)).toEqual({ version: 1, battles: r });
+    expect(JSON.parse(m.get('ccn-record-v1')!)).toEqual({ version: 1, battles: r });
     expect(loadRecord()).toEqual(r);
-    m.set('cca-record-v1', '{not json');
+    m.set('ccn-record-v1', '{not json');
     expect(loadRecord()).toEqual({});
-    m.set('cca-record-v1', JSON.stringify({ version: 2, battles: r }));
+    m.set('ccn-record-v1', JSON.stringify({ version: 2, battles: r }));
     expect(loadRecord()).toEqual({});
   });
 
@@ -128,15 +128,15 @@ describe('battle record', () => {
   it('exports to a dated file and imports it back; other files are refused', () => {
     const r = addResult(addResult({}, '301', 'top', 'consul', 'won'), '012', 'bottom', 'recruit', 'lost');
     const file = exportRecord(r, new Date(2026, 9, 11, 12));
-    expect(file.name).toBe('cca-triumphs-2026-10-11.json');
+    expect(file.name).toBe('ccn-triumphs-2026-10-11.json');
     const parsed = JSON.parse(file.text);
-    expect(parsed.game).toBe('cca-triumphs');
+    expect(parsed.game).toBe('ccn-triumphs');
     expect(parsed.version).toBe(1);
     expect(importRecord(file.text)).toEqual(r);
     expect(importRecord('{"version":1,"battles":{}}')).toBeNull();
     expect(importRecord(JSON.stringify({ version: 1, engine: 2, config: {}, answers: [] }))).toBeNull();
     expect(importRecord('not json')).toBeNull();
-    expect(importRecord(JSON.stringify({ game: 'cca-triumphs', version: 1, battles: {} }))).toEqual({});
+    expect(importRecord(JSON.stringify({ game: 'ccn-triumphs', version: 1, battles: {} }))).toEqual({});
   });
 });
 
@@ -180,7 +180,7 @@ describe('recording a battle when it ends', () => {
     expect(sideTally(loadRecord(), '002', game.winner)).toEqual({ won: 1, lost: 0, draw: 0 });
     expect(c.view.over?.newMedal).toBe('gold');
     c.dispose();
-    expect(storage.has('cca-autosave-v1')).toBe(false);
+    expect(storage.has('ccn-autosave-v1')).toBe(false);
   });
 
   it('records a lost battle, with no medal', async () => {
