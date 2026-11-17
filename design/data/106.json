@@ -1,0 +1,397 @@
+{
+ "id": "106",
+ "grid": {
+  "x0": 74.0,
+  "y0": 129.88,
+  "w": 87.0,
+  "pitch": 75.5
+ },
+ "terrain": [
+  {
+   "r": 0,
+   "c": 9,
+   "t": "hill"
+  },
+  {
+   "r": 0,
+   "c": 10,
+   "t": "hill"
+  },
+  {
+   "r": 0,
+   "c": 11,
+   "t": "hill"
+  },
+  {
+   "r": 1,
+   "c": 5,
+   "t": "hill"
+  },
+  {
+   "r": 1,
+   "c": 6,
+   "t": "hill"
+  },
+  {
+   "r": 1,
+   "c": 8,
+   "t": "hill"
+  },
+  {
+   "r": 1,
+   "c": 9,
+   "t": "hill"
+  },
+  {
+   "r": 4,
+   "c": 10,
+   "t": "hill"
+  },
+  {
+   "r": 4,
+   "c": 11,
+   "t": "hill"
+  },
+  {
+   "r": 5,
+   "c": 8,
+   "t": "hill"
+  },
+  {
+   "r": 5,
+   "c": 9,
+   "t": "hill"
+  },
+  {
+   "r": 5,
+   "c": 10,
+   "t": "hill"
+  },
+  {
+   "r": 6,
+   "c": 9,
+   "t": "hill"
+  },
+  {
+   "r": 6,
+   "c": 10,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 12,
+   "t": "town",
+   "art": "Mengabril"
+  },
+  {
+   "r": 6,
+   "c": 0,
+   "t": "river",
+   "art": "Guadiana River"
+  },
+  {
+   "r": 6,
+   "c": 1,
+   "t": "river",
+   "art": "Guadiana River"
+  },
+  {
+   "r": 7,
+   "c": 1,
+   "t": "river",
+   "art": "Guadiana River"
+  },
+  {
+   "r": 7,
+   "c": 2,
+   "t": "river",
+   "art": "Guadiana River"
+  },
+  {
+   "r": 8,
+   "c": 3,
+   "t": "river",
+   "art": "Guadiana River"
+  },
+  {
+   "r": 4,
+   "c": 12,
+   "t": "river",
+   "art": "Hortiga River"
+  },
+  {
+   "r": 5,
+   "c": 11,
+   "t": "river",
+   "art": "Hortiga River"
+  },
+  {
+   "r": 6,
+   "c": 11,
+   "t": "river",
+   "art": "Hortiga River"
+  },
+  {
+   "r": 7,
+   "c": 10,
+   "t": "river",
+   "art": "Hortiga River"
+  },
+  {
+   "r": 7,
+   "c": 9,
+   "t": "river",
+   "art": "Hortiga River"
+  },
+  {
+   "r": 8,
+   "c": 9,
+   "t": "river",
+   "crossing": "bridge",
+   "art": "Hortiga River"
+  }
+ ],
+ "units": [
+  {
+   "r": 0,
+   "c": 4,
+   "side": "top",
+   "key": "SP/LC"
+  },
+  {
+   "r": 0,
+   "c": 6,
+   "side": "top",
+   "key": "SP/FA"
+  },
+  {
+   "r": 0,
+   "c": 7,
+   "side": "top",
+   "key": "SP/GR"
+  },
+  {
+   "r": 0,
+   "c": 8,
+   "side": "top",
+   "key": "SP/LC"
+  },
+  {
+   "r": 0,
+   "c": 10,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 1,
+   "c": 0,
+   "side": "top",
+   "key": "SP/LC"
+  },
+  {
+   "r": 1,
+   "c": 1,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 1,
+   "c": 2,
+   "side": "top",
+   "key": "SP/FA"
+  },
+  {
+   "r": 1,
+   "c": 3,
+   "side": "top",
+   "key": "SP/GR"
+  },
+  {
+   "r": 1,
+   "c": 6,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 1,
+   "c": 8,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 1,
+   "c": 9,
+   "side": "top",
+   "key": "SP/FA"
+  },
+  {
+   "r": 1,
+   "c": 10,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 1,
+   "c": 11,
+   "side": "top",
+   "key": "SP/HC"
+  },
+  {
+   "r": 2,
+   "c": 1,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 2,
+   "c": 3,
+   "side": "top",
+   "key": "SP/LT"
+  },
+  {
+   "r": 5,
+   "c": 0,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 5,
+   "c": 1,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 5,
+   "c": 2,
+   "side": "bottom",
+   "key": "FR/LC"
+  },
+  {
+   "r": 5,
+   "c": 8,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 5,
+   "c": 9,
+   "side": "bottom",
+   "key": "FR/HA"
+  },
+  {
+   "r": 5,
+   "c": 10,
+   "side": "bottom",
+   "key": "FR/HC"
+  },
+  {
+   "r": 6,
+   "c": 2,
+   "side": "bottom",
+   "key": "FR/HA"
+  },
+  {
+   "r": 6,
+   "c": 10,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 6,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 7,
+   "c": 7,
+   "side": "bottom",
+   "key": "FR/LC"
+  },
+  {
+   "r": 8,
+   "c": 6,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 7,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 8,
+   "side": "bottom",
+   "key": "FR/FA"
+  },
+  {
+   "r": 8,
+   "c": 10,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 8,
+   "c": 11,
+   "side": "bottom",
+   "key": "FR/LN"
+  }
+ ],
+ "leaders": [
+  {
+   "r": 0,
+   "c": 7,
+   "side": "top",
+   "name": "Trias"
+  },
+  {
+   "r": 0,
+   "c": 10,
+   "side": "top",
+   "name": "Henestrosa"
+  },
+  {
+   "r": 1,
+   "c": 1,
+   "side": "top",
+   "name": "Albuquerque"
+  },
+  {
+   "r": 5,
+   "c": 1,
+   "side": "bottom",
+   "name": "Lasalle"
+  },
+  {
+   "r": 6,
+   "c": 9,
+   "side": "bottom",
+   "name": "Latour-Maubourg"
+  },
+  {
+   "r": 8,
+   "c": 6,
+   "side": "bottom",
+   "name": "Villatte"
+  },
+  {
+   "r": 8,
+   "c": 11,
+   "side": "bottom",
+   "name": "Ruffin"
+  }
+ ],
+ "objectives": [],
+ "notes": [
+  "Counts equal the survey (SP 16 units + 3 leaders with SP/LC 3 as the map shows, the page's 2 not followed; FR 15 + 4). Terrain: 14 hill, 11 river hexes (5 Guadiana, 6 Hortiga incl. the bridge hex), 1 town. The survey's river 5 + bend 5 + bridge 1 = 11 matches.",
+  "SP/LC 3: 0,4 and 0,8 on the top row, 1,0 on the second row (survey 106). No objectives beyond kill banners. Special rules (Spanish hand shrinks per banner lost, square limit, Guerrilla counter) are not on the map.",
+  "Guadiana (impassable): 6,0 6,1 7,1 7,2 8,3, runs off the bottom edge at 8,3. Hortiga (impassable except at the bridge): 4,12 5,11 6,11 7,10 7,9 8,9, enters from the right edge at 4,12 and leaves through the bottom at 8,9. The bridge is in 8,9. Two river pieces.",
+  "River pieces cross hexsides where the map shows a faint line; membership was taken from which hex the river lies in at the 3x crops (hex centres sit about 25 px above the label), and agrees with scan.py water fractions.",
+  "Hills under blocks (0,10 1,6 1,8 1,9 5,8 5,9 5,10 6,9 6,10) read from the rays; 14 equals the survey. 0,10 (stack with Henestrosa) scans at 0.13, close to the threshold, rays are visible around the stack.",
+  "Leader names read from the rotated labels on the stacked blocks (zoom 6-12x): Trias (0,7, GR), Henestrosa (0,10, LN), Albuquerque (1,1, LN), Lasalle (5,1, LN), Latour-Maubourg (lone, 6,9), Villatte (8,6, LN), Ruffin (8,11, LN). Trias and Lasalle are the least clear readings, fitting the real Medellin order of battle; the others are clear.",
+  "Row 4 left edge carries a 'Random Choice' tab outside the board."
+ ],
+ "riverPieces": 2
+}

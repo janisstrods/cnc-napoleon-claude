@@ -1,0 +1,359 @@
+{
+ "id": "105",
+ "grid": {
+  "x0": 74.38,
+  "y0": 130.38,
+  "w": 87.0,
+  "pitch": 75.5
+ },
+ "terrain": [
+  {
+   "r": 0,
+   "c": 7,
+   "t": "hill"
+  },
+  {
+   "r": 1,
+   "c": 6,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 3,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 5,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 9,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 0,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 1,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 2,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 8,
+   "t": "hill"
+  },
+  {
+   "r": 4,
+   "c": 10,
+   "t": "hill"
+  },
+  {
+   "r": 4,
+   "c": 11,
+   "t": "hill"
+  },
+  {
+   "r": 6,
+   "c": 8,
+   "t": "hill"
+  },
+  {
+   "r": 6,
+   "c": 9,
+   "t": "hill"
+  },
+  {
+   "r": 0,
+   "c": 4,
+   "t": "forest"
+  },
+  {
+   "r": 1,
+   "c": 1,
+   "t": "forest"
+  },
+  {
+   "r": 1,
+   "c": 10,
+   "t": "forest"
+  },
+  {
+   "r": 6,
+   "c": 1,
+   "t": "forest"
+  },
+  {
+   "r": 6,
+   "c": 5,
+   "t": "forest"
+  },
+  {
+   "r": 7,
+   "c": 3,
+   "t": "forest"
+  },
+  {
+   "r": 7,
+   "c": 8,
+   "t": "forest"
+  },
+  {
+   "r": 5,
+   "c": 3,
+   "t": "fieldworks",
+   "on": "plain",
+   "sides": [
+    "E",
+    "SE",
+    "SW",
+    "W"
+   ],
+   "art": "4-sided redoubt"
+  }
+ ],
+ "units": [
+  {
+   "r": 0,
+   "c": 6,
+   "side": "top",
+   "key": "SP/GR"
+  },
+  {
+   "r": 0,
+   "c": 8,
+   "side": "top",
+   "key": "SP/LC"
+  },
+  {
+   "r": 0,
+   "c": 9,
+   "side": "top",
+   "key": "SP/LC"
+  },
+  {
+   "r": 1,
+   "c": 6,
+   "side": "top",
+   "key": "SP/FA"
+  },
+  {
+   "r": 1,
+   "c": 8,
+   "side": "top",
+   "key": "SP/LT"
+  },
+  {
+   "r": 2,
+   "c": 3,
+   "side": "top",
+   "key": "SP/GR"
+  },
+  {
+   "r": 2,
+   "c": 5,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 3,
+   "c": 0,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 3,
+   "c": 1,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 3,
+   "c": 2,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 3,
+   "c": 5,
+   "side": "top",
+   "key": "SP/FA"
+  },
+  {
+   "r": 3,
+   "c": 7,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 3,
+   "c": 8,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 3,
+   "c": 11,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 4,
+   "c": 10,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 4,
+   "c": 11,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 5,
+   "c": 3,
+   "side": "top",
+   "key": "SP/FA"
+  },
+  {
+   "r": 7,
+   "c": 0,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 1,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 2,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 5,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 6,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 7,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 8,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 9,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 7,
+   "c": 10,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 7,
+   "c": 11,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 8,
+   "c": 1,
+   "side": "bottom",
+   "key": "FR/LC"
+  },
+  {
+   "r": 8,
+   "c": 2,
+   "side": "bottom",
+   "key": "FR/LC"
+  },
+  {
+   "r": 8,
+   "c": 3,
+   "side": "bottom",
+   "key": "FR/GA"
+  },
+  {
+   "r": 8,
+   "c": 5,
+   "side": "bottom",
+   "key": "FR/GLC"
+  },
+  {
+   "r": 8,
+   "c": 6,
+   "side": "bottom",
+   "key": "FR/GLC"
+  }
+ ],
+ "leaders": [
+  {
+   "r": 1,
+   "c": 7,
+   "side": "top",
+   "name": "unlabelled"
+  },
+  {
+   "r": 2,
+   "c": 1,
+   "side": "top",
+   "name": "unlabelled"
+  },
+  {
+   "r": 3,
+   "c": 10,
+   "side": "top",
+   "name": "unlabelled"
+  },
+  {
+   "r": 8,
+   "c": 1,
+   "side": "bottom",
+   "name": "Pires"
+  },
+  {
+   "r": 8,
+   "c": 7,
+   "side": "bottom",
+   "name": "Rufin?"
+  }
+ ],
+ "objectives": [],
+ "notes": [
+  "Counts equal the survey (SP 17 units + 3 leaders, FR 15 + 2). Terrain: 13 hill, 7 forest, 1 four-sided redoubt (survey 13/7/1).",
+  "No objectives beyond kill banners; the French win at once if all three Spanish artillery (1,6 3,5 5,3) are eliminated (survey rule, not on the map). Spanish Guerrilla Action: one starting counter.",
+  "Redoubt 5,3 (SP/FA): fieldworks on plain, sides E, SE, SW, W. The wall shows at the left and right edges and along the two lower sides; the block hides the top edge but the NE and NW sides show no wall in the hex above it. scan.py reads the redoubt shadow as hill (0.15): false, the hex is plain.",
+  "Hills under blocks (1,6 2,3 2,5 3,0 3,1 3,2 3,8 4,10 4,11) were read from the rays around the blocks; 13 equals the survey. Block counts that differ from the standard are SP/LN at 3,0 (3 blocks), SP/LT 1,8 (5), FR/LN 7,6 (5), FR/GA at 8,3 (3).",
+  "Leaders: the Spanish three (1,7 2,1 3,10) are lone horse blocks with no name on the map ('unlabelled'). French: the leader at 8,1 is stacked with an FR/LC and its side label reads 'Pires' (6x zoom, fairly clear); the lone leader at 8,7 has a label too small to read ('Rufin' is the closest reading, recorded as 'Rufin?'; the survey calls it illegible).",
+  "Map has no river, town or objective. Row 4 left edge carries a 'Random Choice' tab outside the board."
+ ]
+}

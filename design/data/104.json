@@ -1,0 +1,463 @@
+{
+ "id": "104",
+ "grid": {
+  "x0": 74.38,
+  "y0": 130.38,
+  "w": 87.0,
+  "pitch": 75.5
+ },
+ "terrain": [
+  {
+   "r": 1,
+   "c": 4,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 2,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 3,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 9,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 10,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 10,
+   "t": "hill"
+  },
+  {
+   "r": 4,
+   "c": 6,
+   "t": "hill"
+  },
+  {
+   "r": 4,
+   "c": 11,
+   "t": "hill"
+  },
+  {
+   "r": 5,
+   "c": 3,
+   "t": "hill"
+  },
+  {
+   "r": 5,
+   "c": 8,
+   "t": "hill"
+  },
+  {
+   "r": 5,
+   "c": 11,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 7,
+   "t": "forest"
+  },
+  {
+   "r": 3,
+   "c": 0,
+   "t": "forest"
+  },
+  {
+   "r": 3,
+   "c": 3,
+   "t": "forest"
+  },
+  {
+   "r": 4,
+   "c": 0,
+   "t": "forest"
+  },
+  {
+   "r": 4,
+   "c": 2,
+   "t": "forest"
+  },
+  {
+   "r": 4,
+   "c": 8,
+   "t": "forest"
+  },
+  {
+   "r": 6,
+   "c": 12,
+   "t": "forest"
+  },
+  {
+   "r": 7,
+   "c": 1,
+   "t": "forest"
+  },
+  {
+   "r": 7,
+   "c": 2,
+   "t": "forest"
+  },
+  {
+   "r": 7,
+   "c": 3,
+   "t": "forest"
+  },
+  {
+   "r": 7,
+   "c": 10,
+   "t": "forest"
+  },
+  {
+   "r": 0,
+   "c": 6,
+   "t": "town",
+   "art": "Espinosa"
+  },
+  {
+   "r": 0,
+   "c": 7,
+   "t": "town",
+   "art": "Espinosa"
+  },
+  {
+   "r": 6,
+   "c": 6,
+   "t": "town",
+   "art": "Quintana"
+  },
+  {
+   "r": 6,
+   "c": 7,
+   "t": "town",
+   "art": "Quintana"
+  },
+  {
+   "r": 0,
+   "c": 1,
+   "t": "river",
+   "art": "River Trueba"
+  },
+  {
+   "r": 0,
+   "c": 2,
+   "t": "river",
+   "art": "River Trueba"
+  },
+  {
+   "r": 0,
+   "c": 3,
+   "t": "river",
+   "art": "River Trueba"
+  },
+  {
+   "r": 0,
+   "c": 4,
+   "t": "river",
+   "art": "River Trueba"
+  },
+  {
+   "r": 1,
+   "c": 0,
+   "t": "river",
+   "art": "River Trueba"
+  },
+  {
+   "r": 2,
+   "c": 0,
+   "t": "river",
+   "art": "River Trueba"
+  },
+  {
+   "r": 5,
+   "c": 10,
+   "t": "river",
+   "crossing": "ford",
+   "art": "Shallow Stream (source)"
+  },
+  {
+   "r": 6,
+   "c": 11,
+   "t": "river",
+   "crossing": "ford",
+   "art": "Shallow Stream"
+  },
+  {
+   "r": 7,
+   "c": 11,
+   "t": "river",
+   "crossing": "ford",
+   "art": "Shallow Stream"
+  },
+  {
+   "r": 8,
+   "c": 12,
+   "t": "river",
+   "crossing": "ford",
+   "art": "Shallow Stream"
+  }
+ ],
+ "units": [
+  {
+   "r": 0,
+   "c": 8,
+   "side": "top",
+   "key": "SP/LC"
+  },
+  {
+   "r": 0,
+   "c": 9,
+   "side": "top",
+   "key": "SP/LC"
+  },
+  {
+   "r": 1,
+   "c": 1,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 1,
+   "c": 2,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 1,
+   "c": 4,
+   "side": "top",
+   "key": "SP/FA"
+  },
+  {
+   "r": 1,
+   "c": 8,
+   "side": "top",
+   "key": "SP/GR"
+  },
+  {
+   "r": 2,
+   "c": 2,
+   "side": "top",
+   "key": "SP/LT"
+  },
+  {
+   "r": 2,
+   "c": 3,
+   "side": "top",
+   "key": "SP/LT"
+  },
+  {
+   "r": 2,
+   "c": 4,
+   "side": "top",
+   "key": "SP/GR"
+  },
+  {
+   "r": 2,
+   "c": 5,
+   "side": "top",
+   "key": "SP/FA"
+  },
+  {
+   "r": 2,
+   "c": 6,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 2,
+   "c": 7,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 2,
+   "c": 9,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 2,
+   "c": 10,
+   "side": "top",
+   "key": "SP/ML"
+  },
+  {
+   "r": 3,
+   "c": 10,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 4,
+   "c": 11,
+   "side": "top",
+   "key": "SP/ML"
+  },
+  {
+   "r": 5,
+   "c": 11,
+   "side": "top",
+   "key": "SP/ML"
+  },
+  {
+   "r": 5,
+   "c": 0,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 5,
+   "c": 1,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 5,
+   "c": 2,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 5,
+   "c": 3,
+   "side": "bottom",
+   "key": "FR/HA"
+  },
+  {
+   "r": 5,
+   "c": 4,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 1,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 2,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 3,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 4,
+   "side": "bottom",
+   "key": "FR/FA"
+  },
+  {
+   "r": 7,
+   "c": 5,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 8,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 9,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 3,
+   "side": "bottom",
+   "key": "FR/LC"
+  },
+  {
+   "r": 8,
+   "c": 4,
+   "side": "bottom",
+   "key": "FR/LC"
+  },
+  {
+   "r": 8,
+   "c": 8,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 9,
+   "side": "bottom",
+   "key": "FR/FA"
+  },
+  {
+   "r": 8,
+   "c": 10,
+   "side": "bottom",
+   "key": "FR/LT"
+  }
+ ],
+ "leaders": [
+  {
+   "r": 1,
+   "c": 3,
+   "side": "top",
+   "name": "Romana"
+  },
+  {
+   "r": 1,
+   "c": 7,
+   "side": "top",
+   "name": "Blake"
+  },
+  {
+   "r": 2,
+   "c": 11,
+   "side": "top",
+   "name": "Acevedo"
+  },
+  {
+   "r": 5,
+   "c": 2,
+   "side": "bottom",
+   "name": "Ruffin"
+  },
+  {
+   "r": 7,
+   "c": 2,
+   "side": "bottom",
+   "name": "Villatte"
+  },
+  {
+   "r": 8,
+   "c": 8,
+   "side": "bottom",
+   "name": "Lapisse"
+  }
+ ],
+ "objectives": [],
+ "notes": [
+  "Counts equal the survey (SP 17 units + 3 leaders, FR 17 + 3) using the current 104.png (FR/FA 2, FR/HA 1; the old 104.jpg is stale). Terrain: 11 hill, 11 forest, 10 river hexes, 4 town hexes.",
+  "No objectives beyond kill banners (survey). Spanish Guerrilla Action: one starting counter (rule, not on the map).",
+  "River Trueba (0,1 0,2 0,3 0,4 1,0 2,0) is impassable: river hexes with no crossing field. Shallow Stream (5,10 6,11 7,11 8,12; 5,10 is the branching source) is fordable: each hex carries crossing 'ford' to tell the two water rules apart. Two river pieces.",
+  "Towns: Espinosa 0,6 and 0,7, Quintana 6,6 and 6,7 (two hexes each, recorded in art).",
+  "Forest under blocks 2,7 (SP/LN), 7,1 7,2 7,3 (FR/LN, FR/LN+Villatte, FR/LN) read from the trees showing around the blocks. Hills under blocks (1,4 2,2 2,3 2,9 2,10 3,10 4,11 5,3 5,11) read from the ring of rays.",
+  "Militia blocks are labelled MI on the map: key SP/ML. Leaders: Romana 1,3, Blake 1,7 and Acevedo 2,11 are lone horse blocks; Ruffin (5,2), Villatte (7,2), Lapisse (8,8) each stand with an FR/LN. The red dashed lines are section dividers, not terrain."
+ ],
+ "riverPieces": 2
+}
