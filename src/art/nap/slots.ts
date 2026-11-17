@@ -21,14 +21,17 @@ const HF = 0.95; // front-rank scale (horse)
 // The full-strength list of each formation, back rank first (draw order). Depleted units drop figures from the back rank
 // first, so every strength from 2 to 4 is the tail of this list and a surviving figure keeps its slot; the one-block slot is
 // the exception: it is centred (and takes the paint of the last front-rank figure). Front ranks are 24 (foot) and 26 (horse)
-// apart, so neighbours overlap by a third at most, and each back-rank figure stands in a front-rank gap.
+// apart, so neighbours overlap by a third at most; the back rank is offset from the front by about half that, one figure
+// in the gap and one outside it. The hex's pointed top is what binds: the back rank cannot stand higher, nor further out,
+// without plumes, bayonets or blades crossing the edge, which is also why the scales are a little under the old 1.26/1.12.
 const FULL: Record<Formation, readonly [Slot, Slot, Slot, Slot]> = {
   close: [{ x: -17, y: 10.5, s: FB }, { x: 7, y: 10.5, s: FB }, { x: -6, y: 18.5, s: FF }, { x: 18, y: 18.5, s: FF }],
   loose: [{ x: -19, y: 12, s: FB }, { x: 6, y: 6, s: FB }, { x: -7, y: 18.5, s: FF }, { x: 17, y: 17.5, s: FF }],
   horse: [{ x: -17, y: 11, s: HB }, { x: 8, y: 11, s: HB }, { x: -10, y: 21, s: HF }, { x: 16, y: 21, s: HF }],
-  // gun: piece k of a unit stands in slot (max - 1 - k), so at 3 blocks (its strength in play) the linstock man stands at the
-  // rear, behind the trail, the rammer beside the muzzle (turned to face it), and the gun front centre, broadside and whole.
-  // A fourth block (not in play) adds the man with the cartridge bag behind the breech.
+  // gun: piece k of a unit stands in slot (max - 1 - k), so at 3 blocks (its strength in play) the gun stands front centre,
+  // broadside and whole, with its layer crouched behind the trail; the linstock man stands back by the breech, clear of the
+  // recoil, and the rammer out at the muzzle, turned to face it. A fourth block (not in play) adds the man with the cartridge
+  // bag behind the trail. A horse-artillery stand's horse holder takes the empty rear corner behind the layer (HOLDER_SLOT).
   gun: [{ x: -9, y: 6, s: 0.9 }, { x: 9, y: 7, s: 0.95 }, { x: 30, y: 11, s: 0.92, face: -1 }, { x: 2, y: 19, s: 1.1 }],
 };
 const SINGLE: Record<Formation, Slot> = {
@@ -40,7 +43,8 @@ const SINGLE: Record<Formation, Slot> = {
 
 /**
  * Where a horse-artillery stand's horse holder stands (a mounted gunner, not a block piece: he stays at every strength), at the
- * rear of the base on the side away from the enemy. Mirrored with the facing like every slot.
+ * rear of the base on the side away from the enemy, his horse turned away from the guns so that its head shows clear of the
+ * crew. Mirrored with the facing like every slot.
  */
 export const HOLDER_SLOT: Slot = { x: -22, y: 4, s: 0.7, face: -1 };
 
