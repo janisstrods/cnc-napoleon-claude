@@ -4,10 +4,10 @@ import { CLOTH } from '../nations';
 import type { FrInfantryKey } from '../keys';
 import type { Dress, FootSpec, Headwear } from '../uniform';
 
-// Local swatches (not in CLOTH): the company pompom colours of the line, the light infantry's bright green.
-const POMPOM_GREEN = '#3c8f3a';
+// Local swatches (not in CLOTH): the violet company pompom, and one bright green for the green company pompom and the
+// light infantry's epaulettes and plume.
 const POMPOM_VIOLET = '#7a3f9a';
-const LIGHT_GREEN = '#3f8f3c';
+const GREEN = '#3f8f3c';
 
 const tails = (d: Partial<Dress> & Pick<Dress, 'facings' | 'trousers'>): Dress => ({ coat: CLOTH.frenchBlue, cut: 'tails', belts: CLOTH.white, ...d });
 const foot = (dress: Dress, head: Headwear, poses: FootSpec['poses'], order: FootSpec['order'], guard?: true): FootSpec => ({
@@ -19,14 +19,15 @@ export const FR_INFANTRY_SPECS: Record<FrInfantryKey, FootSpec> = {
   // the pompom shows the company (green, sky, orange, violet), cycled by figure.
   'FR/LN': foot(
     tails({ facings: CLOTH.scarlet, lapels: CLOTH.white, trousers: CLOTH.white, gaiters: CLOTH.black, shoulders: { kind: 'straps', colour: CLOTH.frenchBlue } }),
-    { kind: 'shako', plate: 'brass', pompoms: [POMPOM_GREEN, CLOTH.sky, CLOTH.orange, POMPOM_VIOLET] },
+    { kind: 'shako', plate: 'brass', pompoms: [GREEN, CLOTH.sky, CLOTH.orange, POMPOM_VIOLET] },
     ['shoulder', 'shoulder', 'charge', 'shoulder'], 'close',
   ),
-  // Light infantry: all blue, blue lapels piped white, green epaulettes, tall green plume tipped yellow, white cords.
+  // Light infantry: all blue, blue lapels piped white, scarlet collar and cuffs piped white (pre-1812 practice; later regulations
+  // gave a blue collar, so sources differ), green epaulettes, tall green plume tipped yellow, white cords.
   'FR/LT': foot(
-    tails({ facings: CLOTH.frenchBlue, lapels: CLOTH.frenchBlue, lace: CLOTH.white, trousers: CLOTH.frenchBlue, gaiters: CLOTH.black, shoulders: { kind: 'epaulettes', colour: LIGHT_GREEN } }),
-    { kind: 'shako', plate: 'brass', cords: CLOTH.white, plume: { colour: LIGHT_GREEN, tip: CLOTH.yellow, tall: true } },
-    ['aim', 'port', 'aim', 'port'], 'loose',
+    tails({ facings: CLOTH.scarlet, lapels: CLOTH.frenchBlue, lace: CLOTH.white, trousers: CLOTH.frenchBlue, gaiters: CLOTH.black, shoulders: { kind: 'epaulettes', colour: GREEN } }),
+    { kind: 'shako', plate: 'brass', cords: CLOTH.white, plume: { colour: GREEN, tip: CLOTH.yellow, tall: true } },
+    ['port', 'aim', 'port', 'aim'], 'loose',
   ),
   // Converged line grenadiers in bearskins. Some had gone to the shako by 1808; the bearskin is kept because it reads at
   // board scale. No plate on this one: the plate marks the Old Guard.

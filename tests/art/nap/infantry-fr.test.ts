@@ -54,10 +54,11 @@ describe('French infantry', () => {
     }
   });
 
-  it('LT aims on figures 0 and 2', () => {
-    expect(fig('FR/LT', 0)).toContain('data-pose="aim"');
-    expect(fig('FR/LT', 2)).toContain('data-pose="aim"');
-    expect(fig('FR/LT', 1)).toContain('data-pose="port"');
+  it('LT aims on figures 1 and 3 (the right-hand files)', () => {
+    expect(fig('FR/LT', 1)).toContain('data-pose="aim"');
+    expect(fig('FR/LT', 3)).toContain('data-pose="aim"');
+    expect(fig('FR/LT', 0)).toContain('data-pose="port"');
+    expect(fig('FR/LT', 2)).toContain('data-pose="port"');
   });
 
   it('light infantry stand loose', () => {

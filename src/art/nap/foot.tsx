@@ -15,6 +15,8 @@ type P = readonly [number, number];
 
 const SHOE = '#17140f';
 const HIDE = '#6a4c2e'; // the calfskin pack
+// The rolled greatcoat on every pack: campaign grey, whatever the man wears.
+const PACK_ROLL = CLOTH.greatcoatGrey;
 const SKIRT = 4.6; // y of the greatcoat hem
 
 /** The upper body's lean for a stance: a rotation about the hips, and a drop for the kneel. */
@@ -68,7 +70,8 @@ function Shoulders({ dress }: { dress: Dress }) {
   const piece = (x: number, key: string) => {
     if (s.kind === 'straps') {
       // a flat strap on the shoulder, piped in the facing colour
-      return <Shape key={key} d={`M${x - 1.5} -21.9 L${x + 1.5} -21.6 L${x + 1.4} -20.5 L${x - 1.6} -20.8 Z`} f={s.colour} sw={0.5} />;
+      const d = `M${x - 1.5} -21.9 L${x + 1.5} -21.6 L${x + 1.4} -20.5 L${x - 1.6} -20.8 Z`;
+      return <g key={key}><Shape d={d} f={s.colour} sw={0.5} /><path d={d} fill="none" stroke={dress.facings} strokeWidth={0.45} strokeLinejoin="round" /></g>;
     }
     if (s.kind === 'wings') {
       return <path key={key} d={`M${x - 2.4} -20.6 Q${x - 2.2} -23 ${x} -22.8 Q${x + 2.4} -23 ${x + 2.4} -20.6 Z`} fill={s.colour} stroke={OL} strokeWidth={0.6} strokeLinejoin="round" />;
@@ -114,6 +117,7 @@ function Torso({ dress, f }: { dress: Dress; f: Fig }) {
       {dress.lace && !lapel && !long ? <path d="M-2.4 -19 L2.4 -19 M-2.4 -17 L2.4 -17 M-2.6 -15 L2.6 -15" stroke={dress.lace} strokeWidth={0.45} /> : null}
       {/* collar */}
       <Shape d="M-1.7 -22.2 L2 -22.2 L2.3 -20.5 L-1.9 -20.5 Z" f={dress.facings} sw={0.6} />
+      {dress.lace ? <path d="M-1.6 -21.9 L1.9 -21.9" stroke={dress.lace} strokeWidth={0.4} /> : null}
       {/* the two cross belts and the plate where they meet */}
       <Line2 d="M-2.2 -20.6 L3 -12.8" w={1.1} c={darken(dress.belts, 0.12)} ow={0.4} />
       <Line2 d="M2.3 -20.6 L-2.9 -12.8" w={1.1} c={dress.belts} ow={0.4} />
@@ -232,13 +236,13 @@ function geo(pose: FootPose): PoseGeo {
 }
 
 /** The calfskin pack with its rolled greatcoat on top, behind the shoulders. */
-function Pack({ dress }: { dress: Dress }) {
+function Pack() {
   return (
     <g>
       <Shape d="M-7.2 -21.4 Q-7.7 -17.4 -6.8 -13.4 L-2.9 -13.6 L-2.7 -21 Z" f={HIDE} sw={0.7} />
       <Paint d="M-7.2 -21.4 Q-7.7 -17.4 -6.8 -13.4 L-5.6 -13.5 L-5.6 -21.2 Z" f={darken(HIDE, 0.4)} o={0.5} mx={-5} />
       <path d="M-6.3 -19.8 L-3.3 -19.8 M-6.3 -16.6 L-3.3 -16.6" stroke={darken(HIDE, 0.45)} strokeWidth={0.45} />
-      <Line2 d="M-7.5 -22.6 L-2.7 -22.9" w={2.7} c={dress.cut === 'greatcoat' ? CLOTH.white : CLOTH.greatcoatGrey} ow={0.6} />
+      <Line2 d="M-7.5 -22.6 L-2.7 -22.9" w={2.7} c={PACK_ROLL} ow={0.6} />
       <path d="M-6.4 -24.1 L-6.4 -21.4 M-3.9 -24.2 L-3.9 -21.6" stroke={darken(CLOTH.greatcoatGrey, 0.4)} strokeWidth={0.45} />
     </g>
   );
@@ -255,7 +259,7 @@ export function FootFigure({ spec, n, i }: { spec: FootSpec; n: NationLook; i: n
   const far = <Sleeve from={FAR_SHOULDER} elbow={g.far.elbow} hand={g.far.hand} dress={dress} f={f} near={false} />;
   return (
     <g data-fig="foot" data-pose={pose}>
-      <g transform={lean}>{spec.pack ? <Pack dress={dress} /> : null}</g>
+      <g transform={lean}>{spec.pack ? <Pack /> : null}</g>
       {g.farOver ? null : <g transform={lean}>{far}</g>}
       <FootBody dress={dress} f={f} stance={g.stance} />
       <g transform={lean}>

@@ -72,16 +72,16 @@ function bearskinOf(kind: 'bearskin' | 'bearskinPlate'): HeadgearRenderer {
     return (
       <g data-head={kind}>
         {head.plume ? <Plume x={-1.4} y={-10.6} h={head.plume.tall ? 4.8 : 3.4} colour={head.plume.colour} tip={head.plume.tip} /> : null}
-        <Shape d="M-3.2 -0.2 L-3 -8.4 Q0.4 -11.8 4.3 -8.8 L3.3 -0.7 Z" f={fur} />
-        <Paint d="M-3.2 -0.2 L-3 -8.4 Q-1.6 -10 -0.8 -10.3 L-0.9 -0.4 Z" f={darken(fur, 0.5)} o={0.6} mx={0} />
+        <Shape d="M-3.2 -0.8 L-3 -8.4 Q0.4 -11.8 4.3 -8.8 L3.3 -1.3 Z" f={fur} />
+        <Paint d="M-3.2 -0.8 L-3 -8.4 Q-1.6 -10 -0.8 -10.3 L-0.9 -1 Z" f={darken(fur, 0.5)} o={0.6} mx={0} />
         {/* fur: short strokes on the lit side */}
         <Hi d="M1.4 -9.4 L1.7 -7.8 M2.8 -8.4 L3 -6.8 M0.2 -10.2 L0.6 -8.6 M1.2 -6.4 L1.5 -4.8 M2.4 -5.6 L2.6 -4 M0.6 -3.8 L0.8 -2.4" c={lighten(fur, 0.35)} w={0.45} o={0.85} mx={1} />
         {/* the back of the cap: the red bag, a hint of it below the crown */}
         <path d="M-3.1 -8 L-4 -4.4 L-3 -4 Z" fill={head.plume?.colour ?? '#8a2a2a'} opacity={0.9} />
-        {head.cords ? <Cords colour={head.cords} y0={-1.4} y1={-0.6} x0={-3} x1={3.3} /> : null}
+        {head.cords ? <Cords colour={head.cords} y0={-3.8} y1={-2.2} x0={-3} x1={3.3} /> : null}
         {plate ? (
           <g>
-            <Shape d="M0.5 -6 Q2.2 -6.7 3.6 -5.6 L3.1 -1.2 Q1.9 -0.6 0.7 -1.2 Z" f={plate} sw={0.5} />
+            <Shape d="M0.5 -6 Q2.2 -6.7 3.6 -5.6 L3.1 -1.9 Q1.9 -1.3 0.7 -1.9 Z" f={plate} sw={0.5} />
             <path d="M2.1 -3.7 L1.2 -3.1 L1.5 -4.2 L2.4 -4.4 Z" fill={METAL.brassShade} />
             <Hi d="M1.2 -5 L1.1 -2" c={lighten(plate, 0.5)} w={0.4} mx={1.8} />
           </g>
