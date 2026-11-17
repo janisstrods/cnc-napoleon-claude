@@ -1,0 +1,481 @@
+{
+  "id": "114",
+  "grid": {
+    "x0": 74.38,
+    "y0": 130.62,
+    "w": 87.0,
+    "pitch": 75.5
+  },
+  "terrain": [
+    {
+      "r": 0,
+      "c": 11,
+      "t": "river"
+    },
+    {
+      "r": 1,
+      "c": 11,
+      "t": "river"
+    },
+    {
+      "r": 2,
+      "c": 12,
+      "t": "river"
+    },
+    {
+      "r": 3,
+      "c": 11,
+      "t": "river"
+    },
+    {
+      "r": 4,
+      "c": 12,
+      "t": "river"
+    },
+    {
+      "r": 0,
+      "c": 1,
+      "t": "forest"
+    },
+    {
+      "r": 0,
+      "c": 8,
+      "t": "forest"
+    },
+    {
+      "r": 1,
+      "c": 0,
+      "t": "forest"
+    },
+    {
+      "r": 2,
+      "c": 9,
+      "t": "forest"
+    },
+    {
+      "r": 2,
+      "c": 11,
+      "t": "forest"
+    },
+    {
+      "r": 3,
+      "c": 6,
+      "t": "forest"
+    },
+    {
+      "r": 3,
+      "c": 9,
+      "t": "forest"
+    },
+    {
+      "r": 4,
+      "c": 7,
+      "t": "forest"
+    },
+    {
+      "r": 5,
+      "c": 8,
+      "t": "forest"
+    },
+    {
+      "r": 6,
+      "c": 0,
+      "t": "forest"
+    },
+    {
+      "r": 6,
+      "c": 12,
+      "t": "forest"
+    },
+    {
+      "r": 7,
+      "c": 8,
+      "t": "forest"
+    },
+    {
+      "r": 2,
+      "c": 3,
+      "t": "hill",
+      "art": "Barrosa Ridge"
+    },
+    {
+      "r": 3,
+      "c": 1,
+      "t": "hill",
+      "art": "Barrosa Ridge"
+    },
+    {
+      "r": 3,
+      "c": 2,
+      "t": "hill",
+      "art": "Barrosa Ridge"
+    },
+    {
+      "r": 3,
+      "c": 3,
+      "t": "hill",
+      "art": "Barrosa Ridge"
+    },
+    {
+      "r": 4,
+      "c": 2,
+      "t": "hill",
+      "art": "Barrosa Ridge"
+    },
+    {
+      "r": 4,
+      "c": 3,
+      "t": "hill",
+      "art": "Barrosa Ridge"
+    },
+    {
+      "r": 4,
+      "c": 4,
+      "t": "hill",
+      "art": "Barrosa Ridge"
+    },
+    {
+      "r": 5,
+      "c": 2,
+      "t": "hill",
+      "art": "Barrosa Ridge"
+    },
+    {
+      "r": 5,
+      "c": 3,
+      "t": "hill",
+      "art": "Barrosa Ridge"
+    },
+    {
+      "r": 5,
+      "c": 4,
+      "t": "hill",
+      "art": "Barrosa Ridge"
+    },
+    {
+      "r": 6,
+      "c": 3,
+      "t": "hill",
+      "art": "Barrosa Ridge"
+    },
+    {
+      "r": 4,
+      "c": 11,
+      "t": "hill"
+    },
+    {
+      "r": 5,
+      "c": 11,
+      "t": "hill"
+    },
+    {
+      "r": 4,
+      "c": 0,
+      "t": "town",
+      "art": "label: Barossa"
+    }
+  ],
+  "units": [
+    {
+      "r": 0,
+      "c": 7,
+      "side": "top",
+      "key": "BR/LN"
+    },
+    {
+      "r": 1,
+      "c": 2,
+      "side": "top",
+      "key": "BR/LN"
+    },
+    {
+      "r": 1,
+      "c": 4,
+      "side": "top",
+      "key": "BR/LN"
+    },
+    {
+      "r": 1,
+      "c": 5,
+      "side": "top",
+      "key": "BR/LN"
+    },
+    {
+      "r": 1,
+      "c": 9,
+      "side": "top",
+      "key": "BR/LN"
+    },
+    {
+      "r": 0,
+      "c": 10,
+      "side": "top",
+      "key": "BR/LT"
+    },
+    {
+      "r": 1,
+      "c": 8,
+      "side": "top",
+      "key": "BR/RI"
+    },
+    {
+      "r": 0,
+      "c": 4,
+      "side": "top",
+      "key": "BR/GG"
+    },
+    {
+      "r": 1,
+      "c": 3,
+      "side": "top",
+      "key": "BR/GG"
+    },
+    {
+      "r": 0,
+      "c": 5,
+      "side": "top",
+      "key": "BR/LC"
+    },
+    {
+      "r": 1,
+      "c": 7,
+      "side": "top",
+      "key": "BR/FA"
+    },
+    {
+      "r": 1,
+      "c": 6,
+      "side": "top",
+      "key": "PT/LN"
+    },
+    {
+      "r": 3,
+      "c": 0,
+      "side": "top",
+      "key": "SP/LN"
+    },
+    {
+      "r": 3,
+      "c": 1,
+      "side": "top",
+      "key": "SP/LN"
+    },
+    {
+      "r": 3,
+      "c": 2,
+      "side": "top",
+      "key": "SP/LN"
+    },
+    {
+      "r": 3,
+      "c": 3,
+      "side": "top",
+      "key": "SP/LN"
+    },
+    {
+      "r": 6,
+      "c": 1,
+      "side": "bottom",
+      "key": "FR/LN"
+    },
+    {
+      "r": 6,
+      "c": 2,
+      "side": "bottom",
+      "key": "FR/LN"
+    },
+    {
+      "r": 7,
+      "c": 3,
+      "side": "bottom",
+      "key": "FR/LN"
+    },
+    {
+      "r": 7,
+      "c": 4,
+      "side": "bottom",
+      "key": "FR/LN"
+    },
+    {
+      "r": 7,
+      "c": 9,
+      "side": "bottom",
+      "key": "FR/LN"
+    },
+    {
+      "r": 7,
+      "c": 10,
+      "side": "bottom",
+      "key": "FR/LN"
+    },
+    {
+      "r": 6,
+      "c": 0,
+      "side": "bottom",
+      "key": "FR/LT"
+    },
+    {
+      "r": 6,
+      "c": 10,
+      "side": "bottom",
+      "key": "FR/LT"
+    },
+    {
+      "r": 6,
+      "c": 11,
+      "side": "bottom",
+      "key": "FR/LT"
+    },
+    {
+      "r": 7,
+      "c": 7,
+      "side": "bottom",
+      "key": "FR/LT"
+    },
+    {
+      "r": 8,
+      "c": 4,
+      "side": "bottom",
+      "key": "FR/GR"
+    },
+    {
+      "r": 8,
+      "c": 6,
+      "side": "bottom",
+      "key": "FR/GR"
+    },
+    {
+      "r": 8,
+      "c": 11,
+      "side": "bottom",
+      "key": "FR/GR"
+    },
+    {
+      "r": 8,
+      "c": 7,
+      "side": "bottom",
+      "key": "FR/HC"
+    },
+    {
+      "r": 7,
+      "c": 5,
+      "side": "bottom",
+      "key": "FR/FA"
+    },
+    {
+      "r": 7,
+      "c": 6,
+      "side": "bottom",
+      "key": "FR/FA"
+    }
+  ],
+  "leaders": [
+    {
+      "r": 0,
+      "c": 3,
+      "side": "top",
+      "name": "Graham"
+    },
+    {
+      "r": 0,
+      "c": 9,
+      "side": "top",
+      "name": "Wheatley"
+    },
+    {
+      "r": 1,
+      "c": 5,
+      "side": "top",
+      "name": "Dilkes"
+    },
+    {
+      "r": 3,
+      "c": 1,
+      "side": "top",
+      "name": "Lardizabal"
+    },
+    {
+      "r": 6,
+      "c": 2,
+      "side": "bottom",
+      "name": "Villatte"
+    },
+    {
+      "r": 8,
+      "c": 5,
+      "side": "bottom",
+      "name": "Ruffin"
+    },
+    {
+      "r": 8,
+      "c": 11,
+      "side": "bottom",
+      "name": "Leval"
+    }
+  ],
+  "objectives": [
+    {
+      "r": 2,
+      "c": 3,
+      "note": "Group banner (survey 114): one banner for the side with an absolute majority of the 11 Barrosa Ridge hexes at the start of its turn; Spanish begin with 3 of them and 1 banner"
+    },
+    {
+      "r": 3,
+      "c": 1,
+      "note": "Group banner (survey 114): one banner for the side with an absolute majority of the 11 Barrosa Ridge hexes at the start of its turn; Spanish begin with 3 of them and 1 banner"
+    },
+    {
+      "r": 3,
+      "c": 2,
+      "note": "Group banner (survey 114): one banner for the side with an absolute majority of the 11 Barrosa Ridge hexes at the start of its turn; Spanish begin with 3 of them and 1 banner"
+    },
+    {
+      "r": 3,
+      "c": 3,
+      "note": "Group banner (survey 114): one banner for the side with an absolute majority of the 11 Barrosa Ridge hexes at the start of its turn; Spanish begin with 3 of them and 1 banner"
+    },
+    {
+      "r": 4,
+      "c": 2,
+      "note": "Group banner (survey 114): one banner for the side with an absolute majority of the 11 Barrosa Ridge hexes at the start of its turn; Spanish begin with 3 of them and 1 banner"
+    },
+    {
+      "r": 4,
+      "c": 3,
+      "note": "Group banner (survey 114): one banner for the side with an absolute majority of the 11 Barrosa Ridge hexes at the start of its turn; Spanish begin with 3 of them and 1 banner"
+    },
+    {
+      "r": 4,
+      "c": 4,
+      "note": "Group banner (survey 114): one banner for the side with an absolute majority of the 11 Barrosa Ridge hexes at the start of its turn; Spanish begin with 3 of them and 1 banner"
+    },
+    {
+      "r": 5,
+      "c": 2,
+      "note": "Group banner (survey 114): one banner for the side with an absolute majority of the 11 Barrosa Ridge hexes at the start of its turn; Spanish begin with 3 of them and 1 banner"
+    },
+    {
+      "r": 5,
+      "c": 3,
+      "note": "Group banner (survey 114): one banner for the side with an absolute majority of the 11 Barrosa Ridge hexes at the start of its turn; Spanish begin with 3 of them and 1 banner"
+    },
+    {
+      "r": 5,
+      "c": 4,
+      "note": "Group banner (survey 114): one banner for the side with an absolute majority of the 11 Barrosa Ridge hexes at the start of its turn; Spanish begin with 3 of them and 1 banner"
+    },
+    {
+      "r": 6,
+      "c": 3,
+      "note": "Group banner (survey 114): one banner for the side with an absolute majority of the 11 Barrosa Ridge hexes at the start of its turn; Spanish begin with 3 of them and 1 banner"
+    }
+  ],
+  "notes": [
+    "Units 16 + 16 and leaders 4 + 3, as the survey. Top: BR red blocks (LN 0,7 1,2 1,4 1,5 1,9; LT 0,10; RI 1,8; GG 0,4 1,3; FA 1,7), BR/LC 0,5 (red light cavalry on the top row, absent from the page table: map followed, survey section 3 item 3), PT/LN 1,6 (brown block), SP/LN yellow on the ridge 3,0 3,1 3,2 3,3. Bottom: FR blue.",
+    "Barrosa Ridge: 11 hill hexes inside the dotted outline (2,3 3,1 3,2 3,3 4,2 4,3 4,4 5,2 5,3 5,4 6,3), all recorded as objective hexes. Spanish hold 3 inside the outline (SP/LN 3,1 3,2 3,3); SP/LN 3,0 is outside it. 3,1 is under a stack (SP/LN + Lardizabal); the dotted outline and the ray ring show it is ridge. Two further hills outside the ridge: 4,11 and 5,11 (13 hills, as the survey).",
+    "Forest 12 as the survey: 0,1 0,8 1,0 2,9 2,11 3,6 3,9 4,7 5,8 6,0 6,12 7,8 (FR/LT stands on 6,0). Town 4,0 is Barrosa village (label on the map; the caption Barossa is the map spelling).",
+    "River 5 hexes in one piece down the right edge: 0,11 1,11 2,12 3,11 4,12 (survey river 2 + bend 3). Not fordable (scenario rule), so no crossing is marked and there is no bridge.",
+    "Leaders: Graham (lone BR horse block 0,3), Wheatley (lone BR horse block 0,9), Dilkes (stacked with BR/LN 1,5), Lardizabal (stacked with SP/LN 3,1), Villatte (FR/LN 6,2), Ruffin (lone FR horse block 8,5), Leval (stacked with FR/GR 8,11). Names read at 6x; Dilkes, Villatte, Ruffin and Leval are probable readings of small rotated labels.",
+    "Objective note: the group banner is recorded as one objective entry per ridge hex, each with the same rule text. The icon of crossed items at the right edge beside the French hand (5,12 margin) is not on the board and is not recorded. Guerrilla Action not in effect."
+  ]
+}

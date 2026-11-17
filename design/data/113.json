@@ -1,0 +1,70 @@
+{
+  "id": "113",
+  "grid": {"x0": 74.0, "y0": 129.88, "w": 87.0, "pitch": 75.5},
+  "terrain": [
+    {"r": 0, "c": 0, "t": "river"},
+    {"r": 0, "c": 1, "t": "river"},
+    {"r": 1, "c": 1, "t": "river"},
+    {"r": 1, "c": 2, "t": "river"},
+    {"r": 1, "c": 3, "t": "river"},
+    {"r": 0, "c": 4, "t": "river"},
+    {"r": 0, "c": 5, "t": "river"},
+    {"r": 0, "c": 7, "t": "river"},
+    {"r": 0, "c": 8, "t": "river"},
+    {"r": 0, "c": 9, "t": "river"},
+    {"r": 0, "c": 6, "t": "river", "crossing": "bridge"},
+    {"r": 1, "c": 0, "t": "forest"},
+    {"r": 1, "c": 7, "t": "forest"},
+    {"r": 6, "c": 0, "t": "forest"},
+    {"r": 7, "c": 9, "t": "forest"},
+    {"r": 8, "c": 8, "t": "forest"},
+    {"r": 1, "c": 9, "t": "hill"},
+    {"r": 2, "c": 9, "t": "hill"},
+    {"r": 4, "c": 9, "t": "hill"},
+    {"r": 4, "c": 10, "t": "hill"},
+    {"r": 5, "c": 10, "t": "hill"},
+    {"r": 6, "c": 11, "t": "hill"}
+  ],
+  "units": [
+    {"r": 3, "c": 0, "side": "top", "key": "SP/LN"},
+    {"r": 3, "c": 2, "side": "top", "key": "SP/LN"},
+    {"r": 3, "c": 4, "side": "top", "key": "SP/LN"},
+    {"r": 3, "c": 7, "side": "top", "key": "SP/LN"},
+    {"r": 3, "c": 8, "side": "top", "key": "SP/LN"},
+    {"r": 3, "c": 10, "side": "top", "key": "SP/LN"},
+    {"r": 3, "c": 11, "side": "top", "key": "SP/LN"},
+    {"r": 3, "c": 1, "side": "top", "key": "SP/ML"},
+    {"r": 3, "c": 3, "side": "top", "key": "SP/ML"},
+    {"r": 3, "c": 9, "side": "top", "key": "SP/ML"},
+    {"r": 4, "c": 2, "side": "top", "key": "SP/LC"},
+    {"r": 4, "c": 5, "side": "top", "key": "SP/LC"},
+    {"r": 4, "c": 12, "side": "top", "key": "SP/LC"},
+    {"r": 3, "c": 6, "side": "top", "key": "SP/FA"},
+    {"r": 6, "c": 2, "side": "bottom", "key": "FR/LC"},
+    {"r": 6, "c": 3, "side": "bottom", "key": "FR/LC"},
+    {"r": 6, "c": 4, "side": "bottom", "key": "FR/LC"},
+    {"r": 7, "c": 1, "side": "bottom", "key": "FR/HC"},
+    {"r": 7, "c": 2, "side": "bottom", "key": "FR/HC"},
+    {"r": 7, "c": 3, "side": "bottom", "key": "FR/HC"},
+    {"r": 7, "c": 4, "side": "bottom", "key": "FR/HC"},
+    {"r": 7, "c": 5, "side": "bottom", "key": "FR/HC"},
+    {"r": 7, "c": 6, "side": "bottom", "key": "FR/HC"}
+  ],
+  "leaders": [
+    {"r": 1, "c": 4, "side": "top", "name": "Losada"},
+    {"r": 2, "c": 10, "side": "top", "name": "Salvador"},
+    {"r": 6, "c": 3, "side": "bottom", "name": "Lorcet"},
+    {"r": 7, "c": 3, "side": "bottom", "name": "Kellermann"}
+  ],
+  "objectives": [
+    {"r": 0, "c": 6, "note": "Temporary banner for the French, held at turn start while a French unit stands on the bridge hex (survey 113)"}
+  ],
+  "notes": [
+    "Units 14 + 9 and leaders 2 + 2, as the survey (no page/map difference). SP yellow blocks: LN 3,0 3,2 3,4 3,7 3,8 3,10 3,11, ML 3,1 3,3 3,9, FA 3,6, LC 4,2 4,5 4,12. FR blue: LC 6,2 6,3 6,4, HC 7,1-7,6.",
+    "River Tormes: 11 hexes in one piece along the top: 0,0 0,1 1,1 1,2 1,3 (the dip), 0,4 0,5, bridge 0,6, 0,7 0,8 0,9 (ends at the top edge). Survey: river 5, bend 5, bridge 1. The river is not fordable (scenario rule), so no ford is marked; only 0,6 has crossing bridge.",
+    "Forest 1,0 1,7 6,0 7,9 8,8 (5, as the survey). Hill 1,9 2,9 4,9 4,10 5,10 6,11 (6, as the survey); each is a hex-outline tile with a ray ring.",
+    "Objective 0,6: the bridge hex, outlined blue on the map: French temporary banner held at turn start.",
+    "Leaders: Losada (lone SP horse block 1,4), Salvador (lone SP horse block 2,10), Lorcet (stacked behind FR/LC 6,3), Kellermann (stacked behind FR/HC 7,3). Names read at 6x; Losada and Lorcet are probable readings of small rotated labels.",
+    "Red dashed vertical lines at columns 3/4 and 8/9 are sector boundaries (not terrain). Guerrilla Action: Spanish 0 counters (not map data)."
+  ]
+}
