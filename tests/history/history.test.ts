@@ -4,7 +4,8 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { SCENARIOS, scenarioById, type Expansion } from '../../src/scenarios';
+import { SCENARIOS, scenarioById } from '../../src/scenarios';
+import { CATALOGUE, catalogueEntry, type CatalogueEntry } from '../../src/scenarios/catalogue';
 import { MAP_H, MAP_W, hasHistory, historyIds, loadHistory, unitFrames, unitsAtPhase, type BattleHistory, type BattleMap as MapData } from '../../src/history';
 import { validateHistory, words } from '../../src/history/validate';
 import { BattleMap, luminance } from '../../src/ui/history/BattleMap';
@@ -16,21 +17,21 @@ beforeAll(async () => {
   for (const id of historyIds()) histories.set(id, await loadHistory(id));
 });
 
-/** Expansions whose battles must all have a history; a newly added expansion joins the list once its histories are written. */
-const COVERED: Expansion[] = [];
+/** Boxes whose catalogue battles must all have a history; a box joins the list once its histories are written. */
+const COVERED: CatalogueEntry['box'][] = [];
 
 /** The validator and dialog fixture (not a battle of the game). */
 const fixture: BattleHistory = fixture007;
 
 describe('coverage', () => {
-  it('every battle of the covered expansions has a history', () => {
-    const missing = SCENARIOS.filter((s) => COVERED.includes(s.expansion) && !hasHistory(s.id)).map((s) => s.id);
+  it('every catalogue battle of the covered boxes has a history', () => {
+    const missing = CATALOGUE.filter((b) => COVERED.includes(b.box) && !hasHistory(b.id)).map((b) => b.id);
     expect(missing).toEqual([]);
   });
 
   it('every history belongs to a battle and carries its own id', () => {
     for (const [id, h] of histories) {
-      expect(scenarioById(id), id).toBeDefined();
+      expect(catalogueEntry(id), id).toBeDefined();
       expect(h.id, `battles/${id}.ts`).toBe(id);
     }
   });
