@@ -1,6 +1,6 @@
 // Dev gallery for the unit art: the placeholder token of every unit row (`UNIT_KEYS`) at full strength and wounded, both
-// facings, its icon, and a leader per nation (alone and attached). Plan 6B Task 7 wires the Napoleonic figures
-// (`#/gallery/figures`) into the same tokens.
+// facings, its icon, and a leader per nation (alone and attached). The public tokens now draw the Napoleonic art for art keys
+// (see `#/gallery/figures`); this page shows what the public components produce.
 import { LEADER_ATTACH_OFFSET, LeaderToken, UnitIcon, UnitToken, blockColors, figureKind } from '../art';
 import { NATIONS, NATION_NAMES, UNIT_KEYS, UNIT_STATS, nationOf } from '../engine';
 

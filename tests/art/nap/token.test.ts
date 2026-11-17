@@ -179,3 +179,14 @@ describe('FigureGallery', () => {
     expect(page('#/gallery/figures/board')).not.toMatch(BAD);
   });
 });
+
+describe('five-block badges', () => {
+  it('the leftmost pip clears the code text', () => {
+    for (const key of ['BR/LT', 'BR/GG'] as const) {
+      const m = token(key, { blocks: 5, maxBlocks: 5 });
+      const xs = [...m.matchAll(/data-pip="(?:on|off)" cx="([-\d.]+)"/g)].map((x) => Number(x[1]));
+      expect(xs.length).toBe(5);
+      expect(Math.min(...xs) - 1.95).toBeGreaterThan(1.3 + 0.3); // the code text ends at about x = 1.3
+    }
+  });
+});

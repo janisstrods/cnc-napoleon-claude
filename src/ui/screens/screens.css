@@ -259,6 +259,7 @@
 .dice-legend span { display: flex; align-items: center; gap: 8px; }
 .rules-units { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .unit-card { display: flex; gap: 8px; align-items: center; background: rgba(255, 255, 255, .35); border: 1px solid rgba(176, 130, 58, .35); border-radius: 8px; padding: 6px; }
+.unit-card > svg { flex-shrink: 0; }
 .unit-card-title { font-family: var(--kit-font-title); font-size: 14.5px; color: #4a2010; }
 .unit-card-line { font-size: 14px; line-height: 1.3; }
 .muted { color: #7a6448; }

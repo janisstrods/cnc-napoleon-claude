@@ -1,9 +1,10 @@
-// UnitIcon: the arm glyph of a unit, for panels and tooltips. A placeholder like the tokens (Plan 6B Task 7).
+// UnitIcon: the arm glyph of a unit, for panels and tooltips. Art keys use NapUnitIcon; the rest a placeholder.
 import { ARM_OF, codeOf, type UnitKey } from '../engine/codes';
-import { ArmGlyph } from './nap';
+import { ArmGlyph, NapUnitIcon, isArtKey } from './nap';
 
 /** The unit's arm glyph on a dark plaque, centred on (0,0) and scaled to fit a `size` x `size` box. */
 export function UnitIcon({ unitKey, size }: { unitKey: UnitKey; size: number }): JSX.Element {
+  if (isArtKey(unitKey)) return <NapUnitIcon unitKey={unitKey} size={size} />;
   const s = size / 20;
   return (
     <g transform={`scale(${s})`}>
