@@ -18,4 +18,8 @@ describe('Napoleonics vocabulary', () => {
     expect(new Set(CATALOGUE.map((b) => b.id)).size).toBe(33);
     expect(catalogueEntry('015')?.name).toBe('Waterloo');
   });
+  it('writes every catalogue date the way the history validator expects', () => {
+    const pattern = /^(\d{1,2}(–\d{1,2})? )?(January|February|March|April|May|June|July|August|September|October|November|December) \d{4}$/;
+    for (const b of CATALOGUE) expect(b.date, b.id).toMatch(pattern);
+  });
 });

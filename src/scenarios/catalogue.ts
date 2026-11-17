@@ -1,6 +1,6 @@
 // Battle catalogue: ids, names and dates of every battle of the game, whether or not it is transcribed yet.
-// Base battles 001-015: names and dates from design/survey.md.
-// Expansion #1 (The Spanish Army) 101-118: official list at
+// Base battles 001–015: names and dates from design/survey.md.
+// Expansion #1 (The Spanish Army) 101–118: official list at
 // https://www.commandsandcolors.net/napoleonics/the-game/game-boxes/expansion-1/expansion-1-official-scenarios.html
 // (the site writes two-part battles as 'Talavera - Spanish Flank'; here they take the survey's parenthesised form).
 export interface CatalogueEntry { id: string; name: string; date: string; box: 'base' | 'exp1' }
@@ -24,7 +24,7 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
   { id: '101', name: 'Bailén', date: '19 July 1808', box: 'exp1' },
   { id: '102', name: 'Zornoza', date: '31 October 1808', box: 'exp1' },
   { id: '103', name: 'Gamonal', date: '10 November 1808', box: 'exp1' },
-  { id: '104', name: 'Espinosa de los Monteros', date: '10-11 November 1808', box: 'exp1' },
+  { id: '104', name: 'Espinosa de los Monteros', date: '10–11 November 1808', box: 'exp1' },
   { id: '105', name: 'Somosierra', date: '30 November 1808', box: 'exp1' },
   { id: '106', name: 'Medellín', date: '28 March 1809', box: 'exp1' },
   { id: '107', name: 'Alcañiz', date: '23 May 1809', box: 'exp1' },
