@@ -49,8 +49,8 @@ const history: BattleHistory = {
       { kind: 'town', at: [890, 185], size: 14, label: 'Gamarra Mayor' },
       { kind: 'label', at: [250, 92], text: 'Nanclares' },
       { kind: 'label', at: [430, 108], text: 'Villodas' },
-      { kind: 'label', at: [615, 212], text: 'Tres Puentes' },
-      { kind: 'label', at: [705, 98], text: 'Mendoza' },
+      { kind: 'label', at: [595, 205], text: 'Tres Puentes' },
+      { kind: 'label', at: [530, 102], text: 'Mendoza' },
       { kind: 'label', at: [690, 395], text: 'Zuazo' },
       { kind: 'label', at: [985, 275], text: 'Durana' },
     ],
@@ -132,7 +132,7 @@ const history: BattleHistory = {
       },
       {
         title: 'Rout of the French',
-        caption: "About four o'clock Wellington's line, with 75 guns, advances again, Gazan's army gives way without a serious stand, D'Erlon resisting longer. With the Bayonne road cut at Durana, Joseph's army flees by the Salvatierra road, leaving guns and baggage.",
+        caption: "About four o'clock Wellington's line, with 75 guns, advances again; Gazan's army gives way without a serious stand, though D'Erlon resists longer. With the Bayonne road cut at Durana, Joseph's army flees by the Salvatierra road, leaving guns and baggage.",
         at: {
           morillo: [140, 265], div2: [305, 265], div4: [440, 335], div3: [560, 380], light: [650, 320], div7: [745, 290],
           guns: [520, 295], cav: [470, 410], div1: [815, 150], div5: [935, 262], longa: [960, 315],
