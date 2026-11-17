@@ -142,14 +142,14 @@ Compiled 2026-11-17. Sources: the 15 scenario pages on commandsandcolors.net (pa
 - **Terrain (page counts):** Entrenchment (flat) 2, Forest 2, Hill 9, River 3, River bend 2, River bend with bridge (exit hex) 1, Town (Almeida fortress) 2, Town with windmill 1.
 - **Objectives:**
   - Exit (BR): any ordered Anglo-Portuguese unit, whatever its strength, that leaves the board by the bridge hex scores one banner for BR. Leaders do not score. Exit hex outlined in red at the top, left of centre.
-  - Loss (FR): the text says that if an Anglo-Portuguese unit is eliminated on the bridge hex, the French player receives one banner. OPEN RULINGS QUESTION: it is not stated whether this is the one banner in total for that unit or an extra banner on top of the normal kill banner. Needs a ruling before transcription.
+  - Loss (FR): the text says that if an Anglo-Portuguese unit is eliminated on the bridge hex, the French player receives one banner. Ruled in R67 (`design/rulings.md`): this is the ordinary kill banner for the eliminated unit, not an extra one.
 - **Special rules (paraphrased):**
   - Anglo-Portuguese units cannot leave by the bridge as a retreat; a unit that cannot retreat takes one block of damage per hex it could not move.
   - The Coa is impassable except at the bridge.
   - Almeida is a town; Anglo-Portuguese units there may ignore one flag.
 - **Layout (indicative):** British (top) deploy in two rows with two Portuguese LT on entrenchment hexes in the centre-left; Almeida fortress is in the top right corner (two town hexes with the FA on one). The bridge and exit are top left of centre. French (bottom) in the lower left and centre, with HC/GR line on the baseline and two LC in the lower right. The town-with-windmill hex is right of centre.
 - **New needs:**
-  - Exit-hex banner objective with a leader exclusion. Open question: does an elimination on the exit hex give FR one banner in total or one extra (see Objectives).
+  - Exit-hex banner objective with a leader exclusion. An elimination on the exit hex gives FR only the ordinary kill banner (R67).
   - Forced-retreat-off-bridge damage rule.
   - Fortress treated as town plus ignore one flag (BR/PT only).
   - Entrenchment (flat) tile occupied by PT/LT at setup.
@@ -437,7 +437,7 @@ Leader rows follow the map (so 009 shows BR 3 and PT 1; the page has BR 4). Only
 | Kill banners only (no extra objective) | 002, 004, 005, 007, 008, 009, 010, 011 | 1 per unit eliminated |
 | Single held hex, temporary, counted at the start of the owner's turn | 001 (2 hexes, BR), 013 (2 hexes, BR), 014 (1 hex, FR), 015 (3 hexes, FR) | 1 each |
 | Joint held hexes, temporary (both needed, lost together) | 003 (2 town hexes, FR) | 2 for the pair |
-| Exit hex (leaders excluded), with a banner to the enemy if a unit is eliminated on the hex (ruling needed) | 006 (BR exit, FR bonus) | 1 per unit that exits; 1 to FR per unit eliminated there (OPEN: one in total, or one in addition to the normal kill banner) |
+| Exit hex (leaders excluded); a unit eliminated on the hex gives the enemy its ordinary kill banner (R67) | 006 (BR exit) | 1 per unit that exits; the ordinary kill banner, not an extra one, for a unit eliminated there (R67) |
 | Elimination weighting | 012 (BR: first French infantry 1, later infantry 2 each) | 1 then 2 |
 
 Kill banners apply in every battle; the table lists the extra objective, if any. 001, 003, 006, 012, 013, 014 and 015 also score kills the normal way.
