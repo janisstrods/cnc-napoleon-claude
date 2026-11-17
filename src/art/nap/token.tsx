@@ -70,11 +70,11 @@ export function NapBasePlate({ side, rx = 38, ry = 11.5, cy = 11 }: { side: Side
 }
 
 // ---------------------------------------------------------------------------------------------
-// Guard marker: a gilt staff planted at the back of the base (left when facing right, mirrored with the facing; low and small enough to clear the attach corner), topped with an eagle or a crown.
+// Guard marker: a gilt staff planted at the back of the base (left when facing right, mirrored with the facing; set low and small so that, in either facing, it clears the leader medallion at (29,-28) r 12), topped with an eagle or a crown.
 
 export function GuardMarker({ device, flip = 1 }: { device: 'eagle' | 'crown'; flip?: number }) {
   return (
-    <g data-guard={device} transform={`translate(${-33 * flip} 11) scale(0.7)`}>
+    <g data-guard={device} transform={`translate(${-31 * flip} 14) scale(0.66)`}>
       <ellipse cx={1} cy={0.6} rx={3} ry={1.1} fill="#000" opacity={0.3} />
       <path d="M0 0.4 L0 -34" stroke={OL} strokeWidth={2.4} strokeLinecap="round" />
       <path d="M0 0 L0 -34" stroke={METAL.gold} strokeWidth={1.3} />

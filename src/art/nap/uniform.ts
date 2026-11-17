@@ -58,11 +58,14 @@ export interface FootSpec {
 }
 
 export type CavalryWeapon = 'sabre' | 'sword' | 'lance';
+/** How a sword is carried: blade raised, or sloped on the shoulder (heavy cavalry's carry). */
+export type Carry = 'raised' | 'sloped';
 export interface HorseSpec {
   drawing: 'horse';
   dress: Dress;
   head: Headwear;
   weapon: CavalryWeapon;
+  carry?: Carry;
   carbine?: true;
   pennon?: readonly [string, string];
   horse: 'light' | 'heavy';

@@ -119,6 +119,26 @@ describe('the attach corner', () => {
   });
 });
 
+describe('the attach corner and the Guard marker', () => {
+  // The marker is a staff with a device on top, placed at translate(-31 * flip, 14) and scaled by 0.66 (see GuardMarker); read the
+  // placement from the markup so a nudge in token.tsx is what this checks. The device box is the eagle's, which is the larger.
+  const CX = 29, CY = -28, R = 12;
+  it('keeps the marker clear of the leader medallion in both facings', () => {
+    for (const k of ['FR/OG', 'BR/GG'] as const) for (const facing of ['right', 'left'] as const) {
+      const out = token(k, { facing });
+      const m = /data-guard="[a-z]+" transform="translate\(([-\d.]+) ([-\d.]+)\) scale\(([\d.]+)\)"/.exec(out);
+      expect(m, `${k} ${facing}`).not.toBeNull();
+      const [tx, ty, sc] = [Number(m![1]), Number(m![2]), Number(m![3])];
+      const boxes: [number, number, number, number][] = [[-1.5, 1, -34.5, 0], [-7.5, 7.5, -42.7, -34]]; // shaft; device
+      for (const [x0, x1, y0, y1] of boxes) {
+        const bx0 = tx + x0 * sc, bx1 = tx + x1 * sc, by0 = ty + y0 * sc, by1 = ty + y1 * sc;
+        const d = Math.hypot(Math.max(bx0 - CX, 0, CX - bx1), Math.max(by0 - CY, 0, CY - by1));
+        expect(d, `${k} ${facing}`).toBeGreaterThanOrEqual(R);
+      }
+    }
+  });
+});
+
 describe('FigureGallery', () => {
   const page = (route: string) => renderToStaticMarkup(h(FigureGallery, { route }));
   it('captions every key', () => {

@@ -2,8 +2,7 @@
 // Where sources differ the choice is hedged in a comment. Horses are the table's coats, cycled by figure index.
 import { CLOTH, METAL } from '../nations';
 import type { CavalryKey } from '../keys';
-import type { MountedSpec } from '../rider';
-import type { Dress } from '../uniform';
+import type { Dress, HorseSpec } from '../uniform';
 
 // Local swatches (a spec may add one; CLOTH is not edited).
 const DARK_BLUE = '#1f2a55'; // the British light dragoon's jacket and the heavy dragoon's facings
@@ -16,7 +15,7 @@ const WHITE_PLUME = '#f0ece0';
 const white = CLOTH.white;
 const dress = (d: Pick<Dress, 'coat' | 'cut' | 'facings' | 'trousers'> & Partial<Dress>): Dress => ({ belts: white, ...d });
 
-export const CAVALRY_SPECS: Record<CavalryKey, MountedSpec> = {
+export const CAVALRY_SPECS: Record<CavalryKey, HorseSpec> = {
   // Chasseurs a cheval: green jacket (the habit-veste), scarlet facings, green overalls. Plume green over red.
   'FR/LC': {
     drawing: 'horse', horse: 'light', weapon: 'sabre', coats: ['bay', 'chestnut'],
