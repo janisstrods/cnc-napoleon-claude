@@ -70,7 +70,7 @@ function MapLegend({ h, colors }: { h: BattleHistory; colors: Record<Side, MapCo
         return (
           <span key={k} className="hist-legend-item">
             <svg width={30} height={14} viewBox={`${-w / 2 - 2} ${-hh / 2 - 2} ${w + 4} ${hh + 4}`} preserveAspectRatio="xMidYMid meet" aria-hidden>
-              <rect x={-w / 2} y={-hh / 2} width={w} height={hh} rx={k === 'warband' || k === 'lighthorse' ? hh / 2.4 : 2} fill="#8a7a5a" stroke="#4a3c26" strokeWidth={2} />
+              <rect x={-w / 2} y={-hh / 2} width={w} height={hh} rx={k === 'light' ? hh / 2.4 : 2} fill="#8a7a5a" stroke="#4a3c26" strokeWidth={2} />
               <UnitGlyph kind={k} w={w} h={hh} color="#f6ecd2" />
             </svg>
             {KIND_NAMES[k]}

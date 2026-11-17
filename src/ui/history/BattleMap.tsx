@@ -13,15 +13,12 @@ export interface MapColors {
 }
 
 const SIZES: Record<UnitKind, [number, number]> = {
-  foot: [110, 26],
-  light: [80, 14],
-  warband: [110, 30],
-  horse: [64, 22],
-  lighthorse: [56, 16],
-  elephants: [54, 22],
-  chariots: [54, 20],
-  camels: [54, 20],
-  machines: [36, 16],
+  infantry: [110, 26],
+  light: [80, 16],
+  guard: [100, 28],
+  cavalry: [64, 22],
+  heavycavalry: [60, 24],
+  artillery: [40, 18],
 };
 
 /** A unit's block size in map units. */
@@ -32,15 +29,12 @@ export function unitSize(u: MapUnit): [number, number] {
 
 /** Names of the unit kinds, for the legend. */
 export const KIND_NAMES: Record<UnitKind, string> = {
-  foot: 'Formed foot',
-  light: 'Light troops',
-  warband: 'Warband',
-  horse: 'Cavalry',
-  lighthorse: 'Light cavalry',
-  elephants: 'Elephants',
-  chariots: 'Chariots',
-  camels: 'Camels',
-  machines: 'War machines',
+  infantry: 'Infantry',
+  light: 'Light infantry',
+  guard: 'Guard',
+  cavalry: 'Cavalry',
+  heavycavalry: 'Heavy cavalry',
+  artillery: 'Artillery',
 };
 
 const f1 = (v: number) => Math.round(v * 10) / 10;
@@ -79,55 +73,44 @@ export function UnitGlyph({ kind, w, h, color }: { kind: UnitKind; w: number; h:
   const y = h / 2 - 1;
   const s = { stroke: color, strokeWidth: 2, fill: 'none', strokeLinecap: 'round' as const };
   switch (kind) {
-    case 'foot':
-    case 'warband':
-      return <path d={`M${-x},${-y} L${x},${y} M${-x},${y} L${x},${-y}`} {...s} />;
+    case 'infantry':
+      // the plain block in the army colour, with a thin centre bar
+      return <path d={`M${-w / 2 + 8},0 H${w / 2 - 8}`} {...s} strokeWidth={2} />;
     case 'light': {
-      const n = Math.max(2, Math.round(w / 18));
+      // loose dotted block
+      const n = Math.max(3, Math.round(w / 14));
       return (
         <g fill={color}>
-          {Array.from({ length: n }, (_, i) => <circle key={i} cx={-w / 2 + (w / n) * (i + 0.5)} cy={0} r={Math.min(3, h / 4)} />)}
+          {Array.from({ length: n }, (_, i) => <circle key={i} cx={-w / 2 + (w / n) * (i + 0.5)} cy={i % 2 ? h / 5 : -h / 5} r={Math.min(2.4, h / 6)} />)}
         </g>
       );
     }
-    case 'horse':
+    case 'guard':
+      // double border
+      return (
+        <g {...s} strokeWidth={1.6}>
+          <rect x={-w / 2 + 4} y={-h / 2 + 4} width={w - 8} height={Math.max(h - 8, 2)} rx={1} />
+          <rect x={-w / 2 + 8} y={-h / 2 + 8} width={w - 16} height={Math.max(h - 16, 2)} rx={1} />
+        </g>
+      );
+    case 'cavalry':
       return <path d={`M${-x},${y} L${x},${-y}`} {...s} />;
-    case 'lighthorse':
+    case 'heavycavalry':
+      return <path d={`M${-x},${y} L${x},${-y} M${-x},${-y} L${x},${y}`} {...s} />;
+    case 'artillery':
+      // a gun barrel on a wheel
       return (
-        <g>
-          <path d={`M${-x},${y} L${x},${-y}`} {...s} />
-          <circle cx={-w / 4} cy={-h / 6} r={2.2} fill={color} />
-          <circle cx={w / 4} cy={h / 6} r={2.2} fill={color} />
+        <g {...s} transform={`scale(${Math.min(w / 40, h / 18)})`}>
+          <circle cx={-3} cy={1} r={5} />
+          <path d="M-3 -4 V6 M-8 1 H2" strokeWidth={1.2} />
+          <path d="M1 -2 H14" strokeWidth={3.4} />
         </g>
       );
-    case 'elephants':
-      // an elephant in profile: body, head, trunk, legs
-      return (
-        <g fill={color} transform={`scale(${Math.min(w / 54, h / 22)})`}>
-          <ellipse cx={-4} cy={-1} rx={11} ry={6} />
-          <circle cx={9} cy={-3} r={4.6} />
-          <path d="M12.5 -1.5 Q16 3 13.5 8" stroke={color} strokeWidth={2.4} fill="none" strokeLinecap="round" />
-          <path d="M-11 3 V8 M-6 4 V8 M-1 4 V8 M3 3 V8" stroke={color} strokeWidth={2.2} strokeLinecap="round" />
-        </g>
-      );
-    case 'chariots':
-      return (
-        <g {...s} transform={`scale(${Math.min(w / 54, h / 20)})`}>
-          <circle cx={-6} cy={0} r={6.5} />
-          <path d="M-6 -6.5 V6.5 M-12.5 0 H0.5 M0.5 0 H17" />
-        </g>
-      );
-    case 'camels':
-      return (
-        <g {...s} transform={`scale(${Math.min(w / 54, h / 20)})`}>
-          <path d="M-15 6 Q-14 -4 -6 -3 Q-2 -10 3 -3 L9 -3 L12 -8 L15 -7" />
-          <path d="M-11 6 V2 M7 6 V0" />
-        </g>
-      );
-    case 'machines':
-      return <path d={`M${-x + 2},${y} L0,${-y} L${x - 2},${y} Z`} fill={color} />;
   }
 }
+
+const FEATURE_SIZES = { town: 26, farm: 20, redoubt: 30 };
+const featureSize = (t: Extract<MapFeature, { kind: 'town' | 'farm' | 'redoubt' }>) => t.size ?? FEATURE_SIZES[t.kind];
 
 function Feature({ t, uid, tp }: { t: MapFeature; uid: string; tp: (p: Pt) => Pt }) {
   switch (t.kind) {
@@ -144,11 +127,27 @@ function Feature({ t, uid, tp }: { t: MapFeature; uid: string; tp: (p: Pt) => Pt
     }
     case 'road':
       return <path className="hm-road" d={smoothPath(t.points.map(tp))} />;
-    case 'town':
-    case 'camp': {
+    case 'farm': {
       const [x, y] = tp(t.at);
-      const s = t.size ?? (t.kind === 'town' ? 26 : 34);
-      if (t.kind === 'camp') return <rect className="hm-camp" x={x - s} y={y - s * 0.65} width={s * 2} height={s * 1.3} rx={4} />;
+      const s = featureSize(t);
+      const c = s * 0.45;
+      return (
+        <g className="hm-farm">
+          <rect x={x - s} y={y - s} width={s * 2} height={s * 2} />
+          <rect className="hm-farm-yard" x={x - c} y={y - c} width={c * 2} height={c * 2} />
+        </g>
+      );
+    }
+    case 'redoubt': {
+      // an angular earthwork: a flattened hexagon
+      const [x, y] = tp(t.at);
+      const s = featureSize(t);
+      const pts = [[-s, 0], [-s * 0.55, -s * 0.6], [s * 0.55, -s * 0.6], [s, 0], [s * 0.55, s * 0.6], [-s * 0.55, s * 0.6]];
+      return <polygon className="hm-redoubt" points={pts.map(([dx, dy]) => `${f1(x + dx)},${f1(y + dy)}`).join(' ')} />;
+    }
+    case 'town': {
+      const [x, y] = tp(t.at);
+      const s = featureSize(t);
       const tw = 7;
       return (
         <g className="hm-town">
@@ -173,17 +172,17 @@ function Feature({ t, uid, tp }: { t: MapFeature; uid: string; tp: (p: Pt) => Pt
   }
 }
 
-/** Where a feature's name goes: beside a river's middle (along it), under a town or camp, at an area's centre. */
+/** Where a feature's name goes: beside a river's middle (along it), under a town, farm or redoubt, at an area's centre. */
 function featureLabel(t: MapFeature, tp: (p: Pt) => Pt): { x: number; y: number; angle: number; text: string; cls: string } | null {
   if (t.kind === 'label') {
     const [x, y] = tp(t.at);
     return { x, y, angle: 0, text: t.text, cls: 'hm-label' };
   }
   if (!t.label) return null;
-  if (t.kind === 'town' || t.kind === 'camp') {
+  if (t.kind === 'town' || t.kind === 'farm' || t.kind === 'redoubt') {
     const [x, y] = tp(t.at);
-    const s = t.size ?? (t.kind === 'town' ? 26 : 34);
-    return { x, y: y + s * 0.8 + 17, angle: 0, text: t.label, cls: 'hm-label hm-label-place' };
+    const s = featureSize(t);
+    return { x, y: y + (t.kind === 'farm' ? s : s * 0.8) + 17, angle: 0, text: t.label, cls: 'hm-label hm-label-place' };
   }
   const pts = t.points.map(tp);
   if (t.kind === 'river' || t.kind === 'road') {
@@ -204,7 +203,7 @@ function featureLabel(t: MapFeature, tp: (p: Pt) => Pt): { x: number; y: number;
   return { x: Math.min(MAP_W - 60, Math.max(60, cx)), y: Math.min(MAP_H - 14, Math.max(24, cy)), angle: 0, text: t.label, cls: `hm-label ${water ? 'hm-label-water' : ''}` };
 }
 
-const AREA_ORDER: MapFeature['kind'][] = ['fields', 'marsh', 'woods', 'hills', 'lake', 'sea', 'river', 'road', 'camp', 'town', 'label'];
+const AREA_ORDER: MapFeature['kind'][] = ['fields', 'marsh', 'woods', 'hills', 'lake', 'sea', 'river', 'road', 'redoubt', 'farm', 'town', 'label'];
 
 /** A unit's block on screen: centre, rotation and axis-aligned half-extents. */
 interface Placed {
@@ -276,7 +275,7 @@ function UnitBlock({ p, colors, uid }: { p: Placed; colors: Record<Side, MapColo
   const [w, h] = unitSize(unit);
   const c = colors[unit.side];
   const glyph = luminance(c.fill) > 0.42 ? '#2b1d12' : '#f6ecd2';
-  const loose = unit.kind === 'warband' || unit.kind === 'lighthorse';
+  const loose = unit.kind === 'light';
   return (
     <g className={`hm-unit${broken ? ' is-broken' : ''}${visible ? '' : ' is-hidden'}`} style={{ transform: `translate(${f1(p.x)}px, ${f1(p.y)}px)` }} data-unit={unit.id}>
       <g className="hm-unit-body" style={{ transform: `rotate(${p.r}deg)` }}>

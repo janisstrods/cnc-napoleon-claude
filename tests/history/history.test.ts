@@ -8,7 +8,7 @@ import { SCENARIOS, scenarioById } from '../../src/scenarios';
 import { CATALOGUE, catalogueEntry, type CatalogueEntry } from '../../src/scenarios/catalogue';
 import { MAP_H, MAP_W, hasHistory, historyIds, loadHistory, unitFrames, unitsAtPhase, type BattleHistory, type BattleMap as MapData } from '../../src/history';
 import { validateHistory, words } from '../../src/history/validate';
-import { BattleMap, luminance } from '../../src/ui/history/BattleMap';
+import { BattleMap, UnitGlyph, luminance } from '../../src/ui/history/BattleMap';
 import fixture007 from './fixture-007';
 import { HistoryButton, HistorySlides, SLIDE_TITLES, nextPos, prevPos, sideColors } from '../../src/ui/history/HistoryDialog';
 
@@ -66,7 +66,7 @@ describe('content', () => {
     bad.map.phases[0].at.numid = [MAP_W + 5, 10];
     bad.map.phases[2].gone = ['nobody'];
     bad.context.text = [Array(200).fill('word').join(' ')];
-    bad.map.units.push({ id: 'idle', side: 'top', kind: 'foot' });
+    bad.map.units.push({ id: 'idle', side: 'top', kind: 'infantry' });
     bad.date = '216';
     const problems = validateHistory(bad).join('\n');
     expect(problems).toMatch(/unknown unit ghost/);
@@ -75,7 +75,25 @@ describe('content', () => {
     expect(problems).toMatch(/context.text has 200 words/);
     expect(problems).toMatch(/idle is never placed/);
     expect(problems).toMatch(/date "216"/);
-    expect(validateHistory({ ...h, date: '9 AD' })).toEqual([]);
+    expect(validateHistory({ ...h, date: '21 August 1808' })).toEqual([]);
+    expect(validateHistory({ ...h, date: '16–17 January 1809' })).toEqual([]);
+    expect(validateHistory({ ...h, date: '1808 AD' }).join('\n')).toMatch(/date "1808 AD"/);
+    expect(validateHistory({ ...h, date: '216' }).join('\n')).toMatch(/date "216"/);
+  });
+
+  it('draws a distinct glyph for each unit kind', () => {
+    const kinds = ['infantry', 'light', 'guard', 'cavalry', 'heavycavalry', 'artillery'] as const;
+    const drawn = kinds.map((kind) => renderToStaticMarkup(createElement('svg', null, createElement(UnitGlyph, { kind, w: 80, h: 24, color: '#fff' }))));
+    expect(new Set(drawn).size).toBe(6);
+  });
+
+  it('names all six kinds in the legend', () => {
+    const h: BattleHistory = structuredClone(fixture);
+    const kinds = ['infantry', 'light', 'guard', 'cavalry', 'heavycavalry', 'artillery'] as const;
+    h.map.units = kinds.map((kind) => ({ id: kind, side: 'top' as const, kind }));
+    h.map.phases = [{ title: 'One', caption: 'x', at: Object.fromEntries(kinds.map((k, i) => [k, [100 + i * 100, 100] as [number, number]])) }];
+    const html = renderToStaticMarkup(createElement(HistorySlides, { h, scenario: scenarioById('000'), pos: { slide: 1, phase: 0 }, onPos: () => {} }));
+    for (const n of ['Infantry', 'Light infantry', 'Guard', 'Cavalry', 'Heavy cavalry', 'Artillery']) expect(html).toContain(`</svg>${n}</span>`);
   });
 
   it('counts words', () => {
@@ -87,8 +105,8 @@ describe('phases', () => {
   const map: MapData = {
     terrain: [],
     units: [
-      { id: 'a', side: 'top', kind: 'foot' },
-      { id: 'b', side: 'bottom', kind: 'horse' },
+      { id: 'a', side: 'top', kind: 'infantry' },
+      { id: 'b', side: 'bottom', kind: 'cavalry' },
       { id: 'late', side: 'bottom', kind: 'light' },
     ],
     phases: [

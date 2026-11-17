@@ -23,14 +23,17 @@ const ARROW_MARGIN = 20;
 
 export const words = (s: string): number => s.trim().split(/\s+/).filter(Boolean).length;
 
+const DATE_RE = /^(\d{1,2}(–\d{1,2})? )?(January|February|March|April|May|June|July|August|September|October|November|December) \d{4}$/;
+
 /** Problems with a history, as readable lines; empty when it is valid. */
+
 export function validateHistory(h: BattleHistory): string[] {
   const out: string[] = [];
   const bad = (msg: string) => out.push(`${h.id}: ${msg}`);
   const inField = ([x, y]: Pt, m: number) => x >= -m && x <= MAP_W + m && y >= -m && y <= MAP_H + m;
   const isPt = (p: unknown): p is Pt => Array.isArray(p) && p.length === 2 && p.every((v) => typeof v === 'number' && Number.isFinite(v));
 
-  if (h.date !== undefined && !/^(c\. )?\d{1,4}(\/\d{1,4})? (BC|AD)$/.test(h.date)) bad(`date "${h.date}" should look like "255 BC", "c. 305 BC", "353/352 BC" or "9 AD"`);
+  if (h.date !== undefined && !DATE_RE.test(h.date)) bad(`date "${h.date}" should look like "17 August 1808", "16–17 January 1809" or "August 1808"`);
 
   // slide 1
   if (!h.context.war.trim()) bad('context.war is empty');
@@ -54,7 +57,7 @@ export function validateHistory(h: BattleHistory): string[] {
   if (m.north !== undefined && !(m.north >= 0 && m.north < 360)) bad('map.north must be 0–359');
   m.terrain.forEach((t, i) => {
     const where = `terrain[${i}] (${t.kind})`;
-    if (t.kind === 'town' || t.kind === 'camp' || t.kind === 'label') {
+    if (t.kind === 'town' || t.kind === 'farm' || t.kind === 'redoubt' || t.kind === 'label') {
       if (!isPt(t.at) || !inField(t.at, 0)) bad(`${where} must be on the field`);
       if (t.kind === 'label' && !t.text.trim()) bad(`${where} has no text`);
       return;
