@@ -95,7 +95,19 @@ and `exp3-ai-balance.md`.
 
 ## Battle histories
 
-- No battle has a history now (Plan 2A removed them). The format (`src/history/types.ts`), validator and dialog stay; `tests/history/fixture-007.ts` is the validator fixture, and `COVERED` in `tests/history/history.test.ts` is `[]`.
+- Every battle in the catalogue (base 001–015 and Expansion #1 101–118) has a history in `src/history/battles/<id>.ts`
+  (format `src/history/types.ts`: context, map with phases, outcome, sources). `COVERED` in `tests/history/history.test.ts`
+  is `['base', 'exp1']`, so a new catalogue battle in those boxes fails the tests until its history is written;
+  `tests/history/fixture-007.ts` is the validator fixture.
+- Sources: Oman, *A History of the Peninsular War*, and Napier, *History of the War in the Peninsula* (cite the 1829–1840
+  first edition), read in full on archive.org; other campaigns from comparable standard histories. Paraphrase (quotes
+  under 15 words, no close paraphrase of Oman), attribute every judgement or figure to the source that makes it, and say
+  so when sources differ. British spelling. The lessons from the fact-checks are in
+  `.superpowers/sdd/2026-11-17-plan-6a-histories/lessons.md` when present.
+- Check one: `npx vite-node scripts/history-check.ts -- <id>` (validator and word counts), then with a dev server running
+  `scripts/history-shot.sh <id> <out-dir> [port]` cuts `#/gallery/history/<id>` into tiles to read one by one (every map
+  phase and the flipped map; arrows fade in for about a second). `#/gallery/history/maps` is the contact sheet of every
+  map phase. Parallel writers each use their own worktree and dev-server port.
 
 ## Golden fixtures
 

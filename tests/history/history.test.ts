@@ -18,7 +18,7 @@ beforeAll(async () => {
 });
 
 /** Boxes whose catalogue battles must all have a history; a box joins the list once its histories are written. */
-const COVERED: CatalogueEntry['box'][] = [];
+const COVERED: CatalogueEntry['box'][] = ['base', 'exp1'];
 
 /** The validator and dialog fixture (not a battle of the game). */
 const fixture: BattleHistory = fixture007;
