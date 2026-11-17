@@ -1,0 +1,151 @@
+// Roliça, French first position (17 August 1808). Top: British and Portuguese (Wellesley); bottom: French (Delaborde).
+// The map has north at the top: the British come down from Óbidos, the French hold the hill of Roliça. Distances are schematic.
+import type { BattleHistory } from '../types';
+
+const history: BattleHistory = {
+  id: '001',
+  date: '17 August 1808',
+  context: {
+    war: 'Peninsular War, 1807–1814',
+    text: [
+      "Junot's French corps occupied Portugal at the end of 1807, under the Treaty of Fontainebleau. Spain rose against Napoleon in May 1808 and Portugal followed in June. In July, Dupont's surrender at Bailén shook the French hold on the Peninsula. Sir Arthur Wellesley's British army landed at Mondego Bay from 1 August and marched south along the coast towards Lisbon.",
+      "Junot's troops were scattered in garrisons, so he sent General Delaborde with about 4,000 men to delay the British while his other columns gathered. On 17 August Wellesley found Delaborde on the isolated hill of Roliça and planned to envelop both flanks. This history covers that first position; the fighting on the Columbeira heights is told in 002.",
+    ],
+  },
+  sides: {
+    top: {
+      name: 'British and Portuguese',
+      commanders: ['Sir Arthur Wellesley (commanding)', 'Ferguson (left column)', 'Trant (Portuguese, right column)', 'Hill, Nightingale, Fane (centre)'],
+      strength: 'c. 15,000: about 13,000 British and 2,000 Portuguese, with 18 guns (Oman)',
+      forces: 'Six British brigades with riflemen, Portuguese line infantry and cazadores, about 470 horse (Napier) and 18 guns.',
+    },
+    bottom: {
+      name: "French (Junot's army)",
+      commanders: ['Delaborde (commanding)', 'Brennier (brigade)', 'Thomières (light infantry)'],
+      strength: 'about 4,350 with 5 guns (Oman); estimates run from 1,900 to 6,000',
+      forces: '70th Line, two provisional light battalions (2nd and 4th Léger), part of the 4th Swiss, 26th Chasseurs à cheval.',
+    },
+  },
+  map: {
+    north: 0,
+    terrain: [
+      { kind: 'hills', points: [[730, -40], [1060, -40], [1060, 640], [800, 640], [770, 500], [735, 340], [725, 160]] },
+      { kind: 'hills', points: [[-60, -40], [240, -40], [262, 160], [272, 340], [262, 480], [220, 640], [-60, 640]] },
+      { kind: 'hills', points: [[210, 520], [380, 505], [500, 512], [640, 505], [790, 520], [800, 640], [200, 640]] },
+      { kind: 'hills', points: [[440, 345], [510, 322], [585, 340], [606, 405], [545, 440], [452, 428]] },
+      { kind: 'road', points: [[522, 40], [520, 200], [504, 320], [500, 440], [500, 535], [478, 640]] },
+      { kind: 'town', at: [522, 40], size: 24, label: 'Óbidos' },
+      { kind: 'town', at: [540, 452], size: 15, label: 'Roliça' },
+      { kind: 'town', at: [360, 588], size: 14, label: 'Columbeira' },
+      { kind: 'town', at: [636, 580], size: 14, label: 'Zambugeira' },
+      { kind: 'label', at: [110, 450], text: 'Western heights' },
+      { kind: 'label', at: [905, 470], text: 'Sierra de Baragueda' },
+      { kind: 'label', at: [740, 562], text: 'Columbeira ridge' },
+      { kind: 'label', at: [525, 600], text: 'to Torres Vedras' },
+    ],
+    units: [
+      { id: 'trant', side: 'top', kind: 'infantry', label: 'Trant (Portuguese)', w: 84 },
+      { id: 'hill', side: 'top', kind: 'infantry', label: 'Hill', w: 84 },
+      { id: 'night', side: 'top', kind: 'infantry', label: 'Nightingale', w: 84 },
+      { id: 'fane', side: 'top', kind: 'infantry', label: 'Fane', w: 84 },
+      { id: 'rifles', side: 'top', kind: 'light', label: 'Fane’s riflemen', w: 70 },
+      { id: 'crawf', side: 'top', kind: 'infantry', label: 'C. Crawfurd (reserve)', w: 84 },
+      { id: 'ferg', side: 'top', kind: 'infantry', label: 'Ferguson', w: 84 },
+      { id: 'bowes', side: 'top', kind: 'infantry', label: 'Bowes', w: 84 },
+      { id: 'cav', side: 'top', kind: 'cavalry', label: 'Cavalry' },
+      { id: 'guns', side: 'top', kind: 'artillery', label: 'Guns' },
+      { id: 'l70', side: 'bottom', kind: 'infantry', label: '70th Line', w: 84 },
+      { id: 'leg2', side: 'bottom', kind: 'light', label: '2nd Léger', w: 64 },
+      { id: 'leg4', side: 'bottom', kind: 'light', label: '4th Léger', w: 64 },
+      { id: 'swiss', side: 'bottom', kind: 'infantry', label: '4th Swiss', w: 64 },
+      { id: 'chass', side: 'bottom', kind: 'cavalry', label: '26th Chasseurs' },
+      { id: 'fguns', side: 'bottom', kind: 'artillery', label: 'Guns' },
+    ],
+    phases: [
+      {
+        title: 'The crescent advances',
+        caption: 'Wellesley leaves Óbidos at dawn in three columns with the wings thrown forward: Trant on the right, Ferguson on the left, the main body between. Delaborde waits on the hill of Roliça.',
+        at: {
+          trant: [200, 215],
+          hill: [390, 170],
+          night: [520, 140],
+          fane: [650, 170],
+          rifles: [700, 218],
+          crawf: [420, 100],
+          ferg: [830, 215],
+          bowes: [830, 256],
+          cav: [440, 215],
+          guns: [585, 112],
+          l70: [510, 372],
+          leg2: [415, 358],
+          leg4: [610, 366],
+          swiss: [470, 408],
+          chass: [650, 425],
+          fguns: [545, 335],
+        },
+        arrows: [
+          { side: 'top', points: [[200, 190], [205, 280], [215, 330]] },
+          { side: 'top', points: [[520, 118], [520, 200], [515, 270]] },
+          { side: 'top', points: [[830, 190], [815, 270], [775, 340]] },
+        ],
+      },
+      {
+        title: 'The flanks close in',
+        caption: "Trant and Ferguson swing wide round the hill, Fane's riflemen engage the French skirmishers, and the centre deploys under fire from the guns. Delaborde sees both his flanks about to be turned.",
+        at: {
+          trant: [215, 320],
+          hill: [395, 278],
+          night: [520, 252],
+          fane: [650, 278],
+          rifles: [655, 322],
+          crawf: [520, 195],
+          ferg: [815, 335],
+          bowes: [815, 376],
+          cav: [440, 300],
+          guns: [585, 215],
+          leg2: [420, 355],
+          leg4: [605, 362],
+        },
+        arrows: [
+          { side: 'top', points: [[215, 300], [250, 380], [330, 440]] },
+          { side: 'top', points: [[815, 315], [770, 395], [700, 455]] },
+          { side: 'top', points: [[520, 232], [510, 300], [505, 330]] },
+        ],
+      },
+      {
+        title: 'Delaborde slips away',
+        caption: 'Delaborde, who had warned his men, orders the retreat at the last moment. His battalions fall back a mile to the wooded heights above Columbeira, and the British net closes on empty ground.',
+        at: {
+          l70: [505, 525],
+          leg2: [410, 512],
+          leg4: [590, 515],
+          swiss: [290, 525],
+          chass: [660, 478],
+          fguns: [455, 478],
+        },
+        arrows: [
+          { side: 'bottom', points: [[510, 395], [505, 460], [505, 515]], style: 'retreat' },
+          { side: 'bottom', points: [[420, 372], [410, 440], [425, 500]], style: 'retreat' },
+          { side: 'bottom', points: [[610, 380], [605, 450], [590, 505]], style: 'retreat' },
+        ],
+      },
+    ],
+  },
+  outcome: {
+    winner: 'top',
+    result: 'Delaborde slips the net; the British take the ground',
+    losses: "Small, as far as the sources show; the day's totals, about 475 British and 600 French, are given in 002.",
+    text: [
+      "Delaborde gave the order only when Trant and Ferguson appeared on his flanks and Fane's riflemen were already skirmishing with his tirailleurs. His battalions slipped away to the wooded heights above Columbeira, a mile behind, and the envelopment closed on empty ground.",
+      'Half the morning had been spent for nothing, and Wellesley had to rearrange his columns to attack the second position, which Delaborde had meant to hold all along. He needed only to delay the British until Loison arrived, though Loison was still some fifteen miles away at Cercal. The second phase of the day is told in 002.',
+    ],
+  },
+  sources: [
+    'Charles Oman, A History of the Peninsular War, vol. 1 (1902), section IV, ch. 2, pp. 220–41',
+    'W. F. P. Napier, History of the War in the Peninsula, vol. 1, book 2, ch. 4',
+    "Wellesley's dispatches of 17 August 1808, Wellington's Dispatches (Gurwood), vol. 4, as cited by Oman",
+    'Colonel Leslie, Military Journal (printed 1887), account of the 29th Regiment, as cited by Oman',
+  ],
+};
+
+export default history;
