@@ -31,7 +31,7 @@ export const TEXTS: Record<string, ScenarioTexts> = {
     hint: "Hold Vimiero hill and shift your line to meet the flank attack.",
   },
   '004': {
-    blurb: "On 16 January 1809 Soult attacked at Corunna while Sir John Moore's army was embarking after its winter retreat from Spain. Moore posted his divisions on Monte Moro, shielding the ships. The British beat off the French columns, though Moore himself fell to a cannon ball. The army sailed within days.",
+    blurb: "On 16 January 1809 Soult attacked at Corunna while Sir John Moore's army was embarking after its winter retreat across Galicia. Moore posted his divisions on Monte Moro, shielding the ships. The British beat off the French columns, though Moore himself fell to a cannon ball. The army sailed within days.",
     specialText: [
       "All streams are fordable.",
     ],
@@ -46,7 +46,7 @@ export const TEXTS: Record<string, ScenarioTexts> = {
     hint: "Hold the line and the hill; the French must come to you.",
   },
   '006': {
-    blurb: "On 24 July 1810 Ney's 6th Corps attacked Craufurd's Light Division, which Craufurd had kept east of the Côa against Wellington's wishes, with one narrow bridge behind it. Turned on his left, Craufurd fell back to the bridge, where French attacks failed under riflemen's fire. The French then invested Almeida, which fell a month later.",
+    blurb: "On 24 July 1810 Ney's 6th Corps attacked Craufurd's Light Division, which Craufurd had kept east of the Côa against Wellington's wishes, with one narrow bridge behind it. Turned on his left, Craufurd fell back to the bridge, where French attacks failed under riflemen's fire. The French then invested the nearby fortress of Almeida, which fell a month later.",
     specialText: [
       "An Anglo-Portuguese unit that leaves the board by the Côa bridge on its own baseline scores 1 permanent banner; leaders may leave but score nothing.",
       "No retreat leads off the bridge: a unit that cannot complete its retreat loses blocks instead.",
@@ -64,11 +64,11 @@ export const TEXTS: Record<string, ScenarioTexts> = {
     hint: "Hold the crest from behind it, then counter-charge the columns.",
   },
   '008': {
-    blurb: "Ney ordered two VI Corps divisions up the slopes near Sula on 27 September 1810, believing Reynier had already gained the heights. Craufurd's 43rd and 52nd lay concealed beyond the crest, with skirmishers out in front; as the French columns neared the top they fired a volley at close range and charged. Loison's men broke, Pack's Portuguese and the guns held Marchand, and Ney called off the attack.",
+    blurb: "Ney ordered two VI Corps divisions up the slopes near Sula on 27 September 1810, believing Reynier had already gained the heights. Craufurd's 43rd and 52nd lay concealed beyond the crest, with skirmishers out in front; as the French columns neared the top the hidden regiments fired a volley at close range and charged. Loison's men broke, Pack's Portuguese and the guns held Marchand, and Ney called off the attack.",
     hint: "Hold your best troops back until the columns reach the crest.",
   },
   '009': {
-    blurb: "On 12 March 1811 Ney held a plateau before Redinha with Mermet's division, covering the one bridge at his back as Masséna's army retreated. Erskine's Light Division and Picton worked through the woods on either flank, and Wellington then advanced in line. Ney crossed the river in good order, though he had delayed Wellington for a day.",
+    blurb: "On 12 March 1811 Ney held a plateau before Redinha with Mermet's division, covering the one bridge at his back as Masséna's army retreated. Erskine's Light Division and Picton worked through the woods on either flank, and Wellington then advanced in line. Ney crossed the river in good order, having delayed Wellington for a day.",
     specialText: [
       "The Ancos is impassable except at the bridge.",
     ],
