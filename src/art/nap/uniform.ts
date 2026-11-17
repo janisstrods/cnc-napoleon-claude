@@ -84,8 +84,8 @@ export interface GunSpec {
   /** [0] = front piece, removed last. */
   pieces: readonly [GunPiece, GunPiece, GunPiece, GunPiece];
   guard?: true;
-  /** Horse artillery: a limber hooked to two draught horses with a mounted driver stands behind the gun at every strength. */
-  team?: true;
+  /** Horse artillery: a mounted gunner holding his horse stands at the rear of the base at every strength (not a block piece). */
+  holder?: true;
   stub?: true;
 }
 

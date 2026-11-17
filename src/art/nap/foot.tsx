@@ -5,7 +5,7 @@
 // near arm, head. The torso, arms, musket and head share one lean transform (`torsoTransform`) so a stride or a kneel tilts
 // the whole upper body about the hips while the legs plant themselves.
 import { darken, lighten } from '../color';
-import { Hi, Line2, OL, OW, Paint, Shape, dots, makeFig, type Fig } from './draw';
+import { Hi, Line2, OL, OW, Paint, Shape, makeFig, type Fig } from './draw';
 import { Headgear } from './headgear';
 import { CLOTH, METAL, type NationLook } from './nations';
 import type { Dress, FootPose, FootSpec, Headwear } from './uniform';
@@ -15,8 +15,9 @@ type P = readonly [number, number];
 
 const SHOE = '#17140f';
 const HIDE = '#6a4c2e'; // the calfskin pack
-// The rolled greatcoat on every pack: campaign grey, whatever the man wears.
-const PACK_ROLL = CLOTH.greatcoatGrey;
+// The rolled greatcoat on every pack: campaign grey, whatever the man wears, darkened towards the pack's value so that it does
+// not read as a stray light blob beside every head at board scale.
+const PACK_ROLL = darken(CLOTH.greatcoatGrey, 0.35);
 const SKIRT = 4.6; // y of the greatcoat hem
 
 /** The upper body's lean for a stance: a rotation about the hips, and a drop for the kneel. */
@@ -107,14 +108,18 @@ function Torso({ dress, f }: { dress: Dress; f: Fig }) {
       {long ? (
         <>
           <path d={`M0.8 -20.8 L1.3 -${SKIRT - 0.3}`} stroke={darken(coat, 0.45)} strokeWidth={0.5} />
-          <path d={dots([[-0.1, -19], [-0.1, -16.4], [-0.1, -13.8], [2.2, -19], [2.2, -16.4], [2.2, -13.8]], 0.35)} fill={darken(coat, 0.5)} />
         </>
       ) : (
         <path d={`M-1.4 ${-9.2} L-1.4 -12 M2.4 ${-9.6} L2.3 -12`} stroke={dress.lace ? dress.lace : darken(coat, 0.4)} strokeWidth={0.4} opacity={0.8} />
       )}
       {lapel ? <Shape d="M0.1 -21.2 L3.2 -20.6 L2.9 -13.4 L-0.1 -13.6 Z" f={dress.lapels!} sw={0.5} /> : null}
       {lapel ? <path d="M0.1 -21.2 L-0.1 -13.6 M3.2 -20.6 L2.9 -13.4" fill="none" stroke={edge} strokeWidth={0.45} opacity={0.9} /> : null}
-      {dress.lace && !lapel && !long ? <path d="M-2.4 -19 L2.4 -19 M-2.4 -17 L2.4 -17 M-2.6 -15 L2.6 -15" stroke={dress.lace} strokeWidth={0.45} /> : null}
+      {dress.lace && cut === 'dolman' ? (
+        // a hussar dolman: bold bars of braid across the chest, the horse artillery's mark on foot
+        <g data-part="braid" stroke={dress.lace} strokeLinecap="round" fill="none">
+          <path d="M-2.6 -19.6 L2.8 -19.4 M-2.7 -17.9 L2.9 -17.7 M-2.8 -16.2 L2.9 -16 M-2.8 -14.5 L2.9 -14.3" strokeWidth={0.75} />
+        </g>
+      ) : dress.lace && !lapel && !long ? <path d="M-2.4 -19 L2.4 -19 M-2.4 -17 L2.4 -17 M-2.6 -15 L2.6 -15" stroke={dress.lace} strokeWidth={0.45} /> : null}
       {/* collar */}
       <Shape d="M-1.7 -22.2 L2 -22.2 L2.3 -20.5 L-1.9 -20.5 Z" f={dress.facings} sw={0.6} />
       {dress.lace ? <path d="M-1.6 -21.9 L1.9 -21.9" stroke={dress.lace} strokeWidth={0.4} /> : null}
@@ -242,8 +247,7 @@ function Pack() {
       <Shape d="M-7.2 -21.4 Q-7.7 -17.4 -6.8 -13.4 L-2.9 -13.6 L-2.7 -21 Z" f={HIDE} sw={0.7} />
       <Paint d="M-7.2 -21.4 Q-7.7 -17.4 -6.8 -13.4 L-5.6 -13.5 L-5.6 -21.2 Z" f={darken(HIDE, 0.4)} o={0.5} mx={-5} />
       <path d="M-6.3 -19.8 L-3.3 -19.8 M-6.3 -16.6 L-3.3 -16.6" stroke={darken(HIDE, 0.45)} strokeWidth={0.45} />
-      <Line2 d="M-7.5 -22.6 L-2.7 -22.9" w={2.7} c={PACK_ROLL} ow={0.6} />
-      <path d="M-6.4 -24.1 L-6.4 -21.4 M-3.9 -24.2 L-3.9 -21.6" stroke={darken(CLOTH.greatcoatGrey, 0.4)} strokeWidth={0.45} />
+      <Line2 d="M-6.9 -22.4 L-3.3 -22.6" w={2} c={PACK_ROLL} ow={0.55} />
     </g>
   );
 }

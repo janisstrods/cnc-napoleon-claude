@@ -2,26 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { createElement as h } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { ARM_OF, CODE_NAMES, codeOf } from '../../../src/engine/codes';
-import { SLOTS, TEAM_BANDS, iconRects, type Formation } from '../../../src/art/nap/slots';
+import { FIGURE_BANDS, SLOTS, type Formation } from '../../../src/art/nap/slots';
 import { ART_KEYS, ART_NATIONS, type ArtKey } from '../../../src/art/nap/keys';
 import { ArmGlyph } from '../../../src/art/nap/badge';
-import { NapLeaderToken, NapUnitIcon } from '../../../src/art/nap';
+import { MEDALLION_SCALE, NAP_LEADER_ATTACH_OFFSET, NapLeaderToken, NapUnitIcon } from '../../../src/art/nap';
 import FigureGallery from '../../../src/dev/FigureGallery';
-import { count, svg, token } from './helpers';
+import { balanced, count, placed, svg, token } from './helpers';
 
 const BAD = /NaN|undefined|Infinity/;
 const GUARDS = ['FR/YG', 'FR/OG', 'FR/GHC', 'FR/GA', 'BR/GG', 'BR/GHC'];
-/** The element starting at `from`, up to its balanced closing tag. */
-function balanced(m: string, from: number): string {
-  let depth = 0;
-  const re = /<g[\s>]|<\/g>/g;
-  re.lastIndex = from;
-  for (let r = re.exec(m); r; r = re.exec(m)) {
-    depth += r[0] === '</g>' ? -1 : 1;
-    if (depth === 0) return m.slice(from, r.index + 4);
-  }
-  return '';
-}
 const badge = (m: string) => (m.indexOf('<g data-badge') < 0 ? '' : balanced(m, m.indexOf('<g data-badge')));
 /** The figure groups of a token by data-slot value. */
 function slotGroups(m: string): Record<string, string> {
@@ -63,14 +52,15 @@ describe('NapUnitToken', () => {
     expect(new Set([g('infantry'), g('cavalry'), g('artillery')]).size).toBe(3);
   });
 
-  it('the Guard units, and only they, carry the marker and the gold rim', () => {
-    for (const k of ART_KEYS) {
-      const out = token(k);
+  it('the Guard units, and only they, stand on a gold-rimmed base and carry the gold badge rim; no staff marker is drawn', () => {
+    for (const k of ART_KEYS) for (const facing of ['left', 'right'] as const) {
+      const out = token(k, { facing });
+      expect(out, k).not.toContain('data-guard');
       if (GUARDS.includes(k)) {
-        expect(out, k).toContain(`data-guard="${k.startsWith('FR') ? 'eagle' : 'crown'}"`);
+        expect(count(out, 'data-base-rim="gold"'), k).toBe(1);
         expect(out, k).toContain('data-rim="gold"');
       } else {
-        expect(out, k).not.toContain('data-guard');
+        expect(out, k).not.toContain('data-base-rim');
         expect(out, k).not.toContain('data-rim');
       }
     }
@@ -88,6 +78,17 @@ describe('NapUnitToken', () => {
     }
   });
 
+  it('draws no specks: every round detail of a figure is at least 1.2 units across, eyes and nostrils apart', () => {
+    const bad: string[] = [];
+    let seen = 0;
+    for (const k of ART_KEYS) {
+      const out = token(k, { blocks: 4 });
+      for (const m of out.matchAll(/<circle[^>]*?r="([\d.]+)"[^>]*?fill="([^"]+)"/g)) if (++seen && Number(m[1]) < 0.6 && m[2] !== '#1d140e') bad.push(`${k}: ${m[0]}`);
+    }
+    expect(seen).toBeGreaterThan(500);
+    expect([...new Set(bad)]).toEqual([]);
+  });
+
   it('icons render at both sizes', () => {
     for (const k of ART_KEYS) for (const size of [24, 64]) expect(svg(h(NapUnitIcon, { unitKey: k, size }))).not.toMatch(BAD);
   });
@@ -99,66 +100,64 @@ describe('NapUnitToken', () => {
   });
 });
 
-describe('the attach corner', () => {
-  // An attached leader's medallion: centre (29, -28), radius 12 (a little over the drawn 12 for the outline).
-  const CX = 29, CY = -28, R = 12;
-  const drawing: Record<Formation, 'foot' | 'horse' | 'gun'> = { close: 'foot', loose: 'foot', horse: 'horse', gun: 'gun' };
-  it('stays clear of every figure box at every strength, in both facings', () => {
+describe('inside the hex', () => {
+  // A point is inside the pointy-top hex of radius 50, inset by `d`, if it clears the vertical edges (apothem 43.30) and the
+  // slanted ones (normal (1/2, sqrt 3/2), same apothem).
+  const AP = 50 * Math.sqrt(3) / 2;
+  const inside = (x: number, y: number, d: number) => Math.abs(x) <= AP - d && Math.abs(x) / 2 + (Math.abs(y) * Math.sqrt(3)) / 2 <= AP - d;
+
+  it('the measured profiles are there', () => {
+    for (const [k, bands] of Object.entries(FIGURE_BANDS)) expect(bands.length, k).toBeGreaterThan(10);
+  });
+
+  it('every figure stays at least 1 unit inside the hex, both facings, every strength (weapons, plumes and pennons included)', () => {
     const hits: string[] = [];
-    for (const f of Object.keys(SLOTS) as Formation[]) {
-      for (const n of [1, 2, 3, 4] as const) for (const flip of [1, -1]) for (const sl of SLOTS[f][n]) for (const [top, bottom, left, right] of iconRects(drawing[f])) {
-        const x0 = sl.x + (flip > 0 ? left : -right) * sl.s;
-        const x1 = sl.x + (flip > 0 ? right : -left) * sl.s;
-        const y0 = sl.y + top * sl.s;
-        const y1 = sl.y + bottom * sl.s;
-        const d = Math.hypot(Math.max(x0 - CX, 0, CX - x1), Math.max(y0 - CY, 0, CY - y1));
-        if (d < R) hits.push(`${f} n${n} flip${flip} slot(${sl.x},${sl.y},${sl.s}) d=${d.toFixed(1)}`);
+    for (const k of ART_KEYS) for (const max of [3, 4]) for (let n = 1; n <= max; n++) for (const facing of ['left', 'right'] as const) {
+      for (const [key, tx, ty, sx, sy] of placed(k, token(k, { blocks: n, maxBlocks: max, facing }))) {
+        for (const [t, b, l, r] of FIGURE_BANDS[key]) for (const [x, y] of [[l, t], [r, t], [l, b], [r, b]]) {
+          const X = tx + x * sx, Y = ty + y * sy;
+          if (!inside(X, Y, 1)) hits.push(`${k} ${n}/${max} ${facing} ${key} at (${X.toFixed(1)}, ${Y.toFixed(1)})`);
+        }
       }
     }
-    expect(hits).toEqual([]);
+    expect([...new Set(hits)].slice(0, 20)).toEqual([]);
+  });
+
+  it('formations are centred and mirror with the facing', () => {
+    for (const k of ['FR/LN', 'BR/RI', 'FR/HC', 'FR/FA', 'BR/HA'] as ArtKey[]) for (const n of [4, 3, 2]) {
+      const r = placed(k, token(k, { blocks: n, facing: 'right' }));
+      const l = placed(k, token(k, { blocks: n, facing: 'left' }));
+      expect(l.map(([key, x, y, sx, sy]) => [key, -x + 0, y, -sx + 0, sy]), `${k} ${n}`).toEqual(r);
+    }
+    for (const f of ['close', 'loose', 'horse'] as Formation[]) {
+      const xs = SLOTS[f][4].map((s) => s.x);
+      // within 4 of the centre: the cavalry's back rank stands half a file left, its horses' heads reaching right
+      expect(Math.abs((Math.min(...xs) + Math.max(...xs)) / 2), f).toBeLessThanOrEqual(4);
+      expect(SLOTS[f][1][0].x, f).toBe(0);
+    }
+  });
+
+  it('front-rank figures stand far enough apart to read as separate men and horses', () => {
+    for (const f of ['close', 'loose'] as Formation[]) expect(SLOTS[f][2][1].x - SLOTS[f][2][0].x, f).toBeGreaterThanOrEqual(24);
+    expect(SLOTS.horse[2][1].x - SLOTS.horse[2][0].x).toBeGreaterThanOrEqual(26);
   });
 });
 
-describe('the attach corner and the Guard marker', () => {
-  // The marker is a staff with a device on top, placed at translate(-31 * flip, 14) and scaled by 0.66 (see GuardMarker); read the
-  // placement from the markup so a nudge in token.tsx is what this checks. The device box is the eagle's, which is the larger.
-  const CX = 29, CY = -28, R = 12;
-  it('keeps the marker clear of the leader medallion in both facings', () => {
-    for (const k of ['FR/OG', 'BR/GG'] as const) for (const facing of ['right', 'left'] as const) {
-      const out = token(k, { facing });
-      const m = /data-guard="[a-z]+" transform="translate\(([-\d.]+) ([-\d.]+)\) scale\(([\d.]+)\)"/.exec(out);
-      expect(m, `${k} ${facing}`).not.toBeNull();
-      const [tx, ty, sc] = [Number(m![1]), Number(m![2]), Number(m![3])];
-      const boxes: [number, number, number, number][] = [[-1.5, 1, -34.5, 0], [-7.5, 7.5, -42.7, -34]]; // shaft; device
-      for (const [x0, x1, y0, y1] of boxes) {
-        const bx0 = tx + x0 * sc, bx1 = tx + x1 * sc, by0 = ty + y0 * sc, by1 = ty + y1 * sc;
-        const d = Math.hypot(Math.max(bx0 - CX, 0, CX - bx1), Math.max(by0 - CY, 0, CY - by1));
-        expect(d, `${k} ${facing}`).toBeGreaterThanOrEqual(R);
-      }
+describe('the attached medallion', () => {
+  it('sits on the badge\'s left end at 0.875 scale, clear of the code and the pips', () => {
+    expect(NAP_LEADER_ATTACH_OFFSET).toEqual({ x: -23.5, y: 27 });
+    expect(MEDALLION_SCALE).toBe(0.875);
+    const med = svg(h(NapLeaderToken, { nation: 'FR', facing: 'right', attached: true }));
+    expect(med).toContain(`scale(${MEDALLION_SCALE})`);
+    const outer = Math.max(...[...med.matchAll(/<circle[^>]*? r="([\d.]+)"[^>]*?stroke-width="([\d.]+)"/g)].map((m) => Number(m[1]) + Number(m[2]) / 2));
+    const right = NAP_LEADER_ATTACH_OFFSET.x + outer * MEDALLION_SCALE;
+    for (const k of ['FR/LN', 'FR/LNC', 'BR/HA'] as ArtKey[]) {
+      const code = /<text x="([-\d.]+)"/.exec(badge(token(k)));
+      expect(code, k).not.toBeNull();
+      expect(right, k).toBeLessThan(Number(code![1]));
     }
-  });
-});
-
-describe('the attach corner and the horse-artillery team', () => {
-  // The team's placement is read from the markup (translate and a facing-signed scale on the group after the team's shadow), so a
-  // nudge in token.tsx is what this checks; its extent is TEAM_BANDS (measured in the figure's own frame, stroke included).
-  const CX = 29, CY = -28, R = 12;
-  it('keeps the team clear of the leader medallion in both facings', () => {
-    for (const k of ['FR/HA', 'BR/HA'] as const) for (const facing of ['right', 'left'] as const) for (const b of [4, 1]) {
-      const out = token(k, { facing, blocks: b });
-      const m = /<g data-team-slot[^>]*>.*?<g transform="translate\(([-\d.]+) ([-\d.]+)\) scale\(([-\d.]+) ([\d.]+)\)"><g data-team/.exec(out);
-      expect(m, `${k} ${facing}`).not.toBeNull();
-      const [tx, ty, sx, sy] = m!.slice(1).map(Number);
-      expect(Math.sign(sx), `${k} ${facing}`).toBe(facing === 'right' ? 1 : -1);
-      for (const [t, bt, l, r] of TEAM_BANDS) {
-        const x0 = tx + Math.min(l * sx, r * sx), x1 = tx + Math.max(l * sx, r * sx);
-        const d = Math.hypot(Math.max(x0 - CX, 0, CX - x1), Math.max(ty + t * sy - CY, 0, CY - (ty + bt * sy)));
-        expect(d, `${k} ${facing} band ${t}`).toBeGreaterThanOrEqual(R);
-      }
-    }
-  });
-  it('draws no team for a foot gun or any other arm', () => {
-    for (const k of ['FR/FA', 'FR/GA', 'BR/FA', 'FR/LN', 'FR/HC']) expect(token(k as ArtKey)).not.toContain('data-team');
+    // and within the badge's height band, so it reads as a seal on the badge rather than a disc on the figures
+    expect(NAP_LEADER_ATTACH_OFFSET.y - outer * MEDALLION_SCALE).toBeGreaterThan(14);
   });
 });
 

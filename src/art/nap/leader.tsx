@@ -12,8 +12,15 @@ import { LEADER_SPECS } from './specs/leaders';
 import { NapBasePlate } from './token';
 import type { FlagSpec, LeaderSpec } from './uniform';
 
-/** Where an attached leader's medallion sits relative to its unit's hex centre. */
-export const NAP_LEADER_ATTACH_OFFSET = { x: 29, y: -28 } as const;
+/**
+ * Where an attached leader's medallion sits relative to its unit's hex centre: on the left end of the arm badge, like a seal,
+ * over the badge's arm glyph (the code still names the arm). All the game information (arm, code, pips, leader) is then one
+ * strip along the bottom of the token and no figure is covered. The medallion is drawn at MEDALLION_SCALE (outer rim radius
+ * about 10.5 with its outline).
+ */
+export const NAP_LEADER_ATTACH_OFFSET = { x: -23.5, y: 27 } as const;
+/** The attached medallion's scale: 0.875 of its drawn radius 11 (12 with the outline). */
+export const MEDALLION_SCALE = 0.875;
 
 export interface NapLeaderTokenProps {
   nation: ArtNation;
@@ -198,7 +205,9 @@ function NapLeaderTokenImpl({ nation, facing, attached, name, showName }: NapLea
       <g data-leader="attached">
         {/* the medallion is never mirrored, so it is always lit from the upper left: value true in both facings */}
         <FacingRightCtx.Provider value>
-          <Medallion spec={spec} n={n} />
+          <g transform={`scale(${MEDALLION_SCALE})`}>
+            <Medallion spec={spec} n={n} />
+          </g>
         </FacingRightCtx.Provider>
       </g>
     );

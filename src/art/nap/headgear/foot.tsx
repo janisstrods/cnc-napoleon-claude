@@ -1,7 +1,7 @@
 // Foot headgear, in the head-local frame (origin at the head's centre, head radius 2.4, facing right; the front is +x).
 // Each root carries data-head={kind}.
 import { darken, lighten } from '../../color';
-import { OL, Hi, Paint, Shape, dots } from '../draw';
+import { OL, Hi, Paint, Shape } from '../draw';
 import { METAL } from '../nations';
 import type { FootHeadgear, Headwear } from '../uniform';
 import type { HeadgearRenderer } from './index';
@@ -28,12 +28,15 @@ function Plume({ x, y, h, colour, tip }: { x: number; y: number; h: number; colo
   );
 }
 
-/** Cords: a festoon across the front and two hanging ends (raquettes). */
-function Cords({ colour, y0, y1, x0 = -2.7, x1 = 2.9 }: { colour: string; y0: number; y1: number; x0?: number; x1?: number }) {
+/**
+ * Cords: a festoon across the front and two hanging ends (raquettes); `arc` draws the festoon alone, a single short arc (on a
+ * bearskin's fur the hanging ends only fizz at board scale).
+ */
+function Cords({ colour, y0, y1, x0 = -2.7, x1 = 2.9, arc = false }: { colour: string; y0: number; y1: number; x0?: number; x1?: number; arc?: boolean }) {
   return (
-    <g fill="none" stroke={colour} strokeLinecap="round">
-      <path d={`M${x0} ${y0} Q${(x0 + x1) / 2} ${y1 + 1.4} ${x1} ${y0 + 0.1}`} strokeWidth={0.55} />
-      <path d={`M${x1 - 0.3} ${y0 + 0.1} L${x1 - 0.6} ${y1 + 1.8} M${x1 - 1.1} ${y0 + 0.3} L${x1 - 1.4} ${y1 + 2.3}`} strokeWidth={0.5} />
+    <g data-cords={arc ? 'arc' : 'full'} fill="none" stroke={colour} strokeLinecap="round">
+      <path d={`M${x0} ${y0} Q${(x0 + x1) / 2} ${y1 + 1.4} ${x1} ${y0 + 0.1}`} strokeWidth={arc ? 0.6 : 0.55} />
+      {arc ? null : <path d={`M${x1 - 0.3} ${y0 + 0.1} L${x1 - 0.6} ${y1 + 1.8} M${x1 - 1.1} ${y0 + 0.3} L${x1 - 1.4} ${y1 + 2.3}`} strokeWidth={0.5} />}
     </g>
   );
 }
@@ -65,7 +68,7 @@ const Shako: HeadgearRenderer = ({ head, f }) => {
           <Hi d="M0.8 -4.2 L0.8 -2.4" c={lighten(brass, 0.5)} w={0.4} mx={1.4} />
         </g>
       ) : null}
-      {pom && !head.plume ? <><circle cx={0.7} cy={-7.1} r={1.5} fill={pom} stroke={OL} strokeWidth={0.5} /><circle cx={0.2} cy={-7.6} r={0.5} fill={lighten(pom, 0.5)} opacity={0.8} /></> : null}
+      {pom && !head.plume ? <circle cx={0.7} cy={-7.1} r={1.5} fill={pom} stroke={OL} strokeWidth={0.5} /> : null}
     </g>
   );
 };
@@ -84,7 +87,7 @@ function bearskinOf(kind: 'bearskin' | 'bearskinPlate'): HeadgearRenderer {
         <Hi d="M1.4 -9.4 L1.7 -7.8 M2.8 -8.4 L3 -6.8 M0.2 -10.2 L0.6 -8.6 M1.2 -6.4 L1.5 -4.8 M2.4 -5.6 L2.6 -4 M0.6 -3.8 L0.8 -2.4" c={lighten(fur, 0.35)} w={0.45} o={0.85} mx={1} />
         {/* the back of the cap: the red bag, a hint of it below the crown */}
         <path d="M-3.1 -8 L-4 -4.4 L-3 -4 Z" fill={head.plume?.colour ?? '#8a2a2a'} opacity={0.9} />
-        {head.cords ? <Cords colour={head.cords} y0={-3.8} y1={-2.2} x0={-3} x1={3.3} /> : null}
+        {head.cords ? <Cords colour={head.cords} y0={-3.8} y1={-2.6} x0={-0.6} x1={3.3} arc /> : null}
         {plate ? (
           <g>
             <Shape d="M0.5 -6 Q2.2 -6.7 3.6 -5.6 L3.1 -1.9 Q1.9 -1.3 0.7 -1.9 Z" f={plate} sw={0.5} />
@@ -106,7 +109,6 @@ const CoveredShako: HeadgearRenderer = ({ head, f }) => {
       <Shape d="M-2.7 -0.5 L-2.9 -5.4 Q0 -6 2.9 -5.4 L2.8 -0.5 Z" f={c} />
       <Paint d="M-2.7 -0.5 L-2.9 -5.4 L-1.5 -5.7 L-1.3 -0.5 Z" f="#000" o={0.35} mx={0} />
       <path d="M-2.9 -5.4 Q0 -6 2.9 -5.4" fill="none" stroke={lighten(c, 0.45)} strokeWidth={0.5} opacity={0.7} />
-      <path d={dots([[-0.8, -2.6], [1, -3.8]], 0.25)} fill={lighten(c, 0.5)} opacity={0.35} />
       <Shape d="M2.5 -0.9 L4.6 -0.4 L4.4 0.3 L2.6 0.1 Z" f={darken(c, 0.1)} />
       {pom ? <circle cx={0.3} cy={-6.4} r={1.4} fill={pom} stroke={OL} strokeWidth={0.5} /> : null}
     </g>
@@ -186,7 +188,6 @@ const RoundHat: HeadgearRenderer = ({ head }) => {
       <Paint d="M-2.5 -1.7 L-2.4 -4.4 L-1.2 -4.6 L-1.1 -1.5 Z" f={darken(c, 0.4)} o={0.5} mx={0} />
       <path d="M-2.4 -2.4 Q0 -1.8 2.7 -2.4" fill="none" stroke={lighten(c, 0.35)} strokeWidth={0.4} opacity={0.8} />
       <circle cx={3.1} cy={-2.5} r={0.95} fill={cockade} stroke={OL} strokeWidth={0.45} />
-      <circle cx={3.1} cy={-2.5} r={0.4} fill={lighten(cockade, 0.5)} />
     </g>
   );
 };

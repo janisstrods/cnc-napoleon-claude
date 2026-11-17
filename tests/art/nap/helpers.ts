@@ -3,6 +3,8 @@ import { createElement as h } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { NapMiniature, NapUnitToken } from '../../../src/art/nap/token';
 import type { ArtKey } from '../../../src/art/nap/keys';
+import { FIGURE_SPECS } from '../../../src/art/nap/specs';
+import type { BandKey } from '../../../src/art/nap/slots';
 import { rgb } from '../../../src/art/color';
 export { deltaE } from '../delta-e';
 
@@ -49,3 +51,38 @@ export function hueClass(hex: string): HueClass {
   if (hh < 265) return 'blue';
   return 'purple';
 }
+
+/** The element starting at `from`, up to its balanced closing tag. */
+export function balanced(m: string, from: number): string {
+  let depth = 0;
+  const re = /<g[\s>]|<\/g>/g;
+  re.lastIndex = from;
+  for (let r = re.exec(m); r; r = re.exec(m)) {
+    depth += r[0] === '</g>' ? -1 : 1;
+    if (depth === 0) return m.slice(from, r.index + 4);
+  }
+  return '';
+}
+/** Every placed figure of a token as [band key, translate x, translate y, scale x, scale y], read from the markup. */
+export function placed(k: ArtKey, out: string): [BandKey, number, number, number, number][] {
+  const spec = FIGURE_SPECS[k];
+  const res: [BandKey, number, number, number, number][] = [];
+  const tr = /<g transform="translate\(([-\d.]+) ([-\d.]+)\) scale\(([-\d.]+) ([-\d.]+)\)">/;
+  for (const r of out.matchAll(/<g data-slot="\d"/g)) {
+    const g = balanced(out, r.index!);
+    const m = tr.exec(g);
+    if (!m) throw new Error(`no placement in ${k}`);
+    const piece = /data-piece="(\w+)"/.exec(g)?.[1];
+    const gunKey = (p: string): BandKey => (p === 'gun' && spec.drawing === 'gun' && spec.holder ? 'horseGun' : (p as BandKey));
+    const key: BandKey = spec.drawing === 'gun' ? gunKey(piece!) : spec.drawing === 'horse' ? 'horse' : spec.order === 'close' ? 'close' : 'loose';
+    res.push([key, ...(m!.slice(1).map(Number) as [number, number, number, number])]);
+  }
+  const hold = out.indexOf('<g data-holder="true"');
+  if (hold >= 0) {
+    const m = tr.exec(balanced(out, hold));
+    if (!m) throw new Error(`no placement in ${k}`);
+    res.push(['holder', ...(m!.slice(1).map(Number) as [number, number, number, number])]);
+  }
+  return res;
+}
+

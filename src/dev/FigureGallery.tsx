@@ -3,8 +3,10 @@
 //   #/gallery/figures/<filter>             infantry | cavalry | artillery | leaders, or a comma list of keys (FR-LN,BR-LN)
 //   #/gallery/figures/single/<KEY>         one key's four figures (or four gun pieces) at x6, e.g. single/FR-LN
 //   #/gallery/figures/board                two facing lines of hexes at board scale, with an attached leader per side
+//   #/gallery/figures/bands                measures every figure's ink profile (FIGURE_BANDS) and prints it as JSON in
+//                                          <pre id="bands">; scripts/art-bands.ts reads it and rewrites src/art/nap/slots.ts
 // Each section has a board-scale row (x0.75) on grass, the same row on the darkest terrain colour, and a large row (x2.5).
-import type { ReactNode } from 'react';
+import { createElement, useEffect, useState, type ReactElement, type ReactNode } from 'react';
 import { ARM_OF, CODE_NAMES, NATION_NAMES, codeOf, nationOf } from '../engine/codes';
 import { HEX_R, HEX_W, ROW_H, hexPoints } from '../ui/geometry';
 import { P } from '../ui/terrain/palette';
@@ -13,7 +15,10 @@ import {
 } from '../art/nap';
 import { FacingRightCtx } from '../art/nap/draw';
 import { NapMiniature } from '../art/nap/token';
-import { ICON_BOX } from '../art/nap/slots';
+import { HorseHolderFigure } from '../art/nap/gun';
+import { artNationOf } from '../art/nap/keys';
+import { NATION_LOOKS } from '../art/nap/nations';
+import { ICON_BOX, type BandKey } from '../art/nap/slots';
 import { FIGURE_SPECS } from '../art/nap/specs';
 
 const BOARD = 0.75;
@@ -29,12 +34,14 @@ const DARKEST = (() => {
   return solid.reduce((a, b) => (lum(b) < lum(a) ? b : a));
 })();
 
-const MAXB = 4;
+/** Blocks at full strength: artillery has 3 in play, everything else 4. */
+const maxOf = (k: ArtKey) => (ARM_OF[codeOf(k)] === 'artillery' ? 3 : 4);
 type Filter = { keys: ArtKey[]; leaders: boolean; sections: ('infantry' | 'cavalry' | 'artillery')[] };
 
-function parse(route: string): { mode: 'board' } | { mode: 'single'; key: ArtKey | null } | ({ mode: 'list' } & Filter) {
+function parse(route: string): { mode: 'board' } | { mode: 'bands' } | { mode: 'single'; key: ArtKey | null } | ({ mode: 'list' } & Filter) {
   const rest = route.replace(/^#?\/?gallery\/figures\/?/, '');
   if (rest === 'board') return { mode: 'board' };
+  if (rest === 'bands') return { mode: 'bands' };
   if (rest.startsWith('single/')) {
     const k = rest.slice(7).replace('-', '/');
     return { mode: 'single', key: isArtKey(k) ? k : null };
@@ -70,9 +77,9 @@ function Strip({ scale, cells }: { scale: number; cells: { fill: string; node: R
 }
 
 const tokenCells = (k: ArtKey, bg: string) => [
-  { fill: bg, node: <NapUnitToken unitKey={k} blocks={MAXB} maxBlocks={MAXB} facing="right" /> },
-  { fill: bg, node: <NapUnitToken unitKey={k} blocks={2} maxBlocks={MAXB} facing="left" /> },
-  { fill: bg, node: <NapUnitToken unitKey={k} blocks={MAXB} maxBlocks={MAXB} facing="right" dimmed /> },
+  { fill: bg, node: <NapUnitToken unitKey={k} blocks={maxOf(k)} maxBlocks={maxOf(k)} facing="right" /> },
+  { fill: bg, node: <NapUnitToken unitKey={k} blocks={2} maxBlocks={maxOf(k)} facing="left" /> },
+  { fill: bg, node: <NapUnitToken unitKey={k} blocks={maxOf(k)} maxBlocks={maxOf(k)} facing="right" dimmed /> },
 ];
 
 const caption = (k: ArtKey) => `${k} · ${CODE_NAMES[codeOf(k)]}`;
@@ -96,7 +103,7 @@ function KeySection({ title, keys }: { title: string; keys: ArtKey[] }) {
       <div style={{ ...wrap, gap: 16 }}>
         {keys.map((k) => (
           <figure key={k} style={{ margin: 0 }}>
-            <Strip scale={LARGE} cells={[{ fill: GRASS, node: <NapUnitToken unitKey={k} blocks={MAXB} maxBlocks={MAXB} facing="right" /> }]} />
+            <Strip scale={LARGE} cells={[{ fill: GRASS, node: <NapUnitToken unitKey={k} blocks={maxOf(k)} maxBlocks={maxOf(k)} facing="right" /> }]} />
             <figcaption style={{ fontSize: 13, textAlign: 'center' }}>{caption(k)}</figcaption>
           </figure>
         ))}
@@ -108,16 +115,20 @@ function KeySection({ title, keys }: { title: string; keys: ArtKey[] }) {
 const LEADER_NAMES: Record<ArtNation, string> = { FR: 'Kellermann', BR: 'Prince of Orange', PT: 'Beresford', AL: 'Brunswick' };
 
 function LeaderSection() {
-  const cell = (bg: string, n: ArtNation, facing: 'left' | 'right') => ({
-    fill: bg,
-    node: (
-      <>
-        <NapLeaderToken nation={n} facing={facing} attached={false} name={LEADER_NAMES[n]} showName />
-        <g transform={`translate(${NAP_LEADER_ATTACH_OFFSET.x} ${NAP_LEADER_ATTACH_OFFSET.y})`}><NapLeaderToken nation={n} facing={facing} attached /></g>
-      </>
-    ),
-  });
-  const cells = (bg: string) => ART_NATIONS.map((n, k) => cell(bg, n, k % 2 ? 'left' : 'right'));
+  // each nation: the general alone on his base, then attached to a line battalion (the medallion on the badge's left end)
+  const pair = (bg: string, n: ArtNation, facing: 'left' | 'right') => [
+    { fill: bg, node: <NapLeaderToken nation={n} facing={facing} attached={false} name={LEADER_NAMES[n]} showName /> },
+    {
+      fill: bg,
+      node: (
+        <>
+          <NapUnitToken unitKey={`${n}/LN` as ArtKey} blocks={4} maxBlocks={4} facing={facing} />
+          <g transform={`translate(${NAP_LEADER_ATTACH_OFFSET.x} ${NAP_LEADER_ATTACH_OFFSET.y})`}><NapLeaderToken nation={n} facing={facing} attached /></g>
+        </>
+      ),
+    },
+  ];
+  const cells = (bg: string) => ART_NATIONS.flatMap((n, k) => pair(bg, n, k % 2 ? 'left' : 'right'));
   return (
     <section>
       <Heading>Leaders</Heading>
@@ -129,7 +140,7 @@ function LeaderSection() {
       <div style={{ ...wrap, gap: 16 }}>
         {ART_NATIONS.map((n) => (
           <figure key={n} style={{ margin: 0 }}>
-            <Strip scale={LARGE} cells={[cell(GRASS, n, 'right')]} />
+            <Strip scale={LARGE} cells={pair(GRASS, n, 'right')} />
             <figcaption style={{ fontSize: 13, textAlign: 'center' }}>{`${NATION_NAMES[n]} leader`}</figcaption>
           </figure>
         ))}
@@ -183,7 +194,7 @@ function Board() {
           const y = 4 + HEX_R + row * ROW_H;
           return (
             <Hex key={k} x={x} y={y} fill={(c + row) % 3 === 2 ? DARKEST : GRASS}>
-              <NapUnitToken unitKey={k} blocks={c % 2 ? 3 : MAXB} maxBlocks={MAXB} facing={r.facing} />
+              <NapUnitToken unitKey={k} blocks={c % 2 ? maxOf(k) - 1 : maxOf(k)} maxBlocks={maxOf(k)} facing={r.facing} />
               {c === 0 ? <g transform={`translate(${NAP_LEADER_ATTACH_OFFSET.x} ${NAP_LEADER_ATTACH_OFFSET.y})`}><NapLeaderToken nation={nationOf(k) as ArtNation} facing={r.facing} attached /></g> : null}
             </Hex>
           );
@@ -194,9 +205,81 @@ function Board() {
   );
 }
 
+// ---------------------------------------------------------------------------------------------
+// Ink profiles (FIGURE_BANDS): each figure rasterised at 4 px per unit in its own frame (facing right, feet at 0,0), scanned
+// for ink in 2-unit bands, and the union taken over every key and paint index of a band key, rounded out to half a unit.
+
+const PX = 4, X0 = -70, X1 = 70, Y0 = -80, Y1 = 20, BAND = 2;
+type Band = [number, number, number, number];
+
+/** The figures each band key is measured over. */
+function bandFigures(): Record<BandKey, ReactElement[]> {
+  const out = { close: [], loose: [], horse: [], gun: [], horseGun: [], rammer: [], linstock: [], ammo: [], holder: [] } as Record<BandKey, ReactElement[]>;
+  for (const k of ART_KEYS) {
+    const s = FIGURE_SPECS[k];
+    for (let i = 0; i < 4; i++) {
+      if (s.drawing === 'foot') out[s.order === 'close' ? 'close' : 'loose'].push(<NapMiniature unitKey={k} i={i} />);
+      else if (s.drawing === 'horse') {
+        out.horse.push(<NapMiniature unitKey={k} i={i} />);
+        out.horse.push(<NapMiniature unitKey={k} i={i} back />);
+      } else {
+        for (const p of new Set(s.pieces)) out[p === 'gun' ? (s.holder ? 'horseGun' : 'gun') : p].push(<NapMiniature unitKey={k} i={i} piece={p} />);
+        if (s.holder && i === 0) out.holder.push(<HorseHolderFigure spec={s} n={NATION_LOOKS[artNationOf(k)]} />);
+      }
+    }
+  }
+  return out;
+}
+
+async function inkBands(el: ReactElement, toMarkup: (e: ReactElement) => string): Promise<Map<number, [number, number]>> {
+  const w = (X1 - X0) * PX, h = (Y1 - Y0) * PX;
+  const svg = toMarkup(createElement('svg', { xmlns: 'http://www.w3.org/2000/svg', width: w, height: h, viewBox: `${X0} ${Y0} ${X1 - X0} ${Y1 - Y0}` }, <FacingRightCtx.Provider value>{el}</FacingRightCtx.Provider>));
+  const img = new Image();
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  await img.decode();
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const g = c.getContext('2d')!;
+  g.drawImage(img, 0, 0);
+  const d = g.getImageData(0, 0, w, h).data;
+  const bands = new Map<number, [number, number]>();
+  for (let py = 0; py < h; py++) for (let px = 0; px < w; px++) {
+    if (d[(py * w + px) * 4 + 3] < 8) continue;
+    const b = Math.floor((Y0 + py / PX) / BAND) * BAND;
+    const l = X0 + px / PX, r = l + 1 / PX;
+    const cur = bands.get(b);
+    if (cur) { cur[0] = Math.min(cur[0], l); cur[1] = Math.max(cur[1], r); } else bands.set(b, [l, r]);
+  }
+  return bands;
+}
+
+async function measureBands(): Promise<Record<string, Band[]>> {
+  const { renderToStaticMarkup } = await import('react-dom/server');
+  const res: Record<string, Band[]> = {};
+  for (const [key, els] of Object.entries(bandFigures())) {
+    const u = new Map<number, [number, number]>();
+    for (const el of els) for (const [b, [l, r]] of await inkBands(el, renderToStaticMarkup)) {
+      const cur = u.get(b);
+      if (cur) { cur[0] = Math.min(cur[0], l); cur[1] = Math.max(cur[1], r); } else u.set(b, [l, r]);
+    }
+    res[key] = [...u.entries()].sort((a, b) => a[0] - b[0]).map(([b, [l, r]]) => [b, b + BAND, Math.floor(l * 2) / 2, Math.ceil(r * 2) / 2]);
+  }
+  return res;
+}
+
+function Bands() {
+  const [out, setOut] = useState('measuring');
+  useEffect(() => {
+    measureBands().then((r) => setOut(JSON.stringify(r)), (e) => setOut(`ERROR ${String(e)}`));
+  }, []);
+  return <pre id="bands" style={{ ...page, whiteSpace: 'pre-wrap' }}>{out}</pre>;
+}
+
 export default function FigureGallery({ route }: { route: string }) {
   const r = parse(route);
   if (r.mode === 'board') return <Board />;
+  if (r.mode === 'bands') return <Bands />;
   if (r.mode === 'single') return <Single k={r.key} />;
   const arm = (a: string) => r.keys.filter((k) => ARM_OF[codeOf(k)] === a);
   return (

@@ -4,9 +4,7 @@ import { CLOTH } from '../nations';
 import type { FrInfantryKey } from '../keys';
 import type { Dress, FootSpec, Headwear } from '../uniform';
 
-// Local swatches (not in CLOTH): the violet company pompom, and one bright green for the green company pompom and the
-// light infantry's epaulettes and plume.
-const POMPOM_VIOLET = '#7a3f9a';
+// Local swatch (not in CLOTH): one bright green for the light infantry's epaulettes and plume.
 const GREEN = '#3f8f3c';
 
 const tails = (d: Partial<Dress> & Pick<Dress, 'facings' | 'trousers'>): Dress => ({ coat: CLOTH.frenchBlue, cut: 'tails', belts: CLOTH.white, ...d });
@@ -15,11 +13,12 @@ const foot = (dress: Dress, head: Headwear, poses: FootSpec['poses'], order: Foo
 });
 
 export const FR_INFANTRY_SPECS: Record<FrInfantryKey, FootSpec> = {
-  // Line: white lapels, scarlet facings, white breeches; red-piped blue shoulder straps (the facing colour is the piping);
-  // the pompom shows the company (green, sky, orange, violet), cycled by figure.
+  // Line: white lapels, scarlet facings, white breeches; red-piped blue shoulder straps (the facing colour is the piping).
+  // The fusilier pompom showed the company (green, sky blue, orange, violet); a token stands for a whole battalion, so it
+  // wears one colour, the third company's orange (four colours read as confetti at board scale).
   'FR/LN': foot(
     tails({ facings: CLOTH.scarlet, lapels: CLOTH.white, trousers: CLOTH.white, gaiters: CLOTH.black, shoulders: { kind: 'straps', colour: CLOTH.frenchBlue } }),
-    { kind: 'shako', plate: 'brass', pompoms: [GREEN, CLOTH.sky, CLOTH.orange, POMPOM_VIOLET] },
+    { kind: 'shako', plate: 'brass', pompoms: [CLOTH.orange] },
     ['shoulder', 'shoulder', 'charge', 'shoulder'], 'close',
   ),
   // Light infantry: all blue, blue lapels piped white, scarlet collar and cuffs piped white (pre-1812 practice; later regulations

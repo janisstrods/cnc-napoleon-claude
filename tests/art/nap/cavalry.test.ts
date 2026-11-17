@@ -3,11 +3,13 @@ import { describe, expect, it } from 'vitest';
 import { makeFig } from '../../../src/art/nap/draw';
 import { HORSE_SEAT, Horse } from '../../../src/art/nap/horse';
 import { CAVALRY, type ArtKey, type CavalryKey } from '../../../src/art/nap/keys';
-import { NATION_LOOKS } from '../../../src/art/nap/nations';
-import { Rider } from '../../../src/art/nap/rider';
+import { HORSE_COATS, NATION_LOOKS } from '../../../src/art/nap/nations';
+import { MountedFigure, Rider } from '../../../src/art/nap/rider';
+import { SLOTS } from '../../../src/art/nap/slots';
+import { darken } from '../../../src/art/color';
 import { FIGURE_SPECS } from '../../../src/art/nap/specs';
 import { CAVALRY_SPECS } from '../../../src/art/nap/specs/cavalry';
-import { count, fig, hueClass, shape, svg, token } from './helpers';
+import { balanced, count, fig, hueClass, shape, svg, token } from './helpers';
 
 const spec = (k: CavalryKey) => CAVALRY_SPECS[k];
 /** The four figures of a key, concatenated, colours stripped: the drawing alone. */
@@ -101,10 +103,60 @@ describe('cavalry', () => {
     expect(cu && hueClass(cu.colour)).toBe('red');
   });
 
+  it('the lance slopes forward, towards the charge, rather than standing upright', () => {
+    for (let i = 0; i < 4; i++) {
+      const m = /<g data-weapon="lance"><g transform="translate\([-\d.]+ [-\d.]+\) rotate\(([-\d.]+)\)"/.exec(fig('FR/LNC', i));
+      expect(m, `figure ${i}`).not.toBeNull();
+      expect(Number(m![1])).toBeGreaterThanOrEqual(25);
+      expect(Number(m![1])).toBeLessThanOrEqual(45);
+    }
+  });
+
+  it('the ranks are staggered: every back-rank rider stands in a gap, half a file from each front rider', () => {
+    for (const n of [4, 3] as const) {
+      const sl = SLOTS.horse[n];
+      const front = sl.slice(-2).map((s) => s.x);
+      for (const b of sl.slice(0, -2)) for (const f of front) expect(Math.abs(b.x - f), `${n}: back ${b.x} vs front ${f}`).toBeGreaterThanOrEqual(11);
+    }
+  });
+
+  it('the back rank recedes: darker horses and no portmanteau; the front rank keeps both', () => {
+    const groups = (m: string) => [...m.matchAll(/<g data-slot="(\d)"/g)].map((r) => balanced(m, r.index!));
+    for (const k of CAVALRY) for (const facing of ['left', 'right'] as const) {
+      const g = groups(token(k, { blocks: 4, maxBlocks: 4, facing }));
+      expect(g.length).toBe(4);
+      for (const back of g.slice(0, 2)) {
+        expect(back, k).toContain('data-rank="back"');
+        expect(back, k).not.toContain('data-part="portmanteau"');
+      }
+      for (const front of g.slice(2)) {
+        expect(front, k).not.toContain('data-rank="back"');
+        expect(front, k).toContain('data-part="portmanteau"');
+      }
+    }
+    // the same figure, back and front: every coat colour of the back one is darker
+    const coat = HORSE_COATS[spec('FR/LC').coats[0]].coat;
+    expect(svg(h(MountedFigure, { spec: spec('FR/LC'), n: NATION_LOOKS.FR, i: 0 }))).toContain(coat);
+    const back = svg(h(MountedFigure, { spec: spec('FR/LC'), n: NATION_LOOKS.FR, i: 0, back: true }));
+    expect(back).not.toContain(coat);
+    expect(back).toContain(darken(coat, 0.15));
+  });
+
+  it('the horse kit is calm: portmanteau and cloak roll in the cloth darkened, sheepskins ivory-grey', () => {
+    for (const k of CAVALRY) {
+      const out = fig(k, 0);
+      expect(out, k).toContain(darken(spec(k).shabraque.cloth, 0.35));
+      expect(out, k).not.toContain(darken(spec(k).shabraque.cloth, 0.18));
+    }
+    const lc = spec('BR/LC');
+    expect(lc.shabraque.sheepskin).toBe(true);
+    expect(fig('BR/LC', 0)).toContain('#d8d0bc');
+    expect(fig('BR/LC', 0)).not.toContain('#e6dfcb');
+  });
+
   it('marks the Guard', () => {
-    expect(token('FR/GHC')).toContain('data-guard="eagle"');
-    expect(token('BR/GHC')).toContain('data-guard="crown"');
-    for (const k of CAVALRY.filter((x) => x !== 'FR/GHC' && x !== 'BR/GHC')) expect(token(k), k).not.toContain('data-guard');
+    for (const k of ['FR/GHC', 'BR/GHC']) expect(token(k as CavalryKey), k).toContain('data-base-rim="gold"');
+    for (const k of CAVALRY.filter((x) => x !== 'FR/GHC' && x !== 'BR/GHC')) expect(token(k), k).not.toContain('data-base-rim');
   });
 
   it('renders every key at 1..4 blocks, both facings, one figure per block, without NaN', () => {

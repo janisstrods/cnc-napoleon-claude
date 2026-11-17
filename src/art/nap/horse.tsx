@@ -63,7 +63,8 @@ function scallop(w: number, n: number): string {
   return ' q' + `${(w / n / 2).toFixed(2)} 1.6 ${step} 0`.repeat(1) + ` q${(w / n / 2).toFixed(2)} 1.6 ${step} 0`.repeat(n - 1);
 }
 
-const WOOL = '#e6dfcb';
+// Sheepskin: an ivory grey rather than a bright white, so the saddle does not outshine the rider.
+const WOOL = '#d8d0bc';
 
 /** The saddle cloth with a pointed rear and its trim; a light horse's sheepskin lies over it, leaving a border of the cloth. */
 function Shabraque({ cloth, trim, sheepskin }: HorseSpec['shabraque']) {
@@ -83,31 +84,44 @@ function Shabraque({ cloth, trim, sheepskin }: HorseSpec['shabraque']) {
   );
 }
 
-/** The rolled cloak across the pommel and the portmanteau behind the cantle. */
-function Valise({ cloth, trim }: { cloth: string; trim: string }) {
-  const roll = darken(cloth, 0.18);
+/**
+ * The rolled cloak across the pommel and (unless `portmanteau` is false) the portmanteau behind the cantle, in the cloth
+ * darkened, with its end lace toned down: at board scale they are kit, not a saturated square on every horse.
+ */
+function Valise({ cloth, trim, portmanteau }: { cloth: string; trim: string; portmanteau: boolean }) {
+  const roll = darken(cloth, 0.35);
   return (
     <g data-part="valise">
-      <Shape d="M-13 -21.4 L-7.4 -21.8 L-7.2 -17.6 L-12.8 -17.2 Q-13.8 -19.4 -13 -21.4 Z" f={roll} sw={0.6} />
-      <path d="M-13 -21.4 L-7.4 -21.8 M-12.9 -17.4 L-7.2 -17.8" stroke={trim} strokeWidth={0.5} fill="none" />
-      <path d="M-10.2 -21.7 L-10 -17.5" stroke={darken(roll, 0.4)} strokeWidth={0.5} />
-      <Line2 d="M3.8 -22.2 Q5.8 -20.4 5.4 -17.6" w={2.6} c={lighten(roll, 0.12)} ow={0.55} />
+      {portmanteau ? (
+        <g data-part="portmanteau">
+          <Shape d="M-13 -21.4 L-7.4 -21.8 L-7.2 -17.6 L-12.8 -17.2 Q-13.8 -19.4 -13 -21.4 Z" f={roll} sw={0.6} />
+          <path d="M-13 -21.4 L-7.4 -21.8 M-12.9 -17.4 L-7.2 -17.8" stroke={darken(trim, 0.3)} strokeWidth={0.5} fill="none" />
+          <path d="M-10.2 -21.7 L-10 -17.5" stroke={darken(roll, 0.4)} strokeWidth={0.5} />
+        </g>
+      ) : null}
+      <Line2 d="M3.8 -22.2 Q5.8 -20.4 5.4 -17.6" w={2.6} c={roll} ow={0.55} />
     </g>
   );
 }
 
-/** Bridle, bit and reins' buckle. */
+/** Bridle and bit. */
 function Bridle() {
   return (
     <g fill="none" stroke="#33200f" strokeWidth={0.55} strokeLinecap="round">
       <path d="M14.2 -27.4 L17.2 -19.2 M15.6 -23.2 L19.9 -21.6 M14 -25.4 L17 -24" />
-      <circle cx={18.5} cy={-18.9} r={0.5} stroke={OL} strokeWidth={0.35} fill="#c9b27a" />
     </g>
   );
 }
 
-export function Horse({ size, coat, pose, shabraque }: { size: HorseSize; coat: HorseCoatName; pose: 0 | 1 | 2; shabraque: HorseSpec['shabraque'] }) {
-  const c = HORSE_COATS[coat];
+/**
+ * A horse. `shade` darkens the coat, mane and shading by that fraction (the back rank recedes); `portmanteau: false` leaves
+ * off the portmanteau behind the cantle.
+ */
+export function Horse({ size, coat, pose, shabraque, shade = 0, portmanteau = true }: {
+  size: HorseSize; coat: HorseCoatName; pose: 0 | 1 | 2; shabraque: HorseSpec['shabraque']; shade?: number; portmanteau?: boolean;
+}) {
+  const base = HORSE_COATS[coat];
+  const c = shade > 0 ? { coat: darken(base.coat, shade), shade: darken(base.shade, shade), mane: darken(base.mane, shade) } : base;
   const g = GAITS[pose % GAITS.length];
   const far = darken(c.coat, 0.24);
   return (
@@ -128,7 +142,7 @@ export function Horse({ size, coat, pose, shabraque }: { size: HorseSize; coat: 
       <circle cx={15.4} cy={-24.4} r={0.5} fill={OL} />
       <circle cx={19.6} cy={-18.9} r={0.35} fill={OL} />
       <Shabraque {...shabraque} />
-      <Valise cloth={shabraque.cloth} trim={shabraque.trim} />
+      <Valise cloth={shabraque.cloth} trim={shabraque.trim} portmanteau={portmanteau} />
       {([g.nearHind, g.nearFore] as const).map((l, k) => (
         <g key={k}>
           <Line2 d={path(l)} w={k ? 2.3 : 2.7} c={c.coat} ow={0.75} />
