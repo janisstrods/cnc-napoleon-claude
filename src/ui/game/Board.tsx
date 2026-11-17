@@ -94,9 +94,9 @@ const UnitLayer = memo(function UnitLayer(p: {
               if (p.onLeaderClick?.(l.id)) e.stopPropagation();
             }}
           >
-            {hl && <circle r={attached ? 12.5 : 30} fill={HL_STYLE[hl].fill} stroke={HL_STYLE[hl].stroke} strokeWidth={2.5} strokeDasharray={HL_STYLE[hl].dash} />}
+            {hl && <circle r={attached ? 12 : 30} fill={HL_STYLE[hl].fill} stroke={HL_STYLE[hl].stroke} strokeWidth={2.5} strokeDasharray={HL_STYLE[hl].dash} />}
             {p.orderedIds.has(l.id) && <circle r={attached ? 13.5 : 31} className="ordered-ring" />}
-            <LeaderToken {...leaderTokenProps(state, l, attached)} name={l.name || 'Leader'} />
+            <LeaderToken {...leaderTokenProps(state, l, attached, humanSide)} name={l.name || 'Leader'} />
           </g>
         );
       })}

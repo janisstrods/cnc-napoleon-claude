@@ -5,6 +5,9 @@ import { LeaderToken, UnitIcon, UnitToken } from '../../../src/art';
 import { NapLeaderToken, NapUnitIcon, NapUnitToken, ART_KEYS, ART_NATIONS, artNationOf } from '../../../src/art/nap';
 import { FIGURE_SPECS, LEADER_SPECS } from '../../../src/art/nap/specs';
 import { UNIT_KEYS, nationOf, type UnitKey } from '../../../src/engine/codes';
+import { createGame } from '../../../src/engine';
+import { scenarioById } from '../../../src/scenarios';
+import { leaderTokenProps } from '../../../src/ui/game/boardProps';
 import { svg } from './helpers';
 
 /** UNIT_KEYS rows of an art nation that deliberately keep the placeholder. Each carries its reason. A new row fails the coverage test until decided. */
@@ -60,5 +63,21 @@ describe('public tokens delegate to the Napoleonic art', () => {
     for (const nation of ART_NATIONS) for (const attached of [true, false]) expect(svg(h(NapLeaderToken, { nation, facing: 'right', attached, name: 'X', showName: true }))).not.toContain('data-stub');
     for (const s of Object.values(FIGURE_SPECS)) expect(JSON.stringify(s)).not.toContain('"stub"');
     for (const s of Object.values(LEADER_SPECS)) expect(JSON.stringify(s)).not.toContain('"stub"');
+  });
+
+  it('a lone leader faces the way its side faces', () => {
+    for (const nation of ART_NATIONS) {
+      const l = svg(h(LeaderToken, { name: 'Picton', nation, attached: false, facing: 'left' }));
+      const r = svg(h(LeaderToken, { name: 'Picton', nation, attached: false }));
+      expect(l).toBe(svg(h(NapLeaderToken, { nation, facing: 'left', attached: false, name: 'Picton', showName: true })));
+      expect(l).not.toBe(r);
+    }
+  });
+
+  it('leaderTokenProps gives the facing of the leader\'s side', () => {
+    const g = createGame(scenarioById('000').setup, 1);
+    const lead = g.leaders[0];
+    expect(leaderTokenProps(g, lead, false, lead.side).facing).toBe('right');
+    expect(leaderTokenProps(g, lead, false, lead.side === 'top' ? 'bottom' : 'top').facing).toBe('left');
   });
 });

@@ -14,14 +14,16 @@ export interface LeaderTokenProps {
   name: string;
   nation: Nation;
   attached: boolean;
+  /** Which way a lone general faces (default right). */
+  facing?: 'left' | 'right';
   dimmed?: boolean;
 }
 
 const OUTLINE = '#1d140e';
 
-function LeaderTokenImpl({ name, nation, attached, dimmed }: LeaderTokenProps) {
+function LeaderTokenImpl({ name, nation, attached, facing = 'right', dimmed }: LeaderTokenProps) {
   if (isArtNation(nation)) {
-    const el = <NapLeaderToken nation={nation} facing="right" attached={attached} name={name} showName={!attached} />;
+    const el = <NapLeaderToken nation={nation} facing={facing} attached={attached} name={name} showName={!attached} />;
     return dimmed ? <g opacity={0.55}>{el}</g> : el;
   }
   const side = blockColors(nation);

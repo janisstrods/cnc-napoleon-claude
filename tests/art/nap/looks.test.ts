@@ -5,12 +5,12 @@ import { svg } from './helpers';
 
 // The hash pin: fixes the Napoleonic art as of Plan 6B Task 7. After a deliberate art change, re-pin by pasting the hash this
 // failure prints, and say so in the commit message.
-const BASELINE = 'dd47a191e1c3a841e171d8a5cfd01edbf1a260fa911062032317124790ef7fee';
+const BASELINE = 'c3c2f87557342eb6e89bdd4ca1addbc8c6f76839d4da22aa32ff243372be3b2c';
 
 function markup(): string {
   const out: string[] = [];
   for (const key of ART_KEYS) {
-    for (const max of [3, 4]) for (let blocks = 0; blocks <= max; blocks++) for (const facing of ['left', 'right'] as const) for (const dimmed of [false, true]) {
+    for (const max of [3, 4, 5]) for (let blocks = 0; blocks <= max; blocks++) for (const facing of ['left', 'right'] as const) for (const dimmed of [false, true]) {
       out.push(svg(h(NapUnitToken, { unitKey: key, blocks, maxBlocks: max, facing, dimmed })));
     }
     for (const size of [24, 64]) out.push(svg(h(NapUnitIcon, { unitKey: key, size })));
