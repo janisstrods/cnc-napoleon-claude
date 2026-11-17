@@ -27,8 +27,7 @@ describe('range (RR §8.1)', () => {
     expect(reach('BR/HA', 3, 1)).toBe(true);
   });
 
-  // needs T2 (rebase): baseFireDice ignores `moved` in the skeleton; re-enable after rebasing onto T2
-  it.skip('horse artillery that moved 1 hex fires 3 hexes, not 4 (§8.1)', () => {
+  it('horse artillery that moved 1 hex fires 3 hexes, not 4 (§8.1)', () => {
     const at = (d: number): boolean => {
       const s = build({ units: [bot('BR/HA', [7, 6]), top('FR/LN', [6 - d, 6])] });
       const dr = play(s, 'probeC', ['u1']);
