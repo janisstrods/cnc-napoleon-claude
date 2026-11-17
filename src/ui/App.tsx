@@ -14,6 +14,7 @@ const ArtGallery = lazy(() => import('../dev/ArtGallery'));
 const TerrainGallery = lazy(() => import('../dev/TerrainGallery'));
 const KitGallery = lazy(() => import('../dev/KitGallery'));
 const HistoryGallery = lazy(() => import('../dev/HistoryGallery'));
+const FigureGallery = lazy(() => import('../dev/FigureGallery'));
 
 function useHash(): string {
   const [hash, setHash] = useState(() => window.location.hash);
@@ -56,6 +57,7 @@ export function App() {
   if (hash.startsWith('#/gallery/art')) return <Suspense fallback={null}><ArtGallery /></Suspense>;
   if (hash.startsWith('#/gallery/terrain')) return <Suspense fallback={null}><TerrainGallery /></Suspense>;
   if (hash.startsWith('#/gallery/kit')) return <Suspense fallback={null}><KitGallery /></Suspense>;
+  if (hash.startsWith('#/gallery/figures')) return <Suspense fallback={null}><FigureGallery route={hash} /></Suspense>;
   if (hash.startsWith('#/gallery/history')) return <Suspense fallback={null}><HistoryGallery key={hash} /></Suspense>;
 
   const toMenu = () => {
