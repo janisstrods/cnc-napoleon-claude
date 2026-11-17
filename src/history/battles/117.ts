@@ -1,4 +1,4 @@
-// 117 San Marcial, 31 August 1813. Top: Freire's Spanish Army of Galicia on the San Marcial heights; bottom: Soult's French right column under Reille, with Villatte's reserve.
+// 117 San Marcial, 31 August 1813. (Barcena, not the scenario's Del Barco, led the third Galician division on the day; Del Barco succeeded Losada afterwards, Oman vol. 7 p. 137.) Top: Freire's Spanish Army of Galicia on the San Marcial heights; bottom: Soult's French right column under Reille, with Villatte's reserve.
 // Drawn with the Spaniards at the top, so the French stand to the north of the Bidassoa at the bottom: north points down, west (the sea, Irun and the Hermitage) is on the right and
 // east (Biriatou and Vera) on the left. This history follows the assault on the heights; Clausel's attack at Vera is only touched on. Places and distances are schematic.
 import type { BattleHistory } from '../types';
@@ -9,7 +9,7 @@ const history: BattleHistory = {
   context: {
     war: 'Peninsular War, 1807–1814',
     text: [
-      "By late August 1813 the French had been driven from nearly all Spain. Wellington was besieging San Sebastián for the second time, with his army strung along the Pyrenees and the Bidassoa. Marshal Soult, who had rallied the beaten armies behind the frontier river, judged himself bound to make one more attempt to relieve the place.",
+      "By late August 1813 the French had been driven from most of Spain. Wellington was besieging San Sebastián for the second time, with his army strung along the Pyrenees and the Bidassoa. Marshal Soult, who had rallied the beaten armies behind the frontier river, felt obliged to try once more to save the garrison.",
       "He chose the lower Bidassoa, where the Spaniards of Freire's Army of Galicia held the San Marcial heights above the fords. Reille's divisions were to storm the heights while Clausel crossed higher up near Vera to take them in the rear. A storm of rain broke over both fronts in the afternoon.",
     ],
   },
@@ -18,12 +18,12 @@ const history: BattleHistory = {
       name: 'Spanish Army of Galicia',
       commanders: ['Freire (Army of Galicia)', 'Porlier, Losada, Barcena (divisions)', 'Longa (Cantabrians)', 'Wellington (watching)'],
       strength: "Freire's three divisions about 10,000 bayonets; Spaniards under 15,000 with Longa (Oman); Napier says 6,000 on the crest",
-      forces: "Galician infantry in columns behind an old trench on the slope, Longa's Cantabrians on the spur behind, three battalions in Irun, and about a dozen guns.",
+      forces: "Galician infantry in columns along an old trench on the slope, Longa's Cantabrians on the spur behind, three battalions in Irun, and about a dozen guns.",
     },
     bottom: {
       name: 'French Army of Spain, right column',
       commanders: ['Marshal Soult (commanding)', 'Reille (right column)', 'Lamartinière and Maucune (divisions)', 'Villatte (reserve)'],
-      strength: 'About 45,000 in nine divisions; Reille’s three and Villatte’s reserve attacked here (Oman)',
+      strength: 'About 45,000 in nine divisions; Reille’s three (Lamartinière, Maucune and Villatte’s reserve) attacked here (Oman)',
       forces: "Lamartinière's and Maucune's divisions, Villatte's reserve with King Joseph's Guards and German regiments, 36 guns on the north bank and Foy's division behind.",
     },
   },
@@ -78,7 +78,7 @@ const history: BattleHistory = {
       },
       {
         title: 'First assault repulsed',
-        caption: "About nine, Lamartinière storms the central slope and Pinoteau's brigade of Maucune's division the Hermitage end. The brush breaks their order; Freire's columns charge from behind the old trench and roll them downhill to the river.",
+        caption: "About nine, Lamartinière storms the central slope and Pinoteau's brigade of Maucune's division the Hermitage end. The brush breaks their order; Freire's columns charge from along an old trench and roll them downhill to the river.",
         at: {
           lamart: [520, 335],
           maucune: [770, 335],
@@ -94,8 +94,8 @@ const history: BattleHistory = {
         title: 'Noon: the Hermitage',
         caption: "At noon Soult attacks again with Villatte's rested reserve added. The French left and centre give way, but Guy's Guard brigade takes part of the crest and Porlier's men are pushed from the Hermitage until a Spanish counter-attack drives the French back.",
         at: {
-          lamart: [430, 395],
-          maucune: [640, 395],
+          lamart: [400, 375],
+          maucune: [640, 380],
           villatte: [775, 318],
           guy: [835, 262],
           porlier: [715, 262],
@@ -109,7 +109,7 @@ const history: BattleHistory = {
       },
       {
         title: 'Withdrawal in the storm',
-        caption: "The French fall back in disorder, some into the river. Soult, his assaults broken and Foy sent to steady his alarmed left, abandons a third attempt and pulls everyone over the Bidassoa after dark through the rain. San Sebastián had fallen that day.",
+        caption: "The French fall back in disorder, some into the river. Soult, his assaults broken and Foy sent to steady his alarmed left, pulls everyone over the Bidassoa after dark through the rain. San Sebastián's town had been stormed that day.",
         at: {
           porlier: [800, 290],
           losada: [600, 290],
@@ -130,7 +130,7 @@ const history: BattleHistory = {
     losses: "Soult reported 3,808 French casualties for the whole day (Oman thinks the true figure higher); Allies 2,524, of whom 1,679 Spaniards. Napier gives about 3,600 and 2,600.",
     text: [
       "Clausel's column, caught by the rising Bidassoa, lost General Vandermaesen in a night fight at the Vera bridge, and Soult withdrew to his old lines. San Sebastián's castle surrendered on 8 September, and Wellington praised the Galicians in his dispatch.",
-      "Soult now stayed on the defensive, and on 7 October Wellington crossed the Bidassoa into France. Oman and Napier differ in detail, and over whether Wellington rode up during the Hermitage fight or declined to lend the 4th Division to Freire.",
+      "Soult now stayed on the defensive, and on 7 October Wellington crossed the Bidassoa into France. Napier has Wellington ride up as the Spaniards rallied at the chapel; Oman has him refuse Freire the 4th Division.",
     ],
   },
   sources: [
