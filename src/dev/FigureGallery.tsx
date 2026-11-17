@@ -219,8 +219,10 @@ function bandFigures(): Record<BandKey, ReactElement[]> {
     const s = FIGURE_SPECS[k];
     for (let i = 0; i < 4; i++) {
       if (s.drawing === 'foot') out[s.order === 'close' ? 'close' : 'loose'].push(<NapMiniature unitKey={k} i={i} />);
-      else if (s.drawing === 'horse') out.horse.push(<NapMiniature unitKey={k} i={i} />);
-      else {
+      else if (s.drawing === 'horse') {
+        out.horse.push(<NapMiniature unitKey={k} i={i} />);
+        out.horse.push(<NapMiniature unitKey={k} i={i} back />);
+      } else {
         for (const p of new Set(s.pieces)) out[p === 'gun' ? (s.holder ? 'horseGun' : 'gun') : p].push(<NapMiniature unitKey={k} i={i} piece={p} />);
         if (s.holder && i === 0) out.holder.push(<HorseHolderFigure spec={s} n={NATION_LOOKS[artNationOf(k)]} />);
       }

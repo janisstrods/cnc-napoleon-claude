@@ -3,8 +3,11 @@ import type { FigureSpec, GunPiece } from './uniform';
 
 export type Rect = readonly [top: number, bottom: number, left: number, right: number];
 
-/** A place on the base for a unit facing right; `face: -1` turns the figure to face the other way (a crewman facing his gun). */
-export interface Slot { x: number; y: number; s: number; face?: -1 }
+/**
+ * A place on the base for a unit facing right; `face: -1` turns the figure to face the other way (a crewman facing his gun),
+ * and `back` marks a cavalry back-rank place (its horse is drawn darker, without a portmanteau, so the rank recedes).
+ */
+export interface Slot { x: number; y: number; s: number; face?: -1; back?: true }
 export type Formation = 'close' | 'loose' | 'horse' | 'gun';
 
 const FB = 1.08; // back-rank scale (foot)
@@ -27,7 +30,8 @@ const HF = 0.95; // front-rank scale (horse)
 const FULL: Record<Formation, readonly [Slot, Slot, Slot, Slot]> = {
   close: [{ x: -17, y: 10.5, s: FB }, { x: 7, y: 10.5, s: FB }, { x: -6, y: 18.5, s: FF }, { x: 18, y: 18.5, s: FF }],
   loose: [{ x: -19, y: 12, s: FB }, { x: 6, y: 6, s: FB }, { x: -7, y: 18.5, s: FF }, { x: 17, y: 17.5, s: FF }],
-  horse: [{ x: -17, y: 11, s: HB }, { x: 8, y: 11, s: HB }, { x: -10, y: 21, s: HF }, { x: 16, y: 21, s: HF }],
+  // horse: the back rank stands half a file (13) left of the front, so each back rider's head shows in a gap
+  horse: [{ x: -23, y: 12.5, s: 0.85, back: true }, { x: 3, y: 11, s: HB, back: true }, { x: -10, y: 21, s: HF }, { x: 16, y: 21, s: HF }],
   // gun: piece k of a unit stands in slot (max - 1 - k), so at 3 blocks (its strength in play) the gun stands front centre,
   // broadside and whole, with its layer crouched behind the trail; the linstock man stands back by the breech, clear of the
   // recoil, and the rammer out at the muzzle, turned to face it. A fourth block (not in play) adds the man with the cartridge

@@ -131,7 +131,8 @@ describe('inside the hex', () => {
     }
     for (const f of ['close', 'loose', 'horse'] as Formation[]) {
       const xs = SLOTS[f][4].map((s) => s.x);
-      expect(Math.abs((Math.min(...xs) + Math.max(...xs)) / 2), f).toBeLessThanOrEqual(2);
+      // within 4 of the centre: the cavalry's back rank stands half a file left, its horses' heads reaching right
+      expect(Math.abs((Math.min(...xs) + Math.max(...xs)) / 2), f).toBeLessThanOrEqual(4);
       expect(SLOTS[f][1][0].x, f).toBe(0);
     }
   });

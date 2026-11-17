@@ -22,12 +22,15 @@ export interface NapUnitTokenProps {
   dimmed?: boolean;
 }
 
-/** One miniature of a unit in its local frame (facing right, feet at 0,0); `piece` picks a gun unit's piece (default: the gun). */
-export function NapMiniature({ unitKey, i, piece }: { unitKey: ArtKey; i: number; piece?: GunPiece }) {
+/**
+ * One miniature of a unit in its local frame (facing right, feet at 0,0); `piece` picks a gun unit's piece (default: the gun),
+ * and `back` draws a cavalry figure as the back rank does (darker horse, no portmanteau).
+ */
+export function NapMiniature({ unitKey, i, piece, back }: { unitKey: ArtKey; i: number; piece?: GunPiece; back?: boolean }) {
   const spec = FIGURE_SPECS[unitKey];
   const n = NATION_LOOKS[artNationOf(unitKey)];
   if (spec.drawing === 'foot') return <FootFigure spec={spec} n={n} i={i} />;
-  if (spec.drawing === 'horse') return <MountedFigure spec={spec} n={n} i={i} />;
+  if (spec.drawing === 'horse') return <MountedFigure spec={spec} n={n} i={i} back={back} />;
   return <GunPieceFigure spec={spec} n={n} i={i} piece={piece ?? spec.pieces[0]} />;
 }
 
@@ -109,7 +112,7 @@ function UnitTokenImpl({ unitKey, blocks, maxBlocks, facing, dimmed }: NapUnitTo
               <ellipse cx={(sl.x + 1.6) * flip} cy={sl.y + 0.4} rx={(formation === 'close' || formation === 'loose' ? 7.5 : 15) * sl.s} ry={2.2 * sl.s} fill="#1a1208" opacity={0.42} />
               <FacingRightCtx.Provider value={dir > 0}>
                 <g transform={`translate(${sl.x * flip} ${sl.y}) scale(${sl.s * dir} ${sl.s})`}>
-                  <NapMiniature unitKey={unitKey} i={idx} piece={spec.drawing === 'gun' ? spec.pieces[maxBlocks - 1 - idx] ?? spec.pieces[0] : undefined} />
+                  <NapMiniature unitKey={unitKey} i={idx} back={sl.back} piece={spec.drawing === 'gun' ? spec.pieces[maxBlocks - 1 - idx] ?? spec.pieces[0] : undefined} />
                 </g>
               </FacingRightCtx.Provider>
             </g>

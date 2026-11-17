@@ -3,11 +3,13 @@ import { describe, expect, it } from 'vitest';
 import { makeFig } from '../../../src/art/nap/draw';
 import { HORSE_SEAT, Horse } from '../../../src/art/nap/horse';
 import { CAVALRY, type ArtKey, type CavalryKey } from '../../../src/art/nap/keys';
-import { NATION_LOOKS } from '../../../src/art/nap/nations';
-import { Rider } from '../../../src/art/nap/rider';
+import { HORSE_COATS, NATION_LOOKS } from '../../../src/art/nap/nations';
+import { MountedFigure, Rider } from '../../../src/art/nap/rider';
+import { SLOTS } from '../../../src/art/nap/slots';
+import { darken } from '../../../src/art/color';
 import { FIGURE_SPECS } from '../../../src/art/nap/specs';
 import { CAVALRY_SPECS } from '../../../src/art/nap/specs/cavalry';
-import { count, fig, hueClass, shape, svg, token } from './helpers';
+import { balanced, count, fig, hueClass, shape, svg, token } from './helpers';
 
 const spec = (k: CavalryKey) => CAVALRY_SPECS[k];
 /** The four figures of a key, concatenated, colours stripped: the drawing alone. */
@@ -108,6 +110,36 @@ describe('cavalry', () => {
       expect(Number(m![1])).toBeGreaterThanOrEqual(25);
       expect(Number(m![1])).toBeLessThanOrEqual(45);
     }
+  });
+
+  it('the ranks are staggered: every back-rank rider stands in a gap, half a file from each front rider', () => {
+    for (const n of [4, 3] as const) {
+      const sl = SLOTS.horse[n];
+      const front = sl.slice(-2).map((s) => s.x);
+      for (const b of sl.slice(0, -2)) for (const f of front) expect(Math.abs(b.x - f), `${n}: back ${b.x} vs front ${f}`).toBeGreaterThanOrEqual(11);
+    }
+  });
+
+  it('the back rank recedes: darker horses and no portmanteau; the front rank keeps both', () => {
+    const groups = (m: string) => [...m.matchAll(/<g data-slot="(\d)"/g)].map((r) => balanced(m, r.index!));
+    for (const k of CAVALRY) for (const facing of ['left', 'right'] as const) {
+      const g = groups(token(k, { blocks: 4, maxBlocks: 4, facing }));
+      expect(g.length).toBe(4);
+      for (const back of g.slice(0, 2)) {
+        expect(back, k).toContain('data-rank="back"');
+        expect(back, k).not.toContain('data-part="portmanteau"');
+      }
+      for (const front of g.slice(2)) {
+        expect(front, k).not.toContain('data-rank="back"');
+        expect(front, k).toContain('data-part="portmanteau"');
+      }
+    }
+    // the same figure, back and front: every coat colour of the back one is darker
+    const coat = HORSE_COATS[spec('FR/LC').coats[0]].coat;
+    expect(svg(h(MountedFigure, { spec: spec('FR/LC'), n: NATION_LOOKS.FR, i: 0 }))).toContain(coat);
+    const back = svg(h(MountedFigure, { spec: spec('FR/LC'), n: NATION_LOOKS.FR, i: 0, back: true }));
+    expect(back).not.toContain(coat);
+    expect(back).toContain(darken(coat, 0.15));
   });
 
   it('marks the Guard', () => {

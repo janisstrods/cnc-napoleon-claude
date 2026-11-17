@@ -280,14 +280,17 @@ export function Rider({ dress, head, weapon, f, pose, carbine, pennon, mouth = H
 const RIDER_SCALE = 0.9;
 const POSES = [1, 0, 2, 0] as const;
 
-export function MountedFigure({ spec, n, i }: { spec: HorseSpec; n: NationLook; i: number }) {
+/** The back rank recedes: its horses are this much darker, and carry no portmanteau (one saturated square fewer per rider). */
+export const BACK_RANK_SHADE = 0.15;
+
+export function MountedFigure({ spec, n, i, back = false }: { spec: HorseSpec; n: NationLook; i: number; back?: boolean }) {
   const f = makeFig(n, i);
   const pose = POSES[i % 4];
   const coat = spec.coats[i % spec.coats.length];
   const seat = HORSE_SEAT[spec.horse];
   return (
-    <g data-fig="horse" data-pose={pose} data-coat={coat}>
-      <Horse size={spec.horse} coat={coat} pose={pose} shabraque={spec.shabraque} />
+    <g data-fig="horse" data-pose={pose} data-coat={coat} data-rank={back ? 'back' : undefined}>
+      <Horse size={spec.horse} coat={coat} pose={pose} shabraque={spec.shabraque} shade={back ? BACK_RANK_SHADE : 0} portmanteau={!back} />
       <g transform={`translate(${seat.x} ${seat.y}) scale(${RIDER_SCALE})`}>
         <Rider dress={spec.dress} head={spec.head} weapon={spec.weapon} f={f} pose={pose} carbine={spec.carbine} pennon={spec.pennon} mouth={HORSE_MOUTH[spec.horse]} slope={spec.carry === 'sloped'} />
       </g>
