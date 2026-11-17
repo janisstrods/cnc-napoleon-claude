@@ -104,7 +104,7 @@ const history: BattleHistory = {
         at: {
           marchand: [400, 195],
           lorcet: [480, 260],
-          dragoons: [610, 285],
+          dragoons: [590, 280],
           ballas: [300, 45],
           castro: [700, 45],
         },
