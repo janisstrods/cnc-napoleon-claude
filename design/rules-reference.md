@@ -1031,15 +1031,14 @@ size; the Tactician numbers are ignored (R86). Every battle also scores the ordi
   (`design/data/014.json`).
 * `rivers`: fordableNoStop (the whole stream, as at 011): fordable-river battle effects, no movement stop, no bar on
   taking ground **[Interp R83]**. Bridge hexes (5,4) and (5,10) (R47).
-* `sideRules` (top): the Nassau, Hanover and Dutch units are `AL` units (brown blocks): Portuguese card values, except
-  that `AL/LN` retreats 2 hexes per flag (§2.4, R10).
+* The Nassau, Hanover and Dutch units are `AL/*` rows (§2.4, R10); no side rule.
 
 ### 14.15 015 Waterloo
 
 * `hand` 6 / 6.
 * `objectives`: `tempHex` × 3, `side` bottom, `timing` turnStart, `banners` 1 each, `hex` (3,5) La Haye Sainte, (4,1)
   Hougoumont, (4,12) Papelotte (`design/data/015.json`). All three are ordinary Town hexes with no flag-ignore **[Interp R72]**.
-* `sideRules` (top): the Nassau, Brunswick, Hanover and Dutch units are `AL` units, as at 014 (§2.4, R10).
+* The Nassau, Hanover, Dutch and Brunswick units are `AL/*` rows (§2.4, R10); no side rule.
 * `sideRules` (top): **impetuous British cavalry** (R72, R82) **[Interp R82]**. For `BR/LC`, `BR/HC`, `BR/GHC` only (not `AL/LC`), after
   a successful attacking melee, and only when §9.8 allows a breakthrough (not after entering a stop hex this turn,
   R35):

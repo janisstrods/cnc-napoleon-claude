@@ -116,3 +116,17 @@ describe('formatScenario', () => {
     expect(formatScenario(parsed)).toBe(t1);
   });
 });
+
+describe('convertBattle (Task 2 carry)', () => {
+  it('two squares on one hex throw', () => {
+    const squares = [{ r: 3, c: 8, slot: 1 as const }, { r: 3, c: 8, slot: 2 as const }];
+    expect(() => convertBattle(RAW['012'], meta({ squares, leaderNames: undefined }), e('012'))).toThrow(/two squares on hex \(3,8\) \(012\)/);
+  });
+
+  it('the output shares no object with the meta', () => {
+    const m = meta({ rivers: 'fordable', objectives: [{ kind: 'tempHex', side: 'top', hex: [8, 2] }, { kind: 'tempHex', side: 'top', hex: [8, 11] }] });
+    const j = convertBattle(RAW['001'], m, e('001'));
+    expect(j.top).toEqual(m.top); expect(j.top).not.toBe(m.top);
+    expect(j.objectives).toEqual(m.objectives); expect(j.objectives).not.toBe(m.objectives);
+  });
+});

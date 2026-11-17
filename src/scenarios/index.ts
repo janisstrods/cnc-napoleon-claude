@@ -1,5 +1,5 @@
-// The battles: only the hidden drill battle 000 until the Napoleonic battles return. Setups, rules included, are
-// transcribed data (src/scenarios/data); texts are original summaries (texts.ts).
+// The battles: the drill 000 (hidden) and battles generated from design/data by scripts/scenarios/build.ts. Setups, rules included,
+// are data (src/scenarios/data); texts are original summaries (texts.ts).
 import { EXPANSIONS, type Expansion } from '../engine/expansions';
 import type { ScenarioSetup } from '../engine/setup';
 import { TEXTS, type ScenarioTexts } from './texts';

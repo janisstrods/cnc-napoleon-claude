@@ -97,7 +97,10 @@ export function convertBattle(raw: RawBattle, meta: BattleMeta, entry: Catalogue
   });
 
   const units: UnitSetup[] = raw.units.map((u) => ({ side: u.side as Side, key: u.key as UnitSetup['key'], r: u.r, c: u.c }));
+  const squareHexes = new Set<string>();
   for (const sq of meta.squares ?? []) {
+    if (squareHexes.has(hexKey(sq.r, sq.c))) throw new Error(`two squares on hex (${sq.r},${sq.c}) (${id})`);
+    squareHexes.add(hexKey(sq.r, sq.c));
     const u = units.find((x) => x.r === sq.r && x.c === sq.c);
     if (!u) throw new Error(`no unit at (${sq.r},${sq.c}) for square ${sq.slot} (${id})`);
     u.square = sq.slot;
@@ -114,16 +117,16 @@ export function convertBattle(raw: RawBattle, meta: BattleMeta, entry: Catalogue
   // Fixed key order of the output file.
   const out: Record<string, unknown> = { id, name: entry.name, year: entry.date.slice(-4) };
   if (entry.box !== 'base') out.expansion = entry.box;
-  Object.assign(out, { top: meta.top, bottom: meta.bottom, first: meta.first, banners: meta.banners });
+  Object.assign(out, { top: structuredClone(meta.top), bottom: structuredClone(meta.bottom), first: meta.first, banners: meta.banners });
   if (meta.rivers !== 'none') out.rivers = meta.rivers;
   Object.assign(out, {
     terrain,
     units: units.map((u) => ({ side: u.side, key: u.key, r: u.r, c: u.c, ...(u.square !== undefined ? { square: u.square } : {}) })),
     leaders: leaders.map((l) => ({ side: l.side, name: l.name, r: l.r, c: l.c })),
   });
-  if (meta.objectives?.length) out.objectives = meta.objectives;
-  if (meta.sideRules?.length) out.sideRules = meta.sideRules;
-  if (meta.unitOverrides?.length) out.unitOverrides = meta.unitOverrides;
+  if (meta.objectives?.length) out.objectives = structuredClone(meta.objectives);
+  if (meta.sideRules?.length) out.sideRules = structuredClone(meta.sideRules);
+  if (meta.unitOverrides?.length) out.unitOverrides = structuredClone(meta.unitOverrides);
   const json = out as unknown as ScenarioJson;
 
   const setup: ScenarioSetup = { id, name: json.name, top: json.top, bottom: json.bottom, first: json.first, banners: json.banners, terrain: json.terrain, units: json.units, leaders: json.leaders };

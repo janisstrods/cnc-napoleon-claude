@@ -31,8 +31,8 @@ const ids = (xs: { id: string }[]) => xs.map((x) => x.id);
 describe('battle picker tabs', () => {
   it('two tabs, in box order, from EXPANSIONS; a battle is in exactly one tab; the hidden drill is in none', () => {
     expect(PICKER_TABS.map((t) => [t.id, t.label])).toEqual([['base', 'The Peninsula & Waterloo'], ['exp1', 'The Spanish Army']]);
-    expect(ids(battlesOf(SCENARIOS, 'exp1'))).toEqual(['990']);
-    expect(battlesOf(SCENARIOS, 'base')).toEqual([]);
+    expect(ids(battlesOf(SCENARIOS, 'base'))).toEqual(Array.from({ length: 15 }, (_, i) => String(i + 1).padStart(3, '0')));
+    expect(ids(battlesOf(SCENARIOS, 'exp1'))).toEqual(['990']); // no real exp1 battle: 990 is the mocked stand-in
     for (const s of SCENARIOS.filter((x) => !x.hidden)) expect(PICKER_TABS.filter((t) => battlesOf(SCENARIOS, t.id).includes(s)), s.id).toHaveLength(1);
   });
 
