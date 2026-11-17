@@ -126,14 +126,15 @@ describe('base battles: objectives and side rules in their real setups', () => {
     expect(bannerTotal(t, 'top')).toBe(0);
   });
 
-  it('015: the three farms for bottom; only British cavalry is impetuous', () => {
+  it('015: the three farms for bottom; only British red-block cavalry is impetuous', () => {
     const s = game('015');
     for (const h of [H(3, 5), H(4, 1), H(4, 12)]) placeOn(s, 'bottom', h);
     turnStartObjectives(s, ctx, 'bottom');
     expect(bannerTotal(s, 'bottom')).toBe(3);
 
     const g = game('015');
-    const cav = g.units.filter((u) => u.side === 'top' && ['BR/HC', 'BR/GHC'].includes(u.key));
+    // R82 / RR §14.15: British red-block cavalry (BR/LC, BR/HC, BR/GHC) is impetuous; AL/LC is not.
+    const cav = g.units.filter((u) => u.side === 'top' && ['BR/LC', 'BR/HC', 'BR/GHC'].includes(u.key));
     expect(cav.length).toBeGreaterThan(0);
     for (const u of cav) expect(impetuous(g, u)).toBe(true);
     for (const u of g.units.filter((x) => x.side === 'top' && x.key === 'AL/LC')) expect(impetuous(g, u)).toBe(false);
