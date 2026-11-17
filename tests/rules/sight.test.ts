@@ -32,6 +32,7 @@ describe('range (RR §8.1)', () => {
       const s = build({ units: [bot('BR/HA', [7, 6]), top('FR/LN', [6 - d, 6]), top('FR/LN', [6, 3])] });  // the decoy keeps the battle phase (and `ordered`) alive
       const dr = play(s, 'probeC', ['u1']);
       must(dr, { kind: 'move', piece: 'u1', to: H(6, 6) });
+      expect(dr.state.turn.ordered.u1?.moved).toBe(1);
       return canFireAt(dr.state, u(dr, 'u1')!, H(6 - d, 6));
     };
     expect(at(4)).toBe(false);
@@ -102,6 +103,13 @@ describe('line of sight (RR §8.3)', () => {
     expect(lineOfSight(s([[0, 1], [2, 2]]), H(0, 0), H(2, 3))).toBe(true);
     expect(lineOfSight(s([[0, 1], [1, 0]]), H(0, 0), H(2, 3))).toBe(false);
     expect(lineOfSight(s([[1, 1]]), H(0, 0), H(2, 3))).toBe(false);
+  });
+
+  it('a line that crosses an edge midpoint without running along a hexside meets both hexes (§8.3)', () => {
+    const s = (pcs: [number, number][]) => build({ units: pcs.map((at) => bot('BR/LN', at)) });
+    expect(lineOfSight(s([]), H(4, 4), H(5, 7))).toBe(true);
+    expect(lineOfSight(s([[5, 5]]), H(4, 4), H(5, 7))).toBe(false);
+    expect(lineOfSight(s([[4, 6]]), H(4, 4), H(5, 7))).toBe(false);
   });
 
   it('the side edge obstructs ([Interp R50])', () => {

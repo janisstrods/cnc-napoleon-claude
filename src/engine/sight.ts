@@ -1,5 +1,5 @@
 // Line of sight and range (RR §8.1, §8.3, §8.4).
-import { ALL_HEXES, distance, lineBetween, neighbours } from './hex';
+import { ALL_HEXES, distance, lineBetween, neighbours, toCube } from './hex';
 import { baseFireDice } from './dice';
 import { enemyUnitAdjacent, leaderOn, unitOn, type PieceIndex } from './query';
 import { TERRAIN_STATS, isHill, terrainAt } from './terrain';
@@ -48,7 +48,12 @@ export function lineOfSight(s: GameState, from: HexId, to: HexId, opts: { hillBa
     return true;
   };
   const [plus, minus] = lineBetween(from, to);
-  // Blocked only where the hexes on both sides of the line are obstructed, step by step (R49); a step on a hex centre has one hex.
+  // A line running exactly along hexsides is blocked only where the hexes on both sides are obstructed, step by step (R49);
+  // a step on a hex centre has one hex. Any other line simply meets every hex it crosses (§8.3).
+  const [ax, ay, az] = toCube(from);
+  const [bx, by, bz] = toCube(to);
+  const along = bx - ax === by - ay || by - ay === bz - az || bz - az === bx - ax;
+  if (!along) return !plus.some((h, i) => obstructed(h, i === 0)) && !minus.some((h, i) => obstructed(h, i === 0));
   return !plus.some((h, i) => obstructed(h, i === 0) && (minus[i] === h || obstructed(minus[i], i === 0)));
 }
 
