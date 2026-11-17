@@ -1,0 +1,377 @@
+{
+ "id": "010",
+ "grid": {
+  "x0": 74.38,
+  "y0": 129.88,
+  "w": 87.0,
+  "pitch": 75.5
+ },
+ "terrain": [
+  {
+   "r": 1,
+   "c": 4,
+   "t": "hill"
+  },
+  {
+   "r": 1,
+   "c": 10,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 5,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 6,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 3,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 7,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 8,
+   "t": "hill"
+  },
+  {
+   "r": 4,
+   "c": 9,
+   "t": "hill"
+  },
+  {
+   "r": 4,
+   "c": 10,
+   "t": "hill"
+  },
+  {
+   "r": 4,
+   "c": 11,
+   "t": "hill"
+  },
+  {
+   "r": 5,
+   "c": 2,
+   "t": "hill"
+  },
+  {
+   "r": 5,
+   "c": 6,
+   "t": "hill"
+  },
+  {
+   "r": 6,
+   "c": 3,
+   "t": "hill"
+  },
+  {
+   "r": 6,
+   "c": 7,
+   "t": "hill"
+  },
+  {
+   "r": 7,
+   "c": 3,
+   "t": "hill"
+  },
+  {
+   "r": 7,
+   "c": 8,
+   "t": "hill"
+  },
+  {
+   "r": 7,
+   "c": 9,
+   "t": "hill"
+  },
+  {
+   "r": 7,
+   "c": 10,
+   "t": "hill"
+  },
+  {
+   "r": 6,
+   "c": 11,
+   "t": "forest"
+  },
+  {
+   "r": 6,
+   "c": 12,
+   "t": "forest"
+  },
+  {
+   "r": 7,
+   "c": 11,
+   "t": "forest"
+  },
+  {
+   "r": 4,
+   "c": 0,
+   "t": "town",
+   "art": "label: Miranda de Azan"
+  },
+  {
+   "r": 0,
+   "c": 0,
+   "t": "river"
+  },
+  {
+   "r": 1,
+   "c": 0,
+   "t": "river"
+  },
+  {
+   "r": 2,
+   "c": 1,
+   "t": "river"
+  },
+  {
+   "r": 3,
+   "c": 0,
+   "t": "river"
+  },
+  {
+   "r": 5,
+   "c": 0,
+   "t": "river"
+  },
+  {
+   "r": 6,
+   "c": 0,
+   "t": "river"
+  },
+  {
+   "r": 7,
+   "c": 0,
+   "t": "river"
+  },
+  {
+   "r": 8,
+   "c": 1,
+   "t": "river"
+  },
+  {
+   "r": 4,
+   "c": 1,
+   "t": "river",
+   "crossing": "bridge"
+  }
+ ],
+ "units": [
+  {
+   "r": 0,
+   "c": 1,
+   "side": "top",
+   "key": "BR/LC"
+  },
+  {
+   "r": 0,
+   "c": 3,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 1,
+   "c": 3,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 1,
+   "c": 5,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 1,
+   "c": 6,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 2,
+   "c": 8,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 2,
+   "c": 9,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 1,
+   "c": 4,
+   "side": "top",
+   "key": "BR/FA"
+  },
+  {
+   "r": 3,
+   "c": 9,
+   "side": "top",
+   "key": "BR/LT"
+  },
+  {
+   "r": 3,
+   "c": 10,
+   "side": "top",
+   "key": "BR/RI"
+  },
+  {
+   "r": 2,
+   "c": 2,
+   "side": "top",
+   "key": "PT/HC"
+  },
+  {
+   "r": 2,
+   "c": 3,
+   "side": "top",
+   "key": "PT/HC"
+  },
+  {
+   "r": 3,
+   "c": 4,
+   "side": "top",
+   "key": "PT/LN"
+  },
+  {
+   "r": 3,
+   "c": 5,
+   "side": "top",
+   "key": "PT/LN"
+  },
+  {
+   "r": 3,
+   "c": 6,
+   "side": "top",
+   "key": "PT/LT"
+  },
+  {
+   "r": 7,
+   "c": 1,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 8,
+   "c": 2,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 3,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 5,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 6,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 8,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 9,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 10,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 6,
+   "side": "bottom",
+   "key": "FR/LC"
+  },
+  {
+   "r": 8,
+   "c": 10,
+   "side": "bottom",
+   "key": "FR/LC"
+  },
+  {
+   "r": 8,
+   "c": 12,
+   "side": "bottom",
+   "key": "FR/LC"
+  },
+  {
+   "r": 7,
+   "c": 7,
+   "side": "bottom",
+   "key": "FR/FA"
+  },
+  {
+   "r": 8,
+   "c": 11,
+   "side": "bottom",
+   "key": "FR/FA"
+  }
+ ],
+ "leaders": [
+  {
+   "r": 1,
+   "c": 3,
+   "side": "top",
+   "name": "Campbell"
+  },
+  {
+   "r": 2,
+   "c": 9,
+   "side": "top",
+   "name": "Wallace"
+  },
+  {
+   "r": 3,
+   "c": 4,
+   "side": "top",
+   "name": "Power"
+  },
+  {
+   "r": 8,
+   "c": 5,
+   "side": "bottom",
+   "name": "Thomières"
+  },
+  {
+   "r": 8,
+   "c": 8,
+   "side": "bottom",
+   "name": "Maucune"
+  }
+ ],
+ "objectives": [],
+ "notes": [
+  "Azan River: 9 hexes, 0,0 1,0 2,1 3,0 4,1 5,0 6,0 7,0 8,1; bridge on 4,1 beside the town Miranda de Azan (4,0). Impassable except at the bridge (survey).",
+  "Brown (Portuguese) blocks: PT/HC 2,2 and 2,3, PT/LN 3,4 (leader Power) and 3,5, PT/LT 3,6. Red (British): the rest.",
+  "Map has no objective hexes: victory is 6 banners by killing units (survey)."
+ ],
+ "riverPieces": 1
+}
