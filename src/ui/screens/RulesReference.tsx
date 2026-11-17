@@ -80,7 +80,7 @@ export function UnitCards({ keys }: { keys: readonly RowKey[] }) {
         const [statsLine, notesLine] = unitCardLines(k);
         return (
           <div key={k} className="unit-card">
-            <svg width={64} height={64} viewBox="-30 -34 60 60">
+            <svg width={64} height={64} viewBox="-30 -30 60 60">
               <UnitIcon unitKey={k} size={54} />
             </svg>
             <div>

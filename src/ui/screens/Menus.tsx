@@ -120,7 +120,7 @@ function SetupPreview({ state, flipped, humanSide }: { state: GameState; flipped
         const att = !!leaderUnit(state, l);
         return (
           <g key={l.id} transform={`translate(${x + (att ? LEADER_ATTACH_OFFSET.x : 0)}, ${y + (att ? LEADER_ATTACH_OFFSET.y : 0)})`}>
-            <LeaderToken {...leaderTokenProps(state, l, att)} name={l.name} />
+            <LeaderToken {...leaderTokenProps(state, l, att, humanSide)} name={l.name} />
           </g>
         );
       })}
