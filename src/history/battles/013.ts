@@ -1,0 +1,165 @@
+// Combat at Aire (2 March 1814). Top: British and Portuguese (Hill); bottom: French (Clausel).
+// The map has north to the right: Hill's column came from the west along the south bank of the Adour and the French stood with
+// their right on that river, so the attackers are drawn at the top and the Adour runs down the right-hand edge. Distances are schematic.
+import type { BattleHistory } from '../types';
+
+const history: BattleHistory = {
+  id: '013',
+  date: '2 March 1814',
+  context: {
+    war: 'Peninsular War: the invasion of southern France, 1813–1814',
+    text: [
+      "Wellington beat Marshal Soult at Orthez on 27 February 1814, and Soult drew his army eastward up the Adour, giving up the road to Bordeaux. On 1 March a storm swelled the rivers and swept away bridges, so the main army halted. Only Sir Rowland Hill's column, marching south of the Adour, pressed on to seize the French magazines and artillery park at Aire.",
+      "Hill expected little resistance. Instead General Clausel, with two divisions, held a steep ridge above the small river Grave, about two thousand yards in front of the town. His orders were to stand until Reille's corps had crossed the Adour at Barcelonne. Oman notes that Soult had not even discovered Hill's column on that bank.",
+    ],
+  },
+  sides: {
+    top: {
+      name: 'British and Portuguese',
+      commanders: ['Sir Rowland Hill (commanding)', 'Sir William Stewart (2nd Division)', 'Barnes and Byng (brigades)', 'Da Costa (Portuguese brigade)'],
+      strength: 'Two divisions, a cavalry brigade and horse artillery; no reliable total survives',
+      forces: 'British 2nd Division, brigades of Le Cor’s Portuguese division, Fane’s cavalry and horse guns.',
+    },
+    bottom: {
+      name: 'French (Soult’s army)',
+      commanders: ['Clausel (commanding)', 'Harispe (division)', 'Villatte (division)', 'Reille (covering, from Barcelonne)'],
+      strength: 'Two divisions in five brigades; Soult’s whole army, by his own count, 30,000 foot',
+      forces: 'Harispe’s and Villatte’s divisions with some guns, many of them raw conscripts; part of Reille’s corps came up late.',
+    },
+  },
+  map: {
+    north: 90,
+    terrain: [
+      { kind: 'hills', points: [[-30, 385], [200, 372], [450, 380], [700, 370], [1000, 380], [1000, 470], [700, 462], [450, 468], [200, 460], [-30, 468]] },
+      { kind: 'woods', points: [[40, 285], [112, 282], [118, 345], [46, 350]] },
+      { kind: 'woods', points: [[300, 290], [372, 288], [374, 346], [306, 350]] },
+      { kind: 'woods', points: [[510, 290], [585, 288], [590, 346], [514, 350]] },
+      { kind: 'woods', points: [[740, 292], [815, 290], [820, 348], [746, 350]] },
+      { kind: 'woods', points: [[880, 372], [965, 372], [965, 470], [885, 466]] },
+      { kind: 'river', points: [[-30, 240], [250, 240], [330, 182], [400, 124], [462, 124], [535, 182], [620, 232], [700, 240], [980, 240]], width: 12, label: 'Grave' },
+      { kind: 'river', points: [[985, -30], [992, 300], [978, 640]], width: 22, label: 'Adour' },
+      { kind: 'river', points: [[-40, 545], [150, 562], [330, 600], [420, 650]], width: 12, label: 'Lées' },
+      { kind: 'road', points: [[830, -20], [836, 150], [850, 300], [866, 420], [874, 520]] },
+      { kind: 'town', at: [868, 552], size: 24, label: 'Aire' },
+      { kind: 'town', at: [70, 488], size: 16, label: 'Nauzeilles' },
+    ],
+    units: [
+      { id: 'barnes', side: 'top', kind: 'infantry', label: 'Barnes’s brigade', w: 84, h: 28 },
+      { id: 'byng', side: 'top', kind: 'infantry', label: 'Byng’s brigade', w: 84, h: 28 },
+      { id: 'lightco', side: 'top', kind: 'light', label: 'Light cos., 71st', w: 66, h: 24 },
+      { id: 'ha', side: 'top', kind: 'artillery', label: 'Horse artillery', w: 44, h: 24 },
+      { id: 'fane', side: 'top', kind: 'cavalry', label: 'Fane’s cavalry', w: 70, h: 22 },
+      { id: 'dacosta', side: 'top', kind: 'infantry', label: 'Da Costa’s brigade', w: 84, h: 28 },
+      { id: 'buchan', side: 'top', kind: 'infantry', label: 'Buchan’s brigade', w: 84, h: 28 },
+      { id: 'harding', side: 'top', kind: 'infantry', label: 'Harding’s brigade', w: 84, h: 28 },
+      { id: 'v1', side: 'bottom', kind: 'infantry', label: 'Villatte’s division', w: 100, h: 30 },
+      { id: 'hr', side: 'bottom', kind: 'infantry', label: 'Dauture (Harispe)', w: 96, h: 30 },
+      { id: 'hl', side: 'bottom', kind: 'infantry', label: 'Harispe’s left', w: 96, h: 30 },
+      { id: 'paris', side: 'bottom', kind: 'infantry', label: 'Paris’s reserve', w: 84, h: 28 },
+      { id: 'fart', side: 'bottom', kind: 'artillery', label: 'French guns', w: 44, h: 24 },
+      { id: 'rouget', side: 'bottom', kind: 'infantry', label: 'Rouget (Reille)', w: 84, h: 28 },
+    ],
+    phases: [
+      {
+        title: 'The French ridge',
+        caption: 'Hill’s two columns reach Aire in the early afternoon (Oman says two, Napier three). Clausel stands on the wooded ridge above the Grave, Villatte by the Adour, Harispe across the plateau, with Paris’s four battalions behind them near Nauzeilles.',
+        at: {
+          barnes: [850, 130],
+          byng: [740, 84],
+          lightco: [905, 190],
+          ha: [770, 180],
+          fane: [500, 36],
+          dacosta: [530, 122],
+          buchan: [380, 60],
+          harding: [650, 44],
+          v1: [830, 418],
+          hr: [560, 424],
+          hl: [330, 428],
+          paris: [170, 452],
+          fart: [700, 412],
+        },
+      },
+      {
+        title: 'Portuguese thrown back',
+        caption: 'Hill attacks at once. Barnes and Byng climb the steep ridge by the Adour and drive Villatte down. Da Costa’s brigade, rushed forward, is charged by Dauture’s brigade of Harispe’s division and flung back to the stream.',
+        at: {
+          barnes: [838, 346],
+          byng: [800, 236],
+          lightco: [900, 280],
+          dacosta: [504, 262],
+          v1: [850, 456],
+          hr: [545, 372],
+        },
+        arrows: [
+          { side: 'top', points: [[850, 142], [842, 250], [838, 322]] },
+          { side: 'top', points: [[530, 152], [534, 250], [536, 330]] },
+          { side: 'bottom', points: [[560, 398], [548, 350], [524, 300]] },
+          { side: 'top', points: [[522, 338], [510, 300], [502, 270]], style: 'retreat' },
+        ],
+      },
+      {
+        title: 'Barnes turns the tide',
+        caption: 'Seeing the Portuguese beaten, Stewart sends Barnes with the 50th and 92nd along the crest into Dauture’s flank. Byng and Buchan come up, and Harispe is thrown back on his reserve at Nauzeilles.',
+        at: {
+          barnes: [660, 356],
+          byng: [770, 330],
+          lightco: [880, 410],
+          buchan: [385, 340],
+          dacosta: [520, 300],
+          harding: [790, 250],
+          v1: [872, 506],
+          hr: [530, 440],
+          hl: [320, 440],
+        },
+        broken: ['v1'],
+        arrows: [
+          { side: 'top', points: [[820, 350], [740, 354], [676, 356]] },
+          { side: 'top', points: [[400, 140], [420, 240], [440, 306]] },
+          { side: 'bottom', points: [[550, 418], [540, 450], [528, 470]], style: 'retreat' },
+          { side: 'bottom', points: [[846, 442], [866, 480], [872, 506]], style: 'retreat' },
+        ],
+      },
+      {
+        title: 'Aire taken',
+        caption: 'Villatte is driven through the town, where Harding’s caçadores and the 71st fight in the streets. Rouget’s division of Reille’s corps covers his escape, while Harispe retreats east, many conscripts throwing away their arms.',
+        at: {
+          barnes: [600, 440],
+          byng: [680, 430],
+          lightco: [815, 505],
+          harding: [875, 452],
+          buchan: [400, 420],
+          dacosta: [520, 380],
+          v1: [915, 590],
+          hr: [560, 520],
+          hl: [330, 524],
+          paris: [190, 520],
+          rouget: [760, 576],
+        },
+        broken: ['hr', 'hl'],
+        gone: ['fart'],
+        arrows: [
+          { side: 'top', points: [[875, 430], [880, 480], [900, 560]] },
+          { side: 'bottom', points: [[570, 500], [570, 560], [560, 616]], style: 'rout' },
+          { side: 'bottom', points: [[330, 506], [340, 570], [350, 620]], style: 'rout' },
+          { side: 'bottom', points: [[800, 580], [850, 584], [880, 588]] },
+        ],
+      },
+    ],
+  },
+  outcome: {
+    winner: 'top',
+    result: 'Allied success: Aire and its magazines taken',
+    losses: 'British brigades about 156 (Napier says 150), Portuguese over 100 more; French perhaps 250 killed and wounded, 100 prisoners, many conscripts deserting.',
+    text: [
+      'Hill took the town and its stores, and Wellington reported that his own loss had not been severe, though he regretted Lieutenant-Colonel Hood. Oman judges the French resistance feeble and Da Costa’s failure serious enough that Beresford sent him home to Lisbon in disgrace.',
+      'Soult fell back up the Adour towards Maubourget and reorganised his battered army, surprised that nobody followed. Wellington sent a detachment under Beresford to occupy Bordeaux, then resumed the advance, meeting Soult again at Tarbes on 20 March and at Toulouse on 10 April.',
+    ],
+  },
+  sources: [
+    'Napier, History of the War in the Peninsula, vol. VI, book XXIV ch. 2 (Combat of Aire and Observations)',
+    'Oman, A History of the Peninsular War, vol. VII (1930), pp. 376–388',
+    'Wellington to Bathurst, St Sever, 4 March 1814, with Hill’s report of 3 March, in Gurwood, Dispatches, vol. XI, pp. 548–549',
+  ],
+};
+
+export default history;
