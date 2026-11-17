@@ -1,0 +1,152 @@
+// 106 Medellín, 28 March 1809 (Oman’s narrative implies 29 March, but his plan and later text give the 28th). Top: Cuesta's Spanish Army of Estremadura; bottom: Victor's French 1st Corps.
+// The map is drawn with the Spaniards at the top: they advanced from Don Benito in the east, so east is up and north is to
+// the left. The Guadiana lies at the left, the Hortiga ravine at the right, and Medellín at the bottom where they meet.
+import type { BattleHistory } from '../types';
+
+const history: BattleHistory = {
+  id: '106',
+  context: {
+    war: 'Peninsular War, 1807–1814',
+    text: [
+      "In the spring of 1809 Marshal Victor's 1st Corps held the Tagus valley for King Joseph, facing General Cuesta's Army of Estremadura on the road to Badajoz and Andalusia. In mid-March Victor crossed the Tagus upstream at Talavera and Arzobispo, turned Cuesta out of Almaraz and drove him back through the hills.",
+      "Cuesta retreated to La Serena, where Albuquerque brought him reinforcements on 27 March. Now stronger in infantry, he turned back at once. Victor, who had gathered his army at Medellín, met him on the open plain between the Guadiana and the Hortiga ravine, with the town and its long bridge at his back.",
+    ],
+  },
+  sides: {
+    top: {
+      name: 'Spanish Army of Estremadura',
+      commanders: ['Gregorio de la Cuesta (commanding)', 'Henestrosa (left)', 'Trias (centre)', 'Albuquerque (right)'],
+      strength: 'c. 23,000 with 30 guns (Oman: 20,000 foot, 3,000 horse); Napier says 29,000',
+      forces: 'Many raw Estremaduran battalions, Albuquerque’s men from La Mancha and cavalry on both wings, in one thin line.',
+    },
+    bottom: {
+      name: 'French 1st Corps',
+      commanders: ['Marshal Victor (commanding)', 'Latour-Maubourg (dragoons)', 'Lasalle (light cavalry)', 'Villatte (infantry)'],
+      strength: 'c. 17,500 with over 50 guns (Oman: 13,000 foot, 4,500 horse); Napier 16,500, 42 guns',
+      forces: "Villatte's infantry in the centre, two cavalry divisions on the wings, Leval's Germans, and Ruffin's division in reserve.",
+    },
+  },
+  map: {
+    north: 270,
+    terrain: [
+      { kind: 'river', points: [[40, -30], [55, 220], [75, 400], [120, 520], [170, 640]], width: 24, label: 'Guadiana' },
+      { kind: 'river', points: [[965, -30], [955, 150], [935, 330], [880, 450], [760, 540], [600, 580], [420, 600], [290, 640]], width: 10, label: 'Hortiga' },
+      { kind: 'town', at: [260, 548], size: 28, label: 'Medellín' },
+      { kind: 'label', at: [500, 28], text: 'Don Benito (east)' },
+    ],
+    units: [
+      { id: 'cavR', side: 'top', kind: 'cavalry', label: 'Right cavalry', w: 56 },
+      { id: 'albu', side: 'top', kind: 'infantry', label: 'Albuquerque', w: 100 },
+      { id: 'portago', side: 'top', kind: 'infantry', label: 'Portago', w: 70 },
+      { id: 'trias', side: 'top', kind: 'infantry', label: 'Trias', w: 90 },
+      { id: 'parque', side: 'top', kind: 'infantry', label: 'Del Parque', w: 100 },
+      { id: 'henes', side: 'top', kind: 'infantry', label: 'Henestrosa', w: 100 },
+      { id: 'cavL', side: 'top', kind: 'cavalry', label: 'Left cavalry', w: 56 },
+      { id: 'lasalle', side: 'bottom', kind: 'cavalry', label: 'Lasalle', w: 70 },
+      { id: 'levL', side: 'bottom', kind: 'infantry', label: 'Germans', w: 60 },
+      { id: 'villatte', side: 'bottom', kind: 'infantry', label: 'Villatte', w: 140 },
+      { id: 'levR', side: 'bottom', kind: 'infantry', label: 'Germans', w: 60 },
+      { id: 'hguns', side: 'bottom', kind: 'artillery', label: 'Horse guns', w: 46 },
+      { id: 'latour', side: 'bottom', kind: 'heavycavalry', label: 'Latour-Maubourg', w: 80 },
+      { id: 'ruffin', side: 'bottom', kind: 'infantry', label: 'Ruffin (reserve)', w: 80 },
+    ],
+    phases: [
+      {
+        title: 'Cuesta’s long line',
+        caption: "The Spaniards sweep down from the heights in a single line nearly four miles long and four men deep, with no reserve. Victor's compact arc waits before Medellín, Ruffin far behind beyond the Hortiga.",
+        at: {
+          cavR: [110, 150],
+          albu: [205, 175],
+          portago: [325, 178],
+          trias: [440, 178],
+          parque: [580, 178],
+          henes: [715, 178],
+          cavL: [860, 150],
+          lasalle: [190, 400],
+          levL: [290, 410],
+          villatte: [500, 450],
+          levR: [680, 410],
+          hguns: [750, 460],
+          latour: [830, 380],
+          ruffin: [890, 555],
+        },
+        arrows: [
+          { side: 'top', points: [[205, 195], [205, 250]] },
+          { side: 'top', points: [[440, 198], [440, 250]] },
+          { side: 'top', points: [[715, 198], [715, 250]] },
+        ],
+      },
+      {
+        title: 'The French fall back',
+        caption: "Latour-Maubourg's dragoons charge Del Parque's infantry and fail; his wing retires, and Lasalle conforms. For two hours the French give ground, facing about to show a front, until Victor makes a stand nearer the town.",
+        at: {
+          cavR: [110, 230],
+          albu: [205, 255],
+          portago: [325, 258],
+          trias: [440, 258],
+          parque: [580, 262],
+          henes: [715, 262],
+          cavL: [860, 235],
+          lasalle: [200, 440],
+          levL: [290, 460],
+          levR: [660, 455],
+          hguns: [725, 485],
+          latour: [800, 440],
+        },
+        arrows: [
+          { side: 'bottom', points: [[830, 370], [800, 300], [760, 270]] },
+          { side: 'bottom', points: [[760, 275], [800, 360], [815, 430]], style: 'retreat' },
+          { side: 'bottom', points: [[190, 400], [200, 430]], style: 'retreat' },
+        ],
+      },
+      {
+        title: 'Crisis on the Spanish left',
+        caption: "Henestrosa and Del Parque reach the French guns and cut down gunners. Latour-Maubourg's dragoons charge; Cuesta's cavalry bolts, riding over the general himself, and the dragoons roll up the exposed infantry.",
+        at: {
+          parque: [600, 330],
+          henes: [725, 340],
+          latour: [800, 385],
+        },
+        broken: ['parque', 'henes'],
+        gone: ['cavL'],
+        arrows: [
+          { side: 'bottom', points: [[830, 440], [790, 410], [770, 375]] },
+          { side: 'top', points: [[860, 235], [880, 160], [900, 60]], style: 'rout' },
+        ],
+      },
+      {
+        title: 'The Spanish right destroyed',
+        caption: "Lasalle's hussars and chasseurs scatter the Spanish right cavalry. Villatte's brigade and the Germans attack Albuquerque and Trias in front while Lasalle charges their flank; Latour-Maubourg returns behind them. A thunderstorm halts the pursuit.",
+        at: {
+          lasalle: [215, 330],
+          villatte: [420, 380],
+          latour: [490, 205],
+        },
+        broken: ['albu', 'portago', 'trias'],
+        gone: ['cavR'],
+        arrows: [
+          { side: 'bottom', points: [[200, 400], [190, 350], [160, 280]] },
+          { side: 'bottom', points: [[500, 430], [450, 400], [430, 340]] },
+          { side: 'bottom', points: [[700, 320], [600, 250], [510, 212]] },
+          { side: 'top', points: [[325, 258], [320, 180], [330, 80]], style: 'rout' },
+          { side: 'top', points: [[205, 255], [200, 170], [190, 70]], style: 'rout' },
+        ],
+      },
+    ],
+  },
+  outcome: {
+    winner: 'bottom',
+    result: 'Decisive French victory; the Spanish infantry is destroyed',
+    losses: 'Oman: Spanish losses c. 10,000 (at least 7,500 casualties, 1,850 prisoners), 20 of 30 guns; the French claimed only 300, probably over 1,000.',
+    text: [
+      "Cuesta's cavalry escaped almost intact, but his infantry was scattered over Estremadura. He rallied only about 3,000 horse and 6,000 to 7,000 foot at Monasterio by 8 April, and Victor held the Guadiana around Medellín and Mérida.",
+      "King Joseph ordered Victor on into Portugal, but he demurred, and Badajoz was not taken. The Spanish army was rebuilt within weeks, and in July Cuesta fought beside Wellesley at Talavera, where Victor's corps was again among his opponents.",
+    ],
+  },
+  sources: [
+    'Charles Oman, A History of the Peninsular War, vol. 2 (1903), Section XII chap. 2, pp. 149–66 and Appendix IV (Oman’s narrative implies 29 March, though his plan and later text give the 28th)',
+    'W. F. P. Napier, History of the War in the Peninsula, vol. 2 (1829), Book VII chap. 3, pp. 219–27',
+  ],
+};
+
+export default history;
