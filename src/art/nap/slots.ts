@@ -15,15 +15,15 @@ const FF = 1.26; // front-rank scale (foot)
 // first, so every strength from 2 to 4 is the tail of this list and a surviving figure keeps its slot; the one-block
 // slot is the exception: it is centred (and takes the paint of the last front-rank figure).
 const FULL: Record<Formation, readonly [Slot, Slot, Slot, Slot]> = {
-  close: [{ x: -27, y: 5, s: FB }, { x: -7, y: 5, s: FB }, { x: -17, y: 18, s: FF }, { x: 3, y: 18, s: FF }],
-  loose: [{ x: -28, y: 6.5, s: FB }, { x: -6, y: 4, s: FB }, { x: -18, y: 18.5, s: FF }, { x: 2, y: 16.5, s: FF }],
+  close: [{ x: -27, y: 5, s: FB }, { x: -9, y: 5, s: FB }, { x: -18.5, y: 18, s: FF }, { x: -3.5, y: 18, s: FF }],
+  loose: [{ x: -29, y: 6.5, s: FB }, { x: -9.5, y: 3.5, s: FB }, { x: -19.5, y: 18.5, s: FF }, { x: -3.5, y: 16.5, s: FF }],
   horse: [{ x: -26, y: 7, s: 0.88 }, { x: -4, y: 7, s: 0.88 }, { x: -15, y: 20.5, s: 0.96 }, { x: 15, y: 20.5, s: 0.96 }],
   // gun: the front piece (the gun itself) stands front centre; each further piece stands behind, staggered.
   gun: [{ x: -22, y: 5, s: 0.95 }, { x: 20, y: 6, s: 0.95 }, { x: -17, y: 15, s: 1 }, { x: 2, y: 18.5, s: 1.05 }],
 };
 const SINGLE: Record<Formation, Slot> = {
-  close: { x: -3, y: 18, s: FF },
-  loose: { x: -3, y: 18, s: FF },
+  close: { x: -4, y: 18, s: FF },
+  loose: { x: -4, y: 18, s: FF },
   horse: { x: 0, y: 20.5, s: 0.96 },
   gun: FULL.gun[3],
 };
@@ -58,9 +58,9 @@ export function standing(f: Formation, n: number, max: number): readonly (readon
   return now.map((sl, k) => [sl, n >= 2 ? k + (full.length - now.length) : full.length - 1] as const);
 }
 
-/** Measured extents of one figure (top, bottom, left, right) for centring and scaling icons. Provisional until the families land. */
+/** Measured extents of one figure (top, bottom, left, right) for centring and scaling icons. The foot box is measured from the French infantry (Task 2): top = the bearskin's plume, right = a levelled bayonet. */
 export const ICON_BOX: Record<FigureSpec['drawing'], readonly [top: number, bottom: number, left: number, right: number]> = {
-  foot: [-36, 0.4, -9, 11], // headroom for a bearskin
+  foot: [-43.6, 0.4, -8, 16], // measured: the bearskin plume at the top, the pack at the left, the aiming bayonet at the right
   horse: [-38, 0.4, -19, 20],
   gun: [-22, 0.4, -20, 22],
 };
