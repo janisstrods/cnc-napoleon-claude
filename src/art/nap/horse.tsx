@@ -63,7 +63,8 @@ function scallop(w: number, n: number): string {
   return ' q' + `${(w / n / 2).toFixed(2)} 1.6 ${step} 0`.repeat(1) + ` q${(w / n / 2).toFixed(2)} 1.6 ${step} 0`.repeat(n - 1);
 }
 
-const WOOL = '#e6dfcb';
+// Sheepskin: an ivory grey rather than a bright white, so the saddle does not outshine the rider.
+const WOOL = '#d8d0bc';
 
 /** The saddle cloth with a pointed rear and its trim; a light horse's sheepskin lies over it, leaving a border of the cloth. */
 function Shabraque({ cloth, trim, sheepskin }: HorseSpec['shabraque']) {
@@ -83,19 +84,22 @@ function Shabraque({ cloth, trim, sheepskin }: HorseSpec['shabraque']) {
   );
 }
 
-/** The rolled cloak across the pommel and (unless `portmanteau` is false) the portmanteau behind the cantle. */
+/**
+ * The rolled cloak across the pommel and (unless `portmanteau` is false) the portmanteau behind the cantle, in the cloth
+ * darkened, with its end lace toned down: at board scale they are kit, not a saturated square on every horse.
+ */
 function Valise({ cloth, trim, portmanteau }: { cloth: string; trim: string; portmanteau: boolean }) {
-  const roll = darken(cloth, 0.18);
+  const roll = darken(cloth, 0.35);
   return (
     <g data-part="valise">
       {portmanteau ? (
         <g data-part="portmanteau">
           <Shape d="M-13 -21.4 L-7.4 -21.8 L-7.2 -17.6 L-12.8 -17.2 Q-13.8 -19.4 -13 -21.4 Z" f={roll} sw={0.6} />
-          <path d="M-13 -21.4 L-7.4 -21.8 M-12.9 -17.4 L-7.2 -17.8" stroke={trim} strokeWidth={0.5} fill="none" />
+          <path d="M-13 -21.4 L-7.4 -21.8 M-12.9 -17.4 L-7.2 -17.8" stroke={darken(trim, 0.3)} strokeWidth={0.5} fill="none" />
           <path d="M-10.2 -21.7 L-10 -17.5" stroke={darken(roll, 0.4)} strokeWidth={0.5} />
         </g>
       ) : null}
-      <Line2 d="M3.8 -22.2 Q5.8 -20.4 5.4 -17.6" w={2.6} c={lighten(roll, 0.12)} ow={0.55} />
+      <Line2 d="M3.8 -22.2 Q5.8 -20.4 5.4 -17.6" w={2.6} c={roll} ow={0.55} />
     </g>
   );
 }

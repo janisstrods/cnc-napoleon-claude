@@ -142,6 +142,18 @@ describe('cavalry', () => {
     expect(back).toContain(darken(coat, 0.15));
   });
 
+  it('the horse kit is calm: portmanteau and cloak roll in the cloth darkened, sheepskins ivory-grey', () => {
+    for (const k of CAVALRY) {
+      const out = fig(k, 0);
+      expect(out, k).toContain(darken(spec(k).shabraque.cloth, 0.35));
+      expect(out, k).not.toContain(darken(spec(k).shabraque.cloth, 0.18));
+    }
+    const lc = spec('BR/LC');
+    expect(lc.shabraque.sheepskin).toBe(true);
+    expect(fig('BR/LC', 0)).toContain('#d8d0bc');
+    expect(fig('BR/LC', 0)).not.toContain('#e6dfcb');
+  });
+
   it('marks the Guard', () => {
     for (const k of ['FR/GHC', 'BR/GHC']) expect(token(k as CavalryKey), k).toContain('data-base-rim="gold"');
     for (const k of CAVALRY.filter((x) => x !== 'FR/GHC' && x !== 'BR/GHC')) expect(token(k), k).not.toContain('data-base-rim');

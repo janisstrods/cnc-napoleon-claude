@@ -83,6 +83,16 @@ describe('French infantry', () => {
     }
   });
 
+  it('bearskin cords are one short arc across the front, with no hanging ends', () => {
+    for (const k of ['FR/GR', 'FR/OG'] as const) {
+      const m = /<g data-cords="arc"[^>]*>(.*?)<\/g>/.exec(fig(k, 0));
+      expect(m, k).not.toBeNull();
+      expect(m![0], k).toContain(`stroke="${spec(k).head.cords}"`);
+      expect(m![1].split('<path').length - 1, k).toBe(1);
+    }
+    expect(fig('FR/LT', 0)).toContain('data-cords="full"');
+  });
+
   it('the Guard stands on the gold-rimmed base', () => {
     for (const k of ['FR/YG', 'FR/OG'] as const) expect(token(k), k).toContain('data-base-rim="gold"');
     for (const k of ['FR/LN', 'FR/LT', 'FR/GR', 'FR/ML'] as const) expect(token(k), k).not.toContain('data-base-rim');

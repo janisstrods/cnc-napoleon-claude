@@ -114,7 +114,12 @@ function Torso({ dress, f }: { dress: Dress; f: Fig }) {
       )}
       {lapel ? <Shape d="M0.1 -21.2 L3.2 -20.6 L2.9 -13.4 L-0.1 -13.6 Z" f={dress.lapels!} sw={0.5} /> : null}
       {lapel ? <path d="M0.1 -21.2 L-0.1 -13.6 M3.2 -20.6 L2.9 -13.4" fill="none" stroke={edge} strokeWidth={0.45} opacity={0.9} /> : null}
-      {dress.lace && !lapel && !long ? <path d="M-2.4 -19 L2.4 -19 M-2.4 -17 L2.4 -17 M-2.6 -15 L2.6 -15" stroke={dress.lace} strokeWidth={0.45} /> : null}
+      {dress.lace && cut === 'dolman' ? (
+        // a hussar dolman: bold bars of braid across the chest, the horse artillery's mark on foot
+        <g data-part="braid" stroke={dress.lace} strokeLinecap="round" fill="none">
+          <path d="M-2.6 -19.6 L2.8 -19.4 M-2.7 -17.9 L2.9 -17.7 M-2.8 -16.2 L2.9 -16 M-2.8 -14.5 L2.9 -14.3" strokeWidth={0.75} />
+        </g>
+      ) : dress.lace && !lapel && !long ? <path d="M-2.4 -19 L2.4 -19 M-2.4 -17 L2.4 -17 M-2.6 -15 L2.6 -15" stroke={dress.lace} strokeWidth={0.45} /> : null}
       {/* collar */}
       <Shape d="M-1.7 -22.2 L2 -22.2 L2.3 -20.5 L-1.9 -20.5 Z" f={dress.facings} sw={0.6} />
       {dress.lace ? <path d="M-1.6 -21.9 L1.9 -21.9" stroke={dress.lace} strokeWidth={0.4} /> : null}

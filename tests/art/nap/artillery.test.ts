@@ -138,6 +138,16 @@ describe('artillery', () => {
     for (const k of ARTILLERY.filter((x) => x !== 'FR/GA')) expect(token(k), k).not.toContain('data-base-rim');
   });
 
+  it('the French horse gunner wears a hussar-braided dolman, which a foot gunner does not', () => {
+    const braid = (m: string) => /<g data-part="braid"[^>]*>(.*?)<\/g>/.exec(m);
+    const ha = braid(piece('FR/HA', 'rammer'));
+    expect(ha).not.toBeNull();
+    expect(ha![0]).toContain(spec('FR/HA').crew.dress.lace!);
+    expect(count(ha![1], '<path')).toBeGreaterThanOrEqual(1);
+    expect(braid(piece('FR/FA', 'rammer'))).toBeNull();
+    expect(shape(piece('FR/HA', 'rammer'))).not.toBe(shape(piece('FR/FA', 'rammer')));
+  });
+
   it('the holder is a light horse at a halt with a gunner in the crew\'s dress holding the reins', () => {
     for (const k of HORSE) {
       const out = svg(h(HorseHolderFigure, { spec: spec(k), n: NATION_LOOKS[k.slice(0, 2) as 'FR'] }));
