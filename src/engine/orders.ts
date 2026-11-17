@@ -55,7 +55,8 @@ export function eligiblePieces(s: GameState, side: Side, kind: CardKind): string
       return ids.filter((id) => isLeaderId(id) || attachedLeaderOf(s, id));
     }
     case 'grandManoeuvre':
-      return ids.filter((id) => !squareOrLeaderOfSquare(s, id));
+      // a square may be the single unit (R62); the group refuses it in validateOrders
+      return ids.filter((id) => !isLeaderId(id) || !squareOrLeaderOfSquare(s, id));
     default:
       return ids.filter((id) => !isLeaderId(id) || !attachedUnitOf(s, id));
   }
@@ -82,17 +83,17 @@ function attachedUnitOf(s: GameState, leaderId: string): boolean {
 }
 
 /** The most pieces the card orders. */
-export function orderLimit(s: GameState, _side: Side, kind: CardKind): number {
+export function orderLimit(s: GameState, side: Side, kind: CardKind): number {
   const counts = sectionCounts(s, kind);
   if (counts) return Object.values(counts).reduce((a, b) => a + (b ?? 0), 0);
   const sel = CARD_DEFS[kind].select;
   switch (sel.kind) {
     case 'none': case 'copy': case 'shortSupply': case 'dice': return 0;
-    case 'kinds': return fallbackActive(s, _side, kind) ? 1 : sel.max;
+    case 'kinds': return fallbackActive(s, side, kind) ? 1 : sel.max;
     case 'grandManoeuvre': return sel.max;
-    case 'sectionAll': return fallbackActive(s, _side, kind) ? 1 : Math.max(0, ...SECTIONS.map((sec) => sectionUnits(s, _side, sel, sec).length));
-    case 'leaders': return fallbackActive(s, _side, kind) ? 1 : eligiblePieces(s, _side, kind).length;
-    case 'adjacentToEnemy': return autoOrders(s, _side, kind)?.length ?? 0;
+    case 'sectionAll': return fallbackActive(s, side, kind) ? 1 : Math.max(0, ...SECTIONS.map((sec) => sectionUnits(s, side, sel, sec).length));
+    case 'leaders': return fallbackActive(s, side, kind) ? 1 : eligiblePieces(s, side, kind).length;
+    case 'adjacentToEnemy': return autoOrders(s, side, kind)?.length ?? 0;
     default: return 1;
   }
 }
@@ -184,7 +185,7 @@ function validateTactic(s: GameState, side: Side, kind: CardKind, pieces: readon
       if (fallbackActive(s, side, kind)) return validateFallback(s, side, pieces);
       const want = (sec: SectionName) => sectionUnits(s, side, sel, sec).map((u) => u.id);
       const given = new Set(pieces);
-      const ok = SECTIONS.some((sec) => { const w = want(sec); return w.length > 0 && w.length === given.size && w.every((id) => given.has(id)); });
+      const ok = given.size === 0 || SECTIONS.some((sec) => { const w = want(sec); return w.length > 0 && w.length === given.size && w.every((id) => given.has(id)); });
       return ok ? null : 'Order all the matching units of one section.';
     }
     case 'adjacentToEnemy': {
@@ -269,7 +270,7 @@ export function sampleOrders(s: GameState, side: Side, kind: CardKind, rnd: () =
     }
     case 'grandManoeuvre': {
       if (units.length > 0 && rnd() < 0.25) return { ...oneUnit(), single: true };
-      return { pieces: shuffled(eligiblePieces(s, side, kind), rnd).slice(0, 1 + Math.floor(rnd() * sel.max)) };
+      return { pieces: shuffled(eligiblePieces(s, side, kind).filter((id) => !squareOrLeaderOfSquare(s, id)), rnd).slice(0, 1 + Math.floor(rnd() * sel.max)) };
     }
     default:
       break;

@@ -1,7 +1,7 @@
-// Rules: RR §12.2 (design/rules-reference.md)
+// Rules: RR §5.2, §12.2 (design/rules-reference.md)
 import { describe, expect, it } from 'vitest';
 import {
-  CARD_DEFS, GameDriver, neighbours, autoOrders, battleTargets, cardForbidsBattle, fallbackActive, fireDice, meleeDice, pieceMoves, randomAnswer,
+  CARD_DEFS, GameDriver, eligiblePieces, neighbours, autoOrders, battleTargets, cardForbidsBattle, fallbackActive, fireDice, meleeDice, pieceMoves, randomAnswer,
   answerError, sampleOrders, validateOrders, baseMeleeDice, type CardKind, type GameState, type RowKey, type Side,
 } from '../../src/engine';
 import { game } from '../scenarios/helpers';
@@ -57,6 +57,9 @@ describe('Bombard', () => {
     expect(battleTargets(e.state, 'u1')).toEqual([]);                       // moved: no battle
     const f = toBattle(build({ units: [bottom('BR/FA', [6, 6]), topU('FR/LN', [4, 6])] }), 'bombard', ['u1']);
     expect(battleTargets(f.state, 'u1')).toEqual([{ hex: H(4, 6), kind: 'fire', dice: 5 }]);   // 3 standing at range 2, +2
+    // Guard artillery adds one more: FR/GA 3 blocks at range 2 is 3 dice, +3
+    const g = toBattle(build({ units: [bottom('FR/GA', [6, 6]), topU('FR/LN', [4, 6])] }), 'bombard', ['u1']);
+    expect(battleTargets(g.state, 'u1')).toEqual([{ hex: H(4, 6), kind: 'fire', dice: 6 }]);
   });
 });
 
@@ -127,7 +130,7 @@ describe('Force March', () => {
     expect(orders(d.state, 'forceMarch', ['u2', 'u3'])).toBeNull();           // centre
     expect(orders(d.state, 'forceMarch', ['u1'])).not.toBeNull();
     expect(orders(d.state, 'forceMarch', ['u1', 'u2', 'u3'])).not.toBeNull();
-    expect(orders(d.state, 'forceMarch', [])).not.toBeNull();
+    expect(orders(d.state, 'forceMarch', [])).toBeNull();                     // an empty choice orders nothing
   });
 });
 
@@ -150,6 +153,8 @@ describe('Give Them the Cold Steel', () => {
     expect(d.pending?.kind).toBe('playCard');
     expect(d.pending?.side).toBe('top');
     expect(Object.keys(d.state.turn.ordered)).toEqual([]);
+    const kinds = ev(d).map((e) => e.t);
+    expect(kinds.slice(kinds.indexOf('cardPlayed'))).toEqual(['cardPlayed', 'draw', 'turnStart']);
   });
   it('Cold Steel: a unit no longer adjacent when its turn comes cannot battle (R61)', () => {
     const s = build({ units: [bottom('BR/LN', [5, 6]), bottom('BR/LN', [5, 5]), topU('FR/LN', [4, 6], { blocks: 1 })] });
@@ -164,7 +169,7 @@ describe('Give Them the Cold Steel', () => {
     // the ban itself: an enemy that stepped away leaves the ordered unit unable to battle while the battle phase is still open
     const e = play(build({ units: [bottom('BR/LN', [5, 6]), bottom('BR/LN', [5, 5]), topU('FR/LN', [4, 6])] }), 'coldSteel');
     expect(cardForbidsBattle(e.state, e.state.turn.ordered.u2, u(e, 'u2')!)).toBe(false);
-    e.state.units[2].hex = H(0, 6);
+    e.state.units.find((x) => x.id === 'u3')!.hex = H(0, 6);
     expect(cardForbidsBattle(e.state, e.state.turn.ordered.u2, u(e, 'u2')!)).toBe(true);
     expect(battleTargets(e.state, 'u2')).toEqual([]);
   });
@@ -218,6 +223,21 @@ describe('La Grande Manoeuvre', () => {
     expect(orders(d.state, 'grandManoeuvre', ['u2'])).toBeNull();
     expect(orders(d.state, 'grandManoeuvre', ['u1'], true)).toBeNull();
     expect(orders(d.state, 'grandManoeuvre', ['u1', 'u2'], true)).not.toBeNull();
+    expect(eligiblePieces(d.state, 'bottom', 'grandManoeuvre')).toContain('u1');   // a square may be the single unit
+    const five = [[6, 0], [6, 2], [6, 4], [6, 8], [6, 10]].map(([r, c]) => bottom('BR/LN', [r, c]));
+    const g = at({ units: [...five, topU('FR/LN', [4, 6])] }, 'grandManoeuvre');
+    expect(orders(g.state, 'grandManoeuvre', ['u1', 'u2', 'u3', 'u4'])).toBeNull();
+    expect(orders(g.state, 'grandManoeuvre', ['u1', 'u2', 'u3', 'u4', 'u5'])).not.toBeNull();   // the cap is 4
+    // only a square: the card is not skipped, and the single option takes it
+    const q = play(build({ units: [bottom('BR/LN', [6, 6], { square: 1 }), topU('FR/LN', [0, 12])] }), 'grandManoeuvre');
+    expect(q.pending?.kind).toBe('orders');
+    expect(orders(q.state, 'grandManoeuvre', ['u1'], true)).toBeNull();
+    // the group may not battle (4 hexes, no battle)
+    const h = play(build({ units: [bottom('BR/LN', [6, 4]), topU('FR/LN', [4, 5])] }), 'grandManoeuvre', ['u1']);
+    const adj = pieceMoves(h.state, 'u1').find((m) => neighbours(H(4, 5)).includes(m.hex))!;
+    must(h, { kind: 'move', piece: 'u1', to: adj.hex });
+    endMoves(h);
+    expect(battleTargets(h.state, 'u1')).toEqual([]);
     const e = play(build(P), 'grandManoeuvre', ['u2'], { single: true });
     expect(e.state.turn.ordered.u2.cardMods).toBe(false);
     const foe = H(4, 5);
