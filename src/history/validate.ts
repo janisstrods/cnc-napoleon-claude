@@ -23,8 +23,9 @@ const ARROW_MARGIN = 20;
 
 export const words = (s: string): number => s.trim().split(/\s+/).filter(Boolean).length;
 
-/** Problems with a history, as readable lines; empty when it is valid. */
 const DATE_RE = /^(\d{1,2}(–\d{1,2})? )?(January|February|March|April|May|June|July|August|September|October|November|December) \d{4}$/;
+
+/** Problems with a history, as readable lines; empty when it is valid. */
 
 export function validateHistory(h: BattleHistory): string[] {
   const out: string[] = [];

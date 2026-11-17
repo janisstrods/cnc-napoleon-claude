@@ -74,8 +74,8 @@ export function UnitGlyph({ kind, w, h, color }: { kind: UnitKind; w: number; h:
   const s = { stroke: color, strokeWidth: 2, fill: 'none', strokeLinecap: 'round' as const };
   switch (kind) {
     case 'infantry':
-      // solid block
-      return <rect x={-w / 2 + 4} y={-h / 2 + 4} width={w - 8} height={h - 8} rx={1} fill={color} />;
+      // the plain block in the army colour, with a thin centre bar
+      return <path d={`M${-w / 2 + 8},0 H${w / 2 - 8}`} {...s} strokeWidth={2} />;
     case 'light': {
       // loose dotted block
       const n = Math.max(3, Math.round(w / 14));
@@ -89,8 +89,8 @@ export function UnitGlyph({ kind, w, h, color }: { kind: UnitKind; w: number; h:
       // double border
       return (
         <g {...s} strokeWidth={1.6}>
-          <rect x={-w / 2 + 4} y={-h / 2 + 4} width={w - 8} height={h - 8} rx={1} />
-          <rect x={-w / 2 + 8} y={-h / 2 + 8} width={w - 16} height={h - 16} rx={1} />
+          <rect x={-w / 2 + 4} y={-h / 2 + 4} width={w - 8} height={Math.max(h - 8, 2)} rx={1} />
+          <rect x={-w / 2 + 8} y={-h / 2 + 8} width={w - 16} height={Math.max(h - 16, 2)} rx={1} />
         </g>
       );
     case 'cavalry':

@@ -17,7 +17,7 @@ export interface BattleHistory {
   date?: string;
   /** Slide 1: the war and why the armies met here. */
   context: {
-    /** The war or campaign, with dates: "Second Punic War, 218–201 BC". */
+    /** The war or campaign, with dates: "Peninsular War, 1807–1814". */
     war: string;
     /** One or two short paragraphs. */
     text: string[];
@@ -44,7 +44,7 @@ export interface BattleHistory {
 export interface SideHistory {
   /** The army: "Carthaginians and allies". */
   name: string;
-  /** Commanders, with their role where useful: "Hasdrubal (left-wing cavalry)". */
+  /** Commanders, with their role where useful: "Wellesley (commanding)". */
   commanders: string[];
   /** Estimated strength, with its uncertainty: "c. 40,000 foot and 10,000 horse". */
   strength: string;
@@ -91,7 +91,7 @@ export interface MapUnit {
   id: string;
   side: Side;
   kind: UnitKind;
-  /** A short name shown beside the block: "Libyans", "Companions". */
+  /** A short name shown beside the block: "95th Rifles", "Imperial Guard". */
   label?: string;
   /** Block size in map units (defaults depend on the kind). */
   w?: number;

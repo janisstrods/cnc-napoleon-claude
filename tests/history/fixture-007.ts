@@ -29,7 +29,7 @@ const history: BattleHistory = {
     north: 180,
     terrain: [
       { kind: 'river', points: [[935, -30], [962, 140], [925, 330], [968, 470], [945, 640]], width: 20, label: 'Aufidus' },
-      { kind: 'redoubt', at: [150, 300], label: 'Redoubt' },
+      { kind: 'redoubt', at: [300, 560], label: 'Redoubt' },
       { kind: 'town', at: [860, 52], size: 18, label: 'Cannae' },
     ],
     units: [
