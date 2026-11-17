@@ -1,4 +1,4 @@
-// 106 Medellín, 28 March 1809 (Oman dates it 29 March). Top: Cuesta's Spanish Army of Estremadura; bottom: Victor's French 1st Corps.
+// 106 Medellín, 28 March 1809 (Oman’s narrative implies 29 March, but his plan and later text give the 28th). Top: Cuesta's Spanish Army of Estremadura; bottom: Victor's French 1st Corps.
 // The map is drawn with the Spaniards at the top: they advanced from Don Benito in the east, so east is up and north is to
 // the left. The Guadiana lies at the left, the Hortiga ravine at the right, and Medellín at the bottom where they meet.
 import type { BattleHistory } from '../types';
@@ -8,7 +8,7 @@ const history: BattleHistory = {
   context: {
     war: 'Peninsular War, 1807–1814',
     text: [
-      "In the spring of 1809 Marshal Victor's 1st Corps held the Tagus valley for King Joseph, facing General Cuesta's Army of Estremadura on the road to Badajoz and Andalusia. In mid-March Victor forced the Tagus at Almaraz and drove Cuesta back through the hills.",
+      "In the spring of 1809 Marshal Victor's 1st Corps held the Tagus valley for King Joseph, facing General Cuesta's Army of Estremadura on the road to Badajoz and Andalusia. In mid-March Victor crossed the Tagus upstream at Talavera and Arzobispo, turned Cuesta out of Almaraz and drove him back through the hills.",
       "Cuesta retreated to La Serena, where Albuquerque brought him reinforcements on 27 March. Now stronger in infantry, he turned back at once. Victor, who had gathered his army at Medellín, met him on the open plain between the Guadiana and the Hortiga ravine, with the town and its long bridge at his back.",
     ],
   },
@@ -140,12 +140,12 @@ const history: BattleHistory = {
     losses: 'Oman: Spanish losses c. 10,000 (at least 7,500 casualties, 1,850 prisoners), 20 of 30 guns; the French claimed only 300, probably over 1,000.',
     text: [
       "Cuesta's cavalry escaped almost intact, but his infantry was scattered over Estremadura. He rallied only about 3,000 horse and 6,000 to 7,000 foot at Monasterio by 8 April, and Victor held the Guadiana around Medellín and Mérida.",
-      "King Joseph ordered Victor on into Portugal, but he demurred, and Badajoz was not taken. The Spanish army was rebuilt within months, and in July Cuesta fought beside Wellesley at Talavera, where Victor's corps was again among his opponents.",
+      "King Joseph ordered Victor on into Portugal, but he demurred, and Badajoz was not taken. The Spanish army was rebuilt within weeks, and in July Cuesta fought beside Wellesley at Talavera, where Victor's corps was again among his opponents.",
     ],
   },
   sources: [
-    'Charles Oman, A History of the Peninsular War, vol. 2 (1903), Section XII chap. 2, pp. 149–66 and Appendix IV (Oman dates the battle 29 March)',
-    'W. F. P. Napier, History of the War in the Peninsula, vol. 2 (1829), Book VII chap. 3, pp. 219–25',
+    'Charles Oman, A History of the Peninsular War, vol. 2 (1903), Section XII chap. 2, pp. 149–66 and Appendix IV (Oman’s narrative implies 29 March, though his plan and later text give the 28th)',
+    'W. F. P. Napier, History of the War in the Peninsula, vol. 2 (1829), Book VII chap. 3, pp. 219–27',
   ],
 };
 

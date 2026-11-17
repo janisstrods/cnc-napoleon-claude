@@ -8,7 +8,7 @@ const history: BattleHistory = {
   context: {
     war: 'Peninsular War, 1807–1814',
     text: [
-      "By late November 1808 Napoleon had broken the Spanish armies on the Ebro and was marching from Burgos on Madrid. Two passes through the Sierra de Guadarrama guard the capital, and he chose the northern road over the Somosierra.",
+      "By late November 1808 Napoleon had broken the Spanish armies on the Ebro and was marching from Burgos on Madrid. Two passes over the mountains north of Madrid guard the capital, and he chose the northern road over the Somosierra.",
       "General Benito San Juan was sent to hold it with an improvised force, about 12,000 men at first. He put sixteen guns across the crest of the pass, with a shallow earthwork, and left a detachment at Sepúlveda that slipped away to Segovia on the night of 29 November. On the 30th the Emperor pushed up the road.",
     ],
   },
@@ -16,8 +16,8 @@ const history: BattleHistory = {
     top: {
       name: 'Spanish Army of Reserve',
       commanders: ['General Benito San Juan (commanding)', 'Colonel Sarden (Sepúlveda detachment)'],
-      strength: 'up to 12,000 at first, perhaps 9,000 in the pass, with 16 guns (Oman)',
-      forces: 'Six regular and two militia battalions, seven of raw levies, a few cavalry and sixteen guns at the crest.',
+      strength: 'up to 12,000 at first, perhaps 8,000 to 9,000 in the pass, with 16 guns (after Oman)',
+      forces: 'Six regular and two militia battalions, seven of raw levies, a few cavalry; sixteen guns, all at the crest by Oman’s account.',
     },
     bottom: {
       name: "Napoleon's army",
@@ -64,7 +64,7 @@ const history: BattleHistory = {
           r24: [290, 430],
           gg: [400, 545],
           esc: [500, 540],
-          reg: [600, 590],
+          reg: [600, 565],
         },
         arrows: [
           { side: 'bottom', points: [[480, 430], [480, 370], [480, 330]] },
@@ -74,7 +74,7 @@ const history: BattleHistory = {
       },
       {
         title: 'The Poles charge',
-        caption: "Impatient, Napoleon orders his Polish escort squadron up the road. Per Ségur, 88 men charge; four officers and forty men are killed and sixteen wounded, none reaching the guns. The Emperor's bulletin claimed the guns were taken.",
+        caption: "Impatient, Napoleon sends his Polish escort squadron up the road. By Ségur’s account, via Oman, 88 men charge and none reach the guns; Polish accounts tell of a larger squadron taking battery after battery. Sources differ sharply.",
         at: {
           esc: [485, 235],
           r96: [480, 395],
@@ -89,12 +89,12 @@ const history: BattleHistory = {
           r96: [480, 290],
           r9: [700, 215],
           r24: [285, 215],
-          reg: [480, 175],
+          reg: [480, 205],
         },
         broken: ['spE', 'spW'],
         gone: ['batt', 'esc'],
         arrows: [
-          { side: 'bottom', points: [[600, 570], [520, 400], [485, 200]] },
+          { side: 'bottom', points: [[600, 550], [520, 400], [485, 225]] },
           { side: 'bottom', points: [[700, 300], [700, 240]] },
         ],
       },
@@ -103,13 +103,13 @@ const history: BattleHistory = {
         caption: "The Spaniards scatter. Most, posted west of the road, flee towards Segovia; a few reach Madrid. Only about 200 are caught. The Poles chase to Buitrago, and Napoleon sleeps there that night.",
         at: {
           reg: [480, 85],
-          r96: [480, 170],
+          r96: [480, 225],
         },
         gone: ['spE', 'spW', 'res'],
         arrows: [
           { side: 'top', points: [[660, 195], [760, 130], [830, 60]], style: 'rout' },
-          { side: 'top', points: [[480, 90], [480, 40]], style: 'rout' },
-          { side: 'bottom', points: [[480, 150], [480, 80]] },
+          { side: 'top', points: [[445, 95], [410, 45]], style: 'rout' },
+          { side: 'bottom', points: [[480, 225], [480, 110]] },
         ],
       },
     ],
@@ -119,7 +119,7 @@ const history: BattleHistory = {
     result: 'French victory; the road to Madrid is open',
     losses: 'Oman: about 200 Spaniards caught and sixteen guns lost; the Polish squadron lost 60 by Ségur, 24 by the bulletin.',
     text: [
-      "Oman judged that Ruffin's infantry, not the cavalry, won the pass; the Poles' second charge only hastened it by minutes. Napier, by contrast, gave the charge the decisive role and thought the position nearly impregnable.",
+      "Oman judged that Ruffin's infantry, not the cavalry, won the pass; the Poles' second charge only hastened it by minutes. Napier gave the charge the decisive role, and Polish accounts credit the cavalry still more; sources differ sharply.",
       "San Juan escaped, but on 7 December his mutinous troops killed him at Talavera de la Reina. The French appeared before Madrid on 2 December, and it capitulated on 4 December; the Army of Reserve had dissolved.",
     ],
   },

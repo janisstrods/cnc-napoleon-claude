@@ -17,7 +17,7 @@ const history: BattleHistory = {
       name: 'Spanish Army of the Left',
       commanders: ['Joaquín Blake (commanding)', 'Conde de San Román (Baltic division)', 'Acevedo (Asturians)', 'Riquelme (3rd Division)'],
       strength: 'c. 22,000 to 23,000 on the field, with only six guns (Oman)',
-      forces: "Galician divisions, Acevedo's Asturians (mostly raw levies) and La Romana's regulars from Denmark.",
+      forces: "Galician divisions, Acevedo's Asturians (mostly raw levies) and La Romana's regulars from Denmark (the scenario’s ‘Romana’).",
     },
     bottom: {
       name: 'French 1st Corps',
@@ -91,7 +91,7 @@ const history: BattleHistory = {
         title: '11 November: Asturians break',
         caption: "Victor feints at the road while most of Lapisse’s division, Maison leading under a cloud of skirmishers, climbs Las Peñucas. Acevedo and his brigadiers Quirós and Valdés are struck down and the Asturians flee.",
         at: {
-          mahy: [275, 120],
+          mahy: [310, 100],
           lapisse: [820, 335],
         },
         broken: ['ace'],
@@ -112,9 +112,9 @@ const history: BattleHistory = {
         broken: ['sanroman', 'mendiz', 'riq', 'fig', 'mahy', 'mart'],
         gone: ['guns'],
         arrows: [
-          { side: 'bottom', points: [[700, 215], [640, 205], [600, 205]] },
+          { side: 'bottom', points: [[700, 215], [660, 208], [625, 206]] },
           { side: 'bottom', points: [[480, 345], [480, 305]] },
-          { side: 'top', points: [[335, 195], [310, 120], [270, 40]], style: 'rout' },
+          { side: 'top', points: [[160, 245], [110, 250], [70, 248]], style: 'rout' },
           { side: 'top', points: [[580, 192], [520, 110], [440, 30]], style: 'rout' },
         ],
       },
@@ -123,14 +123,14 @@ const history: BattleHistory = {
   outcome: {
     winner: 'bottom',
     result: 'French victory; the Army of the Left is routed',
-    losses: 'Oman: Spanish killed and wounded probably under 3,000, French over 1,000; other totals run higher.',
+    losses: 'Oman: Spanish killed and wounded probably under 3,000, French over 1,000.',
     text: [
       "Straggling cost Blake more than the fighting. Oman counts some 12,000 men at Reinosa out of the 23,000 who stood at Espinosa; Napier saw only about 7,000. On 14 November Soult's cavalry fell on his convoy, and the wounded Acevedo was, it is said, killed with it.",
-      "Blake abandoned his guns and wagons and struggled over the mountains to the coast. There La Romana arrived on 15 November to replace him. With the Army of the Left broken, Napoleon, already at Burgos, was free to march on Madrid.",
+      "Blake abandoned his guns and wagons and struggled over the mountains to the coast. There La Romana arrived on 15 November and took formal command some days later. With the Army of the Left broken, Napoleon, already at Burgos, had one obstacle fewer on the road to Madrid.",
     ],
   },
   sources: [
-    'Charles Oman, A History of the Peninsular War, vol. 1 (1902), Section VII chap. 3, pp. 402–16 and the retreat that followed',
+    'Charles Oman, A History of the Peninsular War, vol. 1 (1902), Section VII chap. 3, pp. 402–16, and chap. 4, pp. 426–27',
     'W. F. P. Napier, History of the War in the Peninsula, vol. 1 (1828), Book IV chap. 1, pp. 391–93',
   ],
 };
