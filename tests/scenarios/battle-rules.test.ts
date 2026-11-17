@@ -1,8 +1,9 @@
 // Rules: RR §13.3–§13.4, §14.1–§14.15 (design/rules-reference.md)
 // The base battles' objectives and side rules in their real setups: the meta's hexes and sides are wired to the right battle.
-// The rules themselves are tested by Plan 2B T13.
+// The rules themselves are tested by Plan 2B T13. The fortress flag-ignore (006) and the impetuous breakthrough (015) are
+// predicate checks here; their behaviour is applied by Plan 2B T6a (retreat flag ignores) and T7 (forced breakthrough).
 import { describe, expect, it } from 'vitest';
-import { exitAllowedFrom, scoreKill, turnStartObjectives, updateHeld } from '../../src/engine/objectives';
+import { exitAllowedFrom, exitPiece, scoreKill, turnStartObjectives, updateHeld } from '../../src/engine/objectives';
 import { bannerTotal } from '../../src/engine/banners';
 import { unitAt } from '../../src/engine/query';
 import { impetuous, sideRuleFlagIgnores } from '../../src/engine/scenarioRules';
@@ -86,6 +87,20 @@ describe('base battles: objectives and side rules in their real setups', () => {
     expect(sideRuleFlagIgnores(t, french)).toBe(0);
     const britOnWindmill = placeOn(t, 'top', H(4, 10));
     expect(sideRuleFlagIgnores(t, britOnWindmill)).toBe(0);
+
+    const u = game('006');
+    expect(sideRuleFlagIgnores(u, placeOn(u, 'top', H(0, 12)))).toBe(1);
+    expect(sideRuleFlagIgnores(u, placeOn(u, 'bottom', H(0, 11)))).toBe(0);
+
+    // the exit scores: a unit 1 banner, a lone leader none (leadersScore false)
+    const e = game('006');
+    const unit = placeOn(e, 'top', H(0, 4));
+    exitPiece(e, ctx, unit.id);
+    expect(bannerTotal(e, 'top')).toBe(1);
+    const lead = e.leaders.find((l) => l.side === 'top' && !e.units.some((x) => x.hex === l.hex))!;
+    lead.hex = H(0, 4);
+    exitPiece(e, ctx, lead.id);
+    expect(bannerTotal(e, 'top')).toBe(1);
   });
 
   it('012: first French infantry kill 1, the next 2; French cavalry 1', () => {
@@ -137,6 +152,11 @@ describe('base battles: objectives and side rules in their real setups', () => {
     const cav = g.units.filter((u) => u.side === 'top' && ['BR/LC', 'BR/HC', 'BR/GHC'].includes(u.key));
     expect(cav.length).toBeGreaterThan(0);
     for (const u of cav) expect(impetuous(g, u)).toBe(true);
+    // the rule data itself, and a top unit retagged BR/LC (015 starts with none)
+    expect(g.scenario.sideRules).toContainEqual({ kind: 'impetuousCavalry', side: 'top', keys: ['BR/LC', 'BR/HC', 'BR/GHC'] });
+    const lc = { ...cav[0], key: 'BR/LC' as const };
+    expect(impetuous(g, lc)).toBe(true);
+    expect(impetuous(g, { ...lc, side: 'bottom' })).toBe(false);
     for (const u of g.units.filter((x) => x.side === 'top' && x.key === 'AL/LC')) expect(impetuous(g, u)).toBe(false);
     for (const u of g.units.filter((x) => x.side === 'bottom')) expect(impetuous(g, u)).toBe(false);
   });
