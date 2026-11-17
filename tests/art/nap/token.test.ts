@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createElement as h } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { ARM_OF, CODE_NAMES, codeOf } from '../../../src/engine/codes';
-import { ICON_BOX, SLOTS, type Formation } from '../../../src/art/nap/slots';
+import { SLOTS, iconRects, type Formation } from '../../../src/art/nap/slots';
 import { ART_KEYS, ART_NATIONS, type ArtKey } from '../../../src/art/nap/keys';
 import { ArmGlyph } from '../../../src/art/nap/badge';
 import { NapLeaderToken, NapUnitIcon } from '../../../src/art/nap';
@@ -106,8 +106,7 @@ describe('the attach corner', () => {
   it('stays clear of every figure box at every strength, in both facings', () => {
     const hits: string[] = [];
     for (const f of Object.keys(SLOTS) as Formation[]) {
-      const [top, bottom, left, right] = ICON_BOX[drawing[f]];
-      for (const n of [1, 2, 3, 4] as const) for (const flip of [1, -1]) for (const sl of SLOTS[f][n]) {
+      for (const n of [1, 2, 3, 4] as const) for (const flip of [1, -1]) for (const sl of SLOTS[f][n]) for (const [top, bottom, left, right] of iconRects(drawing[f])) {
         const x0 = sl.x + (flip > 0 ? left : -right) * sl.s;
         const x1 = sl.x + (flip > 0 ? right : -left) * sl.s;
         const y0 = sl.y + top * sl.s;

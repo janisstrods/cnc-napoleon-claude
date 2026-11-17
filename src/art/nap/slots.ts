@@ -15,15 +15,15 @@ const FF = 1.26; // front-rank scale (foot)
 // first, so every strength from 2 to 4 is the tail of this list and a surviving figure keeps its slot; the one-block
 // slot is the exception: it is centred (and takes the paint of the last front-rank figure).
 const FULL: Record<Formation, readonly [Slot, Slot, Slot, Slot]> = {
-  close: [{ x: -27, y: 5, s: FB }, { x: -7, y: 5, s: FB }, { x: -17, y: 18, s: FF }, { x: 3, y: 18, s: FF }],
-  loose: [{ x: -28, y: 6.5, s: FB }, { x: -6, y: 4, s: FB }, { x: -18, y: 18.5, s: FF }, { x: 2, y: 16.5, s: FF }],
+  close: [{ x: -27, y: 5, s: FB }, { x: -9, y: 5, s: FB }, { x: -21, y: 18, s: FF }, { x: -6, y: 18, s: FF }],
+  loose: [{ x: -29, y: 6.5, s: FB }, { x: -9.5, y: 3.5, s: FB }, { x: -22, y: 18.5, s: FF }, { x: -6.5, y: 16.5, s: FF }],
   horse: [{ x: -26, y: 7, s: 0.88 }, { x: -4, y: 7, s: 0.88 }, { x: -15, y: 20.5, s: 0.96 }, { x: 15, y: 20.5, s: 0.96 }],
   // gun: the front piece (the gun itself) stands front centre; each further piece stands behind, staggered.
   gun: [{ x: -22, y: 5, s: 0.95 }, { x: 20, y: 6, s: 0.95 }, { x: -17, y: 15, s: 1 }, { x: 2, y: 18.5, s: 1.05 }],
 };
 const SINGLE: Record<Formation, Slot> = {
-  close: { x: -3, y: 18, s: FF },
-  loose: { x: -3, y: 18, s: FF },
+  close: { x: -6, y: 18, s: FF },
+  loose: { x: -6, y: 18, s: FF },
   horse: { x: 0, y: 20.5, s: 0.96 },
   gun: FULL.gun[3],
 };
@@ -58,9 +58,30 @@ export function standing(f: Formation, n: number, max: number): readonly (readon
   return now.map((sl, k) => [sl, n >= 2 ? k + (full.length - now.length) : full.length - 1] as const);
 }
 
-/** Measured extents of one figure (top, bottom, left, right) for centring and scaling icons. Provisional until the families land. */
+/**
+ * Measured extents of one figure (top, bottom, left, right), stroke included, for centring and scaling icons. The foot box is
+ * the union over every French pose (getBBox, Task 2): top = the bearskin plume, left = the pack, right = a levelled bayonet
+ * (aim 17.3 before stroke, about 17.7 with it; rounded up).
+ */
 export const ICON_BOX: Record<FigureSpec['drawing'], readonly [top: number, bottom: number, left: number, right: number]> = {
-  foot: [-36, 0.4, -9, 11], // headroom for a bearskin
+  foot: [-43.6, 0.4, -8.4, 18.2],
   horse: [-38, 0.4, -19, 20],
   gun: [-22, 0.4, -20, 22],
 };
+
+type Rect = readonly [top: number, bottom: number, left: number, right: number];
+
+/**
+ * The box as a stepped profile, for the attach-corner test. Levelled weapons (bayonets at aim and charge) reach the full
+ * width only below y -24; above that line there are heads, headgear and the port-arms bayonet, which stay inside a narrower column (measured 12.7 before
+ * stroke, at the port bayonet tip; heads and headgear reach only about 7.5). A new foot figure, such as the rifles, must keep its
+ * wide parts below the step and its head and headgear inside the column (or re-measure both).
+ */
+export const ICON_STEP: Record<FigureSpec['drawing'], { y: number; right: number } | undefined> = { foot: { y: -24, right: 13.4 }, horse: undefined, gun: undefined };
+
+/** The rectangles a figure occupies: the whole box, or the two bands of its stepped profile (above and below the step). */
+export function iconRects(d: FigureSpec['drawing']): readonly Rect[] {
+  const [top, bottom, left, right] = ICON_BOX[d];
+  const st = ICON_STEP[d];
+  return st ? [[top, st.y, left, st.right], [st.y, bottom, left, right]] : [[top, bottom, left, right]];
+}
