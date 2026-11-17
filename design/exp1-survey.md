@@ -230,7 +230,7 @@ Compiled 2026-11-17. Sources: the 18 scenario pages on commandsandcolors.net (pa
 - **New needs:**
   - Mixed Spanish and British army on one side: commander shown as Cuesta (Wellesley); the British units use the same hand.
   - Redoubts as starting positions for two artillery units.
-  - Brook rule (OPEN: same as the base fordable rule?).
+  - Brook rule: see base ruling R47 (design/rulings.md on main).
 
 ### 110 Tamames (18 October 1809)
 (Page category: Peninsular War, Expansion #1.)
@@ -541,7 +541,7 @@ New tiles in the box: Walled Farm (acts as a town), 4-sided and 2-sided redoubts
 | Objective type | Battles | Banner value |
 |---|---|---|
 | Kill banners only | 101, 103, 104, 106, 107, 108, 109, 110, 111, 112, 116, 118 | 1 per unit eliminated |
-| Single held hex, temporary, counted at the start of the owner's turn | 113 (bridge, FR), 115 (either Albuera hex, FR) | 1 (one banner for either hex in 115; OPEN, see 2.6) |
+| Single held hex, temporary, counted at the start of the owner's turn | 113 (bridge, FR), 115 (either Albuera hex, FR) | 1 (one banner for either hex in 115, per the page) |
 | Group majority banner, temporary, starting banners | 114 (Barrosa Ridge, 11 hexes, SP side starts with 1), 117 (three groups, Spanish start with 3) | 1 per group |
 | Exit hex or edge, leaders excluded | 102 (Spanish baseline, from the fourth ordered unit) | 1 per extra exiting unit |
 | Sudden death | 105 (French win if all three Spanish artillery units are eliminated) | win |
@@ -575,7 +575,7 @@ Kill banners apply in every battle; the table lists the extra objective, if any.
 ### 2.5 Other needs
 
 - **Unit types** beyond the base list: none except the new **SWI** code (Swiss line infantry, 101). All other types are in the code list. The Spanish nation block is new: SP/LN, LT, GR, ML, LC, HC, CU, FA and leader. The French lancer (FR/LNC, 4 blocks) appears in 112 and 115. FR/GLC (4 blocks) and FR/GA appear in 105.
-- **Spanish unit values** from the site's new-units page (paraphrased; the reference card itself is not available). LN: 4 blocks, moves 1; moving fire is half the blocks rounded down, minus 1 die; moving melee minus 1 die; retreats 2 hexes per flag. LT: 5 blocks, moves 1, or 2 without battling; moving fire half the blocks rounded down; moving melee minus 1 die; retreats 2. GR: 4 blocks, moves 1; moving fire half rounded down; one extra die in melee; may ignore one flag; retreats 2 per flag. ML: 4 blocks, moves 1; moving fire half rounded down minus 1 die, moving melee minus 1 die; no sabre hits in melee except against a lone leader; retreats 3. LC: 3 blocks, moves 3. HC: 3 blocks, moves 2, one extra die in melee. CU: 3 blocks, moves 2, one extra die in melee, may ignore one flag, and ignores one hit from infantry ranged fire. FA: 3 blocks, retreats 1 hex per flag. Leader moves 3 alone. Spanish cavalry may retire and reform when meleed by infantry or when hit by combined arms.
+- **Spanish unit values** from the site's new-units page (paraphrased; the reference card itself is not available). LN: 4 blocks, moves 1; moving fire is half the blocks rounded down, minus 1 die; moving melee minus 1 die; retreats 2 hexes per flag. LT: 5 blocks, moves 1, or 2 without battling; moving fire half the blocks rounded down; moving melee minus 1 die; retreats 2. GR: 4 blocks, moves 1; moving fire half rounded down; one extra die in melee; may ignore one flag; retreats 2 per flag. ML: 4 blocks, moves 1; moving fire half rounded down minus 1 die, moving melee minus 1 die; no sabre hits in melee except against a lone leader; retreats 3. LC: 3 blocks, moves 3, retreats 2 hexes per flag. HC: 3 blocks, moves 2, one extra die in melee, retreats 2 per flag. CU: 3 blocks, moves 2, one extra die in melee, may ignore one flag (retreats 2 per flag if it does retreat), and ignores one hit from infantry ranged fire. FA: 3 blocks, retreats 1 hex per flag. Leader moves 3 alone. Spanish cavalry may retire and reform when meleed by infantry or when hit by combined arms.
 - **Block counts that differ from the standard on the maps** (read by eye; not exhaustive): 101 Swiss line 5 blocks (rule); 103 SP/HC drawn with 4; 105 one SP/LN with 3 and one FR/LN with 5; 110 one SP/LN with 5; 109 BR/GG 5; 114 one BR/LN with 5 and the other BR/LN with 4. British LN are drawn with 4 blocks in 109, 114-116 and 118; the base-game block count for BR/LN is in the base survey and has not been rechecked here. These are part of the setup and must be transcribed per unit.
 - **Mechanics:** Spanish Guerrilla Action counters (see below); Spanish Infantry in Square track (4 Spanish square counters in the box; the rule for 106 limits it to two units); 9 Spanish/French two-sided banner counters (116 needs a banner track to 9); the banner track pre-set with Spanish flags in 114 (one) and 117 (three); Swiss infantry rules; exit banners; sudden-death victory; Stewart's Folly; card-reveal move-first; hand reduction.
 - **Mixed armies on one side:** 109 (SP and BR), 114 (BR, SP, PT), 115 (BR, SP, PT), 116 (BR, PT, SP), 118 (SP and BR). All share one hand and one command; the page names the commander of the larger or senior force. The deployment sides are the map banner (Spanish or British).
