@@ -1,7 +1,7 @@
-// Terrain tables (RR §4.1–§4.4) and the table-driven terrain queries. T3 fills the stubs at the end.
+// Terrain tables (RR §4.1–§4.4) and the table-driven terrain queries.
 // Imports only codes, types, hex, rng, expansions, units.
 import type { Arm } from './codes';
-import { directionTo, areAdjacent, colOf, rowOf } from './hex';
+import { directionTo, areAdjacent, sidesCrossed } from './hex';
 import { statsOf, type UnitStats } from './units';
 import type { GameState, HexId, TerrainType, Unit } from './types';
 
@@ -106,28 +106,13 @@ export function noBattleAfterEntering(s: GameState, h: HexId, st: UnitStats): bo
 }
 
 // Battle queries (RR §4.2–§4.4).
-/** Unit vectors of the six hexsides (E, NE, NW, W, SW, SE) in the odd-r layout (x = c + half a hex on odd rows, y = r·√3/2). */
-const SIDE_VECTORS: readonly (readonly [number, number])[] = [[1, 0], [0.5, -Math.sqrt(3) / 2], [-0.5, -Math.sqrt(3) / 2], [-1, 0], [-0.5, Math.sqrt(3) / 2], [0.5, Math.sqrt(3) / 2]];
-const centre = (h: HexId): [number, number] => [colOf(h) + (rowOf(h) % 2 === 1 ? 0.5 : 0), (rowOf(h) * Math.sqrt(3)) / 2];
-
 /**
  * `other` lies in the closed 60° wedge of one of `worksHex`'s works sides: the angle between that side's direction and the
  * line from the works hex's centre to `other` is at most 30° ([Interp R46]).
  */
 export function worksAcross(s: GameState, worksHex: HexId, other: HexId): boolean {
   const mask = worksMask(s, worksHex);
-  if (mask === 0 || worksHex === other) return false;
-  const [dx, dy] = centre(worksHex);
-  const [ax, ay] = centre(other);
-  const vx = ax - dx;
-  const vy = ay - dy;
-  for (let i = 0; i < 6; i++) {
-    if ((mask & (1 << i)) === 0) continue;
-    const [sx, sy] = SIDE_VECTORS[i];
-    const angle = Math.atan2(Math.abs(sx * vy - sy * vx), sx * vx + sy * vy);
-    if (angle <= Math.PI / 6 + 1e-9) return true;
-  }
-  return false;
+  return mask !== 0 && sidesCrossed(worksHex, other).some((i) => (mask & (1 << i)) !== 0);
 }
 
 /** The hill relation of a battle from the battler's hex to the target's hex (RR §4.2), null when neither is a hill. */

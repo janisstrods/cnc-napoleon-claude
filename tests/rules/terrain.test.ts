@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { meleeDice, noBattleAfterEntering, passableFor, statsOf, stopsOnEntry, terrainReduction, worksAcross, worksFlagIgnore, worksForbidSquare } from '../../src/engine';
 import type { RowKey } from '../../src/engine';
-import { H, build, u, type Pos } from './helpers';
+import { H, build, duel, u, type Pos } from './helpers';
 
 type T = Omit<NonNullable<Pos['terrain']>[number], 'at'>;
 const I: RowKey = 'BR/LN';
@@ -118,6 +118,9 @@ describe('Field Works (§4.2, §4.4)', () => {
     // cavalry on a hill at (2,3) meleeing across W into (2,4): -2 + downhill -1 (R3)
     const s = build({ terrain: [...W006!, { at: [2, 3], t: 'hill' }], units: [{ side: 'bottom', key: C, at: [2, 3] }] });
     expect(terrainReduction(s, u(s, 'u1')!, 'melee', H(2, 3), H(2, 4))).toBe(-3);
+    // cavalry on the works hex meleeing out across a works side into a hill: works out -2 + uphill -1
+    const h2 = build({ terrain: [...W006!, { at: [2, 3], t: 'hill' }], units: [{ side: 'bottom', key: C, at: [2, 4] }] });
+    expect(terrainReduction(h2, u(h2, 'u1')!, 'melee', H(2, 4), H(2, 3))).toBe(-3);
   });
   const W005: Pos['terrain'] = [{ at: [2, 0], t: 'fieldworks', on: 'hill', sides: ['SE', 'E'] }];
   it('works on a hill replace the hill relation across a works side only (R45, R79, [Interp R79])', () => {
@@ -196,7 +199,9 @@ describe('§4.1 rows', () => {
 });
 
 describe('dice integration', () => {
-  it.todo('dice integration: cavalry into a town, infantry battles back out of it (§3.2 step 5) — needs T2 (rebase)');
+  it('dice integration: cavalry into a town, infantry battles back out of it (§3.2 step 5)', () => {
+    expect(duel('BR/HC', 'FR/LN', { defT: { t: 'town' } })).toEqual({ attack: 1, back: 4 });
+  });
   it('terrain never takes dice below 0 (§3.2 step 6)', () => {
     const s = build({
       units: [{ side: 'bottom', key: 'BR/LC', at: [5, 6], blocks: 1 }, { side: 'top', key: 'FR/LN', at: [4, 6] }],
