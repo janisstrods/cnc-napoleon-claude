@@ -37,7 +37,7 @@ const history: BattleHistory = {
       { kind: 'town', at: [120, 58], size: 28, label: 'Talavera' },
       { kind: 'redoubt', at: [350, 125], size: 22 },
       { kind: 'label', at: [790, 103], text: 'Cerro de Medellín' },
-      { kind: 'label', at: [955, 112], text: 'Segurilla' },
+      { kind: 'label', at: [930, 112], text: 'Segurilla' },
       { kind: 'label', at: [915, 374], text: 'Cerro de Cascajal' },
       { kind: 'farm', at: [905, 276], size: 12, label: 'Valdefuentes' },
     ],
