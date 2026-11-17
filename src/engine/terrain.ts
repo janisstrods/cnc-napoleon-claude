@@ -1,8 +1,8 @@
 // Terrain tables (RR §4.1–§4.4) and the table-driven terrain queries. T3 fills the stubs at the end.
 // Imports only codes, types, hex, rng, expansions, units.
 import type { Arm } from './codes';
-import { directionTo, areAdjacent } from './hex';
-import type { UnitStats } from './units';
+import { directionTo, areAdjacent, colOf, rowOf } from './hex';
+import { statsOf, type UnitStats } from './units';
 import type { GameState, HexId, TerrainType, Unit } from './types';
 
 export interface ArmValues { infantry: number; cavalry: number; artillery: number }
@@ -105,14 +105,62 @@ export function noBattleAfterEntering(s: GameState, h: HexId, st: UnitStats): bo
   return r === 'all' || (r === 'notLight' && !st.tags.includes('light'));
 }
 
-// Stubs, filled by T3.
-/** Stub: `other` is adjacent to `worksHex` across one of its works sides (RR §4.4's wedge comes with T3). */
+// Battle queries (RR §4.2–§4.4).
+/** Unit vectors of the six hexsides (E, NE, NW, W, SW, SE) in the odd-r layout (x = c + half a hex on odd rows, y = r·√3/2). */
+const SIDE_VECTORS: readonly (readonly [number, number])[] = [[1, 0], [0.5, -Math.sqrt(3) / 2], [-0.5, -Math.sqrt(3) / 2], [-1, 0], [-0.5, Math.sqrt(3) / 2], [0.5, Math.sqrt(3) / 2]];
+const centre = (h: HexId): [number, number] => [colOf(h) + (rowOf(h) % 2 === 1 ? 0.5 : 0), (rowOf(h) * Math.sqrt(3)) / 2];
+
+/**
+ * `other` lies in the closed 60° wedge of one of `worksHex`'s works sides: the angle between that side's direction and the
+ * line from the works hex's centre to `other` is at most 30° ([Interp R46]).
+ */
 export function worksAcross(s: GameState, worksHex: HexId, other: HexId): boolean {
-  return areAdjacent(worksHex, other) && (worksMask(s, worksHex) & (1 << directionTo(worksHex, other))) !== 0;
+  const mask = worksMask(s, worksHex);
+  if (mask === 0 || worksHex === other) return false;
+  const [dx, dy] = centre(worksHex);
+  const [ax, ay] = centre(other);
+  const vx = ax - dx;
+  const vy = ay - dy;
+  for (let i = 0; i < 6; i++) {
+    if ((mask & (1 << i)) === 0) continue;
+    const [sx, sy] = SIDE_VECTORS[i];
+    const angle = Math.atan2(Math.abs(sx * vy - sy * vx), sx * vx + sy * vy);
+    if (angle <= Math.PI / 6 + 1e-9) return true;
+  }
+  return false;
 }
-/** Stub: 0. */
-export function terrainReduction(_s: GameState, _battler: Unit, _kind: 'fire' | 'melee', _from: HexId, _to: HexId): number { return 0; }
-/** Stub: 0. */
-export function worksFlagIgnore(_s: GameState, _target: Unit, _attackerHex: HexId): number { return 0; }
-/** Stub: false. */
-export function worksForbidSquare(_s: GameState, _target: Unit, _attackerHex: HexId): boolean { return false; }
+
+/** The hill relation of a battle from the battler's hex to the target's hex (RR §4.2), null when neither is a hill. */
+export function hillRelation(s: GameState, from: HexId, to: HexId): 'uphill' | 'downhill' | 'hillToHill' | null {
+  const f = isHill(s, from);
+  const t = isHill(s, to);
+  if (f && t) return 'hillToHill';
+  if (t) return 'uphill';
+  if (f) return 'downhill';
+  return null;
+}
+
+/**
+ * Terrain reduction (≤ 0) of `battler` battling from `from` to `to`: out of `from` + into `to` + the hill relation, each for
+ * the battler's arm (R3). A works hex gives its works values only across a works side, and then they replace the hill
+ * relation (R45, R79); otherwise only its base terrain counts.
+ */
+export function terrainReduction(s: GameState, battler: Unit, kind: 'fire' | 'melee', from: HexId, to: HexId): number {
+  const arm = statsOf(s, battler).arm;
+  const worksOut = worksAcross(s, from, to);
+  const worksIn = worksAcross(s, to, from);
+  const out = (worksOut ? WORKS.out : TERRAIN_STATS[terrainAt(s, from)].out)[kind][arm];
+  const into = (worksIn ? WORKS.into : TERRAIN_STATS[terrainAt(s, to)].into)[kind][arm];
+  const rel = (worksOut && isHill(s, from)) || (worksIn && isHill(s, to)) ? null : hillRelation(s, from, to);
+  return out + into + (rel ? HILL_RELATION[rel][kind][arm] : 0);
+}
+
+/** Flags the target ignores because of works between it and the attacker (infantry and artillery, across a works side). */
+export function worksFlagIgnore(s: GameState, target: Unit, attackerHex: HexId): number {
+  return worksAcross(s, target.hex, attackerHex) ? WORKS.flagIgnore[statsOf(s, target).arm] : 0;
+}
+
+/** No square across a works side (R70). */
+export function worksForbidSquare(s: GameState, target: Unit, attackerHex: HexId): boolean {
+  return worksAcross(s, target.hex, attackerHex);
+}
