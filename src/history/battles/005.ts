@@ -8,7 +8,7 @@ const history: BattleHistory = {
     war: 'Peninsular War, 1807–1814',
     text: [
       "In July 1809 Sir Arthur Wellesley marched up the Tagus valley from Portugal with about 20,000 British troops to join General Cuesta's Spanish army and threaten Madrid. Joseph Bonaparte, King of Spain, gathered the corps of Victor and Sebastiani and his Madrid reserve to meet them.",
-      "On 27 July the allies fell back from the Alberche to a position at Talavera. The Spaniards held the town and the olive groves beside it, and the British stood on open ground to the north, ending on the Cerro de Medellin. Victor attacked the Cerro in the dark, and again at dawn on the 28th.",
+      "On 27 July the allies fell back from the Alberche to a position at Talavera. The Spaniards held the town and the olive groves beside it, and the British stood on open ground to the north, ending on the Cerro de Medellín. Victor attacked the Cerro in the dark, and again at dawn on the 28th.",
     ],
   },
   sides: {
@@ -22,7 +22,7 @@ const history: BattleHistory = {
       name: 'French army of King Joseph',
       commanders: ['King Joseph Bonaparte', 'Marshal Jourdan (chief of staff)', 'Marshal Victor (1st Corps)', 'General Sebastiani (4th Corps)'],
       strength: 'c. 46,000 (Oman); Napier says nearly 50,000, with 80 guns',
-      forces: 'Five infantry divisions in the attack, with German and Polish allies, strong cavalry and a small reserve.',
+      forces: 'Five infantry divisions (one German) in the attack, a Polish division and the King’s reserve behind, and strong cavalry.',
     },
   },
   map: {
@@ -37,9 +37,9 @@ const history: BattleHistory = {
       { kind: 'town', at: [120, 58], size: 28, label: 'Talavera' },
       { kind: 'redoubt', at: [350, 125], size: 22 },
       { kind: 'label', at: [790, 103], text: 'Cerro de Medellín' },
-      { kind: 'label', at: [968, 242], text: 'Segurilla' },
+      { kind: 'label', at: [955, 112], text: 'Segurilla' },
       { kind: 'label', at: [915, 374], text: 'Cerro de Cascajal' },
-      { kind: 'farm', at: [935, 258], size: 12, label: 'Valdefuentes' },
+      { kind: 'farm', at: [905, 276], size: 12, label: 'Valdefuentes' },
     ],
     units: [
       { id: 'spanish', side: 'top', kind: 'infantry', label: 'Spaniards (Cuesta)', w: 230, h: 32 },
@@ -70,7 +70,7 @@ const history: BattleHistory = {
     phases: [
       {
         title: 'Dawn: Ruffin attacks the Cerro',
-        caption: 'After a confused night fight for the Cerro de Medellin, Victor’s guns open at about five and Ruffin’s nine battalions climb the hill. Hill’s brigades volley and charge; Ruffin loses perhaps 1,300 men and falls back.',
+        caption: 'After a confused night fight for the Cerro de Medellín, Victor’s guns open at about five and Ruffin’s nine battalions climb the hill. Hill’s brigades volley and charge; Ruffin loses perhaps 1,300 men and falls back.',
         at: {
           spanish: [215, 132],
           pajar: [350, 125],
@@ -141,10 +141,10 @@ const history: BattleHistory = {
       },
       {
         title: 'Anson’s charge, French withdraw',
-        caption: 'In the northern valley the 23rd Light Dragoons and German light dragoons charge Ruffin’s squares and fall into a hidden ravine; the 23rd lose nearly half their men. By dusk the French fall back, and Victor leaves at three in the morning.',
+        caption: 'In the northern valley the 23rd Light Dragoons and German light dragoons charge the French squares and fall into a hidden ravine; the 23rd lose nearly half their men. By dusk the French fall back, and Victor leaves at three in the morning.',
         at: {
           anson: [890, 205],
-          ruffin: [850, 292],
+          ruffin: [825, 302],
           villatte: [790, 335],
         },
         broken: ['anson'],
@@ -168,7 +168,7 @@ const history: BattleHistory = {
   },
   sources: [
     'Charles Oman, A History of the Peninsular War, vol. 2 (1903), pp. 507–57 and the retreat that followed',
-    'W. F. P. Napier, History of the War in the Peninsula, vol. 2, Book VIII, chap. 2 (the battle of Talavera)',
+    'W. F. P. Napier, History of the War in the Peninsula, vol. 2 (1829), Book IX, chap. 2 (the battle of Talavera)',
   ],
 };
 

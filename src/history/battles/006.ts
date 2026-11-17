@@ -16,7 +16,7 @@ const history: BattleHistory = {
       name: 'Anglo-Portuguese Light Division',
       commanders: ['Robert Craufurd (commanding)', 'Colonel Sydney Beckwith (95th Rifles)'],
       strength: 'about 4,000 (Oman); Napier: 4,000 infantry, 1,100 horse, six guns',
-      forces: '1/43rd, 1/52nd, 1/95th, two Portuguese Caçadore battalions, cavalry including German hussars, and horse artillery.',
+      forces: '1/43rd, 1/52nd, 1/95th, two Portuguese Caçador battalions, cavalry including German hussars, and horse artillery.',
     },
     bottom: {
       name: 'French 6th Corps and cavalry',
@@ -35,7 +35,7 @@ const history: BattleHistory = {
       { kind: 'road', points: [[960, 590], [900, 380], [850, 112]], label: 'to Ciudad Rodrigo' },
       { kind: 'town', at: [850, 80], size: 30, label: 'Almeida' },
       { kind: 'label', at: [190, 38], text: 'Bridge' },
-      { kind: 'label', at: [285, 168], text: 'Pine knoll' },
+      { kind: 'label', at: [300, 190], text: 'Pine knoll' },
       { kind: 'label', at: [690, 305], text: 'Walled fields' },
     ],
     units: [
@@ -129,11 +129,11 @@ const history: BattleHistory = {
         title: 'Ney storms the bridge',
         caption: 'Ney sends the 66th, then an elite chasseur battalion, against the bridge. Riflemen, Caçadores and guns across the gorge shoot them down and the chasseurs lose most of their men. Craufurd holds until midnight, then retires to Pinhel.',
         at: {
-          d43: [48, 130],
-          d95: [48, 168],
-          d52: [48, 206],
-          cacad: [48, 244],
-          rha: [40, 86],
+          d43: [38, 132],
+          d95: [38, 170],
+          d52: [38, 208],
+          cacad: [38, 246],
+          rha: [36, 90],
           f66: [270, 118],
           chass: [232, 100],
           loison: [345, 160],
@@ -147,9 +147,9 @@ const history: BattleHistory = {
     ],
   },
   outcome: {
-    winner: 'draw',
-    result: 'Indecisive: the Light Division escapes, but Almeida is cut off',
-    losses: 'Allies about 316 to 333; French 527 by Oman’s count, over 1,000 by Napier’s, most of them at the bridge.',
+    winner: 'bottom',
+    result: 'French tactical success: Craufurd is driven over the Côa, but Ney’s attacks on the bridge fail',
+    losses: 'Allies about 310 to 333; French 527 by Oman’s count, over 1,000 by Napier’s, most of them at the bridge.',
     text: [
       "Wellington had forbidden the fight and was displeased, though he kept his confidence in Craufurd. Picton, at Pinhel, is said to have refused to bring up the 3rd Division, and the two generals quarrelled; the story was disputed. Massena's report claimed a far greater success than the day had brought.",
       "The French invested Almeida. On 26 August a magazine exploded inside the fortress, and the governor surrendered the next day. Wellington could not relieve the place, and Massena advanced into Portugal, towards Bussaco.",
@@ -157,7 +157,7 @@ const history: BattleHistory = {
   },
   sources: [
     'Charles Oman, A History of the Peninsular War, vol. 3 (1908), pp. 257–66 and 272–75',
-    'W. F. P. Napier, History of the War in the Peninsula, vol. 2, Book XI, chap. 4 (combat of the Côa)',
+    'W. F. P. Napier, History of the War in the Peninsula, vol. 3 (1831), Book XI, chap. 4 (combat of the Côa)',
   ],
 };
 

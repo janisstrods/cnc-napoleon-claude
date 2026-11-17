@@ -20,14 +20,14 @@ const history: BattleHistory = {
     bottom: {
       name: 'French 2nd Corps',
       commanders: ['Marshal Soult (commanding)', 'Mermet (left)', 'Merle (centre)', 'Delaborde (right)'],
-      strength: 'c. 16,000 to 20,000, with strong cavalry; sources differ widely',
+      strength: 'c. 16,000 to over 20,000 (Oman over 20,000); sources differ',
       forces: 'Three infantry divisions, three cavalry divisions and a battery of ten or eleven heavy guns.',
     },
   },
   map: {
     north: 0,
     terrain: [
-      { kind: 'hills', points: [[250, 70], [560, 50], [860, 70], [880, 170], [560, 185], [270, 190]] },
+      { kind: 'hills', points: [[250, 70], [560, 50], [860, 70], [890, 200], [870, 262], [560, 268], [260, 262], [245, 190]] },
       { kind: 'hills', points: [[20, 240], [165, 250], [185, 400], [30, 410]] },
       { kind: 'hills', points: [[190, 440], [500, 405], [890, 425], [910, 610], [170, 610]] },
       { kind: 'river', points: [[945, -20], [965, 160], [935, 330], [965, 500], [945, 620]], width: 18, label: 'Mero' },
@@ -80,7 +80,7 @@ const history: BattleHistory = {
       },
       {
         title: 'Soult attacks, about 2 pm',
-        caption: "At about two the French battery opens and Mermet's columns take Elviña. Baird is wounded; Moore sends the 42nd and 50th forward. Paget marches out westward to meet the cavalry and Mermet's flanking brigade, with Fraser close behind.",
+        caption: "At about two the French battery opens and Mermet's columns take Elviña. Baird is wounded; Moore sends the 42nd and 50th forward. Paget marches out westward to meet the cavalry and Mermet's flanking brigade, while Fraser comes out to cover the neck of the peninsula.",
         at: {
           mermet: [345, 378],
           lahou: [155, 360],
@@ -142,10 +142,10 @@ const history: BattleHistory = {
   outcome: {
     winner: 'top',
     result: 'The British beat off Soult and embark, but Moore dies',
-    losses: 'British perhaps 700 to 900 killed and wounded; French uncertain, about 900 to 1,500 (Oman 1,500; Napier’s 3,000 is thought too high).',
+    losses: 'British perhaps 700 to 900 killed and wounded; French uncertain, about 900 to 1,500 (Oman 1,500; Napier heard 3,000 from French officers but thought it exaggerated).',
     text: [
       "Moore lived long enough to learn that the attack had failed. He was buried on the ramparts of Corunna at dawn on the 17th. Four transports ran aground when Soult's guns opened on the harbour; the rearguard sailed on the 18th.",
-      "The retreat had cost the army perhaps 5,000 men. Soult took Corunna and Ferrol, then turned towards Portugal, while Napoleon went home to face Austria. Opinion in Britain was at first harsh on Moore, but Oman held that the battle redeemed the army's honour.",
+      "The retreat had cost the army perhaps 5,000 men. Soult took Corunna and Ferrol, then turned towards Portugal, while Napoleon went home to face Austria. Opinion in Britain was at first harsh on Moore; Oman, writing ninety years on, judged his campaign favourably on the whole while faulting the headlong retreat.",
     ],
   },
   sources: [
