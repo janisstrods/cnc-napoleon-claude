@@ -25,7 +25,7 @@ export function UnitBadge({ unitKey, blocks, maxBlocks, guard }: { unitKey: ArtK
   const code = codeOf(unitKey);
   const arm = ARM_OF[code];
   const cyB = 30.8;
-  const pw = 4.6;
+  const pw = maxBlocks > 4 ? 3.9 : 4.6; // five pips must clear the code text
   const right = 19.4;
   const pips: JSX.Element[] = [];
   for (let k = 0; k < maxBlocks; k++) {

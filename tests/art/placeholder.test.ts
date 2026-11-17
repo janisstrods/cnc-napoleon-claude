@@ -1,5 +1,5 @@
-// The placeholder figures: a simple, deterministic drawing for every unit row and nation until Plan 6B wires the Napoleonic
-// art (src/art/nap) into src/art/token.tsx.
+// The placeholder figures: a simple, deterministic drawing for every unit row and nation for keys without Napoleonic art (SP); the
+// art keys are covered by tests/art/nap/wiring.test.ts.
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
@@ -21,11 +21,11 @@ describe('placeholder figures', () => {
   });
 
   it('draws one figure per remaining block', () => {
-    const fig = (blocks: number) => renderToStaticMarkup(createElement(UnitToken, { unitKey: 'FR/LN', nation: 'FR', blocks, maxBlocks: 4, facing: 'right' })).split('data-figure').length - 1;
+    const fig = (blocks: number) => renderToStaticMarkup(createElement(UnitToken, { unitKey: 'SP/LN', nation: 'SP', blocks, maxBlocks: 4, facing: 'right' })).split('data-figure').length - 1;
     expect([1, 2, 3, 4].map(fig)).toEqual([1, 2, 3, 4]);
-    const five = (k: 'BR/LT' | 'BR/FA', blocks: number) => renderToStaticMarkup(createElement(UnitToken, { unitKey: k, nation: 'BR', blocks, maxBlocks: 5, facing: 'right' })).split('data-figure').length - 1;
-    expect(five('BR/LT', 5)).toBe(5);
-    expect(five('BR/FA', 5)).toBe(5);
+    const five = (k: 'SP/LT' | 'SP/FA', blocks: number) => renderToStaticMarkup(createElement(UnitToken, { unitKey: k, nation: 'SP', blocks, maxBlocks: 5, facing: 'right' })).split('data-figure').length - 1;
+    expect(five('SP/LT', 5)).toBe(5);
+    expect(five('SP/FA', 5)).toBe(5);
   });
 
   it('placeholder figures follow the arm', () => {
@@ -49,6 +49,6 @@ describe('placeholder figures', () => {
         expect(html).not.toContain('NaN');
       }
     }
-    expect(LEADER_ATTACH_OFFSET).toEqual({ x: 29, y: -28 });
+    expect(LEADER_ATTACH_OFFSET).toEqual({ x: -23.5, y: 27 }); // the Napoleonic art's offset (left end of the badge)
   });
 });

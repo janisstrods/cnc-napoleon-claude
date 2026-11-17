@@ -1,10 +1,10 @@
-// Placeholder unit tokens: a base plate in the nation's colour, one primitive silhouette per remaining block (a foot
-// soldier, a horseman or a gun), and the arm badge. Plan 6B Task 7 replaces the bodies with the Napoleonic art (src/art/nap);
-// the props stay. The token is centred on (0,0) of a pointy-top hex of radius 50; its top-right corner is kept clear for an
-// attached leader (LEADER_ATTACH_OFFSET).
+// Unit tokens. Keys with Napoleonic art (src/art/nap) are drawn by NapUnitToken; the code below is the placeholder that
+// remains for the rest (SP): a base plate in the nation's colour, one primitive silhouette per remaining block, and the arm
+// badge. The token is centred on (0,0) of a pointy-top hex of radius 50; an attached leader's medallion sits on the left end
+// of the badge (LEADER_ATTACH_OFFSET).
 import { memo } from 'react';
 import { ARM_OF, codeOf, type Nation, type UnitKey } from '../engine/codes';
-import { ArmGlyph } from './nap';
+import { ArmGlyph, NapUnitToken, isArtKey } from './nap';
 import { BASE_TOP, blockColors, type SideColors } from './palettes';
 import { darken } from './color';
 
@@ -77,6 +77,7 @@ function Figure({ kind, side }: { kind: Kind; side: SideColors }) {
 }
 
 function UnitTokenImpl({ unitKey, nation, blocks, maxBlocks, facing, dimmed }: UnitTokenProps) {
+  if (isArtKey(unitKey)) return <NapUnitToken unitKey={unitKey} blocks={blocks} maxBlocks={maxBlocks} facing={facing} dimmed={dimmed} />;
   const side = blockColors(nation);
   const kind = figureKind(unitKey);
   const slots = SLOTS[kind];
