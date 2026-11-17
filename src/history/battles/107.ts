@@ -1,0 +1,142 @@
+// 107 Alcañiz, 23 May 1809. Top: Blake's Spanish Army of the Right; bottom: Suchet's French III Corps.
+// The map shows the Spaniards at the top facing the French; the Guadalope runs along the top edge behind the three Spanish hills (Pueyos, Las Horcas,
+// La Perdiguera), with Areizaga on the Pueyos at the left as on the scenario board. Sources differ on which side of Alcañiz the hills lay (Oman says east,
+// Spanish accounts north-west), so the map has no compass. Distances and unit places are schematic.
+import type { BattleHistory } from '../types';
+
+const history: BattleHistory = {
+  id: '107',
+  date: '23 May 1809',
+  context: {
+    war: 'Peninsular War: the Spanish risings, 1809',
+    text: [
+      "After Zaragoza fell in February 1809, Aragon was held by Suchet's III Corps, but risings and a new Spanish field force pressed its outposts back. General Blake, newly given command of the forces of Aragon, Valencia and Catalonia, gathered an 'Army of the Right' and seized Alcañiz, south of the Ebro.",
+      "Suchet reached Zaragoza on 19 May and took over from Junot a corps that was short of pay and confidence. On 21 May he took Musnier's division out to meet Laval's brigade, and on 23 May he found Blake on three hills beside Alcañiz (east of the town in Oman; other accounts say west), the Guadalope behind him.",
+    ],
+  },
+  sides: {
+    top: {
+      name: 'Spanish Army of the Right',
+      commanders: ['Blake (commanding)', 'Areizaga (Pueyos, Aragonese)', 'Lazan (Las Horcas)', 'Roca (La Perdiguera)'],
+      strength: 'c. 8,700 with 19 guns (Oman); Napier, after French sources, 12,000',
+      forces: 'Aragonese and Valencian infantry in three wings, about 450 cavalry, and the whole artillery on the central hill.',
+    },
+    bottom: {
+      name: 'French III Corps (Army of Aragon)',
+      commanders: ['Suchet (commanding, new to the corps)', 'Musnier (division)', 'Laval (brigade)'],
+      strength: 'c. 8,100 with 18 guns (Suchet’s return, as given by Oman)',
+      forces: 'Thirteen battalions (114th, 115th, 121st and 14th Line, 1st and 3rd Vistula), an escort detachment, the 4th Hussars and half the 13th Cuirassiers.',
+    },
+  },
+  map: {
+    terrain: [
+      { kind: 'river', points: [[1040, 36], [750, 26], [400, 34], [-40, 28]], width: 18, label: 'Guadalope' },
+      { kind: 'hills', points: [[930, 92], [700, 88], [680, 215], [820, 255], [940, 235]] },
+      { kind: 'hills', points: [[655, 95], [455, 92], [440, 205], [650, 215]] },
+      { kind: 'hills', points: [[300, 90], [80, 88], [40, 160], [70, 235], [280, 238]] },
+      { kind: 'town', at: [555, 56], size: 24, label: 'Alcañiz' },
+      { kind: 'label', at: [765, 218], text: 'La Perdiguera' },
+      { kind: 'label', at: [415, 222], text: 'Las Horcas' },
+      { kind: 'label', at: [185, 224], text: 'Cerro de los Pueyos' },
+      { kind: 'label', at: [75, 575], text: 'To Híjar' },
+    ],
+    units: [
+      { id: 'roca', side: 'top', kind: 'infantry', label: 'Roca (La Perdiguera)', w: 130, h: 30 },
+      { id: 'scav', side: 'top', kind: 'cavalry', label: 'Spanish cavalry', w: 64 },
+      { id: 'guns', side: 'top', kind: 'artillery', label: 'Spanish guns (19)', w: 50 },
+      { id: 'lazan', side: 'top', kind: 'infantry', label: 'Lazan (centre)', w: 100, h: 30 },
+      { id: 'areiz', side: 'top', kind: 'infantry', label: 'Areizaga (Pueyos)', w: 130, h: 30 },
+      { id: 'laval', side: 'bottom', kind: 'infantry', label: "Laval's brigade", w: 110, h: 30 },
+      { id: 'hus', side: 'bottom', kind: 'cavalry', label: '4th Hussars', w: 64 },
+      { id: 'm114', side: 'bottom', kind: 'infantry', label: '114th Line', w: 100, h: 30 },
+      { id: 'm1v', side: 'bottom', kind: 'infantry', label: '1st Vistula', w: 80, h: 30 },
+      { id: 'm115', side: 'bottom', kind: 'infantry', label: '115th and 121st', w: 100, h: 30 },
+      { id: 'cuir', side: 'bottom', kind: 'heavycavalry', label: '13th Cuirassiers', w: 64 },
+      { id: 'fguns', side: 'bottom', kind: 'artillery', label: 'French guns (18)', w: 50 },
+    ],
+    phases: [
+      {
+        title: 'Three hills, one bridge',
+        caption: "Blake holds three hills with his back to the river and a single bridge. Suchet, short of men, spends the morning feeling for the position, then sends Laval's brigade twice against the northern hill, the Cerro de los Pueyos.",
+        at: {
+          roca: [810, 165],
+          scav: [910, 225],
+          guns: [560, 150],
+          lazan: [560, 190],
+          areiz: [190, 165],
+          laval: [210, 410],
+          hus: [95, 470],
+          m114: [530, 455],
+          m1v: [405, 455],
+          m115: [660, 465],
+          cuir: [750, 520],
+          fguns: [470, 520],
+        },
+        arrows: [
+          { side: 'bottom', points: [[210, 385], [200, 320], [195, 215]] },
+        ],
+      },
+      {
+        title: 'The northern hill holds',
+        caption: "Areizaga throws Laval back without great difficulty. Blake sends all his cavalry to that flank, but when the French retire the Spanish horse tries a flank charge and is cut up by Suchet's hussars.",
+        at: {
+          laval: [230, 335],
+          scav: [110, 290],
+          hus: [75, 360],
+        },
+        broken: ['scav'],
+        arrows: [
+          { side: 'bottom', points: [[195, 225], [210, 280], [225, 320]], style: 'retreat' },
+          { side: 'top', points: [[870, 235], [530, 270], [150, 290]] },
+          { side: 'bottom', points: [[65, 420], [75, 385]] },
+        ],
+      },
+      {
+        title: "Musnier's columns break",
+        caption: "Suchet then sends two regiments, over 2,600 men in battalion columns, up Las Horcas. Grapeshot from the guns and musketry from Areizaga's hill halt them at a ditch on the slope, and they break and flee.",
+        at: {
+          m114: [560, 262],
+          m1v: [450, 265],
+        },
+        broken: ['m114', 'm1v'],
+        arrows: [
+          { side: 'bottom', points: [[530, 420], [545, 330], [555, 265]] },
+          { side: 'bottom', points: [[405, 420], [425, 335], [445, 270]] },
+          { side: 'top', points: [[260, 160], [340, 215], [410, 245]] },
+        ],
+      },
+      {
+        title: 'Night panic',
+        caption: "Suchet rallies his men behind the battalions still intact and draws off before night. A false alarm of Spanish cavalry then scatters Laval's troops, and the next morning the corps streams back through San Per to Híjar, and Blake does not pursue.",
+        at: {
+          m114: [360, 450],
+          m1v: [260, 490],
+          m115: [460, 478],
+          laval: [100, 440],
+          hus: [60, 475],
+          cuir: [600, 545],
+          fguns: [400, 560],
+        },
+        arrows: [
+          { side: 'bottom', points: [[400, 425], [240, 400], [120, 395]], style: 'retreat' },
+          { side: 'bottom', points: [[560, 530], [360, 535], [150, 535]], style: 'retreat' },
+        ],
+      },
+    ],
+  },
+  outcome: {
+    winner: 'top',
+    result: "Spanish victory; Suchet's corps falls back on Híjar",
+    losses: 'French at least 700 or 800, with Suchet wounded in the foot; Spanish about 300 (Oman).',
+    text: [
+      "Blake did not follow up. He had few cavalry, thought Suchet nearly as strong as himself, and awaited reinforcements from Valencia. The French gave up their outlying posts, and recruits flocked to him in thousands, more than he could arm.",
+      "Within three weeks he had about 25,000 men on the rolls and marched on Zaragoza by Belchite. Suchet turned on him at María (108) on 15 June, and routed him at Belchite on 18 June. Suchet's own memoirs, Oman remarks, slur over the defeat.",
+    ],
+  },
+  sources: [
+    'Charles Oman, A History of the Peninsular War, vol. 2 (1903), section XV, ch. 3: Alcañiz at pp. 417–20 (order of battle in notes 518–19)',
+    'W. F. P. Napier, History of the War in the Peninsula, vol. 2 (1829), Book V, ch. 5, pp. 97–100 (battle of Alcanitz)',
+  ],
+};
+
+export default history;

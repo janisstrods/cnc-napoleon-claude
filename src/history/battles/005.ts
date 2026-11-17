@@ -104,7 +104,7 @@ const history: BattleHistory = {
       },
       {
         title: 'The grand attack begins',
-        caption: 'About 2 pm eighty French guns open, and the infantry advance. Leval’s Germans come on first against Campbell and the Spaniards by the Pajar de Vergara redoubt, and are driven back, leaving seventeen guns behind.',
+        caption: 'About 2 pm eighty French guns open, and the infantry advance. Leval’s Germans come on first against Campbell and the Spaniards by the Pajar de Vergara redoubt, and are driven back, abandoning a battery; by evening Leval has lost seventeen guns.',
         at: {
           leval: [420, 195],
           sebast: [540, 195],

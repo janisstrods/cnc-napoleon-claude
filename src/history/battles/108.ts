@@ -1,0 +1,148 @@
+// 108 María, 15 June 1809. Top: Blake's Spanish Army of the Right (two divisions); bottom: Suchet's French III Corps.
+// The map is schematic and has no compass: the Huerba runs down the left edge with María at the top left and the abbey of Santa Fe behind the French
+// at the lower left; the Spaniards hold hill spurs above the plain and the French a lower line of heights.
+import type { BattleHistory } from '../types';
+
+const history: BattleHistory = {
+  id: '108',
+  date: '15 June 1809',
+  context: {
+    war: 'Peninsular War: the Spanish risings, 1809',
+    text: [
+      "After Alcañiz (107), Valencian reinforcements swelled Blake's army to about 25,000 on the rolls. He kept to the hills rather than cross the open plain, and by mid-June he was marching down the valley of the Huerba to threaten Suchet's communications and force him out of Zaragoza.",
+      "Suchet feared defeat but would not abandon the city. On 14 June he made the Abbey of Santa Fe his headquarters. He learnt that Blake's army had split, with Areizaga's division on the far bank at Botorrita, and attacked the main body at María next day.",
+    ],
+  },
+  sides: {
+    top: {
+      name: 'Spanish Army of the Right',
+      commanders: ['Blake (commanding)', 'Roca (division)', 'Lazan (division)', 'Areizaga (division, absent)'],
+      strength: 'c. 13,000 present, of 20,000 in line; some 25 guns in all (Oman)',
+      forces: "Roca's and Lazan's mainly Valencian divisions on hill spurs, about 600 cavalry beside the river, and guns in the line.",
+    },
+    bottom: {
+      name: 'French III Corps (Army of Aragon)',
+      commanders: ['Suchet (commanding)', 'Musnier (division)', 'Habert (brigade)', 'Wathier (cavalry)'],
+      strength: 'c. 9,000 engaged, with 12 guns; 3,000 more came up late (Oman)',
+      forces: 'Fourteen battalions of Musnier and Habert, about 800 horse (hussars, cuirassiers, a squadron of Polish lancers) and the corps artillery.',
+    },
+  },
+  map: {
+    terrain: [
+      { kind: 'river', points: [[55, -30], [85, 150], [65, 330], [95, 480], [70, 640]], width: 14, label: 'Huerba' },
+      { kind: 'hills', points: [[250, 40], [900, 48], [940, 110], [260, 112]] },
+      { kind: 'hills', points: [[230, 150], [640, 142], [760, 170], [940, 160], [955, 240], [600, 248], [240, 242]] },
+      { kind: 'hills', points: [[250, 365], [700, 355], [950, 380], [960, 435], [260, 435]] },
+      { kind: 'road', points: [[110, 95], [140, 300], [125, 500], [130, 650]] },
+      { kind: 'town', at: [105, 62], size: 16, label: 'María' },
+      { kind: 'town', at: [112, 548], size: 18, label: 'Abbey of Santa Fe' },
+      { kind: 'label', at: [560, 20], text: 'Areizaga is six or seven miles off, at Botorrita' },
+      { kind: 'label', at: [480, 585], text: 'To Zaragoza' },
+    ],
+    units: [
+      { id: 'roca', side: 'top', kind: 'infantry', label: 'Roca (front line)', w: 150, h: 30 },
+      { id: 'lazan', side: 'top', kind: 'infantry', label: 'Lazan (second line)', w: 140, h: 30 },
+      { id: 'sguns', side: 'top', kind: 'artillery', label: 'Spanish guns', w: 46 },
+      { id: 'scav', side: 'top', kind: 'cavalry', label: "O'Donoju's horse", w: 70 },
+      { id: 'sres', side: 'top', kind: 'infantry', label: 'Reserve at María', w: 70, h: 28 },
+      { id: 'skirm', side: 'top', kind: 'light', label: 'Skirmishers', w: 70 },
+      { id: 'sleft', side: 'top', kind: 'infantry', label: 'Spanish left wing', w: 100, h: 30 },
+      { id: 'habert', side: 'bottom', kind: 'infantry', label: "Habert's brigade", w: 110, h: 30 },
+      { id: 'musnier', side: 'bottom', kind: 'infantry', label: "Musnier's division", w: 170, h: 32 },
+      { id: 'm114', side: 'bottom', kind: 'infantry', label: '114th Line', w: 80, h: 28 },
+      { id: 'lancers', side: 'bottom', kind: 'cavalry', label: 'Polish lancers', w: 60 },
+      { id: 'hus', side: 'bottom', kind: 'cavalry', label: '4th Hussars', w: 64 },
+      { id: 'cuir', side: 'bottom', kind: 'heavycavalry', label: '13th Cuirassiers', w: 64 },
+      { id: 'fguns', side: 'bottom', kind: 'artillery', label: 'French guns', w: 46 },
+      { id: 'fres', side: 'bottom', kind: 'infantry', label: '5th Léger, 64th', w: 80, h: 28 },
+      { id: 'robert', side: 'bottom', kind: 'infantry', label: "Robert's brigade", w: 100, h: 30 },
+    ],
+    phases: [
+      {
+        title: 'Skirmishing in the morning',
+        caption: "Blake's two divisions hold the ridges above María, his cavalry beside the river. Spanish skirmishers and some dragoons press Habert's brigade until a French battery is brought forward and drives them off. Suchet holds back, waiting for his reinforcements.",
+        at: {
+          roca: [520, 195],
+          lazan: [560, 95],
+          sguns: [420, 190],
+          scav: [190, 235],
+          sres: [205, 150],
+          skirm: [330, 290],
+          habert: [235, 405],
+          musnier: [600, 400],
+          m114: [800, 410],
+          lancers: [915, 405],
+          hus: [190, 480],
+          cuir: [280, 505],
+          fguns: [420, 440],
+          fres: [480, 500],
+        },
+        arrows: [{ side: 'top', points: [[330, 262], [285, 330], [250, 380]] }],
+      },
+      {
+        title: "Blake's left thrown back",
+        caption: "Between one and two o'clock Spanish battalions come down from Blake's left to turn the French right. Suchet's Polish lancers charge them in the flank, the 114th and voltigeurs meet them in front, and they fall back to the ridge.",
+        at: {
+          sleft: [860, 270],
+          m114: [815, 335],
+          lancers: [920, 330],
+        },
+        gone: ['skirm'],
+        arrows: [
+          { side: 'top', points: [[860, 205], [860, 245]] },
+          { side: 'bottom', points: [[925, 385], [915, 345]] },
+          { side: 'bottom', points: [[800, 385], [815, 350]] },
+        ],
+      },
+      {
+        title: "Musnier's attack; hailstorm",
+        caption: "Between two and three o'clock Musnier's eight battalions storm the Spanish ridge. Roca's men hold, and Suchet commits half his reserve. A hailstorm halts everything for half an hour, and Robert's brigade reaches the abbey.",
+        at: {
+          sleft: [880, 190],
+          musnier: [520, 295],
+          m114: [740, 300],
+          fres: [490, 375],
+          robert: [245, 560],
+        },
+        arrows: [
+          { side: 'bottom', points: [[540, 390], [532, 350], [526, 322]] },
+          { side: 'bottom', points: [[760, 370], [752, 345], [745, 322]] },
+        ],
+      },
+      {
+        title: "Wathier's cavalry charge",
+        caption: "Habert advances beside the river and the hussars and cuirassiers charge through his intervals. O'Donoju's horse flees without crossing sabres, and the reserve at María is ridden down. Blake throws back his right and retires over the hills, leaving all but two guns.",
+        at: {
+          habert: [215, 305],
+          hus: [185, 215],
+          cuir: [265, 190],
+          sres: [205, 150],
+          roca: [560, 165],
+          lazan: [620, 80],
+        },
+        broken: ['sres'],
+        gone: ['scav', 'sguns'],
+        arrows: [
+          { side: 'bottom', points: [[190, 440], [175, 330], [165, 215], [150, 150]] },
+          { side: 'bottom', points: [[250, 410], [230, 350], [220, 320]] },
+          { side: 'top', points: [[640, 100], [700, 50], [760, 30]], style: 'retreat' },
+        ],
+      },
+    ],
+  },
+  outcome: {
+    winner: 'bottom',
+    result: 'French victory; Blake driven off the field',
+    losses: 'Spanish about 1,000 killed, thousands wounded and nearly all their guns (Oman). Suchet gave 700–800; Napier says nearly 1,000.',
+    text: [
+      "Blake's men left in good order and rejoined Areizaga at Botorrita. Suchet's attempts next day to turn both flanks failed, and Blake retired on Belchite. There, on 18 June, an exploding caisson set off a panic and the army scattered, losing its remaining guns and magazines.",
+      "Of 25,000 men on the rolls on 1 June, not 10,000 were usable a month later (Oman). Suchet, now master of the plains of Aragon, took Caspe on 23 June. Oman blames Blake for fighting at María with two-thirds of his army.",
+    ],
+  },
+  sources: [
+    'Charles Oman, A History of the Peninsular War, vol. 2 (1903), section XV, ch. 3: María at pp. 423–8, Belchite pp. 429–30',
+    'W. F. P. Napier, History of the War in the Peninsula, vol. 2 (1829), Book VIII, ch. 3, pp. 329–32 (María and Belchite)',
+  ],
+};
+
+export default history;
