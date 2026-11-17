@@ -1,6 +1,7 @@
 // The 70 Command cards (RR §12.1–§12.2): the table and its pure helpers. The skeleton draw, effective-card and battle-ban hooks are at the end (logic in T11 / T12a).
 // Imports only codes, types, hex, rng, expansions, units, terrain, query.
-import { other } from './query';
+import { areAdjacent } from './hex';
+import { enemyUnitAdjacent, other } from './query';
 import { shuffle } from './rng';
 import type { UnitStats } from './units';
 import type { CardDef, CardKind, DiceMod, FlowCtx, GameState, OrderMods, OrderedPiece, SectionName, SelectRule, Side, Unit } from './types';
@@ -205,7 +206,13 @@ export function effectiveCard(s: GameState, side: Side, cardId: number): { kind:
   return { kind: copy, mirrored: copy !== last };
 }
 
-/** Does the turn's card forbid this ordered unit to battle now (Fire and Hold R58, Cold Steel R61)? Stub: false (→ T12a). */
-export function cardForbidsBattle(_s: GameState, _op: OrderedPiece, _u: Unit): boolean {
+/**
+ * Does the turn's card forbid this ordered unit to battle now? Fire and Hold: an enemy retreat ended next to it, whether or not
+ * that unit is still there (R58). Cold Steel: it is no longer next to an enemy unit (R61).
+ */
+export function cardForbidsBattle(s: GameState, op: OrderedPiece, u: Unit): boolean {
+  if (!op.cardMods) return false;
+  if (s.turn.effective === 'fireAndHold') return s.turn.retreatEnds.some((h) => areAdjacent(h, u.hex));
+  if (s.turn.effective === 'coldSteel') return !enemyUnitAdjacent(s, u.hex, u.side);
   return false;
 }
