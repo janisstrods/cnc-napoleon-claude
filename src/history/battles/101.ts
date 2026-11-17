@@ -9,7 +9,7 @@ const history: BattleHistory = {
     war: 'Peninsular War, 1807–1814',
     text: [
       "In June 1808 General Dupont led a corps of young conscripts, with Swiss and Guard detachments, over the Sierra Morena to seize Cádiz. He took Córdoba on 7 June, then fell back to Andújar as Andalusia rose behind him. Castaños gathered the Spanish regulars and militia of the south against him.",
-      "In mid-July the Spanish forced the Guadalquivir above Andújar. Reding crossed at Mengíbar on 16 July and took Bailén, which lay on Dupont's road to the Sierra Morena. Dupont had split his army, sending Vedel to the Sierra; on the night of 18 July he marched to break through, with a convoy of baggage behind him.",
+      "In mid-July the Spanish forced the Guadalquivir above Andújar. Reding beat Gobert at Mengíbar on 16 July; on the 18th he and Coupigny occupied Bailén, which lay on Dupont's road to the Sierra Morena. Dupont had split his army, sending Vedel to the Sierra; on the night of 18 July he marched to break through, with a convoy of baggage behind him.",
     ],
   },
   sides: {
@@ -39,7 +39,7 @@ const history: BattleHistory = {
       { kind: 'label', at: [260, 125], text: 'Zumacar Chico' },
       { kind: 'label', at: [745, 125], text: 'Cerrajón' },
       { kind: 'label', at: [610, 330], text: 'to Andújar' },
-      { kind: 'label', at: [850, 112], text: 'to La Carolina' },
+      { kind: 'label', at: [130, 100], text: 'to La Carolina' },
     ],
     units: [
       { id: 'reding', side: 'top', kind: 'infantry', label: 'Reding', w: 100, h: 26 },
@@ -77,7 +77,7 @@ const history: BattleHistory = {
       },
       {
         title: 'Dupont’s attacks fail',
-        caption: 'The Swiss and Privé’s dragoons take the Cerrajón summit but are thrown back. Pannetier’s brigade attacks about eight, and about half past twelve the Marines of the Guard come on; they break on the Spanish guns. Dupont is wounded.',
+        caption: 'Privé’s cavalry clear the Cerrajón summit but are thrown back; the Swiss attack north of the road and fail. Pannetier attacks about eight; at half past twelve the Marines break on the Spanish guns and Dupont is wounded. Most Swiss go over or surrender.',
         at: {
           chabert: [500, 440],
           swiss: [350, 360],
@@ -87,7 +87,7 @@ const history: BattleHistory = {
           dupre: [620, 400],
           reding: [270, 230],
         },
-        broken: ['chabert', 'marines'],
+        broken: ['chabert', 'marines', 'swiss', 'prive'],
         arrows: [
           { side: 'bottom', points: [[340, 340], [300, 300], [275, 260]] },
           { side: 'bottom', points: [[700, 318], [720, 275], [730, 245]] },
@@ -96,18 +96,17 @@ const history: BattleHistory = {
       },
       {
         title: 'Truce and Vedel’s return',
-        caption: 'Dupont asks for a truce in the afternoon. Vedel, back from La Carolina, reaches the field about five and attacks San Cristóbal until Dupont’s flag halts him. Most Swiss with the French go over or surrender; La Peña’s division arrives at the Rumblar.',
+        caption: 'Dupont asks for a truce in the afternoon. Vedel, back from La Carolina, reaches the field about five and attacks San Cristóbal until Dupont’s flag halts him. La Peña’s division and Cruz-Murgeón’s levies close on the Rumblar.',
         at: {
-          vedel: [680, 36],
-          bouss: [820, 52],
+          vedel: [300, 36],
+          bouss: [150, 56],
           lapena: [420, 575],
           cruz: [250, 570],
           swiss: [350, 395],
-          prive: [700, 400],
+          prive: [740, 410],
         },
-        broken: ['swiss', 'prive'],
         arrows: [
-          { side: 'bottom', points: [[820, 20], [740, 40], [620, 44]] },
+          { side: 'bottom', points: [[150, 22], [240, 36], [370, 44]] },
           { side: 'top', points: [[420, 548], [440, 520], [460, 490]] },
           { side: 'top', points: [[250, 548], [270, 520], [300, 500]] },
         ],
@@ -117,15 +116,15 @@ const history: BattleHistory = {
   outcome: {
     winner: 'top',
     result: 'Spanish victory; Dupont’s army capitulates',
-    losses: 'French about 2,000 killed and wounded, and some 17,600 surrendered (Oman: 8,242 with Dupont, 9,393 with Vedel); Spanish about 1,000 killed and wounded.',
+    losses: 'French about 2,000 killed and wounded, and some 17,600 surrendered (Oman: 8,242 with Dupont, 9,393 with Vedel); Spanish about 1,000 killed and wounded (Oman’s figures vary).',
     text: [
       "Dupont's men laid down their arms on 23 July and Vedel's the next day; Napier dates the surrender a day earlier. The terms promised shipment to France, with Vedel's troops included although he stood outside the trap. Collingwood would not let Spanish ships carry them, and the Seville junta declined to honour the pact.",
       "The prisoners were held on hulks at Cádiz and then on the island of Cabrera, where many died; Vedel's men stayed captive until 1814. Joseph Bonaparte left Madrid about the start of August and the French fell back to the Ebro. Napoleon came to Spain in person that autumn to restore the position.",
     ],
   },
   sources: [
-    'Charles Oman, A History of the Peninsular War, vol. 1 (1902), Section III, ch. IV, pp. 176–205 (page numbers as in the Gutenberg/Internet Archive text)',
-    'W. F. P. Napier, History of the War in the Peninsula, vol. 1 (1828), Book I, ch. VIII (Dupont in Andalusia) and the observations that follow it',
+    'Charles Oman, A History of the Peninsular War, vol. 1 (1902), Section III, ch. IV, pp. 176–205 (1902 edition pagination, Internet Archive scan)',
+    'W. F. P. Napier, History of the War in the Peninsula, vol. 1 (1828), Book I, ch. VIII, pp. 112–35',
   ],
 };
 

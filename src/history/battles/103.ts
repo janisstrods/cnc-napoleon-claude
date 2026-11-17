@@ -15,7 +15,7 @@ const history: BattleHistory = {
   sides: {
     top: {
       name: 'Spanish Army of Estremadura',
-      commanders: ['Count of Belvedere (commanding)'],
+      commanders: ['Count of Belvedere (commanding)', 'De Alós (1st Division)', 'Henestrosa (2nd Division)'],
       strength: 'About 8,600 foot, 1,100 horse, 16 guns (Oman); Napier gives 11,150 foot and 30 guns',
       forces: 'Estremaduran line and Royal Guards battalions in two lines, three cavalry regiments and two batteries in the centre.',
     },
@@ -60,26 +60,26 @@ const history: BattleHistory = {
           gunsS: [400, 235],
           cavR: [230, 222],
           cavL: [760, 222],
-          mouton: [320, 500],
-          lasalle: [520, 520],
+          mouton: [640, 500],
+          lasalle: [430, 520],
           milhaud: [200, 540],
-          merle: [600, 572],
-          bonnet: [780, 572],
+          merle: [780, 572],
+          bonnet: [910, 572],
         },
       },
       {
         title: 'Cavalry sweep the plain',
         caption: 'Milhaud’s dragoons ride to the river on the Spanish right and Lasalle’s light cavalry forms the centre as Mouton’s twelve battalions advance through the wood. Nearly 5,000 horse ride over five battalions, which have no time to form square.',
         at: {
-          mouton: [330, 400],
-          lasalle: [520, 330],
+          mouton: [640, 400],
+          lasalle: [430, 330],
           milhaud: [200, 330],
           cavR: [230, 240],
         },
         broken: ['cavR'],
         arrows: [
-          { side: 'bottom', points: [[330, 480], [330, 430], [330, 370]] },
-          { side: 'bottom', points: [[520, 500], [510, 400], [496, 270]] },
+          { side: 'bottom', points: [[640, 480], [640, 430], [640, 370]] },
+          { side: 'bottom', points: [[430, 500], [430, 400], [430, 270]] },
           { side: 'bottom', points: [[210, 520], [200, 420], [215, 300]] },
         ],
       },
@@ -91,7 +91,7 @@ const history: BattleHistory = {
           mouton: [580, 262],
           milhaud: [230, 310],
         },
-        broken: ['line1', 'guards', 'line2', 'cavL'],
+        broken: ['line1', 'line2', 'cavL'],
         gone: ['gunsS'],
         arrows: [
           { side: 'top', points: [[420, 200], [340, 120], [250, 40]], style: 'rout' },
@@ -103,14 +103,14 @@ const history: BattleHistory = {
   outcome: {
     winner: 'bottom',
     result: 'Decisive French victory',
-    losses: 'Spanish probably about 2,500 killed and wounded, some 900 prisoners and all 16 guns (Oman; Napier gives similar); French under about 200.',
+    losses: 'Spanish probably about 2,500 killed and wounded, some 900 prisoners and all 16 guns (Oman); Napier says 2,500 killed, 900 taken, 20 guns. French under about 200.',
     text: [
-      "Fugitives ran for the baggage in Burgos and then for Lerma; Belvedere himself got away. That night the French plundered Burgos, and a house beside Napoleon's own lodging was looted and set on fire.",
+      "Fugitives poured through Burgos, past the jammed baggage, and on to Lerma; Belvedere himself got away. That night the French plundered Burgos, and a house beside Napoleon's own lodging was looted and set on fire.",
       "The way to Madrid lay open. Soult went in pursuit of Blake's beaten army, and Victor attacked Blake at Espinosa de los Monteros on 10 and 11 November. Napoleon pushed on through Somosierra and reached Madrid in early December.",
     ],
   },
   sources: [
-    'Charles Oman, A History of the Peninsular War, vol. 1 (1902), Section VII, ch. IV, pp. 417–24 (page numbers as in the Gutenberg/Internet Archive text)',
+    'Charles Oman, A History of the Peninsular War, vol. 1 (1902), Section VII, ch. IV, pp. 417–24 (1902 edition pagination, Internet Archive scan)',
     'W. F. P. Napier, History of the War in the Peninsula, vol. 1 (1828), Book IV, ch. I, the account of Gamonal, pp. 388–91 of the Internet Archive scan',
   ],
 };

@@ -8,16 +8,16 @@ const history: BattleHistory = {
   context: {
     war: 'Peninsular War, 1807–1814',
     text: [
-      "After Bailén the French fell back to the Ebro, and Napoleon came to Spain in November 1808 with veteran troops from Germany. His plan was to break the Spanish line on its wings before the Spanish could unite. On the left, Blake's Army of Galicia had retaken Bilbao in October and then advanced along the road towards Durango.",
-      "Blake stood at Zornoza for about a week while the French gathered. Lefebvre, commanding the IV Corps, attacked on 31 October, apparently before the Emperor's design was complete, and without waiting for the whole of the force near him.",
+      "After Bailén the French fell back to the Ebro, and Napoleon came to Spain in November 1808 with veteran troops from Germany. His plan was to hold the Spanish wings while he broke through the centre at Burgos, then turn on their flanks. On the left, Blake's Army of Galicia had retaken Bilbao in October and then advanced along the road towards Durango.",
+      "Blake stood at Zornoza for about a week while the French gathered. Lefebvre, commanding the IV Corps, attacked on 31 October against King Joseph's orders, according to Oman; Napier calls the move precipitate.",
     ],
   },
   sides: {
     top: {
       name: 'Spanish Army of Galicia',
-      commanders: ['Blake (commanding)'],
-      strength: 'About 18,000–19,000 (Oman); Napier gives a far higher 36,000 total',
-      forces: 'Galician divisions, vanguard and reserve brigades and a few units of La Romana’s army; only six guns kept in the front (Oman).',
+      commanders: ['Blake (commanding)', 'Riquelme', 'Mendizábal', 'Carbajal'],
+      strength: 'About 18,000–19,000 (Oman); Napier: only 17,000 infantry of some 36,000 were on the field',
+      forces: 'Galician divisions, vanguard and reserve brigades and one battalion of La Romana’s army (the 1st Catalonian Light Infantry); only six guns at the front (Oman).',
     },
     bottom: {
       name: 'French IV Corps and Villatte',
@@ -33,7 +33,7 @@ const history: BattleHistory = {
       { kind: 'hills', points: [[250, 180], [430, 170], [440, 250], [240, 260]] },
       { kind: 'road', points: [[480, -20], [470, 200], [490, 400], [500, 640]] },
       { kind: 'town', at: [480, 66], size: 22, label: 'Zornoza' },
-      { kind: 'label', at: [480, 20], text: 'to Bilbao' },
+      { kind: 'label', at: [590, 16], text: 'to Bilbao' },
       { kind: 'label', at: [500, 580], text: 'to Durango' },
     ],
     units: [
@@ -51,7 +51,7 @@ const history: BattleHistory = {
     phases: [
       {
         title: 'Blake at Zornoza',
-        caption: 'Blake’s vanguard holds low hills across the road, the 1st Division stands on higher ground to the left, and the 3rd and 4th support them. The reserve is in Zornoza. French columns come up the road from Durango in fog.',
+        caption: 'Blake’s vanguard holds low hills across the road, with the 1st Division on higher ground on the left and the 3rd and 4th in support. The reserve stands in Zornoza. In fog, French columns advance from Durango.',
         at: {
           vang: [480, 250],
           div1: [770, 235],
@@ -67,7 +67,7 @@ const history: BattleHistory = {
       },
       {
         title: 'Lefebvre attacks',
-        caption: 'Villatte’s division strikes the Spanish vanguard and spreads out to threaten the flank. Sebastiani advances in one column along the road, and Leval’s Germans attack the Spanish left, while French guns outweigh Blake’s six.',
+        caption: 'Villatte’s division hits the Spanish vanguard and moves to turn the flank. Sebastiani comes up the road in a single column; Leval’s Germans attack the Spanish left, and French guns far outnumber Blake’s six.',
         at: {
           vill: [260, 330],
           seb: [490, 340],
@@ -82,7 +82,7 @@ const history: BattleHistory = {
       },
       {
         title: 'Blake falls back',
-        caption: 'By midday the French are past Zornoza; Sebastiani breaks the centre and by afternoon Blake’s army is retreating towards Bilbao and Balmaseda, the wings covering the withdrawal. Spanish losses are about 600, French about 200.',
+        caption: 'By midday the French have driven in the vanguard and Sebastiani breaks the centre; by afternoon Blake’s army is retreating towards Bilbao and Balmaseda, the wings covering the withdrawal. Spanish losses are about 600, French about 200.',
         at: {
           vang: [480, 262],
           seb: [480, 320],
@@ -110,8 +110,8 @@ const history: BattleHistory = {
     ],
   },
   sources: [
-    'Charles Oman, A History of the Peninsular War, vol. 1 (1902), Section VII, ch. III, pp. 402–11 (page numbers as in the Gutenberg/Internet Archive text)',
-    'W. F. P. Napier, History of the War in the Peninsula, vol. 1 (1828), Book III, the account of the action at Zornosa (his spelling), pp. 379–83 of the Internet Archive scan',
+    'Charles Oman, A History of the Peninsular War, vol. 1 (1902), Section VII, ch. III, pp. 402–11 (1902 edition pagination, Internet Archive scan)',
+    'W. F. P. Napier, History of the War in the Peninsula, vol. 1 (1828), Book III, ch. V, pp. 378–83 (the action at Zornosa, his spelling)',
   ],
 };
 
