@@ -61,9 +61,16 @@ describe('British, Portuguese and Allied infantry', () => {
     expect(fig('BR/RI', 0)).toContain('data-pose="kneelAim"');
     expect(spec('BR/RI').weapon).toBe('rifle');
     expect(spec('BR/LN').weapon).toBe('musket');
-    const gun = (k: ArtKey) => fig(k, 0).match(/<g data-gun="[a-z]+">.*?<\/g>/)?.[0] ?? '';
-    expect(gun('BR/RI')).not.toBe('');
-    expect(gun('BR/RI')).not.toBe(gun('BR/LN'));
+    // the same pose for both, then the length of the wooden stock path (butt to stock end, 0.4 of the weapon's length)
+    const stock = (k: ArtKey) => {
+      const s: FootSpec = { ...spec(k), poses: ['aim', 'aim', 'aim', 'aim'] };
+      const m = svg(h(FootFigure, { spec: s, n: NATION_LOOKS.BR, i: 0 }));
+      const d = m.match(/<path d="M([-\d.]+) ([-\d.]+) L([-\d.]+) ([-\d.]+)" fill="none" stroke="#7a5634"/);
+      expect(d, k).not.toBeNull();
+      const [x0, y0, x1, y1] = d!.slice(1).map(Number);
+      return Math.hypot(x1 - x0, y1 - y0);
+    };
+    expect(stock('BR/RI')).toBeLessThan(stock('BR/LN') * 0.95);
   });
 
   it('light infantry stand loose and the line close', () => {

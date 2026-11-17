@@ -29,7 +29,8 @@ export const ALLIED_INFANTRY_SPECS: Record<AlliedInfantryKey, FootSpec> = {
   ),
   // Light infantry: a short jacket, white-laced red wings, grey trousers; the bugle-horn badge and a green tuft.
   'BR/LT': foot(
-    { coat: CLOTH.britishRed, cut: 'jacket', facings: CLOTH.britishRed, lace: CLOTH.white, shoulders: { kind: 'wings', colour: CLOTH.britishRed }, trousers: CLOTH.trouserGrey, belts: CLOTH.white },
+    // Buff facings (the 43rd and 52nd style; other light regiments wore white, green or yellow, so sources differ).
+    { coat: CLOTH.britishRed, cut: 'jacket', facings: CLOTH.buff, lace: CLOTH.white, shoulders: { kind: 'wings', colour: CLOTH.britishRed }, trousers: CLOTH.trouserGrey, belts: CLOTH.white },
     { kind: 'stovepipe', plate: 'white', plume: { colour: GREEN } },
     ['aim', 'port', 'aim', 'port'], 'loose',
   ),

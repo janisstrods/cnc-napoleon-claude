@@ -143,14 +143,17 @@ const Stovepipe: HeadgearRenderer = ({ head }) => {
 const Barretina: HeadgearRenderer = ({ head }) => {
   const c = head.body ?? FELT;
   const brass = metalOf(head.plate);
+  const panel = lighten(c, 0.2); // a lighter tone than the cap, so the false front reads against it and the sky
   return (
     <g data-head="barretina">
-      {head.plume ? <Plume x={0.3} y={-9.3} h={head.plume.tall ? 6 : 4.4} colour={head.plume.colour} tip={head.plume.tip} /> : null}
+      {/* the plume stands at the side of the front, behind the false front's rim */}
+      {head.plume ? <Plume x={-0.9} y={-6.6} h={head.plume.tall ? 6 : 4.2} colour={head.plume.colour} tip={head.plume.tip} /> : null}
       {/* the cylinder, then the false front rising from its front edge to a rounded peak */}
       <Shape d="M-2.7 -0.5 L-2.8 -5.4 Q0 -6.2 2.9 -5.4 L2.8 -0.5 Z" f={c} />
-      <Shape d="M-0.9 -5.6 L-0.8 -9.3 Q1.3 -10.2 3.3 -9 L3.1 -1.1 L-0.6 -1.1 Z" f={darken(c, 0.12)} />
+      <Shape d="M-0.9 -5.6 L-0.8 -9.3 Q1.3 -10.2 3.3 -9 L3.1 -1.1 L-0.6 -1.1 Z" f={panel} />
       <Paint d="M-2.7 -0.5 L-2.8 -5.4 L-1.5 -5.7 L-1.3 -0.5 Z" f={darken(c, 0.4)} o={0.5} mx={0} />
-      <path d="M-0.8 -9.3 Q1.3 -10.2 3.3 -9" fill="none" stroke={lighten(c, 0.35)} strokeWidth={0.5} />
+      {/* a light metal edge along the top and the front of the false front */}
+      <path d="M-0.8 -9.3 Q1.3 -10.2 3.3 -9 L3.1 -1.4" fill="none" stroke={brass} strokeWidth={0.7} strokeLinecap="round" strokeLinejoin="round" />
       <Shape d="M2.4 -0.9 L4.6 -0.5 L4.4 0.3 L2.5 0.1 Z" f={darken(c, 0.15)} />
       {head.cords ? <Cords colour={head.cords} y0={-5.4} y1={-3.4} /> : null}
       {head.plate !== 'none' ? (
