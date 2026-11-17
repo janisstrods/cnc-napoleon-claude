@@ -1,6 +1,6 @@
 // 111 Ocaña, the cavalry action, 18 November 1809. Top: Freire's Spanish cavalry; bottom: Milhaud's dragoons and Paris's light cavalry of the French 4th Corps.
 // Schematic. Same compass as 112: north points down, so the French come up from Aranjuez at the bottom and the Spanish column, marching west
-// from La Zarza and Noblejas, arrives from the left towards Ocaña at the top right. Places and numbers of blocks are indicative only.
+// from La Zarza and Noblejas, arrives from the east past Ocaña (top left) towards the north-west. Places and numbers of blocks are indicative only.
 import type { BattleHistory } from '../types';
 
 const history: BattleHistory = {
@@ -32,7 +32,7 @@ const history: BattleHistory = {
     terrain: [
       { kind: 'road', points: [[880, 590], [670, 420], [440, 260], [210, 85]], label: 'Road from Aranjuez' },
       { kind: 'town', at: [160, 62], size: 26, label: 'Ocaña' },
-      { kind: 'label', at: [850, 330], text: 'From La Zarza and Noblejas' },
+      { kind: 'label', at: [150, 150], text: 'From La Zarza and Noblejas' },
       { kind: 'label', at: [850, 575], text: 'Aranjuez and the Tagus' },
       { kind: 'label', at: [260, 260], text: 'Open plateau' },
     ],
@@ -60,7 +60,7 @@ const history: BattleHistory = {
           paris: [400, 430],
           lancers: [300, 400],
         },
-        arrows: [{ side: 'top', points: [[840, 215], [700, 195], [570, 185]] }],
+        arrows: [{ side: 'top', points: [[200, 130], [380, 170], [500, 185]] }],
       },
       {
         title: "Paris's light horse charge",
@@ -93,7 +93,7 @@ const history: BattleHistory = {
         arrows: [
           { side: 'bottom', points: [[550, 390], [570, 300], [595, 240]] },
           { side: 'bottom', points: [[650, 455], [665, 370], [670, 290]] },
-          { side: 'top', points: [[670, 130], [780, 80], [900, 45]], style: 'rout' },
+          { side: 'top', points: [[670, 130], [480, 70], [280, 50]], style: 'rout' },
         ],
       },
       {
