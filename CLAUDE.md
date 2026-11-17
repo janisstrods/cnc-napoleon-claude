@@ -4,8 +4,10 @@ Browser game: TypeScript + Vite + React, pure rules engine in `src/engine`, AI i
 
 ## Status
 
-- **The code is still the Ancients game.** This project was started from the Commands & Colors: Ancients edition (v1.6.2); only its identity has changed so far (`ccn-` storage keys, `window.__ccn`, title, version 0.1.0).
-- Plan 2 replaces the engine and deletes the Ancients content.
+- **The engine, AI and UI are still the Ancients ones until Plan 2B.** This project was started from the Commands & Colors: Ancients edition (v1.6.2); its identity has changed (`ccn-` storage keys, `window.__ccn`, title, version 0.1.0).
+- Ancients content (battles, texts, histories, golden fixtures, art and terrain hash pins, scenario-bound tests) was removed in Plan 2A.
+- `000` ("Drill") is the hidden drill battle and the only scenario: the picker and random battle skip `hidden` battles (the picker's tabs are empty), and Plan 2B rewrites `000.json` in the new format.
+- Plan 2 replaces the engine.
 - `design/ancients/` holds the Ancients design docs for reference.
 - The roadmap is in `design/superpowers/plans/2026-11-17-plan-1-foundations.md`.
 - Every localStorage key starts with `ccn-` and is built with `storageKey(name)` from `src/ui/storage.ts`, never a string literal.
@@ -42,10 +44,9 @@ Expansion #1 AI-vs-AI balance runs with behaviour counters: `npx vite-node scrip
 
 ## Development shortcuts
 
-- Battles: `001`–`015` (base game), `101`–`124` (Expansion #1, *Greece & Eastern Kingdoms*), `201`–`223` (Expansion #2,
-  *Rome & the Barbarians*) and `301`–`319` (Expansion #3, *The Roman Civil Wars*; no Epic battles), data in
-  `src/scenarios/data/<id>.json`.
-- Dev-only routes: `#/play/<scenario>/<top|bottom>/<recruit|tribune|consul>[/<seed>]` (e.g. `#/play/109/top/tribune`) and `#/gallery/art|terrain|kit|history`.
+- Battles: only the hidden drill battle `000` for now (Napoleonic battles return in Plan 6), data in
+  `src/scenarios/data/<id>.json`, briefing texts in `src/scenarios/texts.ts` (empty).
+- Dev-only routes: `#/play/<scenario>/<top|bottom>/<recruit|tribune|consul>[/<seed>]` (e.g. `#/play/000/top/tribune`) and `#/gallery/art|terrain|kit|history`.
 - In dev, `window.__ccn` is the GameController. `__ccn.autoAnswer()` plays a random legal move for the human, and `__ccn.setSpeed(4)` speeds up animations.
 - Browser tests must be silent: before playing on a dev-server origin, run `localStorage.setItem('ccn-muted','1'); location.reload()`
   (the flag is per origin, so each port needs it).
@@ -91,24 +92,8 @@ Expansion #1 AI-vs-AI balance runs with behaviour counters: `npx vite-node scrip
 
 ## Battle histories
 
-_Still describes the Ancients content, which Plan 2 deletes._
-
-- The History dialog (briefing and in-game header) shows three slides per battle from `src/history/battles/<id>.ts`:
-  context and armies, a schematic map in 1–4 phases, outcome and consequences. Format: `src/history/types.ts`;
-  worked example: `battles/007.ts`; spec: `design/superpowers/specs/2026-10-10-battle-history-design.md`.
-- A battle without a file simply has no History button, so new expansions add their `2xx`/`3xx` files when ready;
-  `COVERED` in `tests/history/history.test.ts` lists the expansions whose battles must all have one.
-- Check one: `npx vite-node scripts/history-check.ts -- 007` (validator and word counts); look at it with
-  `scripts/history-shot.sh 007 <dir>` against a running dev server (`#/gallery/history/007`), reading every tile.
-  `#/gallery/history/maps[/101-124]` is a contact sheet of every map phase, for checking many battles at once.
-- Texts are original prose in British spelling, hedged where the sources are uncertain, with ancient sources cited.
+- No battle has a history now (Plan 2A removed them). The format (`src/history/types.ts`), validator and dialog stay; `tests/history/fixture-007.ts` is the validator fixture, and `COVERED` in `tests/history/history.test.ts` is `[]`.
 
 ## Golden fixtures
 
-_Still describes the Ancients content, which Plan 2 deletes._
-
-- `tests/golden` replays recorded games (random-play games of the base battles plus a few AI games) and checks every
-  event, so base-game behaviour cannot drift unnoticed. Never hand-edit `tests/golden/*.json`.
-- Regenerate only the `ai-*` entries, and only after a deliberate AI change:
-  `npx vite-node scripts/golden-record.ts > tests/golden/fixtures.json`, then check that the `rnd-*` entries are unchanged.
-- `tests/art/looks.test.ts` pins a hash of the base armies' rendered art: base looks must keep drawing identically.
+- No fixtures are recorded now (Plan 2A deleted the Ancients ones). `tests/golden/golden.test.ts` checks that two random-play runs of `000` with the same seed produce identical event streams; `tests/golden/record.ts` and `scripts/golden-record.ts` stay for recording again with the new engine.

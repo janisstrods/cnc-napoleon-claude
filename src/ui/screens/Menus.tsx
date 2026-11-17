@@ -11,7 +11,7 @@ import { PERSONALITIES, personalityFor } from '../../ai/personality';
 import { RulesDialog } from './RulesDialog';
 import { HistoryButton } from '../history/HistoryButton';
 import {
-  OPTIONAL_RULES, PICKER_TABS, battlesOf, chosenOptions, loadOptionChoices, loadPickerTab, offeredOptions, optionValue, randomPick,
+  OPTIONAL_RULES, PICKER_TABS, battlesOf, visibleBattles, chosenOptions, loadOptionChoices, loadPickerTab, offeredOptions, optionValue, randomPick,
   saveOptionChoice, savePickerTab, tabForKey, type OptionId,
 } from './picker';
 import { BUILD_TIME, RELEASE, buildLabel } from '../../version';
@@ -47,7 +47,7 @@ export function MainMenu(p: {
         </div>
         <h1 className="menu-title">Commands &amp; Colors</h1>
         <div className="menu-sub">ANCIENTS</div>
-        <p className="menu-tag">From Marathon to the Severn, 490 BC – AD 51 · {SCENARIOS.length} historical battles: the base game and Expansions #1, #2 and #3</p>
+        <p className="menu-tag">From Marathon to the Severn, 490 BC – AD 51 · {visibleBattles(SCENARIOS).length} historical battles: the base game and Expansions #1, #2 and #3</p>
         <div className="menu-armies" aria-hidden>
           <svg viewBox="-52 -48 524 96" width="620" height="114">
             {MENU_ARMY_L.map((t, i) => (
@@ -213,6 +213,7 @@ export function ScenarioSelect(p: {
   const [rolls, setRolls] = useState(0);
   const pickRandom = () => {
     const pick = randomPick(SCENARIOS, sel.id);
+    if (!pick) return; // no visible battle (the drill battle 000 is hidden)
     if (pick.battle.expansion !== tab) {
       setTab(pick.battle.expansion);
       savePickerTab(pick.battle.expansion);

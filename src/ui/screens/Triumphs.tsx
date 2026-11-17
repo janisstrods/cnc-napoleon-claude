@@ -6,9 +6,9 @@ import { SCENARIOS } from '../../scenarios';
 import { Button, Modal } from '../kit';
 import { exportRecord, importRecord, mergeRecords, recordTotals, saveRecord, type BattleRecord, type Totals } from '../record';
 import { Medal, MedalPair, pairText } from './Medal';
-import { PICKER_TABS, battlesOf } from './picker';
+import { PICKER_TABS, battlesOf, visibleBattles } from './picker';
 
-const ALL_IDS = SCENARIOS.map((s) => s.id);
+const ALL_IDS = visibleBattles(SCENARIOS).map((s) => s.id);
 
 export function tallyText(t: Totals): string {
   return `${t.gold} gold, ${t.silver} silver, ${t.bronze} bronze of ${t.sides} medals; ${t.fought} of ${t.battles} battles fought`;

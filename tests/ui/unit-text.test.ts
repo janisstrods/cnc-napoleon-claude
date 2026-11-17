@@ -227,12 +227,9 @@ describe('rules reference unit cards', () => {
       if (elitesOf(2).includes(e.id)) expect(text, e.id).not.toContain(e.name);
       else expect(text, e.id).toContain(e.name);
     }
-    // the battles that field each preset, from the scenario data
-    const battles = ['Heavy Infantry · 002 (base game)', 'Medium Infantry · 104', 'Heavy Infantry · 113, 114', 'Medium Cavalry · 107–111', 'Medium Infantry · 108', 'Auxilia · 123'];
-    for (const b of battles) expect(text).toContain(b);
+    // (the lists of battles that field each preset come from the scenario data, which Plan 2A emptied)
     const exp2 = renderToStaticMarkup(createElement(Expansion2)).replace(/<[^>]*>/g, ' ');
     for (const id of elitesOf(2)) expect(exp2, id).toContain(ELITES[id].name);
-    expect(exp2).toContain('Heavy Infantry · 215, 217');
     expect(text).toContain('Alexander');
     expect(text).toContain('satrap');
     for (const t of ['Sea', 'Rampart', 'Ford, no dice limit', 'Tactical Flexibility', 'Hellespont', 'Asculum']) expect(text).toContain(t);

@@ -15,9 +15,14 @@ export interface PickerTab {
  */
 export const PICKER_TABS: readonly PickerTab[] = EXPANSIONS.map((e) => ({ id: e.id, label: e.pickerLabel }));
 
-/** The battles of one tab, in the order given (the scenario list is sorted by id). */
+/** The battles the picker and random battle may offer: every battle but the hidden ones (the drill battle 000). */
+export function visibleBattles(all: readonly ScenarioInfo[]): ScenarioInfo[] {
+  return all.filter((s) => !s.hidden);
+}
+
+/** The visible battles of one tab, in the order given (the scenario list is sorted by id). */
 export function battlesOf(all: readonly ScenarioInfo[], tab: Expansion): ScenarioInfo[] {
-  return all.filter((s) => s.expansion === tab);
+  return visibleBattles(all).filter((s) => s.expansion === tab);
 }
 
 /** The tab a key press on the tab list selects: Left/Right step (wrapping around), Home/End the first/last; else none. */
@@ -29,16 +34,18 @@ export function tabForKey(current: Expansion, key: string): Expansion | undefine
 }
 
 /**
- * Random battle: any battle of `all` except the one shown (`currentId`), so a press always changes it, and a side to
- * command, each equally likely. `rand` returns numbers in [0, 1), like Math.random.
+ * Random battle: any visible battle of `all` except the one shown (`currentId`), so a press always changes it, and a side
+ * to command, each equally likely. Null when there is no visible battle. `rand` returns numbers in [0, 1), like Math.random.
  */
 export function randomPick(
   all: readonly ScenarioInfo[],
   currentId: string,
   rand: () => number = Math.random,
-): { battle: ScenarioInfo; side: Side } {
-  const others = all.filter((s) => s.id !== currentId);
-  const pool = others.length ? others : all;
+): { battle: ScenarioInfo; side: Side } | null {
+  const shown = visibleBattles(all);
+  if (!shown.length) return null;
+  const others = shown.filter((s) => s.id !== currentId);
+  const pool = others.length ? others : shown;
   const battle = pool[Math.min(pool.length - 1, Math.floor(rand() * pool.length))];
   return { battle, side: rand() < 0.5 ? 'bottom' : 'top' };
 }

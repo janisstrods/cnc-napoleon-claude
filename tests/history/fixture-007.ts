@@ -1,5 +1,5 @@
-// 007 Cannae, 216 BC. Top: Carthaginians (Hannibal); bottom: Romans (Varro).
-import type { BattleHistory } from '../types';
+// Validator and dialog fixture: the 007 Cannae history, kept from the Ancients content (not a battle of the game). Top: Carthaginians (Hannibal); bottom: Romans (Varro).
+import type { BattleHistory } from '../../src/history/types';
 
 const history: BattleHistory = {
   id: '007',

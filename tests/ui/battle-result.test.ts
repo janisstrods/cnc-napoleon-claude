@@ -8,9 +8,9 @@ import { scenarioById } from '../../src/scenarios';
 import { BattleResult } from '../../src/ui/game/BattleResult';
 import type { LegResult } from '../../src/ui/game/controller';
 
-/** 001 Akragas (top Carthaginian, bottom Syracusan) after the battle, with the given banner counts. */
+/** 000 Drill (3 banners; top Carthaginian, bottom Syracusan) after the battle, with the given banner counts. */
 function finished(top: number, bottom: number, turn = 19): GameState {
-  const s = createGame(scenarioById('001').setup, 1);
+  const s = createGame(scenarioById('000').setup, 1);
   s.players.top.banners = top;
   s.players.bottom.banners = bottom;
   s.turn.number = turn;
@@ -30,19 +30,19 @@ const matchText = (html: string) => (html.match(/<section class="match"[\s\S]*?<
 
 describe('BattleResult', () => {
   it('shows the result, a row per army (yours first, the winner marked) and the turns played', () => {
-    const s = finished(5, 3);
+    const s = finished(3, 1);
     const html = render(s, 'bottom', 'top');
     expect(html).toContain('Carthaginian captured 5 banners.');
     expect(html.indexOf('Syracusan')).toBeLessThan(html.indexOf('Carthaginian</span>'));
     expect(count(html, 'victory-row is-winner')).toBe(1);
-    expect(html).toMatch(/victory-row is-winner[^>]*aria-label="Carthaginian: 5 of 5 banners"/);
-    expect(html).toContain('aria-label="Syracusan: 3 of 5 banners"');
+    expect(html).toMatch(/victory-row is-winner[^>]*aria-label="Carthaginian: 3 of 3 banners"/);
+    expect(html).toContain('aria-label="Syracusan: 1 of 3 banners"');
     expect(html).toContain('19 turns played');
   });
 
   it('draws captured banners and the empty slots still to win', () => {
-    const html = render(finished(5, 3), 'bottom', 'top');
-    expect(count(html, 'victory-banner is-won')).toBe(8);
+    const html = render(finished(3, 1), 'bottom', 'top');
+    expect(count(html, 'victory-banner is-won')).toBe(4);
     expect(count(html, 'victory-banner is-empty')).toBe(2);
   });
 
