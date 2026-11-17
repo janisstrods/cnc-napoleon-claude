@@ -23,15 +23,15 @@ Browser game: TypeScript + Vite + React, pure rules engine in `src/engine`, AI i
 | `npm run build` | Type-check, then build the static site into `docs/` |
 
 Slow opt-in AI matches: `npx vite-node scripts/ai-match.ts -- --a tribune --b recruit --games 2` (see the file header for flags).
-Expansion #1 AI-vs-AI balance runs with behaviour counters: `npx vite-node scripts/ai-balance.ts -- --scenarios 101,110 --games 2`
-(see the file header; results are logged in `design/exp1-ai-balance.md` and, for 201–223 and 301–319,
-`design/exp2-ai-balance.md` and `design/exp3-ai-balance.md`; `--expansion exp2|exp3` picks a box).
+AI-vs-AI balance runs with behaviour counters (still the Ancients AI): `npx vite-node scripts/ai-balance.ts -- --games 2`
+(see the file header). The old Ancients balance logs are in `design/ancients/exp1-ai-balance.md`, `exp2-ai-balance.md`
+and `exp3-ai-balance.md`.
 
 ## Publishing (GitHub Pages)
 
 - Repo: https://github.com/janisstrods/cnc-napoleonics. Live site (once released): https://strods.work/cnc-napoleonics/.
 - Pages stays off and `docs/` is git-ignored until the first release (Plan 8 removes the ignore line). Once on, Pages serves **`main` branch, `/docs` folder**. `docs/` is generated build output: never hand-edit it, and never put notes there (design notes live in `design/`).
-- To publish a change: `npm run build`, then commit the source changes **together with the regenerated `docs/`**, then `git push`. Pages updates about a minute later.
+- To publish a change (after the first release): `npm run build`, then commit the source changes **together with the regenerated `docs/`**, then `git push`. Pages updates about a minute later.
 - Every publish is a release. Before building, add it at the top of `RELEASES` in `src/version.ts` and set the same number
   in `package.json` (and the root of `package-lock.json`). The main menu shows it in the lower-right corner, with the build time.
   Each release takes the name of a battle of this game (Napoleonic battles) that fits what it brings, never reused. The `Unreleased` placeholder in `RELEASES` stands until the first release. Pick it yourself (the user
@@ -76,21 +76,22 @@ Expansion #1 AI-vs-AI balance runs with behaviour counters: `npx vite-node scrip
 
 ## Rules and docs
 
-- `design/rules-reference.md` is the authoritative condensed rules. Rules tests in `tests/rules` are written from it.
-  §15–§17 cover Expansion #1 (new units; sea, rampart and uncapped fords; elites, leader traits and scenario rules).
-  §18 covers the Expansion #2/#3 mechanics (Barbarian chariot, pilum, march and legions, Caesar, Spartacus, battle
-  objectives, ambush reserves, separate commands, Rolling Fire, ditch, very steep hills; for Expansion #3 §18.7–§18.11:
-  city walls, hills under camps and walls, steep slopes, hand growth, reinforcements with fixed entry and forced
-  placement, dice orders, immobile units), §19 the battles 201–223 and §20 the battles 301–319.
-- `design/exp1-*.md`: Expansion #1 scenario survey (`exp1-survey.md`), rulings research (`exp1-rulings.md`),
-  scenario transcription notes (`exp1-scenario-notes.md`) and AI calibration and balance log (`exp1-ai-balance.md`).
-- `design/exp2-*.md` and `design/exp3-*.md`: the same survey / rulings / notes / balance documents for Expansions #2
-  and #3. Expansion #3's verified transcription notes are in `design/exp3-data/`; its plan is
-  `design/superpowers/plans/2026-10-10-exp3-roman-civil-wars.md`.
+- `design/rules-reference.md` (RR) is the authoritative condensed rules of the base game (4th edition); the new rules
+  tests are written from it. §1 board and sections, §2 units (per-nation tables FR/BR/PT/AL, fire dice by
+  blocks, artillery by range, leaders), §3 dice and hit scoring, §4 terrain, §5 turn and Command, §6 orders and
+  leaders, §7 movement, §8 fire and line of sight, §9 melee (squares, Retire and Reform, Combined Arms, breakthrough),
+  §10 retreats and flags, §11 leaders, §12 the 70 Command cards, §13 victory and objective types, §14 the special rules
+  of battles 001–015, §15 onward reserved for Expansion #1.
+- `design/rulings.md`: the binding decisions table (R1…); the RR's `[Interp R<n>]` marks and engine tests cite it. A new
+  rules question gets a row there first.
+- `design/survey.md`: the scenario survey of battles 001–015 (sides, hands, units, terrain, objectives, special rules).
+  The verified hex-exact transcriptions are `design/data/NNN.json`, with notes and verification logs beside them.
+- `design/ccn-rules-research.md`: background rules research and the comparison with Ancients.
+- `design/ancients/`: the Ancients design docs, kept as reference only (not rules for this game).
 - `design/superpowers/` holds the design specs and implementation plans.
-- Battle objectives (camp captures, held banners, majority, section clear, exits) are data (`objectives` in the scenario
-  JSON) handled by `src/engine/objectives.ts`, `held.ts` and `banners.ts`; victory counts `bannerTotal` (permanent +
-  held). Terrain may change during play only through `setTerrain` (copy-on-write; `cloneState` shares the arrays).
+- Until Plan 2B the engine is still the Ancients one: its battle objectives are data (`objectives` in the scenario JSON)
+  handled by `src/engine/objectives.ts`, `held.ts` and `banners.ts`; victory counts `bannerTotal` (permanent + held).
+  Terrain may change during play only through `setTerrain` (copy-on-write; `cloneState` shares the arrays).
 
 ## Battle histories
 

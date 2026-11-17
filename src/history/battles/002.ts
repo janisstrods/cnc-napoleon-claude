@@ -1,0 +1,166 @@
+// Roliça, French second position (17 August 1808). Top: British and Portuguese (Wellesley); bottom: French (Delaborde).
+// The map has north at the top: the British attack southwards, up the ravines of the Columbeira heights. Distances are schematic.
+import type { BattleHistory } from '../types';
+
+const history: BattleHistory = {
+  id: '002',
+  date: '17 August 1808',
+  context: {
+    war: 'Peninsular War, 1807–1814',
+    text: [
+      "Wellesley's first attempt to envelop Delaborde on the hill of Roliça had failed that morning (see 001). The French had stepped back to the heights above Columbeira, the line Delaborde had meant to hold from the start: a steep, scrubby ridge less than a mile wide, with four deep ravines running up its face.",
+      "Delaborde was hoping that Loison would reach him. Wellesley repeated his manoeuvre, sending Trant and Ferguson on long flank marches while the brigades of Hill, Nightingale and Fane deployed before the heights. The centre was meant to wait for the flanks to take effect; it did not.",
+    ],
+  },
+  sides: {
+    top: {
+      name: 'British and Portuguese',
+      commanders: ['Sir Arthur Wellesley (commanding)', 'Lake (29th Regiment)', 'Ferguson, Trant (flank columns)', 'Hill, Nightingale, Fane (brigades)'],
+      strength: 'c. 15,000 present; about 4,600 engaged, in five and a half battalions (Oman)',
+      forces: 'The 5th, 9th, 29th and 82nd, the 5/60th and four companies of the 2/95th fought; the rest stayed back.',
+    },
+    bottom: {
+      name: "French (Junot's army)",
+      commanders: ['Delaborde (commanding)', 'Brennier (brigade)', 'Thomières (light infantry)'],
+      strength: 'about 4,350 in all (Oman); four battalions held the ridge, three companies detached',
+      forces: '70th Line, 2nd and 4th Léger, part of the 4th Swiss, 26th Chasseurs à cheval and five guns.',
+    },
+  },
+  map: {
+    north: 0,
+    terrain: [
+      { kind: 'hills', points: [[730, -40], [1060, -40], [1060, 640], [800, 640], [780, 480], [745, 330], [728, 160]] },
+      { kind: 'hills', points: [[-60, -40], [240, -40], [262, 160], [270, 340], [250, 480], [215, 640], [-60, 640]] },
+      { kind: 'hills', points: [[225, 405], [400, 388], [500, 395], [640, 388], [795, 405], [805, 535], [220, 535]] },
+      { kind: 'woods', points: [[250, 338], [500, 330], [780, 340], [795, 395], [240, 402]] },
+      { kind: 'hills', points: [[430, 100], [505, 82], [585, 100], [600, 160], [545, 190], [440, 178]] },
+      { kind: 'road', points: [[522, 30], [520, 150], [506, 300], [500, 400], [500, 480], [500, 560], [480, 640]] },
+      { kind: 'town', at: [545, 140], size: 15, label: 'Roliça' },
+      { kind: 'town', at: [350, 505], size: 14, label: 'Columbeira' },
+      { kind: 'town', at: [690, 555], size: 14, label: 'Zambugeira' },
+      { kind: 'label', at: [110, 450], text: 'Western heights' },
+      { kind: 'label', at: [900, 190], text: 'Sierra de Baragueda' },
+      { kind: 'label', at: [900, 560], text: 'Columbeira heights' },
+    ],
+    units: [
+      { id: 'trant', side: 'top', kind: 'infantry', label: 'Trant (Portuguese)', w: 84 },
+      { id: 'r5', side: 'top', kind: 'infantry', label: '5th and light cos.', w: 78 },
+      { id: 'r29', side: 'top', kind: 'infantry', label: '29th (Lake)', w: 66 },
+      { id: 'r9', side: 'top', kind: 'infantry', label: '9th', w: 66 },
+      { id: 'r82', side: 'top', kind: 'infantry', label: '82nd', w: 66 },
+      { id: 'rifles', side: 'top', kind: 'light', label: '5/60th, 2/95th', w: 70 },
+      { id: 'ferg', side: 'top', kind: 'infantry', label: 'Ferguson, Bowes', w: 90 },
+      { id: 'res', side: 'top', kind: 'infantry', label: 'Reserve', w: 66 },
+      { id: 'cav', side: 'top', kind: 'cavalry', label: 'Cavalry' },
+      { id: 'guns', side: 'top', kind: 'artillery', label: 'Guns by the windmill' },
+      { id: 'l70', side: 'bottom', kind: 'infantry', label: '70th Line', w: 84 },
+      { id: 'leg2', side: 'bottom', kind: 'light', label: '2nd Léger', w: 64 },
+      { id: 'leg4', side: 'bottom', kind: 'light', label: '4th Léger', w: 64 },
+      { id: 'swiss', side: 'bottom', kind: 'infantry', label: '4th Swiss', w: 64 },
+      { id: 'chass', side: 'bottom', kind: 'cavalry', label: '26th Chasseurs' },
+      { id: 'fguns', side: 'bottom', kind: 'artillery', label: 'Guns' },
+    ],
+    phases: [
+      {
+        title: 'The second position',
+        caption: 'Two batteries open on the heights from the slope of Roliça hill, by a windmill. Trant and Ferguson begin another wide sweep, while the centre brigades deploy in front of the ravines. Delaborde holds the crest with four battalions.',
+        at: {
+          trant: [200, 300],
+          r5: [285, 292],
+          r29: [405, 296],
+          r9: [405, 252],
+          r82: [520, 290],
+          rifles: [640, 296],
+          ferg: [835, 290],
+          res: [520, 222],
+          cav: [650, 240],
+          guns: [440, 208],
+          l70: [500, 448],
+          leg2: [300, 442],
+          leg4: [610, 440],
+          swiss: [420, 462],
+          chass: [570, 505],
+          fguns: [505, 482],
+        },
+        arrows: [
+          { side: 'top', points: [[200, 275], [215, 335], [250, 390]] },
+          { side: 'top', points: [[835, 265], [815, 335], [775, 400]] },
+        ],
+      },
+      {
+        title: 'The 29th goes in early',
+        caption: 'Colonel Lake leads the 29th up a narrow ravine before the flanks have taken effect. It reaches the brow, but French troops charge it from behind, kill Lake and take prisoners; the regiment tumbles back into a wood.',
+        at: {
+          r29: [405, 378],
+          r9: [405, 322],
+        },
+        arrows: [
+          { side: 'top', points: [[405, 345], [407, 370], [408, 396]] },
+          { side: 'bottom', points: [[450, 455], [430, 428], [415, 405]] },
+          { side: 'top', points: [[372, 400], [362, 372], [362, 345]], style: 'retreat' },
+        ],
+      },
+      {
+        title: 'Three assaults repulsed',
+        caption: 'The other columns now go in up the ravines: the 5th and light companies on the right, the 82nd in the centre, the riflemen on the left. Delaborde and Brennier charge each party as it deploys, but the British re-form and come on again.',
+        at: {
+          r5: [290, 372],
+          r29: [405, 372],
+          r9: [405, 322],
+          r82: [520, 372],
+          rifles: [640, 375],
+          cav: [640, 315],
+          res: [520, 300],
+        },
+        arrows: [
+          { side: 'top', points: [[290, 330], [292, 380], [300, 425]] },
+          { side: 'top', points: [[520, 335], [520, 380], [515, 420]] },
+          { side: 'top', points: [[640, 335], [640, 380], [632, 420]] },
+          { side: 'bottom', points: [[520, 450], [512, 420], [500, 405]] },
+        ],
+      },
+      {
+        title: 'The crest falls',
+        caption: 'After about two hours the British hold the crest in several places and Ferguson comes into view on the French right. Delaborde retires by alternate battalions, covered by his chasseurs, and loses three guns in the defile behind Zambugeira.',
+        at: {
+          trant: [150, 385],
+          r5: [295, 432],
+          r29: [405, 415],
+          r9: [405, 372],
+          r82: [520, 422],
+          rifles: [640, 428],
+          ferg: [770, 425],
+          l70: [510, 535],
+          leg2: [400, 565],
+          leg4: [585, 565],
+          swiss: [250, 565],
+          chass: [730, 490],
+        },
+        gone: ['fguns'],
+        arrows: [
+          { side: 'bottom', points: [[500, 470], [505, 525], [492, 600]], style: 'retreat' },
+          { side: 'bottom', points: [[280, 450], [265, 520], [255, 585]], style: 'retreat' },
+          { side: 'bottom', points: [[610, 460], [620, 530], [600, 600]], style: 'retreat' },
+          { side: 'top', points: [[770, 380], [750, 430], [700, 480]] },
+        ],
+      },
+    ],
+  },
+  outcome: {
+    winner: 'top',
+    result: 'British victory; Delaborde retires in good order',
+    losses: 'British about 475, 190 of them in the 29th, Lake killed; French about 600–700 and three guns (Foy says one). Sources differ.',
+    text: [
+      "The British put only five and a half battalions, some 4,600 men, into the fight. Delaborde's rearguard reached Cazal da Sprega, where Wellesley halted, then fell back to Montechique, fifteen miles from Lisbon, and joined Junot at Torres Vedras on 19 August.",
+      "On the 18th Wellesley heard that reinforcements were off the coast and marched to cover their landing near the Maceira, camping at Vimeiro. That let Junot and Loison pass inland to Torres Vedras. Roliça was the first battle fought by British troops in the Peninsular War; it did not shake the army's confidence. The armies met again at Vimeiro (003).",
+    ],
+  },
+  sources: [
+    'Charles Oman, A History of the Peninsular War, vol. 1 (1902), section IV, ch. 2, pp. 220–41',
+    'W. F. P. Napier, History of the War in the Peninsula, vol. 1, book 2, ch. 4',
+    "Wellesley's dispatches of 17 August 1808, Wellington's Dispatches (Gurwood), vol. 4, as cited by Oman",
+    'Colonel Leslie, Military Journal (printed 1887), account of the 29th Regiment, as cited by Oman',
+  ],
+};
+
+export default history;
