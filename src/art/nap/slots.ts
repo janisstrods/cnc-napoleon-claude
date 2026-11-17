@@ -1,5 +1,7 @@
 // Where each miniature stands on the base, by formation and remaining strength.
-import type { FigureSpec } from './uniform';
+import type { FigureSpec, GunPiece } from './uniform';
+
+type Rect = readonly [top: number, bottom: number, left: number, right: number];
 
 export interface Slot { x: number; y: number; s: number }
 export type Formation = 'close' | 'loose' | 'horse' | 'gun';
@@ -18,14 +20,17 @@ const FULL: Record<Formation, readonly [Slot, Slot, Slot, Slot]> = {
   close: [{ x: -27, y: 5, s: FB }, { x: -9, y: 5, s: FB }, { x: -18.5, y: 18, s: FF }, { x: -3.5, y: 18, s: FF }],
   loose: [{ x: -29, y: 6.5, s: FB }, { x: -9.5, y: 3.5, s: FB }, { x: -19.5, y: 18.5, s: FF }, { x: -3.5, y: 16.5, s: FF }],
   horse: [{ x: -27, y: 8, s: 0.87 }, { x: -5, y: 8, s: 0.87 }, { x: -17, y: 20.5, s: 0.96 }, { x: 4, y: 20.5, s: 0.96 }],
-  // gun: the front piece (the gun itself) stands front centre; each further piece stands behind, staggered.
-  gun: [{ x: -22, y: 5, s: 0.95 }, { x: 20, y: 6, s: 0.95 }, { x: -17, y: 15, s: 1 }, { x: 2, y: 18.5, s: 1.05 }],
+  // gun: the front piece (the gun itself, with its gunner at the trail) stands front centre. The crew stand behind it, in a
+  // staggered line that keeps to the left (the figures are mirrored in place for a left-facing unit, and the gunner's head
+  // must not swing into the corner, so every slot stays at x -4 or less). Piece k
+  // of a unit stands in slot (max - 1 - k) of the full list, so the same pieces keep the same places as it is depleted.
+  gun: [{ x: -27, y: 5, s: 0.95 }, { x: -14, y: 2.5, s: 0.95 }, { x: -4, y: 9, s: 0.98 }, { x: -4, y: 18, s: 1 }],
 };
 const SINGLE: Record<Formation, Slot> = {
   close: { x: -4, y: 18, s: FF },
   loose: { x: -4, y: 18, s: FF },
   horse: { x: 0, y: 20.5, s: 0.96 },
-  gun: FULL.gun[3],
+  gun: { x: -4, y: 17, s: 1 }, // the gun alone is centred on the base
 };
 
 function table(f: Formation): Record<1 | 2 | 3 | 4, readonly Slot[]> {
@@ -68,10 +73,10 @@ export function standing(f: Formation, n: number, max: number): readonly (readon
 export const ICON_BOX: Record<FigureSpec['drawing'], readonly [top: number, bottom: number, left: number, right: number]> = {
   foot: [-43.6, 1.3, -10.8, 16.6],
   horse: [-57.8, 1.8, -19.1, 23.3],
-  gun: [-22, 0.4, -20, 22],
+  // gun: the gun piece (a gunner kneeling at the trail, the larger-than-life gun), measured over all 7 keys and 4 paint indices
+  // like the foot box: top = the Guard gunner's bearskin plume (-38), left = the kneeling far foot (-27.5), right = the muzzle (16).
+  gun: [-38.2, 2.1, -27.7, 16.2],
 };
-
-type Rect = readonly [top: number, bottom: number, left: number, right: number];
 
 /**
  * The box as a stepped profile, for the attach-corner test. Levelled weapons (bayonets at aim and charge) reach the full
@@ -87,7 +92,23 @@ export const ICON_STEP: Record<FigureSpec['drawing'], { y: number; right: number
   // added): riders' heads and headgear, raised sabres and swords (the forward-leaning pose reaches right 12.4) and lances, in the
   // narrow column from -8.5 (a mane or plume behind the head) to 12.4 (rounded outward). `left` is that column's own left edge.
   horse: { y: -33.5, right: 12.6, left: -8.7 },
-  gun: undefined,
+  // Gun: below y -22 the whole piece (the gunner's far foot to the muzzle); above it only the gunner's head and headgear, a
+  // column from -18.3 to -8 (measured by rasterising, stroke included). Mirrored for a left-facing unit it swings to the
+  // right, so the gun slots stay at x -4 or less.
+  gun: { y: -22, right: -7.8, left: -18.5 },
+};
+
+/**
+ * Every piece of a gun unit measured the same way (rasterised at 4 px per unit, all 7 keys and four paint indices, stroke
+ * included): the box, and the step above which it is narrower. Only the gun piece is the icon (ICON_BOX.gun); the others stand
+ * in the back slots, and tests/art/nap/artillery.test.ts checks each against the attach corner where it is placed.
+ */
+export const GUN_PIECE_BOX: Record<GunPiece, { box: Rect; step: { y: number; right: number; left: number } }> = {
+  gun: { box: [-38.2, 2.1, -27.7, 16.2], step: { y: -22, right: -7.8, left: -18.5 } },
+  rammer: { box: [-43.2, 1.4, -9.7, 19.2], step: { y: -20, right: 8.9, left: -4.7 } },
+  linstock: { box: [-43.4, 1.4, -7.4, 7.9], step: { y: -23, right: 7.9, left: -5.5 } },
+  ammo: { box: [-43.2, 1.4, -7.7, 10.9], step: { y: -20, right: 8.9, left: -4.7 } },
+  driver: { box: [-37.9, 1.4, -13.9, 16.9], step: { y: -23, right: 12.5, left: -3.9 } },
 };
 
 /** The rectangles a figure occupies: the whole box, or the two bands of its stepped profile (above and below the step). */
