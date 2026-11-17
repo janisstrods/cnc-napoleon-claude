@@ -172,7 +172,8 @@ describe('rendering', () => {
 
   it('draws every visible unit of a phase, and mirrors a flipped map', () => {
     for (const [id, h] of histories) {
-      const colors = sideColors(scenarioById(id)!);
+      // a battle not transcribed yet has no scenario: its colours do not matter to the unit count, so use the drill's
+      const colors = sideColors(SCENARIOS.find((x) => x.id === id) ?? scenarioById('000'));
       h.map.phases.forEach((_, i) => {
         const html = renderToStaticMarkup(createElement(BattleMap, { map: h.map, phase: i, colors }));
         const drawn = (html.match(/data-unit="/g) ?? []).length;
