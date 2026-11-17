@@ -175,7 +175,7 @@ const history: BattleHistory = {
   outcome: {
     winner: 'top',
     result: 'British victory; Junot beaten but not pursued',
-    losses: 'British and Portuguese about 720 (Oman; some returns are higher); French at least 1,800 (Foy and Thiébault admit as much) and 13 of 23 guns. Brennier was taken.',
+    losses: 'British about 720 (Oman; some returns are higher); French at least 1,800 (Foy and Thiébault admit as much) and 13 of 23 guns. Brennier was taken.',
     text: [
       "Burrard halted the army at the moment of victory, and Dalrymple, who arrived next morning, delayed a march too. Kellermann rode in under a flag of truce on 22 August, and the armistice led to the Convention of Cintra, settled on 30 August: Junot's 25,000-odd men left Portugal in British ships with their arms.",
       "The Convention was hated in Britain. A court of inquiry in November and December 1808 blamed none of the generals, but Burrard and Dalrymple never held field command again, while Wellesley, cleared, returned to command in Portugal in April 1809.",

@@ -136,7 +136,7 @@ const history: BattleHistory = {
     result: 'Delaborde slips the net; the British take the ground',
     losses: "Small, as far as the sources show; the day's totals, about 475 British and 600 French, belong to the second position.",
     text: [
-      "The French had been drilled for a quick exit. Only when Trant and Ferguson were in sight on either flank did Delaborde give the word, and his battalions were a mile away on the Columbeira heights before the British centre closed.",
+      "Delaborde had warned his men to be ready to fall back. Only when Trant and Ferguson were in sight on either flank did Delaborde give the word, and his battalions were a mile away on the Columbeira heights before the British centre closed.",
       'Half the morning was gone, and Wellesley had to redeploy before he could attack the ridge Delaborde had meant to hold all along. Delaborde needed only to gain time for Loison, who was in fact still some fifteen miles off at Cercal.',
     ],
   },
