@@ -4,7 +4,7 @@ import { META } from '../../scripts/scenarios/meta';
 import { scenarioById } from '../../src/scenarios';
 import { catalogueEntry } from '../../src/scenarios/catalogue';
 import { checksums, terrainTally } from './checksum';
-import { game, H, range, rc, SIDES, unitCounts } from './helpers';
+import { game, H, hexesOf as terrainHexes, range, rc, SIDES, unitCounts } from './helpers';
 import { MANIFEST } from './manifest';
 
 type Obj = [string, string, string[]];
@@ -93,11 +93,12 @@ describe('special rules as data (RR §14)', () => {
   it('rivers become their rows (§14, R47, R83)', () => {
     expect(game('005').terrain.filter((t) => t === 'brook')).toHaveLength(14);
     expect(game('006').terrain[H(0, 4)]).toBe('bridge');
-    expect(MANIFEST['006'].terrain.types.river).toBe(5);
-    expect(MANIFEST['011'].terrain.types.fordNoStop).toBe(12);
+    expect(terrainHexes(game('006'), 'river')).toHaveLength(5);
+    expect(terrainHexes(game('011'), 'fordNoStop')).toHaveLength(12);
     const s13 = game('013');
     expect(s13.terrain[H(2, 8)]).toBe('fordNoStop');
     expect(s13.terrain[H(3, 1)]).toBe('bridge'); expect(s13.terrain[H(3, 10)]).toBe('bridge');
-    expect(MANIFEST['013'].terrain.types).toMatchObject({ ford: 11, fordNoStop: 1 });
+    expect(terrainHexes(s13, 'ford')).toHaveLength(11);
+    expect(terrainHexes(s13, 'fordNoStop')).toEqual(['2,8']);
   });
 });

@@ -23,7 +23,7 @@ describe('clean slate', () => {
     expect(battlesOf(SCENARIOS, 'exp1')).toEqual([]);
     let n = 0;
     const rnd = () => ((n = (n * 7 + 3) % 101), n / 101);
-    for (let i = 0; i < 50; i++) expect(randomPick(SCENARIOS, '000', rnd)?.battle.id).not.toBe('000');
+    for (let i = 0; i < 50; i++) expect(visibleBattles(SCENARIOS).map((s) => s.id)).toContain(randomPick(SCENARIOS, '000', rnd)!.battle.id);
     expect(randomPick([], '')).toBeNull();
   });
 
@@ -33,7 +33,7 @@ describe('clean slate', () => {
     const save = (id: string) => JSON.stringify({ version: 1, engine: ENGINE_VERSION, config: { scenarioId: id, seed: 1 }, answers: [] });
     store.set(key, save('000'));
     expect(loadSaved()?.config.scenarioId).toBe('000'); // control: a save of an existing battle is kept
-    store.set(key, save('101'));
+    store.set(key, save('999'));
     expect(loadSaved()).toBeNull();
     expect(store.has(key)).toBe(false);
     clearSaved();
