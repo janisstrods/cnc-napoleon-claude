@@ -52,7 +52,14 @@ const Shako: HeadgearRenderer = ({ head, f }) => {
       {/* peak */}
       <Shape d="M2.5 -0.9 L4.9 -0.4 L4.6 0.4 L2.6 0.1 Z" f={darken(c, 0.15)} />
       {head.cords ? <Cords colour={head.cords} y0={-5.2} y1={-3.2} /> : null}
-      {head.plate !== 'none' ? (
+      {head.plate === 'skull' ? (
+        // the death's-head of the Brunswick corps: a small white skull over crossed bones, on the front of the shako
+        <g data-plate="skull">
+          <path d="M0.3 -2.4 L2.6 -1.6 M2.6 -2.4 L0.3 -1.6" stroke="#e8e4d4" strokeWidth={0.45} strokeLinecap="round" />
+          <path d="M0.6 -3.4 Q0.6 -4.9 1.45 -4.9 Q2.3 -4.9 2.3 -3.4 L2.1 -2.9 L0.8 -2.9 Z" fill="#e8e4d4" stroke={OL} strokeWidth={0.3} />
+          <path d="M0.95 -3.9 L1.15 -3.9 M1.75 -3.9 L1.95 -3.9" stroke={OL} strokeWidth={0.4} strokeLinecap="round" />
+        </g>
+      ) : head.plate !== 'none' ? (
         <g>
           <Shape d="M0.2 -4.7 L2.6 -4.7 L2.5 -1.7 Q1.4 -1.1 0.3 -1.7 Z" f={brass} sw={0.5} />
           <Hi d="M0.8 -4.2 L0.8 -2.4" c={lighten(brass, 0.5)} w={0.4} mx={1.4} />

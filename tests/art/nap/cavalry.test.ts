@@ -34,6 +34,11 @@ describe('cavalry', () => {
     expect(fig('AL/LC')).toContain('data-head="shako"');
   });
 
+  it('the Brunswick hussars wear the death\'s-head, not a brass plate', () => {
+    expect(fig('AL/LC')).toContain('data-plate="skull"');
+    expect(fig('FR/LC')).not.toContain('data-plate="skull"');
+  });
+
   it('only the cuirassiers wear a cuirass', () => {
     expect(fig('FR/CU')).toContain('data-cuirass');
     for (const k of CAVALRY.filter((x) => x !== 'FR/CU')) expect(all(k), k).not.toContain('data-cuirass');
