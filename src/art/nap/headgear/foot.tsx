@@ -1,7 +1,7 @@
 // Foot headgear, in the head-local frame (origin at the head's centre, head radius 2.4, facing right; the front is +x).
 // Each root carries data-head={kind}.
 import { darken, lighten } from '../../color';
-import { OL, Hi, Paint, Shape, dots } from '../draw';
+import { OL, Hi, Paint, Shape } from '../draw';
 import { METAL } from '../nations';
 import type { FootHeadgear, Headwear } from '../uniform';
 import type { HeadgearRenderer } from './index';
@@ -65,7 +65,7 @@ const Shako: HeadgearRenderer = ({ head, f }) => {
           <Hi d="M0.8 -4.2 L0.8 -2.4" c={lighten(brass, 0.5)} w={0.4} mx={1.4} />
         </g>
       ) : null}
-      {pom && !head.plume ? <><circle cx={0.7} cy={-7.1} r={1.5} fill={pom} stroke={OL} strokeWidth={0.5} /><circle cx={0.2} cy={-7.6} r={0.5} fill={lighten(pom, 0.5)} opacity={0.8} /></> : null}
+      {pom && !head.plume ? <circle cx={0.7} cy={-7.1} r={1.5} fill={pom} stroke={OL} strokeWidth={0.5} /> : null}
     </g>
   );
 };
@@ -106,7 +106,6 @@ const CoveredShako: HeadgearRenderer = ({ head, f }) => {
       <Shape d="M-2.7 -0.5 L-2.9 -5.4 Q0 -6 2.9 -5.4 L2.8 -0.5 Z" f={c} />
       <Paint d="M-2.7 -0.5 L-2.9 -5.4 L-1.5 -5.7 L-1.3 -0.5 Z" f="#000" o={0.35} mx={0} />
       <path d="M-2.9 -5.4 Q0 -6 2.9 -5.4" fill="none" stroke={lighten(c, 0.45)} strokeWidth={0.5} opacity={0.7} />
-      <path d={dots([[-0.8, -2.6], [1, -3.8]], 0.25)} fill={lighten(c, 0.5)} opacity={0.35} />
       <Shape d="M2.5 -0.9 L4.6 -0.4 L4.4 0.3 L2.6 0.1 Z" f={darken(c, 0.1)} />
       {pom ? <circle cx={0.3} cy={-6.4} r={1.4} fill={pom} stroke={OL} strokeWidth={0.5} /> : null}
     </g>
@@ -186,7 +185,6 @@ const RoundHat: HeadgearRenderer = ({ head }) => {
       <Paint d="M-2.5 -1.7 L-2.4 -4.4 L-1.2 -4.6 L-1.1 -1.5 Z" f={darken(c, 0.4)} o={0.5} mx={0} />
       <path d="M-2.4 -2.4 Q0 -1.8 2.7 -2.4" fill="none" stroke={lighten(c, 0.35)} strokeWidth={0.4} opacity={0.8} />
       <circle cx={3.1} cy={-2.5} r={0.95} fill={cockade} stroke={OL} strokeWidth={0.45} />
-      <circle cx={3.1} cy={-2.5} r={0.4} fill={lighten(cockade, 0.5)} />
     </g>
   );
 };

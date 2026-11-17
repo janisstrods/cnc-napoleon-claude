@@ -96,12 +96,11 @@ function Valise({ cloth, trim }: { cloth: string; trim: string }) {
   );
 }
 
-/** Bridle, bit and reins' buckle. */
+/** Bridle and bit. */
 function Bridle() {
   return (
     <g fill="none" stroke="#33200f" strokeWidth={0.55} strokeLinecap="round">
       <path d="M14.2 -27.4 L17.2 -19.2 M15.6 -23.2 L19.9 -21.6 M14 -25.4 L17 -24" />
-      <circle cx={18.5} cy={-18.9} r={0.5} stroke={OL} strokeWidth={0.35} fill="#c9b27a" />
     </g>
   );
 }

@@ -90,6 +90,17 @@ describe('NapUnitToken', () => {
     }
   });
 
+  it('draws no specks: every round detail of a figure is at least 1.2 units across, eyes and nostrils apart', () => {
+    const bad: string[] = [];
+    let seen = 0;
+    for (const k of ART_KEYS) {
+      const out = token(k, { blocks: 4 });
+      for (const m of out.matchAll(/<circle[^>]*?r="([\d.]+)"[^>]*?fill="([^"]+)"/g)) if (++seen && Number(m[1]) < 0.6 && m[2] !== '#1d140e') bad.push(`${k}: ${m[0]}`);
+    }
+    expect(seen).toBeGreaterThan(500);
+    expect([...new Set(bad)]).toEqual([]);
+  });
+
   it('icons render at both sizes', () => {
     for (const k of ART_KEYS) for (const size of [24, 64]) expect(svg(h(NapUnitIcon, { unitKey: k, size }))).not.toMatch(BAD);
   });

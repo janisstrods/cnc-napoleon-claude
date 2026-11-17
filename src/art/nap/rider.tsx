@@ -126,7 +126,7 @@ function Shoulder({ dress, x }: { dress: Dress; x: number }) {
   );
 }
 
-/** The cuirass: a steel breastplate with its ridge, brass rim and rivets; it catches the light on the lit side. */
+/** The cuirass: a steel breastplate with its ridge and brass rim; it catches the light on the lit side. */
 function Cuirass() {
   const steel = METAL.steel;
   return (
@@ -137,7 +137,6 @@ function Cuirass() {
       <path d="M0.3 -15.2 L0.1 -4.1" stroke={darken(steel, 0.3)} strokeWidth={0.4} />
       <path d="M-3.5 -5.4 Q0 -3.2 3.3 -5.2" fill="none" stroke={METAL.brass} strokeWidth={0.7} />
       <path d="M-3.5 -14.6 Q0.2 -16.2 3.7 -14.4" fill="none" stroke={METAL.brass} strokeWidth={0.6} />
-      <path d="M-2.4 -13 L-2.4 -12.9 M2.6 -12.8 L2.6 -12.7 M-2.4 -8 L-2.4 -7.9 M2.4 -7.8 L2.4 -7.7" stroke={METAL.brass} strokeWidth={0.7} strokeLinecap="round" />
     </g>
   );
 }

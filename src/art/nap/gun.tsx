@@ -145,7 +145,6 @@ function CartridgeBag() {
       <Shape d="M5.4 -16.8 L5.8 -20.8 L7.8 -20.6 L8 -16.4 Z" f={CLOTHBUFF} sw={0.5} />
       <Shape d="M2.4 -17.2 L9.8 -16.4 L10 -9.2 L2.8 -8.6 Z" f={LEATHER} sw={0.7} />
       <path d="M2.5 -15.4 L9.9 -14.6" stroke={darken(LEATHER, 0.45)} strokeWidth={0.5} />
-      <circle cx={6.2} cy={-13.4} r={0.7} fill={METAL.brass} stroke={OL} strokeWidth={0.3} />
     </g>
   );
 }

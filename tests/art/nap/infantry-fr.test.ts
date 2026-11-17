@@ -2,7 +2,8 @@ import { createElement as h } from 'react';
 import { describe, expect, it } from 'vitest';
 import { FacingRightCtx } from '../../../src/art/nap/draw';
 import { FootFigure } from '../../../src/art/nap/foot';
-import { NATION_LOOKS } from '../../../src/art/nap/nations';
+import { CLOTH, NATION_LOOKS } from '../../../src/art/nap/nations';
+import { darken } from '../../../src/art/color';
 import { FR_INFANTRY, type ArtKey } from '../../../src/art/nap/keys';
 import { FIGURE_SPECS } from '../../../src/art/nap/specs';
 import type { FootSpec } from '../../../src/art/nap/uniform';
@@ -66,11 +67,20 @@ describe('French infantry', () => {
     expect(xs('FR/LT')).not.toBe(xs('FR/LN'));
   });
 
-  it('the line draws four different pompom colours', () => {
+  it('the line wears one pompom colour (a battalion, not four companies), and the four figures still differ', () => {
     const pompoms = spec('FR/LN').head.pompoms!;
-    expect(new Set(pompoms).size).toBe(4);
-    for (let i = 0; i < 4; i++) expect(fig('FR/LN', i), `figure ${i}`).toContain(pompoms[i]);
+    expect(pompoms.length).toBe(1);
+    expect(hueClass(pompoms[0])).toBe('orange');
+    for (let i = 0; i < 4; i++) expect(fig('FR/LN', i), `figure ${i}`).toContain(pompoms[0]);
     for (let i = 0; i < 4; i++) for (let j = 0; j < i; j++) expect(fig('FR/LN', i)).not.toBe(fig('FR/LN', j));
+  });
+
+  it('the rolled greatcoat on the pack is toned down towards the pack, not campaign grey', () => {
+    const roll = darken(CLOTH.greatcoatGrey, 0.35);
+    for (const k of ['FR/LN', 'FR/GR'] as const) for (let i = 0; i < 4; i++) {
+      expect(fig(k, i), `${k} ${i}`).toContain(roll);
+      expect(fig(k, i), `${k} ${i}`).not.toContain(CLOTH.greatcoatGrey);
+    }
   });
 
   it('the Guard stands on the gold-rimmed base', () => {
