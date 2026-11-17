@@ -81,7 +81,7 @@ const history: BattleHistory = {
       },
       {
         title: 'Portuguese thrown back',
-        caption: 'Hill attacks at once. Barnes and Byng climb the steep ridge by the Adour and drive Villatte down. Da Costa’s brigade, rushed forward, is charged by Dauture’s brigade of Harispe’s division and flung back to the stream.',
+        caption: 'Hill attacks at once. Barnes climbs the steep ridge by the Adour and drives Villatte down, with Byng following. Da Costa’s brigade, rushed forward, is charged by Dauture’s brigade of Harispe’s division and flung back to the stream.',
         at: {
           barnes: [838, 346],
           byng: [800, 236],

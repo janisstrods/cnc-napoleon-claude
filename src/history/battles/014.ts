@@ -23,8 +23,8 @@ const history: BattleHistory = {
     bottom: {
       name: 'French (Army of the North, left wing)',
       commanders: ['Marshal Ney (commanding)', 'Reille (II Corps)', 'Foy and Bachelu (divisions)', 'Kellermann (cuirassiers)'],
-      strength: 'Reille’s corps and cavalry; d’Erlon’s 20,000 men of I Corps never arrived',
-      forces: 'Four infantry divisions of II Corps, Piré’s light cavalry and a brigade of Kellermann (cuirass.), with strong artillery.',
+      strength: 'Perhaps 20,000 men (Houssaye’s count of bayonets and sabres); d’Erlon’s I Corps never arrived',
+      forces: 'Three divisions of Reille’s II Corps (Bachelu, Foy, Jérôme), Piré’s light cavalry and one brigade of Kellermann’s cuirassiers, with strong artillery.',
     },
   },
   map: {
@@ -42,7 +42,7 @@ const history: BattleHistory = {
       { kind: 'town', at: [410, 112], size: 20, label: 'Quatre Bras' },
       { kind: 'farm', at: [405, 330], size: 16, label: 'Gemioncourt' },
       { kind: 'farm', at: [258, 342], size: 14, label: 'Pierrepont' },
-      { kind: 'redoubt', at: [640, 205], size: 22, label: 'Piraumont' },
+      { kind: 'farm', at: [640, 205], size: 16, label: 'Piraumont' },
     ],
     units: [
       { id: 'weimar', side: 'top', kind: 'infantry', label: 'Saxe-Weimar’s Nassau', w: 80, h: 28 },
@@ -65,7 +65,7 @@ const history: BattleHistory = {
     phases: [
       {
         title: 'Ney attacks',
-        caption: 'Between two and three, Ney sends Reille’s corps against the Prince of Orange’s 7,800 Dutch-Belgians. Bachelu and Foy take Gemioncourt and drive in the outposts, and Jérôme’s division enters the Bossu wood.',
+        caption: 'Ney strikes between two and three at the Prince of Orange’s 7,800 Dutch-Belgians. Bachelu drives the outposts back on Piraumont and Foy takes Gemioncourt; from three Jérôme attacks Pierrepont and the Bossu wood.',
         at: {
           weimar: [300, 190],
           perp: [540, 270],
@@ -106,7 +106,7 @@ const history: BattleHistory = {
       },
       {
         title: 'Kellermann charges',
-        caption: 'About six, Ney orders Kellermann to charge with a single brigade of cuirassiers. They ride over Halkett’s brigade and reach the crossroads, but, unsupported, are shot down and flee, carrying off the 69th’s colour.',
+        caption: 'About six (Houssaye; others say nearer five), Ney orders Kellermann to charge with a single cuirassier brigade. They break the 69th and 33rd of Halkett’s brigade and reach the crossroads, but, unsupported, are shot down and flee.',
         at: {
           halkett: [450, 288],
           merlen: [335, 268],
@@ -138,7 +138,6 @@ const history: BattleHistory = {
           fart: [480, 520],
           keller: [560, 548],
         },
-        gone: ['pire'],
         arrows: [
           { side: 'top', points: [[340, 180], [310, 250], [280, 300]] },
           { side: 'top', points: [[440, 250], [440, 300], [425, 345]] },
