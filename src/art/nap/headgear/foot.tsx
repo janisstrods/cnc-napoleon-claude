@@ -1,11 +1,10 @@
 // Foot headgear, in the head-local frame (origin at the head's centre, head radius 2.4, facing right; the front is +x).
-// Each root carries data-head={kind}. stovepipe, barretina and roundHat stay stubs until Task 3 draws them.
+// Each root carries data-head={kind}.
 import { darken, lighten } from '../../color';
 import { OL, Hi, Paint, Shape, dots } from '../draw';
 import { METAL } from '../nations';
 import type { FootHeadgear, Headwear } from '../uniform';
 import type { HeadgearRenderer } from './index';
-import { stubHeadgear } from './stub';
 
 const FELT = '#1f1d1d';
 const FUR = '#26211f';
@@ -107,12 +106,87 @@ const CoveredShako: HeadgearRenderer = ({ head, f }) => {
   );
 };
 
+// The 1800 "stovepipe" shako (the Belgic pattern is not drawn): a straight-sided felt cylinder with a peak, a front plate,
+// and a short tuft at the top front; a tall plume if the spec asks for one. The badge is data-driven, as Headwear has no badge
+// field: plate 'brass' is a plain oval plate, but with a tall plume (the grenadiers) it carries a grenade; plate 'white' is the
+// light company's bugle-horn; 'none' has no badge (the rifles).
+const Stovepipe: HeadgearRenderer = ({ head }) => {
+  const c = head.body ?? FELT;
+  const brass = metalOf(head.plate);
+  const tuft = head.plume;
+  return (
+    <g data-head="stovepipe">
+      {tuft ? <Plume x={1.1} y={-7.4} h={tuft.tall ? 7.6 : 3.4} colour={tuft.colour} tip={tuft.tip} /> : null}
+      <Shape d="M-2.6 -0.5 L-2.7 -7.6 Q0.3 -8.2 3.1 -7.6 L2.9 -0.5 Z" f={c} />
+      <Paint d="M-2.6 -0.5 L-2.7 -7.6 L-1.3 -7.9 L-1.2 -0.5 Z" f={darken(c, 0.4)} o={0.5} mx={0} />
+      <path d="M-2.7 -7.6 Q0.3 -8.2 3.1 -7.6" fill="none" stroke={lighten(c, 0.3)} strokeWidth={0.5} />
+      <path d="M-2.65 -1.5 L2.95 -1.5" stroke={lighten(c, 0.2)} strokeWidth={0.4} opacity={0.7} />
+      {/* peak */}
+      <Shape d="M2.4 -0.9 L4.6 -0.5 L4.4 0.3 L2.5 0.1 Z" f={darken(c, 0.15)} />
+      {head.plate === 'white' ? (
+        <g>
+          {/* a bugle-horn: a loop with a flared mouth */}
+          <path d="M0.3 -4.2 Q0.1 -6.4 1.6 -6.4 Q3 -6.4 2.6 -4.4 L2.9 -3.6 L1.4 -3.9 Q1.1 -3.5 0.3 -4.2 Z" fill={brass} stroke={OL} strokeWidth={0.45} strokeLinejoin="round" />
+        </g>
+      ) : head.plate !== 'none' ? (
+        <g>
+          <Shape d="M0.2 -6.2 L2.7 -6.2 L2.7 -2.3 Q1.5 -1.7 0.2 -2.3 Z" f={brass} sw={0.5} />
+          {head.plume?.tall ? <path d="M1.45 -5.6 a0.7 0.7 0 1 0 0.01 0 M1.45 -4.9 L1.45 -3.1 M0.7 -4 L2.2 -4" fill="none" stroke={darken(brass, 0.5)} strokeWidth={0.4} /> : <Hi d="M0.8 -5.6 L0.8 -2.8" c={lighten(brass, 0.5)} w={0.4} mx={1.4} />}
+        </g>
+      ) : null}
+    </g>
+  );
+};
+
+// The Portuguese barretina: a felt cap with a tall false front that rises well above the crown, a plate low on the front, and a
+// plume at the top.
+const Barretina: HeadgearRenderer = ({ head }) => {
+  const c = head.body ?? FELT;
+  const brass = metalOf(head.plate);
+  return (
+    <g data-head="barretina">
+      {head.plume ? <Plume x={0.3} y={-9.3} h={head.plume.tall ? 6 : 4.4} colour={head.plume.colour} tip={head.plume.tip} /> : null}
+      {/* the cylinder, then the false front rising from its front edge to a rounded peak */}
+      <Shape d="M-2.7 -0.5 L-2.8 -5.4 Q0 -6.2 2.9 -5.4 L2.8 -0.5 Z" f={c} />
+      <Shape d="M-0.9 -5.6 L-0.8 -9.3 Q1.3 -10.2 3.3 -9 L3.1 -1.1 L-0.6 -1.1 Z" f={darken(c, 0.12)} />
+      <Paint d="M-2.7 -0.5 L-2.8 -5.4 L-1.5 -5.7 L-1.3 -0.5 Z" f={darken(c, 0.4)} o={0.5} mx={0} />
+      <path d="M-0.8 -9.3 Q1.3 -10.2 3.3 -9" fill="none" stroke={lighten(c, 0.35)} strokeWidth={0.5} />
+      <Shape d="M2.4 -0.9 L4.6 -0.5 L4.4 0.3 L2.5 0.1 Z" f={darken(c, 0.15)} />
+      {head.cords ? <Cords colour={head.cords} y0={-5.4} y1={-3.4} /> : null}
+      {head.plate !== 'none' ? (
+        <g>
+          <Shape d="M0.2 -8.3 L2.8 -8.3 L2.7 -4.2 Q1.5 -3.6 0.3 -4.2 Z" f={brass} sw={0.5} />
+          <Hi d="M0.8 -7.7 L0.8 -5" c={lighten(brass, 0.5)} w={0.4} mx={1.4} />
+        </g>
+      ) : null}
+    </g>
+  );
+};
+
+// The militia round hat: a low crown, a brim turned up on the right (the side the cockade sits), and a cockade. The cockade
+// takes its colour from the first pompom entry (a plain red one if there is none).
+const RoundHat: HeadgearRenderer = ({ head }) => {
+  const c = head.body ?? '#2a2622';
+  const cockade = head.pompoms && head.pompoms.length > 0 ? head.pompoms[0] : '#b3242a';
+  return (
+    <g data-head="roundHat">
+      {/* the brim, wider than the head and turned up at the front */}
+      <Shape d="M-3.7 -1.3 Q0 -2.1 3.4 -1.9 L4.2 -3 L4.6 -1.2 Q0.3 0.2 -3.8 -0.2 Z" f={darken(c, 0.1)} />
+      <Shape d="M-2.5 -1.7 L-2.4 -4.4 Q0.2 -5 2.6 -4.4 L2.8 -1.8 Q0 -1.2 -2.5 -1.7 Z" f={c} />
+      <Paint d="M-2.5 -1.7 L-2.4 -4.4 L-1.2 -4.6 L-1.1 -1.5 Z" f={darken(c, 0.4)} o={0.5} mx={0} />
+      <path d="M-2.4 -2.4 Q0 -1.8 2.7 -2.4" fill="none" stroke={lighten(c, 0.35)} strokeWidth={0.4} opacity={0.8} />
+      <circle cx={3.1} cy={-2.5} r={0.95} fill={cockade} stroke={OL} strokeWidth={0.45} />
+      <circle cx={3.1} cy={-2.5} r={0.4} fill={lighten(cockade, 0.5)} />
+    </g>
+  );
+};
+
 export const FOOT_HEADGEAR: Record<FootHeadgear, HeadgearRenderer> = {
   shako: Shako,
   bearskin: bearskinOf('bearskin'),
   bearskinPlate: bearskinOf('bearskinPlate'),
   coveredShako: CoveredShako,
-  stovepipe: stubHeadgear('stovepipe'),
-  barretina: stubHeadgear('barretina'),
-  roundHat: stubHeadgear('roundHat'),
+  stovepipe: Stovepipe,
+  barretina: Barretina,
+  roundHat: RoundHat,
 };
