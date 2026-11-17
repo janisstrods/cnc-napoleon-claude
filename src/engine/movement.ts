@@ -1,17 +1,24 @@
-// Movement (RR §6.2, §7). Skeleton: the unit's own allowance only; no entering units or enemy leaders; terrain via
-// `passableFor` / `stopsOnEntry`; exits through `exitAllowedFrom` (→ T5 completes the card allowances).
+// Movement (RR §6.2, §7): card allowances, terrain stops, leaders, exits. Terrain via `passableFor` / `stopsOnEntry`.
 import { neighbours } from './hex';
 import { exitAllowedFrom, exitPiece, updateHeld } from './objectives';
 import { attachedLeader, leaderAt, leaderById, unitAt, unitById } from './query';
 import { noBattleAfterEntering, passableFor, stopsOnEntry } from './terrain';
-import { LEADER_MOVE, statsOf } from './units';
+import { LEADER_MOVE, matches, statsOf } from './units';
 import { OFF_BOARD, type FlowCtx, type GameState, type HexId, type MoveOption, type OrderedPiece, type Unit } from './types';
 
 export interface MoveTarget { hex: HexId; path: HexId[]; stops: boolean; battle: boolean; attach: string | null }
 
-/** The allowances of an ordered unit this turn. Skeleton: its own row. */
-export function moveOptions(s: GameState, u: Unit, _op: OrderedPiece): readonly MoveOption[] {
-  return statsOf(s, u).move;
+/** The allowances of an ordered unit this turn (RR §7.1, §12.2, R33, R73). */
+export function moveOptions(s: GameState, u: Unit, op: OrderedPiece): readonly MoveOption[] {
+  const st = statsOf(s, u);
+  const m = s.turn.mods;
+  if (u.square || (m.noMove && op.cardMods)) return [{ max: 0, battle: true }];
+  if (!op.cardMods || m.move === null) return st.move;
+  if (m.move === 'forceMarch') {
+    const fast = st.tags.some((t) => t === 'light' || t === 'grenadier' || t === 'guard') || !!attachedLeader(s, u);
+    return fast ? [{ max: 2, battle: true }] : [{ max: 1, battle: true }, { max: 2, battle: false }];
+  }
+  return !m.move.only || matches(st, m.move.only) ? m.move.options : st.move;
 }
 
 /** May the unit battle after moving `op.moved` hexes (and having entered no battle-barring terrain)? */
@@ -33,33 +40,40 @@ export function unitMoves(s: GameState, id: string): MoveTarget[] {
   const battleAt = (d: number, h: HexId): boolean =>
     moveOptions(s, u, op).some((o) => o.max >= d && o.battle) && (d === 0 || u.blocks >= st.battleAfterMoveMinBlocks) && !noBattleAfterEntering(s, h, st);
   const out: MoveTarget[] = [];
-  const seen = new Set<HexId>([u.hex]);
+  const slot = new Map<HexId, number>();  // hex -> index in `out`
+  const expanded = new Set<HexId>([u.hex]);  // hexes whose onward moves are queued (a hex is entered stopping or not by path)
   type Node = { hex: HexId; path: HexId[] };
   const queue: Node[] = [{ hex: u.hex, path: [u.hex] }];
-  const exits = (n: Node, stopped: boolean) => {
-    if (!stopped && n.path.length - 1 + 1 <= max && exitAllowedFrom(s, u, n.hex)) {
+  let exited = false;
+  const exits = (n: Node) => {
+    if (!exited && n.path.length - 1 + 1 <= max && exitAllowedFrom(s, u, n.hex)) {
+      exited = true;
       out.push({ hex: OFF_BOARD, path: [...n.path, OFF_BOARD], stops: true, battle: false, attach: null });
     }
   };
-  exits(queue[0], false);
+  exits(queue[0]);
   for (let qi = 0; qi < queue.length; qi++) {
     const n = queue[qi];
     if (n.path.length - 1 >= max) continue;
     for (const h of neighbours(n.hex)) {
-      if (seen.has(h) || !passableFor(s, h, st.arm) || unitAt(s, h)) continue;
+      if (h === u.hex || !passableFor(s, h, st.arm) || unitAt(s, h)) continue;
       const l = leaderAt(s, h);
       let attach: string | null = null;
       if (l) {
         if (l.side !== u.side || hasLeader) continue;
         attach = l.id;
       }
-      seen.add(h);
       const path = [...n.path, h];
       const stops = attach !== null || stopsOnEntry(s, n.hex, h);
-      out.push({ hex: h, path, stops, battle: battleAt(path.length - 1, h), attach });
-      if (!stops) {
+      const target: MoveTarget = { hex: h, path, stops, battle: battleAt(path.length - 1, h), attach };
+      // One target per hex: the first (shortest) path; an equally short path that does not stop replaces a stopping one.
+      const at = slot.get(h);
+      if (at === undefined) { slot.set(h, out.length); out.push(target); }
+      else if (out[at].stops && !stops && out[at].path.length === path.length) out[at] = target;
+      if (!stops && !expanded.has(h)) {
+        expanded.add(h);
         queue.push({ hex: h, path });
-        exits({ hex: h, path }, false);
+        exits({ hex: h, path });
       }
     }
   }
@@ -71,27 +85,43 @@ export function leaderMoves(s: GameState, id: string): MoveTarget[] {
   const l = leaderById(s, id);
   const op = s.turn.ordered[id];
   if (!l || !op || l.hex < 0 || op.moveDone) return [];
+  const host = unitAt(s, l.hex);
+  if (host?.square) return [];  // R32
+  const mv = s.turn.mods.move;
+  const reachMax = op.cardMods && mv !== null && mv !== 'forceMarch' && mv.leader !== undefined ? mv.leader : LEADER_MOVE;
   const out: MoveTarget[] = [];
-  const seen = new Set<HexId>([l.hex]);
+  const slot = new Map<HexId, number>();
+  const expanded = new Set<HexId>([l.hex]);
   type Node = { hex: HexId; path: HexId[] };
   const queue: Node[] = [{ hex: l.hex, path: [l.hex] }];
+  let exited = false;
+  const exits = (path: HexId[]) => {
+    if (!exited && path.length - 1 + 1 <= reachMax && exitAllowedFrom(s, l, path[path.length - 1])) {
+      exited = true;
+      out.push({ hex: OFF_BOARD, path: [...path, OFF_BOARD], stops: true, battle: false, attach: null });
+    }
+  };
+  exits([l.hex]);
   for (let qi = 0; qi < queue.length; qi++) {
     const n = queue[qi];
-    if (n.path.length - 1 >= LEADER_MOVE) continue;
+    if (n.path.length - 1 >= reachMax) continue;
     for (const h of neighbours(n.hex)) {
-      if (seen.has(h) || !passableFor(s, h, null)) continue;
+      if (h === l.hex || !passableFor(s, h, null)) continue;
       const v = unitAt(s, h);
       const o = leaderAt(s, h);
       if ((v && v.side !== l.side) || (o && o.side !== l.side)) continue;
-      seen.add(h);
       const path = [...n.path, h];
-      const stops = stopsOnEntry(s, n.hex, h) || (!!v && !o);
-      if (!o) out.push({ hex: h, path, stops: stops || !!v, battle: false, attach: v ? v.id : null });
-      if (!stopsOnEntry(s, n.hex, h)) {
+      const stopTerrain = stopsOnEntry(s, n.hex, h);
+      if (!o) {
+        const target: MoveTarget = { hex: h, path, stops: stopTerrain || !!v, battle: false, attach: v ? v.id : null };
+        const at = slot.get(h);
+        if (at === undefined) { slot.set(h, out.length); out.push(target); }
+        else if (out[at].stops && !target.stops && out[at].path.length === path.length) out[at] = target;
+      }
+      if (!stopTerrain && !expanded.has(h)) {
+        expanded.add(h);
         queue.push({ hex: h, path });
-        if (!o && !v && path.length - 1 + 1 <= LEADER_MOVE && exitAllowedFrom(s, l, h)) {
-          out.push({ hex: OFF_BOARD, path: [...path, OFF_BOARD], stops: true, battle: false, attach: null });
-        }
+        if (!o && !v) exits(path);
       }
     }
   }
