@@ -1,6 +1,8 @@
 // Artillery specs: the crew's dress and headgear, the carriage colour and the barrel metal, from written descriptions and
-// general period knowledge. Where sources differ the choice is hedged in a comment. Horse artillery (the spec has a `team`) is
-// told apart from foot artillery by its limber and pair of draught horses with a mounted driver, its light-cavalry headgear and a lighter carriage.
+// general period knowledge. Where sources differ the choice is hedged in a comment. Horse artillery (the spec has a `holder`)
+// is told apart from foot artillery chiefly by its crew's dress (the Royal Horse Artillery's Tarleton, the French horse
+// gunners' plumed shako and dolman), then by a mounted gunner holding his horse at the rear of the base, a smaller gun and a
+// lighter carriage. Horse gunners rode their own mounts; the limbers and teams stood well to the rear in action, so none is drawn.
 import { CLOTH } from '../nations';
 import type { ArtilleryKey } from '../keys';
 import type { Dress, GunSpec, Headwear } from '../uniform';
@@ -16,7 +18,7 @@ const FUR_HAIR = '#171412';
 
 const FOUR = ['gun', 'rammer', 'linstock', 'ammo'] as const;
 
-const gun = (dress: Dress, head: Headwear, carriage: string, pieces: GunSpec['pieces'], opts: { guard?: true; team?: true } = {}): GunSpec => ({
+const gun = (dress: Dress, head: Headwear, carriage: string, pieces: GunSpec['pieces'], opts: { guard?: true; holder?: true } = {}): GunSpec => ({
   drawing: 'gun', crew: { dress, head }, carriage, barrel: 'bronze', pieces, ...opts,
 });
 
@@ -32,7 +34,7 @@ export const ARTILLERY_SPECS: Record<ArtilleryKey, GunSpec> = {
   // Horse artillery: a hussar-like dolman in the same blue with scarlet lace, blue overalls, shako with a scarlet plume.
   'FR/HA': gun(
     { coat: CLOTH.frenchBlue, cut: 'dolman', facings: CLOTH.scarlet, lace: CLOTH.scarlet, trousers: CLOTH.frenchBlue, belts: CLOTH.white },
-    { kind: 'shako', plate: 'brass', plume: { colour: CLOTH.scarlet }, cords: CLOTH.scarlet }, OLIVE_LIGHT, FOUR, { team: true },
+    { kind: 'shako', plate: 'brass', plume: { colour: CLOTH.scarlet }, cords: CLOTH.scarlet }, OLIVE_LIGHT, FOUR, { holder: true },
   ),
   // Guard foot artillery: the same dress, a bearskin with a scarlet plume and cords (no plate).
   'FR/GA': gun(FR_FOOT, { kind: 'bearskin', plate: 'none', cords: CLOTH.scarlet, plume: { colour: CLOTH.scarlet, tall: true } }, OLIVE, FOUR, { guard: true }),
@@ -46,7 +48,7 @@ export const ARTILLERY_SPECS: Record<ArtilleryKey, GunSpec> = {
   // fur crest and a scarlet turban (the turban colour is a hedge).
   'BR/HA': gun(
     { coat: DARK_BLUE, cut: 'jacket', facings: CLOTH.scarlet, lace: CLOTH.yellow, trousers: CLOTH.trouserGrey, belts: CLOTH.white },
-    { kind: 'tarleton', mane: FUR_HAIR, turban: CLOTH.scarlet }, BLUE_GREY_LIGHT, FOUR, { team: true },
+    { kind: 'tarleton', mane: FUR_HAIR, turban: CLOTH.scarlet }, BLUE_GREY_LIGHT, FOUR, { holder: true },
   ),
   // Portuguese artillery: blue coat, black collar and cuffs piped scarlet, blue trousers (a hedge), barretina with a brass plate.
   'PT/FA': gun(

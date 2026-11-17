@@ -1,12 +1,13 @@
 // One piece of a gun unit: the gun itself with the gunner laying it, a rammer, a linstock man, or a man with a cartridge bag.
-// A horse-artillery stand (the spec has `team`) also shows its limber team behind the gun, a limber hooked to a pair of
-// draught horses with a mounted driver (GunTeamFigure, drawn by the token before the pieces, so it is always there). Data
-// decides everything (the spec's crew dress and headgear, carriage colour and barrel metal); nothing here knows a nation.
+// A horse-artillery stand (the spec has `holder`) also shows a mounted gunner holding his horse (HorseHolderFigure, drawn by
+// the token at the rear of the base at every strength). Data decides everything (the spec's crew dress and headgear,
+// carriage colour and barrel metal); nothing here knows a nation.
 //
 // Every piece is drawn facing right with its feet (wheels, hooves) at (0,0). The gun is seen from the side and a little from
 // above: the far wheel and trail sit up and to the left of the near ones. Order, back to front: far wheel, far trail, barrel,
-// near trail, axle block, near wheel (a ring with spokes, so the barrel shows through it), the gunner and his handspike.
-// The horse-artillery gun (the spec has a team) is drawn 10% smaller; its carriage colour is the spec's lighter one.
+// near trail, axle block, the gunner crouched behind the trail end with his handspike in it (No. 1 laid the gun from there,
+// sighting along the barrel), near wheel (a ring with spokes, so the barrel shows through it).
+// The horse-artillery gun (the spec has a holder) is drawn 10% smaller; its carriage colour is the spec's lighter one.
 import type { ReactNode } from 'react';
 import { darken, lighten } from '../color';
 import { Hi, Line2, OL, Paint, Shape, makeFig, type Fig } from './draw';
@@ -21,11 +22,11 @@ const pt = (p: P) => `${p[0]} ${p[1]}`;
 const circlePath = (cx: number, cy: number, r: number) => `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0Z`;
 
 /** The gun is drawn larger than life against its crew (a wheel is about half a man) so that it reads at board scale. */
-export const GUN_SCALE = 1.05;
+export const GUN_SCALE = 1.12;
 /** The horse-artillery gun is drawn a tenth smaller than the foot gun. */
 export const HORSE_GUN_SCALE = 0.9;
-/** The driver of the team is drawn smaller than a cavalryman. */
-export const DRIVER_SCALE = 0.8;
+/** The horse holder's rider, in the horse's frame (the cavalry's rider scale). */
+const HOLDER_RIDER_SCALE = 0.9;
 
 const WHEEL_R = 8.6;
 const WOOL = '#e6dfcb';
@@ -66,8 +67,8 @@ function Barrel({ metal }: { metal: 'bronze' | 'iron' }) {
   );
 }
 
-/** The field gun: wheels, split trail, axle block and barrel. */
-function GunCarriage({ carriage, barrel }: { carriage: string; barrel: 'bronze' | 'iron' }) {
+/** The field gun: wheels, split trail, axle block and barrel; `layer` (the gunner) is drawn behind the near wheel. */
+function GunCarriage({ carriage, barrel, layer }: { carriage: string; barrel: 'bronze' | 'iron'; layer?: ReactNode }) {
   const far = darken(carriage, 0.3);
   return (
     <g data-part="gun">
@@ -78,6 +79,7 @@ function GunCarriage({ carriage, barrel }: { carriage: string; barrel: 'bronze' 
       <Hi d="M3.6 -13.9 L-5.8 -11.7 L-12 -2.6" c={lighten(carriage, 0.35)} w={0.5} o={0.7} />
       <Shape d="M-13.6 -2 L-11.2 0.2 L-14.2 0.9 Z" f={METAL.iron} sw={0.5} />
       <Shape d="M-2.6 -13.2 L4.4 -13 L4.6 -6.6 L-2.4 -6.4 Z" f={darken(carriage, 0.12)} sw={0.6} />
+      {layer}
       <Wheel cx={0} cy={-WHEEL_R} r={WHEEL_R} rim={carriage} far={false} />
     </g>
   );
@@ -101,16 +103,16 @@ const FAR_SHOULDER: P = [-2.4, -19.9];
 const CREW_POSE: Record<GunPiece, CrewPose> = {
   // crouched at the trail end, both hands on the handspike
   gun: { stance: 'kneel', near: { elbow: [6, -16.8], hand: [8.4, -13.8] }, far: { elbow: [3, -16.6], hand: [7.2, -12] }, farOver: true, head: [1.2, 0.8] },
-  // thrusting the rammer forward at chest height
-  rammer: { stance: 'stride', near: { elbow: [5, -17.8], hand: [8.7, -17.1] }, far: { elbow: [-1.5, -17.2], hand: [3.3, -15.8] }, farOver: true, head: [1, 0.2] },
+  // driving the rammer forward and down into the muzzle
+  rammer: { stance: 'stride', near: { elbow: [5.4, -17.6], hand: [6.5, -13.9] }, far: { elbow: [-2.8, -16.4], hand: [0.6, -17.8] }, farOver: true, head: [1, 0.4] },
   // upright with the linstock in the near hand, the far hand on the hip
   linstock: { stance: 'stand', near: { elbow: [5.2, -16.6], hand: [4.4, -13.4] }, far: { elbow: [-5.2, -16.8], hand: [-3.9, -13.2] }, farOver: false, head: [0.2, 0] },
   // carrying a cartridge bag against the hip
   ammo: { stance: 'stride', near: { elbow: [6.6, -14.4], hand: [8.8, -10.8] }, far: { elbow: [1.6, -14], hand: [4.2, -9.8] }, farOver: false, head: [0.8, 0.2] },
 };
 
-const RAMMER_BUTT: P = [-8.5, -13];
-const RAMMER_TIP: P = [13, -18.2];
+const RAMMER_BUTT: P = [-5, -21.5];
+const RAMMER_TIP: P = [11, -11];
 
 function Rammer() {
   const len = Math.hypot(RAMMER_TIP[0] - RAMMER_BUTT[0], RAMMER_TIP[1] - RAMMER_BUTT[1]);
@@ -177,63 +179,22 @@ function Crewman({ dress, head, f, piece }: { dress: Dress; head: GunSpec['crew'
 }
 
 // ---------------------------------------------------------------------------------------------
-// The limber team
-
-/** The limber's axle, in the team's frame (facing right, hooves and wheels at y 0). */
-const LIMBER_X = -28;
-
-/** The collar and the traces of a draught horse, in the horse's frame. */
-function Harness() {
-  return (
-    <g data-part="harness" fill="none" strokeLinecap="round">
-      <Shape d="M10.4 -25.4 Q13.6 -23.6 13.4 -18.6 Q11.2 -17 9.6 -19 Q9 -22.6 10.4 -25.4 Z" f={LEATHER} sw={0.7} />
-      <path d="M11 -25 Q12.4 -22 11.4 -18.4" stroke={METAL.brass} strokeWidth={0.6} />
-    </g>
-  );
-}
-
-/** The limber: a two-wheeled ammunition chest on an axle with a pole running forward between the horses. */
-function Limber({ carriage }: { carriage: string }) {
-  return (
-    <g data-limber="true" transform={`translate(${LIMBER_X} 0)`}>
-      <Wheel cx={-2.4} cy={-WHEEL_R - 2.2} r={WHEEL_R - 0.8} rim={darken(carriage, 0.3)} far />
-      <Shape d="M-8.4 -20.8 L8.4 -20.8 L9 -12.4 L-9 -12.4 Z" f={carriage} sw={0.8} />
-      <Shape d="M-9.4 -22.8 L9.4 -22.8 L8.4 -20.4 L-8.4 -20.4 Z" f={lighten(carriage, 0.18)} sw={0.7} />
-      <path d="M-8.7 -16.6 L8.8 -16.6" stroke={darken(carriage, 0.45)} strokeWidth={0.6} />
-      <circle cx={0} cy={-17} r={1} fill={METAL.brass} stroke={OL} strokeWidth={0.35} />
-      <Line2 d="M2 -10 L34 -12.4" w={1.7} c={METAL.wood} ow={0.5} />
-      <Wheel cx={0} cy={-WHEEL_R} r={WHEEL_R} rim={carriage} far={false} />
-    </g>
-  );
-}
+// The horse holder
 
 /**
- * The horse-artillery team, behind the gun: a limber at the left, hooked by pole and traces to a pair of draught horses in
- * collar and harness, the near one ridden by a gunner with the reins. Drawn facing right in its own frame; the paint is fixed
- * (it is not one of the block pieces), so it is the same at every strength.
+ * A horse-artillery gunner mounted on his own horse at a halt, reins in hand: the stand's horse cue, drawn facing right in the
+ * horse's frame (hooves at 0,0). The paint is fixed (he is not one of the block pieces), so he is the same at every strength.
  */
-export function GunTeamFigure({ spec, n }: { spec: GunSpec; n: NationLook }) {
+export function HorseHolderFigure({ spec, n }: { spec: GunSpec; n: NationLook }) {
   const f = makeFig(n, 1);
   const crew = spec.crew;
   const seat = HORSE_SEAT.light;
-  const cloth = { cloth: darken(crew.dress.coat, 0.1), trim: crew.dress.facings };
-  const trace = (x: number, y: number) => `M${x + 11} ${y - 17.6} Q${(x + LIMBER_X) / 2} ${y - 12} ${LIMBER_X + 6} -11.6`;
   return (
-    <g data-team="true">
-      <Limber carriage={spec.carriage} />
-      <g transform="translate(5 -2.6)">
-        <Horse size="light" coat="brown" pose={2} shabraque={cloth} />
-        <Harness />
+    <g data-holder-figure>
+      <Horse size="light" coat="bay" pose={0} shabraque={{ cloth: darken(crew.dress.coat, 0.1), trim: crew.dress.facings }} />
+      <g transform={`translate(${seat.x} ${seat.y}) scale(${HOLDER_RIDER_SCALE})`}>
+        <Rider dress={crew.dress} head={crew.head} weapon="reins" f={f} pose={0} mouth={HORSE_MOUTH.light} />
       </g>
-      <Line2 d={trace(5, -2.6)} w={0.6} c="#3e2816" ow={0.3} />
-      <g>
-        <Horse size="light" coat="bay" pose={1} shabraque={cloth} />
-        <Harness />
-        <g transform={`translate(${seat.x} ${seat.y}) scale(${DRIVER_SCALE})`}>
-          <Rider dress={crew.dress} head={crew.head} weapon="reins" f={f} pose={1} mouth={HORSE_MOUTH.light} />
-        </g>
-      </g>
-      <Line2 d={trace(0, 0)} w={0.6} c="#3e2816" ow={0.3} />
     </g>
   );
 }
@@ -244,14 +205,18 @@ export function GunPieceFigure({ spec, n, i, piece }: { spec: GunSpec; n: Nation
   const f = makeFig(n, i);
   let body: ReactNode;
   if (piece === 'gun') {
-    const s = Math.round(GUN_SCALE * (spec.team === true ? HORSE_GUN_SCALE : 1) * 1000) / 1000;
-    body = (
-      <>
-        <g transform={`scale(${s})`}><GunCarriage carriage={spec.carriage} barrel={spec.barrel} /></g>
-        {/* the gunner's handspike is planted at the trail end (x -13, scaled with the gun), 3 units in front of him */}
-        <g transform={`translate(${-13 * s - 3} 0)`}><Crewman dress={spec.crew.dress} head={spec.crew.head} f={f} piece="gun" /></g>
-      </>
+    const s = Math.round(GUN_SCALE * (spec.holder === true ? HORSE_GUN_SCALE : 1) * 1000) / 1000;
+    // the gunner crouches behind the trail end (x -13 in the gun's frame), his handspike planted in it; he is drawn in the
+    // gun's scaled frame, so undo the scale for him
+    const layer = (
+      <g transform={`scale(${Math.round((1 / s) * 1000) / 1000}) translate(${-13 * s - LAYER_BACK} 0)`}>
+        <Crewman dress={spec.crew.dress} head={spec.crew.head} f={f} piece="gun" />
+      </g>
     );
+    body = <g transform={`scale(${s})`}><GunCarriage carriage={spec.carriage} barrel={spec.barrel} layer={layer} /></g>;
   } else body = <Crewman dress={spec.crew.dress} head={spec.crew.head} f={f} piece={piece} />;
   return <g data-fig="gun" data-piece={piece}>{body}</g>;
 }
+
+/** How far behind the trail end the gunner crouches, in crew units: his hands reach forward to the handspike in the trail. */
+const LAYER_BACK = 7.5;

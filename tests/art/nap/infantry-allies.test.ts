@@ -81,8 +81,8 @@ describe('British, Portuguese and Allied infantry', () => {
   });
 
   it('only the Foot Guards carry a marker', () => {
-    expect(token('BR/GG')).toContain('data-guard="crown"');
-    for (const k of KEYS.filter((x) => x !== 'BR/GG')) expect(token(k), k).not.toContain('data-guard');
+    expect(token('BR/GG')).toContain('data-base-rim="gold"');
+    for (const k of KEYS.filter((x) => x !== 'BR/GG')) expect(token(k), k).not.toContain('data-base-rim');
   });
 
   it('every pose and facing draws, with no NaN', () => {

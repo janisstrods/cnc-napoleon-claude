@@ -101,10 +101,18 @@ describe('cavalry', () => {
     expect(cu && hueClass(cu.colour)).toBe('red');
   });
 
+  it('the lance slopes forward, towards the charge, rather than standing upright', () => {
+    for (let i = 0; i < 4; i++) {
+      const m = /<g data-weapon="lance"><g transform="translate\([-\d.]+ [-\d.]+\) rotate\(([-\d.]+)\)"/.exec(fig('FR/LNC', i));
+      expect(m, `figure ${i}`).not.toBeNull();
+      expect(Number(m![1])).toBeGreaterThanOrEqual(25);
+      expect(Number(m![1])).toBeLessThanOrEqual(45);
+    }
+  });
+
   it('marks the Guard', () => {
-    expect(token('FR/GHC')).toContain('data-guard="eagle"');
-    expect(token('BR/GHC')).toContain('data-guard="crown"');
-    for (const k of CAVALRY.filter((x) => x !== 'FR/GHC' && x !== 'BR/GHC')) expect(token(k), k).not.toContain('data-guard');
+    for (const k of ['FR/GHC', 'BR/GHC']) expect(token(k as CavalryKey), k).toContain('data-base-rim="gold"');
+    for (const k of CAVALRY.filter((x) => x !== 'FR/GHC' && x !== 'BR/GHC')) expect(token(k), k).not.toContain('data-base-rim');
   });
 
   it('renders every key at 1..4 blocks, both facings, one figure per block, without NaN', () => {

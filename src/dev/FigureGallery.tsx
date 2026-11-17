@@ -29,7 +29,8 @@ const DARKEST = (() => {
   return solid.reduce((a, b) => (lum(b) < lum(a) ? b : a));
 })();
 
-const MAXB = 4;
+/** Blocks at full strength: artillery has 3 in play, everything else 4. */
+const maxOf = (k: ArtKey) => (ARM_OF[codeOf(k)] === 'artillery' ? 3 : 4);
 type Filter = { keys: ArtKey[]; leaders: boolean; sections: ('infantry' | 'cavalry' | 'artillery')[] };
 
 function parse(route: string): { mode: 'board' } | { mode: 'single'; key: ArtKey | null } | ({ mode: 'list' } & Filter) {
@@ -70,9 +71,9 @@ function Strip({ scale, cells }: { scale: number; cells: { fill: string; node: R
 }
 
 const tokenCells = (k: ArtKey, bg: string) => [
-  { fill: bg, node: <NapUnitToken unitKey={k} blocks={MAXB} maxBlocks={MAXB} facing="right" /> },
-  { fill: bg, node: <NapUnitToken unitKey={k} blocks={2} maxBlocks={MAXB} facing="left" /> },
-  { fill: bg, node: <NapUnitToken unitKey={k} blocks={MAXB} maxBlocks={MAXB} facing="right" dimmed /> },
+  { fill: bg, node: <NapUnitToken unitKey={k} blocks={maxOf(k)} maxBlocks={maxOf(k)} facing="right" /> },
+  { fill: bg, node: <NapUnitToken unitKey={k} blocks={2} maxBlocks={maxOf(k)} facing="left" /> },
+  { fill: bg, node: <NapUnitToken unitKey={k} blocks={maxOf(k)} maxBlocks={maxOf(k)} facing="right" dimmed /> },
 ];
 
 const caption = (k: ArtKey) => `${k} · ${CODE_NAMES[codeOf(k)]}`;
@@ -96,7 +97,7 @@ function KeySection({ title, keys }: { title: string; keys: ArtKey[] }) {
       <div style={{ ...wrap, gap: 16 }}>
         {keys.map((k) => (
           <figure key={k} style={{ margin: 0 }}>
-            <Strip scale={LARGE} cells={[{ fill: GRASS, node: <NapUnitToken unitKey={k} blocks={MAXB} maxBlocks={MAXB} facing="right" /> }]} />
+            <Strip scale={LARGE} cells={[{ fill: GRASS, node: <NapUnitToken unitKey={k} blocks={maxOf(k)} maxBlocks={maxOf(k)} facing="right" /> }]} />
             <figcaption style={{ fontSize: 13, textAlign: 'center' }}>{caption(k)}</figcaption>
           </figure>
         ))}
@@ -108,16 +109,20 @@ function KeySection({ title, keys }: { title: string; keys: ArtKey[] }) {
 const LEADER_NAMES: Record<ArtNation, string> = { FR: 'Kellermann', BR: 'Prince of Orange', PT: 'Beresford', AL: 'Brunswick' };
 
 function LeaderSection() {
-  const cell = (bg: string, n: ArtNation, facing: 'left' | 'right') => ({
-    fill: bg,
-    node: (
-      <>
-        <NapLeaderToken nation={n} facing={facing} attached={false} name={LEADER_NAMES[n]} showName />
-        <g transform={`translate(${NAP_LEADER_ATTACH_OFFSET.x} ${NAP_LEADER_ATTACH_OFFSET.y})`}><NapLeaderToken nation={n} facing={facing} attached /></g>
-      </>
-    ),
-  });
-  const cells = (bg: string) => ART_NATIONS.map((n, k) => cell(bg, n, k % 2 ? 'left' : 'right'));
+  // each nation: the general alone on his base, then attached to a line battalion (the medallion on the badge's left end)
+  const pair = (bg: string, n: ArtNation, facing: 'left' | 'right') => [
+    { fill: bg, node: <NapLeaderToken nation={n} facing={facing} attached={false} name={LEADER_NAMES[n]} showName /> },
+    {
+      fill: bg,
+      node: (
+        <>
+          <NapUnitToken unitKey={`${n}/LN` as ArtKey} blocks={4} maxBlocks={4} facing={facing} />
+          <g transform={`translate(${NAP_LEADER_ATTACH_OFFSET.x} ${NAP_LEADER_ATTACH_OFFSET.y})`}><NapLeaderToken nation={n} facing={facing} attached /></g>
+        </>
+      ),
+    },
+  ];
+  const cells = (bg: string) => ART_NATIONS.flatMap((n, k) => pair(bg, n, k % 2 ? 'left' : 'right'));
   return (
     <section>
       <Heading>Leaders</Heading>
@@ -129,7 +134,7 @@ function LeaderSection() {
       <div style={{ ...wrap, gap: 16 }}>
         {ART_NATIONS.map((n) => (
           <figure key={n} style={{ margin: 0 }}>
-            <Strip scale={LARGE} cells={[cell(GRASS, n, 'right')]} />
+            <Strip scale={LARGE} cells={pair(GRASS, n, 'right')} />
             <figcaption style={{ fontSize: 13, textAlign: 'center' }}>{`${NATION_NAMES[n]} leader`}</figcaption>
           </figure>
         ))}
@@ -183,7 +188,7 @@ function Board() {
           const y = 4 + HEX_R + row * ROW_H;
           return (
             <Hex key={k} x={x} y={y} fill={(c + row) % 3 === 2 ? DARKEST : GRASS}>
-              <NapUnitToken unitKey={k} blocks={c % 2 ? 3 : MAXB} maxBlocks={MAXB} facing={r.facing} />
+              <NapUnitToken unitKey={k} blocks={c % 2 ? maxOf(k) - 1 : maxOf(k)} maxBlocks={maxOf(k)} facing={r.facing} />
               {c === 0 ? <g transform={`translate(${NAP_LEADER_ATTACH_OFFSET.x} ${NAP_LEADER_ATTACH_OFFSET.y})`}><NapLeaderToken nation={nationOf(k) as ArtNation} facing={r.facing} attached /></g> : null}
             </Hex>
           );

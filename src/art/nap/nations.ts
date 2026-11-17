@@ -9,7 +9,6 @@ export interface NationLook {
   side: SideColours;
   skin: readonly string[];
   hair: readonly string[];
-  guardDevice: 'eagle' | 'crown' | 'none';
 }
 
 /** The flocked top of the base (the Ancients' value: the same plate on the same board). */
@@ -28,10 +27,10 @@ const SKIN = ['#e0b48c', '#d4a077', '#c98f66', '#e6c09a'] as const;
 const HAIR = ['#3a2616', '#5a3a1e', '#1f1710', '#7a5a30', '#4a3020'] as const;
 
 export const NATION_LOOKS: Record<ArtNation, NationLook> = {
-  FR: { side: FR_SIDE, skin: SKIN, hair: HAIR, guardDevice: 'eagle' },
-  BR: { side: BR_SIDE, skin: SKIN, hair: HAIR, guardDevice: 'crown' },
-  PT: { side: PT_SIDE, skin: SKIN, hair: HAIR, guardDevice: 'none' },
-  AL: { side: PT_SIDE, skin: SKIN, hair: HAIR, guardDevice: 'none' },
+  FR: { side: FR_SIDE, skin: SKIN, hair: HAIR },
+  BR: { side: BR_SIDE, skin: SKIN, hair: HAIR },
+  PT: { side: PT_SIDE, skin: SKIN, hair: HAIR },
+  AL: { side: PT_SIDE, skin: SKIN, hair: HAIR },
 };
 
 export const HORSE_COATS: Record<HorseCoatName, { coat: string; shade: string; mane: string }> = {

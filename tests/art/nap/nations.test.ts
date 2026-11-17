@@ -55,10 +55,6 @@ describe('nation looks', () => {
     }
   });
 
-  it('guard devices', () => {
-    expect(['FR', 'BR', 'PT', 'AL'].map((n) => NATION_LOOKS[n as 'FR'].guardDevice)).toEqual(['eagle', 'crown', 'none', 'none']);
-  });
-
   it('cloth swatches read as their names', () => {
     expect(hueClass(CLOTH.frenchBlue)).toBe('blue');
     expect(hueClass(CLOTH.britishRed)).toBe('red');

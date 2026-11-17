@@ -41,19 +41,24 @@ function Blade({ hand, tip, curved, hilt }: { hand: P; tip: P; curved: boolean; 
   );
 }
 
-/** The lance, upright and leaning a little forward, its butt in the boot; the pennon streams back from just under the head. */
+const LANCE_HAND: P = [6.5, -8.6];
+/** The lance slopes forward from the vertical (lowered towards the charge), which also keeps its head and pennon inside the hex. */
+const LANCE_SLOPE = 30;
+const LANCE_UP = 26; // hand to the foot of the head
+const LANCE_DOWN = 13; // hand to the butt
+
+/** The lance, gripped in the near hand and sloped forward; the pennon streams back from just under the head. */
 function Lance({ pennon }: { pennon?: readonly [string, string] }) {
-  const butt: P = [5, 6.4];
-  const tip: P = [9.4, -41];
-  const [tx, ty] = tip;
+  // drawn upright in a frame centred on the hand, then turned forward about the hand
+  const ty = -LANCE_UP;
   return (
-    <g>
-      <Line2 d={`M${pt(butt)} L${pt(tip)}`} w={0.95} c={METAL.wood} ow={0.45} />
-      <Shape d={`M${tx - 0.9} ${ty + 2.4} L${tx + 0.1} ${ty - 3.2} L${tx + 1.1} ${ty + 2.4} Z`} f={METAL.steel} sw={0.5} />
+    <g transform={`translate(${pt(LANCE_HAND)}) rotate(${LANCE_SLOPE})`}>
+      <Line2 d={`M0 ${LANCE_DOWN} L0 ${ty}`} w={0.95} c={METAL.wood} ow={0.45} />
+      <Shape d={`M-1 ${ty + 0.4} L0 ${ty - 5.2} L1 ${ty + 0.4} Z`} f={METAL.steel} sw={0.5} />
       {pennon ? (
         <g data-part="pennon">
-          <Shape d={`M${tx - 0.6} ${ty + 3.4} L${tx - 10} ${ty + 3.9} L${tx - 7.4} ${ty + 6.4} L${tx - 0.6} ${ty + 6.4} Z`} f={pennon[0]} sw={0.5} />
-          <Shape d={`M${tx - 0.6} ${ty + 6.4} L${tx - 7.4} ${ty + 6.4} L${tx - 10} ${ty + 8.9} L${tx - 0.6} ${ty + 9.4} Z`} f={pennon[1]} sw={0.5} />
+          <Shape d={`M-0.6 ${ty + 1.4} L-9 ${ty + 1.9} L-6.6 ${ty + 4.2} L-0.6 ${ty + 4.2} Z`} f={pennon[0]} sw={0.5} />
+          <Shape d={`M-0.6 ${ty + 4.2} L-6.6 ${ty + 4.2} L-9 ${ty + 6.5} L-0.6 ${ty + 7} Z`} f={pennon[1]} sw={0.5} />
         </g>
       ) : null}
     </g>
@@ -62,7 +67,16 @@ function Lance({ pennon }: { pennon?: readonly [string, string] }) {
 
 /** Where the weapon arm goes, and the weapon: hand, elbow and the tip of the blade, for each weapon and pose. */
 interface Hold { elbow: P; hand: P; tip?: P }
+/**
+ * Raised blades are drawn at this fraction of the length the poses below are written with: a sword about half a man's height,
+ * which keeps the tips of the right-hand riders inside the hex.
+ */
+const BLADE = 0.85;
+const shorten = (h: Hold): Hold => (h.tip ? { ...h, tip: [h.hand[0] + (h.tip[0] - h.hand[0]) * BLADE, h.hand[1] + (h.tip[1] - h.hand[1]) * BLADE] } : h);
 function hold(weapon: CavalryWeapon | 'none' | 'reins', pose: 0 | 1 | 2): Hold {
+  return shorten(holdAtFullLength(weapon, pose));
+}
+function holdAtFullLength(weapon: CavalryWeapon | 'none' | 'reins', pose: 0 | 1 | 2): Hold {
   switch (weapon) {
     case 'sabre': {
       const h: Hold[] = [
@@ -81,7 +95,7 @@ function hold(weapon: CavalryWeapon | 'none' | 'reins', pose: 0 | 1 | 2): Hold {
       return h[pose];
     }
     case 'lance':
-      return { elbow: [5.2, -10.4], hand: [6.5, -8.6] };
+      return { elbow: [5.2, -10.4], hand: LANCE_HAND };
     case 'reins':
       return { elbow: [4.8, -9.4], hand: [REIN_HAND[0] + 1.6, REIN_HAND[1]] };
     case 'none':

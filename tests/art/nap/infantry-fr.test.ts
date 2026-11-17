@@ -73,9 +73,9 @@ describe('French infantry', () => {
     for (let i = 0; i < 4; i++) for (let j = 0; j < i; j++) expect(fig('FR/LN', i)).not.toBe(fig('FR/LN', j));
   });
 
-  it('the Guard carries its eagle', () => {
-    for (const k of ['FR/YG', 'FR/OG'] as const) expect(token(k), k).toContain('data-guard="eagle"');
-    for (const k of ['FR/LN', 'FR/LT', 'FR/GR', 'FR/ML'] as const) expect(token(k), k).not.toContain('data-guard');
+  it('the Guard stands on the gold-rimmed base', () => {
+    for (const k of ['FR/YG', 'FR/OG'] as const) expect(token(k), k).toContain('data-base-rim="gold"');
+    for (const k of ['FR/LN', 'FR/LT', 'FR/GR', 'FR/ML'] as const) expect(token(k), k).not.toContain('data-base-rim');
   });
 
   it('every pose, weapon and facing draws for every key, with no NaN', () => {

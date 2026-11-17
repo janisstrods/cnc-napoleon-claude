@@ -2,8 +2,8 @@ import { createElement as h } from 'react';
 import { describe, expect, it } from 'vitest';
 import { ARTILLERY, type ArtKey, type ArtilleryKey } from '../../../src/art/nap/keys';
 import { NapMiniature } from '../../../src/art/nap/token';
-import { GUN_PIECE_BOX, ICON_BOX, ICON_STEP, TEAM_BANDS, TEAM_SLOT, standing } from '../../../src/art/nap/slots';
-import { GunTeamFigure } from '../../../src/art/nap/gun';
+import { standing } from '../../../src/art/nap/slots';
+import { HorseHolderFigure } from '../../../src/art/nap/gun';
 import { NATION_LOOKS } from '../../../src/art/nap/nations';
 import { FIGURE_SPECS } from '../../../src/art/nap/specs';
 import type { GunPiece, GunSpec } from '../../../src/art/nap/uniform';
@@ -32,7 +32,7 @@ describe('artillery', () => {
     }
   });
 
-  it('every gun has a gun and two crew at 3 blocks and four pieces at 4 (the horse teams are not block pieces)', () => {
+  it('every gun has a gun and two crew at 3 blocks and four pieces at 4 (the horse holder is not a block piece)', () => {
     for (const k of ARTILLERY) {
       const out = token(k, { blocks: 3, maxBlocks: 3 });
       expect(count(out, 'data-piece='), k).toBe(3);
@@ -42,42 +42,60 @@ describe('artillery', () => {
     }
   });
 
-  it('every horse-artillery key shows a limber and a pair of draught horses at 4, 3, 2 and 1 blocks, in both facings', () => {
+  it('every horse-artillery key shows one mounted gunner holding his horse at 1 to 4 blocks, in both facings, and no limber', () => {
     expect(HORSE.length).toBeGreaterThan(0);
-    for (const k of HORSE) for (const facing of ['right', 'left'] as const) for (let b = 1; b <= 4; b++) {
-      const out = token(k, { blocks: b, maxBlocks: 4, facing });
-      const label = `${k} ${facing} ${b}`;
-      expect(count(out, 'data-limber='), label).toBe(1);
-      expect(count(out, 'data-horse="light"'), label).toBe(2);
+    for (const k of HORSE) for (const facing of ['right', 'left'] as const) for (const max of [3, 4]) for (let b = 1; b <= max; b++) {
+      const out = token(k, { blocks: b, maxBlocks: max, facing });
+      const label = `${k} ${facing} ${b}/${max}`;
+      expect(count(out, '<g data-holder="true"'), label).toBe(1);
+      expect(count(out, 'data-horse="light"'), label).toBe(1);
       expect(count(out, 'data-rider'), label).toBe(1);
-      expect(out, label).toContain(spec(k).carriage);
+      expect(out, label).toContain('data-weapon="reins"');
+      expect(count(out, 'data-fig='), label).toBe(b);
+      for (const a of ['data-limber', 'data-team']) expect(out, `${label} ${a}`).not.toContain(a);
     }
   });
 
-  it('foot guns, Guard guns included, show no team', () => {
+  it('foot guns, Guard guns included, show no holder and no horse', () => {
     for (const k of FOOT) {
-      expect(spec(k).team, k).toBeUndefined();
-      const out = token(k);
-      for (const a of ['data-team', 'data-limber', 'data-horse=', 'data-rider']) expect(out, `${k} ${a}`).not.toContain(a);
+      expect(spec(k).holder, k).toBeUndefined();
+      for (const b of [1, 3]) {
+        const out = token(k, { blocks: b, maxBlocks: 3 });
+        for (const a of ['data-holder', 'data-team', 'data-limber', 'data-horse=', 'data-rider']) expect(out, `${k} ${a}`).not.toContain(a);
+      }
     }
-    for (const k of HORSE) expect(spec(k).team, k).toBe(true);
+    for (const k of HORSE) expect(spec(k).holder, k).toBe(true);
   });
 
-  it('the team is not a block piece: its markup is the same at every strength', () => {
-    const team = (out: string) => out.slice(out.indexOf('<g data-team-slot'), out.indexOf('<g data-slot='));
+  it('the holder is not a block piece: his markup is the same at every strength, and he is drawn before every piece', () => {
+    const holder = (out: string) => out.slice(out.indexOf('<g data-holder="true"'), out.indexOf('<g data-slot='));
     for (const k of HORSE) for (const facing of ['right', 'left'] as const) {
-      const full = team(token(k, { blocks: 4, maxBlocks: 4, facing }));
+      const full = holder(token(k, { blocks: 3, maxBlocks: 3, facing }));
       expect(full.length, k).toBeGreaterThan(500);
-      for (const [b, m] of [[3, 3], [2, 3], [1, 3]] as const) expect(team(token(k, { blocks: b, maxBlocks: m, facing })), `${k} ${facing} ${b}/${m}`).toBe(full);
-      for (const b of [3, 2, 1]) expect(team(token(k, { blocks: b, maxBlocks: 4, facing })), `${k} ${facing} ${b}`).toBe(full);
+      for (const [b, m] of [[2, 3], [1, 3], [4, 4], [1, 4]] as const) expect(holder(token(k, { blocks: b, maxBlocks: m, facing })), `${k} ${facing} ${b}/${m}`).toBe(full);
+      const out = token(k, { facing });
+      expect(out.indexOf('<g data-holder="true"'), k).toBeLessThan(out.indexOf('data-slot='));
     }
   });
 
-  it('the team is drawn before every piece, so the crew and the gun stand in front of it', () => {
-    for (const k of HORSE) {
-      const out = token(k);
-      expect(out.indexOf('data-team-slot'), k).toBeGreaterThan(-1);
-      expect(out.indexOf('data-team-slot'), k).toBeLessThan(out.indexOf('data-slot='));
+  it('the gun stands front centre, the linstock man behind it, and the rammer out at the muzzle, facing it', () => {
+    for (const k of ARTILLERY) for (const facing of ['right', 'left'] as const) {
+      const flip = facing === 'right' ? 1 : -1;
+      const out = token(k, { blocks: 3, maxBlocks: 3, facing });
+      const at = (p: GunPiece) => {
+        const m = new RegExp(`<g transform="translate\\(([-\\d.]+) ([-\\d.]+)\\) scale\\(([-\\d.]+) [\\d.]+\\)"><g data-fig="gun" data-piece="${p}"`).exec(out);
+        expect(m, `${k} ${facing} ${p}`).not.toBeNull();
+        return m!.slice(1).map(Number);
+      };
+      const [gx, gy] = at('gun');
+      const [lx, ly, ls] = at('linstock');
+      const [rx, ry, rs] = at('rammer');
+      expect(Math.abs(gx), k).toBeLessThanOrEqual(3);
+      expect(gy, k).toBeGreaterThan(Math.max(ly, ry)); // in front of both crewmen
+      expect(rx * flip, k).toBeGreaterThan(20); // out at the muzzle
+      expect(rx * flip, k).toBeGreaterThan(lx * flip + 12); // clear of the linstock man, who stands back by the breech
+      expect(Math.sign(ls), k).toBe(flip); // the linstock man faces the enemy
+      expect(Math.sign(rs), k).toBe(-flip); // the rammer faces the gun
     }
   });
 
@@ -89,7 +107,7 @@ describe('artillery', () => {
     for (const p of ['gun', 'rammer', 'linstock', 'ammo'] as const) expect(piece('FR/GA', p)).toContain('data-head="bearskin"');
     expect(piece('BR/HA', 'rammer')).toContain('data-head="tarleton"');
     expect(token('BR/HA')).toContain('data-head="tarleton"');
-    expect(count(svg(h(GunTeamFigure, { spec: spec('BR/HA'), n: NATION_LOOKS.BR })), 'data-head="tarleton"')).toBe(1);
+    expect(count(svg(h(HorseHolderFigure, { spec: spec('BR/HA'), n: NATION_LOOKS.BR })), 'data-head="tarleton"')).toBe(1);
     expect(piece('FR/FA', 'rammer')).toContain('data-head="shako"');
     expect(piece('BR/FA', 'rammer')).toContain('data-head="stovepipe"');
     expect(piece('PT/FA', 'rammer')).toContain('data-head="barretina"');
@@ -111,22 +129,33 @@ describe('artillery', () => {
     const lum = (c: string) => parseInt(c.slice(1, 3), 16) + parseInt(c.slice(3, 5), 16) + parseInt(c.slice(5, 7), 16);
     expect(lum(spec('FR/HA').carriage)).toBeGreaterThan(lum(spec('FR/FA').carriage));
     expect(lum(spec('BR/HA').carriage)).toBeGreaterThan(lum(spec('BR/FA').carriage));
-    expect(piece('FR/HA', 'gun')).toContain('scale(0.945)');
-    expect(piece('FR/FA', 'gun')).toContain('scale(1.05)');
+    expect(piece('FR/HA', 'gun')).toContain('scale(1.008)');
+    expect(piece('FR/FA', 'gun')).toContain('scale(1.12)');
   });
 
-  it('only the Guard artillery carries the marker', () => {
-    expect(token('FR/GA')).toContain('data-guard="eagle"');
-    for (const k of ARTILLERY.filter((x) => x !== 'FR/GA')) expect(token(k), k).not.toContain('data-guard');
+  it('only the Guard artillery stands on the gold-rimmed base', () => {
+    expect(token('FR/GA')).toContain('data-base-rim="gold"');
+    for (const k of ARTILLERY.filter((x) => x !== 'FR/GA')) expect(token(k), k).not.toContain('data-base-rim');
   });
 
-  it('the team is a limber hooked to two light draught horses in collar and traces, the near one ridden', () => {
-    const out = svg(h(GunTeamFigure, { spec: spec('FR/HA'), n: NATION_LOOKS.FR }));
-    expect(count(out, 'data-limber=')).toBe(1);
-    expect(count(out, 'data-horse="light"')).toBe(2);
-    expect(count(out, 'data-part="harness"')).toBe(2);
-    expect(count(out, 'data-rider')).toBe(1);
-    expect(out).not.toMatch(/NaN|undefined|Infinity/);
+  it('the holder is a light horse at a halt with a gunner in the crew\'s dress holding the reins', () => {
+    for (const k of HORSE) {
+      const out = svg(h(HorseHolderFigure, { spec: spec(k), n: NATION_LOOKS[k.slice(0, 2) as 'FR'] }));
+      expect(count(out, 'data-horse="light"'), k).toBe(1);
+      expect(count(out, 'data-rider'), k).toBe(1);
+      expect(out, k).toContain('data-weapon="reins"');
+      expect(out, k).toContain(`data-head="${spec(k).crew.head.kind}"`);
+      expect(out, k).toContain(spec(k).crew.dress.coat);
+      expect(out).not.toMatch(/NaN|undefined|Infinity/);
+    }
+  });
+
+  it('the gunner crouches behind the trail end, drawn behind the near wheel', () => {
+    const out = piece('FR/FA', 'gun');
+    const crew = out.indexOf('data-crew="gun"');
+    const wheels = [...out.matchAll(/data-part="wheel"/g)].map((m) => m.index!);
+    expect(crew).toBeGreaterThan(wheels[0]);
+    expect(crew).toBeLessThan(wheels[wheels.length - 1]);
   });
 
   it('every piece of every key renders in both facings without junk', () => {
@@ -134,41 +163,10 @@ describe('artillery', () => {
     for (const k of ARTILLERY) for (const facing of ['left', 'right'] as const) for (let b = 1; b <= 4; b++) expect(token(k, { blocks: b, facing }), `${k} ${facing} ${b}`).not.toMatch(/NaN|undefined|Infinity/);
   });
 
-  it('every piece clears the leader attach corner where it stands, at every strength and in both facings', () => {
-    const CX = 29, CY = -28, R = 12;
-    const hits: string[] = [];
-    for (const k of ARTILLERY) for (const max of [3, 4] as const) for (let n = 1; n <= max; n++) {
-      for (const [sl, fi] of standing('gun', n, max)) {
-        // the paint index picks the piece, as the token does
-        const p = spec(k).pieces[max - 1 - fi] ?? spec(k).pieces[0];
-        const { box: [top, bottom, left, right], step } = GUN_PIECE_BOX[p];
-        for (const flip of [1, -1]) for (const [t, b, l, r] of [[top, step.y, step.left, step.right], [step.y, bottom, left, right]]) {
-          const x0 = sl.x + (flip > 0 ? l : -r) * sl.s;
-          const x1 = sl.x + (flip > 0 ? r : -l) * sl.s;
-          const d = Math.hypot(Math.max(x0 - CX, 0, CX - x1), Math.max(sl.y + t * sl.s - CY, 0, CY - (sl.y + b * sl.s)));
-          if (d < R) hits.push(`${k} ${n}/${max} ${p} flip${flip} d=${d.toFixed(1)}`);
-        }
-      }
+  it('draws back to front: the gun, in front, is drawn last', () => {
+    for (const max of [3, 4]) {
+      const ys = standing('gun', max, max).map(([sl]) => sl.y);
+      expect(Math.max(...ys)).toBe(ys[ys.length - 1]);
     }
-    expect(hits).toEqual([]);
-  });
-
-  it('the team clears the leader attach corner in both facings (measured bands, stroke included)', () => {
-    const CX = 29, CY = -28, R = 12;
-    const hits: string[] = [];
-    for (const flip of [1, -1]) for (const [t, b, l, r] of TEAM_BANDS) {
-      const x0 = TEAM_SLOT.x + (flip > 0 ? l : -r) * TEAM_SLOT.s;
-      const x1 = TEAM_SLOT.x + (flip > 0 ? r : -l) * TEAM_SLOT.s;
-      const d = Math.hypot(Math.max(x0 - CX, 0, CX - x1), Math.max(TEAM_SLOT.y + t * TEAM_SLOT.s - CY, 0, CY - (TEAM_SLOT.y + b * TEAM_SLOT.s)));
-      if (d < R) hits.push(`flip${flip} band ${t}..${b} d=${d.toFixed(1)}`);
-    }
-    expect(hits).toEqual([]);
-  });
-
-  it('draws back to front: the slots are listed by increasing y', () => {
-    const ys = standing('gun', 4, 4).map(([sl]) => sl.y);
-    expect(ys).toEqual([...ys].sort((a, b) => a - b));
-    expect(GUN_PIECE_BOX.gun.box).toBe(ICON_BOX.gun);
-    expect(GUN_PIECE_BOX.gun.step).toBe(ICON_STEP.gun);
   });
 });

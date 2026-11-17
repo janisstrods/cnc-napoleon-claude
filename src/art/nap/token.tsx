@@ -1,15 +1,16 @@
-// Napoleonic unit token: base plate, one miniature per remaining block, the Guard marker and the arm badge, centred on
-// (0,0) of a pointy-top hex of radius 50 (HEX_R). The top-right corner is kept clear for an attached leader.
+// Napoleonic unit token: base plate (gold-rimmed for the Guard), one miniature per remaining block (and a horse-artillery
+// stand's mounted horse holder) and the arm badge, centred on (0,0) of a pointy-top hex of radius 50 (HEX_R). The formation is
+// centred and mirrored with the facing; an attached leader's medallion sits on the badge's left end (NAP_LEADER_ATTACH_OFFSET).
 import { memo } from 'react';
 import { darken } from '../color';
 import { UnitBadge } from './badge';
 import { FacingRightCtx, OL } from './draw';
 import { FootFigure } from './foot';
-import { GunPieceFigure, GunTeamFigure } from './gun';
+import { GunPieceFigure, HorseHolderFigure } from './gun';
 import { artNationOf, type ArtKey } from './keys';
 import { BASE_TOP, NATION_LOOKS, METAL, type SideColours } from './nations';
 import { MountedFigure } from './rider';
-import { ICON_BOX, TEAM_SLOT, formationOf, standing } from './slots';
+import { HOLDER_SLOT, ICON_BOX, formationOf, standing } from './slots';
 import { FIGURE_SPECS } from './specs';
 import type { GunPiece } from './uniform';
 
@@ -50,11 +51,12 @@ function blobs(list: [number, number, number][], irx: number, iry: number, ox: n
     .join('');
 }
 
-export function NapBasePlate({ side, rx = 38, ry = 11.5, cy = 11 }: { side: SideColours; rx?: number; ry?: number; cy?: number }) {
+/** The base plate; `rim` draws a 1-unit stroke of that colour round the plate's outer edge (the Guard's gold). */
+export function NapBasePlate({ side, rx = 38, ry = 11.5, cy = 11, rim }: { side: SideColours; rx?: number; ry?: number; cy?: number; rim?: string }) {
   const irx = rx - 2.2;
   const iry = ry - 1.9;
   return (
-    <g>
+    <g data-base-rim={rim ? 'gold' : undefined}>
       <ellipse cx={1.8} cy={cy + 5.6} rx={rx + 1.2} ry={ry + 1.2} fill="#000" opacity={0.26} />
       <ellipse cx={0} cy={cy + 3.6} rx={rx} ry={ry} fill={side.edgeShade} stroke={OL} strokeWidth={0.9} />
       <path d={`M${-rx} ${cy} A ${rx} ${ry} 0 0 0 ${rx} ${cy} L ${rx} ${cy + 2.4} A ${rx} ${ry} 0 0 1 ${-rx} ${cy + 2.4} Z`} fill={side.edge} />
@@ -65,32 +67,10 @@ export function NapBasePlate({ side, rx = 38, ry = 11.5, cy = 11 }: { side: Side
       <path d={blobs(TUFTS, irx, iry, 0, cy - 0.2, 2.2, 0.9)} fill={darken(BASE_TOP, 0.3)} opacity={0.75} />
       <path d={blobs(TUFTS, irx, iry, -0.5, cy - 0.6, 1.3, 0.55)} fill="#a6a25a" opacity={0.85} />
       <path d={`M${-rx + 4} ${cy - 3.5} A ${irx} ${iry} 0 0 1 ${rx - 8} ${cy - 5.6}`} fill="none" stroke={side.edgeLight} strokeWidth={0.8} opacity={0.8} />
-    </g>
-  );
-}
-
-// ---------------------------------------------------------------------------------------------
-// Guard marker: a gilt staff planted at the back of the base (left when facing right, mirrored with the facing; set low and small so that, in either facing, it clears the leader medallion at (29,-28) r 12), topped with an eagle or a crown.
-
-export function GuardMarker({ device, flip = 1 }: { device: 'eagle' | 'crown'; flip?: number }) {
-  return (
-    <g data-guard={device} transform={`translate(${-31 * flip} 14) scale(0.66)`}>
-      <ellipse cx={1} cy={0.6} rx={3} ry={1.1} fill="#000" opacity={0.3} />
-      <path d="M0 0.4 L0 -34" stroke={OL} strokeWidth={2.4} strokeLinecap="round" />
-      <path d="M0 0 L0 -34" stroke={METAL.gold} strokeWidth={1.3} />
-      {device === 'eagle' ? (
-        <g transform="translate(0 -35)" fill={METAL.gold} stroke={OL} strokeWidth={0.5} strokeLinejoin="round">
-          <path d="M0 -1 C-2 -3.4 -5.4 -3.6 -7 -2 C-5.4 -2 -4.4 -1.2 -4 0 C-3 -0.4 -2 -0.2 -1.4 0.4 Z M0 -1 C2 -3.4 5.4 -3.6 7 -2 C5.4 -2 4.4 -1.2 4 0 C3 -0.4 2 -0.2 1.4 0.4 Z" />
-          <ellipse cx={0} cy={-1.8} rx={1.5} ry={2.4} />
-          <circle cx={0.7} cy={-5} r={1.1} />
-          <path d="M1.6 -5.3 L3 -4.8 L1.6 -4.3 Z" />
-        </g>
-      ) : (
-        <g transform="translate(0 -35)" fill={METAL.gold} stroke={OL} strokeWidth={0.5} strokeLinejoin="round">
-          <path d="M-3.8 0 L-4.4 -5 L-2.2 -3 L0 -6 L2.2 -3 L4.4 -5 L3.8 0 Z" />
-          <circle cx={0} cy={-6.8} r={0.9} />
-        </g>
-      )}
+      {rim ? (
+        // the rim follows the plate's whole silhouette: the top ellipse's far half and the edge's near half
+        <path d={`M${-rx} ${cy} A ${rx} ${ry} 0 0 1 ${rx} ${cy} L ${rx} ${cy + 3.6} A ${rx} ${ry} 0 0 1 ${-rx} ${cy + 3.6} Z`} fill="none" stroke={rim} strokeWidth={1} strokeLinejoin="round" />
+      ) : null}
     </g>
   );
 }
@@ -105,30 +85,36 @@ function UnitTokenImpl({ unitKey, blocks, maxBlocks, facing, dimmed }: NapUnitTo
   const placed = n > 0 ? standing(formation, n, maxBlocks) : [];
   const flip = facing === 'left' ? -1 : 1;
   const guard = spec.guard === true;
-  const device = look.guardDevice;
+  const holder = spec.drawing === 'gun' && spec.holder === true;
   return (
     <g data-nap>
       <g opacity={dimmed ? 0.6 : undefined} style={dimmed ? { filter: 'saturate(0.3) brightness(0.95)' } : undefined}>
-        <NapBasePlate side={look.side} />
-        <FacingRightCtx.Provider value={facing === 'right'}>
-          {spec.drawing === 'gun' && spec.team ? (
-            <g data-team-slot>
-              <ellipse cx={TEAM_SLOT.x + 1.6 * flip} cy={TEAM_SLOT.y + 0.4} rx={34 * TEAM_SLOT.s} ry={2.2 * TEAM_SLOT.s} fill="#1a1208" opacity={0.42} />
-              <g transform={`translate(${TEAM_SLOT.x} ${TEAM_SLOT.y}) scale(${TEAM_SLOT.s * flip} ${TEAM_SLOT.s})`}>
-                <GunTeamFigure spec={spec} n={look} />
+        <NapBasePlate side={look.side} rim={guard ? METAL.gold : undefined} />
+        {holder ? (
+          // the horse holder stands at the rear, drawn first so that the crew and the gun stand in front of him
+          <g data-holder>
+            <ellipse cx={(HOLDER_SLOT.x + 1.6) * flip} cy={HOLDER_SLOT.y + 0.4} rx={15 * HOLDER_SLOT.s} ry={2.2 * HOLDER_SLOT.s} fill="#1a1208" opacity={0.42} />
+            <FacingRightCtx.Provider value={flip * (HOLDER_SLOT.face ?? 1) > 0}>
+              <g transform={`translate(${HOLDER_SLOT.x * flip} ${HOLDER_SLOT.y}) scale(${HOLDER_SLOT.s * flip * (HOLDER_SLOT.face ?? 1)} ${HOLDER_SLOT.s})`}>
+                <HorseHolderFigure spec={spec} n={look} />
               </g>
-            </g>
-          ) : null}
-          {placed.map(([sl, idx]) => (
+            </FacingRightCtx.Provider>
+          </g>
+        ) : null}
+        {placed.map(([sl, idx]) => {
+          // a slot may turn its figure to face the other way (the rammer faces the muzzle); the light follows the figure
+          const dir = flip * (sl.face ?? 1);
+          return (
             <g key={idx} data-slot={idx}>
-              <ellipse cx={sl.x + 1.6 * flip} cy={sl.y + 0.4} rx={(formation === 'close' || formation === 'loose' ? 7.5 : 15) * sl.s} ry={2.2 * sl.s} fill="#1a1208" opacity={0.42} />
-              <g transform={`translate(${sl.x} ${sl.y}) scale(${sl.s * flip} ${sl.s})`}>
-                <NapMiniature unitKey={unitKey} i={idx} piece={spec.drawing === 'gun' ? spec.pieces[maxBlocks - 1 - idx] ?? spec.pieces[0] : undefined} />
-              </g>
+              <ellipse cx={(sl.x + 1.6) * flip} cy={sl.y + 0.4} rx={(formation === 'close' || formation === 'loose' ? 7.5 : 15) * sl.s} ry={2.2 * sl.s} fill="#1a1208" opacity={0.42} />
+              <FacingRightCtx.Provider value={dir > 0}>
+                <g transform={`translate(${sl.x * flip} ${sl.y}) scale(${sl.s * dir} ${sl.s})`}>
+                  <NapMiniature unitKey={unitKey} i={idx} piece={spec.drawing === 'gun' ? spec.pieces[maxBlocks - 1 - idx] ?? spec.pieces[0] : undefined} />
+                </g>
+              </FacingRightCtx.Provider>
             </g>
-          ))}
-        </FacingRightCtx.Provider>
-        {guard && device !== 'none' ? <GuardMarker device={device} flip={flip} /> : null}
+          );
+        })}
       </g>
       <g opacity={dimmed ? 0.8 : undefined}>
         <UnitBadge unitKey={unitKey} blocks={n} maxBlocks={maxBlocks} guard={guard} />
