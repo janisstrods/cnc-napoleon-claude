@@ -352,7 +352,7 @@
   {
    "r": 0,
    "c": 4,
-   "note": "British exit hex (outlined in red on the map), also the River Coa bridge. Any ordered Anglo-Portuguese unit of any strength leaving the board by this hex scores one banner for BR; leaders do not score (survey 006). Anglo-Portuguese units cannot retreat off the bridge; a unit that cannot retreat takes one block of damage per hex it could not move. OPEN RULINGS QUESTION (survey): the text gives the French one banner if an Anglo-Portuguese unit is eliminated on this hex; it is not stated whether that is one banner in total for the unit or an extra on top of the normal kill banner. Not decided here."
+   "note": "British exit hex (outlined in red on the map), also the River Coa bridge. Any ordered Anglo-Portuguese unit of any strength leaving the board by this hex scores one banner for BR; leaders do not score (survey 006). Anglo-Portuguese units cannot retreat off the bridge; a unit that cannot retreat takes one block of damage per hex it could not move. A unit eliminated on this hex gives the French only the ordinary kill banner, not an extra one (ruled in R67, design/rulings.md)."
   }
  ],
  "notes": [

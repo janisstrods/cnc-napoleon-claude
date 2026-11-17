@@ -653,7 +653,7 @@ flags (R30).
 * A step may not enter a hex with any other unit (friend or foe) or an enemy leader, impassable terrain, or leave the
   board. Other terrain is ignored (no stopping).
 * **Leaders stop retreats:** a unit without an attached leader may retreat onto a lone friendly leader; he attaches and
-  the retreat ends there (remaining hexes are cancelled, not lost). A unit with an attached leader may pass through a
+  the retreat ends there (remaining hexes are cancelled, not lost): a path ending on him is a complete retreat (R74). A unit with an attached leader may pass through a
   lone friendly leader's hex but may not end its retreat there (R75).
 * Each retreat hex that cannot be completed costs 1 block. If any legal path completes the full distance, the owner
   must take one (his choice among them); otherwise he takes a path going as far as possible and the unit loses 1 block
@@ -675,7 +675,7 @@ Ignoring is optional and chosen flag by flag; the sources add up (R23):
 | GR, CU | 1 | Unit type. |
 | YG | 1 | Unit type. |
 | OG, GG, GHC, GA | 2 | Unit type. |
-| Scenario | per §14 | 006 Almeida fortress: 1 for Anglo-Portuguese units (R23). |
+| Scenario | per §14 | 006 Almeida fortress: 1 for British-side units (BR, PT) on a fortress hex (R23, R84). |
 
 A unit may ignore flags each time it is attacked. Lone leaders are not affected by flags at all.
 
@@ -908,8 +908,8 @@ No other edge exits exist in the base game (R67).
 
 Each battle's rules, as data a scenario file carries. Setups (terrain, units, leaders) come from the verified
 transcriptions in `design/data/NNN.json`; hexes are given as (r, c) in the §1 grid, from those files, and the
-transcription notes are in `design/data/notes-*.md`. In all 15 battles the **top** army is the British side (BR with PT,
-or with AL at 014–015) and the **bottom** army is the French (FR). Only the Command card number on the maps is a hand
+transcription notes are in `design/data/notes-*.md`. In all 15 battles the **top** army is the British side (BR, with PT or AL
+where present) and the **bottom** army is the French (FR). Only the Command card number on the maps is a hand
 size; the Tactician numbers are ignored (R86). Every battle also scores the ordinary banners of §13.2.
 
 **Fields used below.**
@@ -926,7 +926,7 @@ size; the Tactician numbers are ignored (R86). Every battle also scores the ordi
 |---|---|---|---|---|---|---|
 | 001 | 6 / 5 | top | 5 | 2 × `tempHex` (top) | fordable | — |
 | 002 | 6 / 5 | top | 5 | — | — (no river) | rugged hills |
-| 003 | 6 / 5 | bottom | 6 | `tempGroup` (bottom, 2 banners) | fordable | — |
+| 003 | 6 / 5 | bottom | 6 | `tempGroup` (bottom, 2 banners) | fordable | rugged hills (4 hexes) |
 | 004 | 5 / 5 | bottom | 6 | — | fordable | — |
 | 005 | 6 / 5 | bottom | 7 | — | brook | Field Works on a hill |
 | 006 | 4 / 4 | top | 6 | `exit` (top) | impassable | fortress, windmill, Field Works |
@@ -965,7 +965,7 @@ size; the Tactician numbers are ignored (R86). Every battle also scores the ordi
 
 * `rivers`: brook. The Portina Brook's River hexes stop movement on entry (units and leaders), cause no battle
   reductions, allow squares and do not block line of sight; a unit that entered one this turn may not take ground or
-  break through (R47, R83).
+  break through (R47, R83) **[Interp R83]**.
 * Field Works on a hill at (2,0), works hexsides SW, SE, E (`design/data/005.json`; a BR/FA starts on it): §4.3–§4.4,
   R45, R79.
 
@@ -1029,7 +1029,8 @@ size; the Tactician numbers are ignored (R86). Every battle also scores the ordi
 
 * `objectives`: `tempHex`, `side` bottom, `timing` turnStart, `banners` 1, `hex` (1,5): the Quatre Bras town hex
   (`design/data/014.json`).
-* `rivers`: fordableNoStop (the whole stream, as at 011). Bridge hexes (5,4) and (5,10) (R47, R83).
+* `rivers`: fordableNoStop (the whole stream, as at 011): fordable-river battle effects, no movement stop, no bar on
+  taking ground **[Interp R83]**. Bridge hexes (5,4) and (5,10) (R47).
 * `sideRules` (top): the Nassau, Hanover and Dutch units are `AL` units (brown blocks): Portuguese card values, except
   that `AL/LN` retreats 2 hexes per flag (§2.4, R10).
 
@@ -1040,12 +1041,13 @@ size; the Tactician numbers are ignored (R86). Every battle also scores the ordi
   Hougoumont, (4,12) Papelotte (`design/data/015.json`). All three are ordinary Town hexes with no flag-ignore **[Interp R72]**.
 * `sideRules` (top): the Nassau, Brunswick, Hanover and Dutch units are `AL` units, as at 014 (§2.4, R10).
 * `sideRules` (top): **impetuous British cavalry** (R72, R82) **[Interp R82]**. For `BR/LC`, `BR/HC`, `BR/GHC` only (not `AL/LC`), after
-  a successful attacking melee:
+  a successful attacking melee, and only when §9.8 allows a breakthrough (not after entering a stop hex this turn,
+  R35):
   * after the initial melee the unit **must** move into the vacated hex, then **must** move 1 more hex if a legal one
     exists: a vacant hex it may enter, adjacent to the vacated hex in the row next toward the French baseline (row + 1),
     and not its original hex; the Allied player chooses between two; none if the vacated hex stopped its movement;
   * the bonus melee stays optional; after a successful bonus melee it **must** move into that vacated hex (no extra hex);
-  * never in a battle back or after First Strike.
+  * never in a battle back, and never for a unit that used First Strike (§9.7).
 * Sand quarry at (2,6) (§4, R71); a BR/RI starts on it.
 
 ## 15. Expansion #1 (reserved)

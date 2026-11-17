@@ -23,9 +23,9 @@ Browser game: TypeScript + Vite + React, pure rules engine in `src/engine`, AI i
 | `npm run build` | Type-check, then build the static site into `docs/` |
 
 Slow opt-in AI matches: `npx vite-node scripts/ai-match.ts -- --a tribune --b recruit --games 2` (see the file header for flags).
-Expansion #1 AI-vs-AI balance runs with behaviour counters: `npx vite-node scripts/ai-balance.ts -- --scenarios 101,110 --games 2`
-(see the file header; results are logged in `design/exp1-ai-balance.md` and, for 201–223 and 301–319,
-`design/exp2-ai-balance.md` and `design/exp3-ai-balance.md`; `--expansion exp2|exp3` picks a box).
+AI-vs-AI balance runs with behaviour counters (still the Ancients AI): `npx vite-node scripts/ai-balance.ts -- --games 2`
+(see the file header). The old Ancients balance logs are in `design/ancients/exp1-ai-balance.md`, `exp2-ai-balance.md`
+and `exp3-ai-balance.md`.
 
 ## Publishing (GitHub Pages)
 
@@ -76,8 +76,8 @@ Expansion #1 AI-vs-AI balance runs with behaviour counters: `npx vite-node scrip
 
 ## Rules and docs
 
-- `design/rules-reference.md` (RR) is the authoritative condensed rules of the base game (4th edition); rules tests in
-  `tests/rules` are written from it alone. §1 board and sections, §2 units (per-nation tables FR/BR/PT/AL, fire dice by
+- `design/rules-reference.md` (RR) is the authoritative condensed rules of the base game (4th edition); the new rules
+  tests are written from it. §1 board and sections, §2 units (per-nation tables FR/BR/PT/AL, fire dice by
   blocks, artillery by range, leaders), §3 dice and hit scoring, §4 terrain, §5 turn and Command, §6 orders and
   leaders, §7 movement, §8 fire and line of sight, §9 melee (squares, Retire and Reform, Combined Arms, breakthrough),
   §10 retreats and flags, §11 leaders, §12 the 70 Command cards, §13 victory and objective types, §14 the special rules
