@@ -63,7 +63,7 @@
   "leaders": [
     {"r": 0, "c": 4, "side": "top", "name": "Cuesta"},
     {"r": 1, "c": 11, "side": "top", "name": "Campbell"},
-    {"r": 7, "c": 8, "side": "bottom", "name": "Laval"},
+    {"r": 7, "c": 8, "side": "bottom", "name": "Leval"},
     {"r": 7, "c": 11, "side": "bottom", "name": "Sebastiani"},
     {"r": 8, "c": 3, "side": "bottom", "name": "Milhaud"}
   ],
