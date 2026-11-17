@@ -29,7 +29,7 @@ describe('range (RR §8.1)', () => {
 
   it('horse artillery that moved 1 hex fires 3 hexes, not 4 (§8.1)', () => {
     const at = (d: number): boolean => {
-      const s = build({ units: [bot('BR/HA', [7, 6]), top('FR/LN', [6 - d, 6])] });
+      const s = build({ units: [bot('BR/HA', [7, 6]), top('FR/LN', [6 - d, 6]), top('FR/LN', [6, 3])] });  // the decoy keeps the battle phase (and `ordered`) alive
       const dr = play(s, 'probeC', ['u1']);
       must(dr, { kind: 'move', piece: 'u1', to: H(6, 6) });
       return canFireAt(dr.state, u(dr, 'u1')!, H(6 - d, 6));
