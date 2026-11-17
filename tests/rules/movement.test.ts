@@ -279,19 +279,6 @@ describe('movement', () => {
       const b = withExit([H(5, 6)], () => lm({ units: [B('BR/LN', 5, 6)], leaders: [{ side: 'bottom', at: [6, 6] }] }));
       expect(b.m.some((t) => t.hex === OFF_BOARD)).toBe(true);
     });
-    it('the exiting piece stands on the exit hex when exitPiece runs', () => {
-      const s = build({ units: [B('BR/LC', 6, 6)] });
-      const d = play(s, 'probeC', ['u1']);
-      exitHexes.add(H(5, 6));
-      const t = pieceMoves(d.state, 'u1').find((x) => x.hex === OFF_BOARD)!;
-      expect(t.path).toEqual([H(6, 6), H(5, 6), OFF_BOARD]);
-      const u1 = d.state.units[0];
-      let seen = u1.hex;
-      Object.defineProperty(u1, 'hex', { get: () => seen, set: (v) => { seen = v; }, configurable: true });
-      must(d, { kind: 'move', piece: 'u1', to: OFF_BOARD });
-      expect(seen).toBe(H(5, 6));
-      expect(d.state.units.some((x) => x.id === 'u1')).toBe(false);
-      exitHexes.clear();
-    });
+    // 'the exiting piece stands on the exit hex when exitPiece runs' moved to objectives.test.ts (real exit objectives; exitPiece throws elsewhere)
   });
 });
