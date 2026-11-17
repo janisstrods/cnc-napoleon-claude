@@ -23,12 +23,12 @@ export const TEXTS: Record<string, ScenarioTexts> = {
     hint: "Work up the gullies together; lone attacks on the crest fail.",
   },
   '003': {
-    blurb: "Junot marched through the night of 20 August 1808 to strike the British camped around Vimeiro before more of them landed. Wellesley, still in command in the field, shifted brigades north to meet the French sweep round his left. The French assaults on Vimeiro hill and at Ventosa were all beaten off, and Junot retreated. No pursuit followed.",
+    blurb: "Junot marched through the night of 20 August 1808 to strike the British camped around Vimiero before more of them landed. Wellesley, still in command in the field, shifted brigades north to meet the French sweep round his left. The French assaults on Vimiero hill and at Ventosa were all beaten off, and Junot retreated. No pursuit followed.",
     specialText: [
       "Vimiero: the French gain 2 temporary banners while they hold both town hexes at the start of their turn, and lose both the moment either hex is empty.",
       "The river is fordable everywhere.",
     ],
-    hint: "Hold Vimeiro hill and shift your line to meet the flank attack.",
+    hint: "Hold Vimiero hill and shift your line to meet the flank attack.",
   },
   '004': {
     blurb: "On 16 January 1809 Soult attacked at Corunna while Sir John Moore's army was embarking after its winter retreat from Spain. Moore posted his divisions on Monte Moro, shielding the ships. The British beat off the French columns, though Moore himself fell to a cannon ball. The army sailed within days.",
