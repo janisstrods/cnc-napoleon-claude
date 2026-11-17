@@ -1,0 +1,554 @@
+{
+ "id": "117",
+ "grid": {
+  "x0": 74.38,
+  "y0": 130.62,
+  "w": 87.0,
+  "pitch": 75.5
+ },
+ "terrain": [
+  {
+   "r": 0,
+   "c": 3,
+   "t": "forest"
+  },
+  {
+   "r": 0,
+   "c": 6,
+   "t": "forest"
+  },
+  {
+   "r": 1,
+   "c": 1,
+   "t": "hill"
+  },
+  {
+   "r": 1,
+   "c": 6,
+   "t": "hill"
+  },
+  {
+   "r": 1,
+   "c": 7,
+   "t": "hill"
+  },
+  {
+   "r": 1,
+   "c": 10,
+   "t": "hill"
+  },
+  {
+   "r": 1,
+   "c": 11,
+   "t": "forest"
+  },
+  {
+   "r": 2,
+   "c": 1,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 2,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 3,
+   "t": "forest"
+  },
+  {
+   "r": 2,
+   "c": 4,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 5,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 6,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 8,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 11,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 0,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 2,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 6,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 8,
+   "t": "forest"
+  },
+  {
+   "r": 3,
+   "c": 9,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 10,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 11,
+   "t": "hill"
+  },
+  {
+   "r": 4,
+   "c": 0,
+   "t": "hill"
+  },
+  {
+   "r": 4,
+   "c": 6,
+   "t": "forest"
+  },
+  {
+   "r": 4,
+   "c": 12,
+   "t": "hill"
+  },
+  {
+   "r": 5,
+   "c": 0,
+   "t": "forest"
+  },
+  {
+   "r": 5,
+   "c": 3,
+   "t": "forest"
+  },
+  {
+   "r": 5,
+   "c": 9,
+   "t": "forest"
+  },
+  {
+   "r": 5,
+   "c": 11,
+   "t": "forest"
+  },
+  {
+   "r": 6,
+   "c": 0,
+   "t": "hill"
+  },
+  {
+   "r": 6,
+   "c": 3,
+   "t": "river"
+  },
+  {
+   "r": 6,
+   "c": 4,
+   "t": "river"
+  },
+  {
+   "r": 6,
+   "c": 5,
+   "t": "river"
+  },
+  {
+   "r": 6,
+   "c": 6,
+   "t": "hill"
+  },
+  {
+   "r": 6,
+   "c": 12,
+   "t": "forest"
+  },
+  {
+   "r": 7,
+   "c": 0,
+   "t": "river"
+  },
+  {
+   "r": 7,
+   "c": 1,
+   "t": "river"
+  },
+  {
+   "r": 7,
+   "c": 2,
+   "t": "river"
+  },
+  {
+   "r": 7,
+   "c": 4,
+   "t": "hill"
+  },
+  {
+   "r": 7,
+   "c": 5,
+   "t": "river"
+  },
+  {
+   "r": 7,
+   "c": 6,
+   "t": "river"
+  },
+  {
+   "r": 7,
+   "c": 7,
+   "t": "river"
+  },
+  {
+   "r": 7,
+   "c": 8,
+   "t": "river"
+  },
+  {
+   "r": 8,
+   "c": 4,
+   "t": "hill"
+  },
+  {
+   "r": 8,
+   "c": 7,
+   "t": "hill"
+  },
+  {
+   "r": 8,
+   "c": 9,
+   "t": "river"
+  }
+ ],
+ "units": [
+  {
+   "r": 1,
+   "c": 1,
+   "side": "top",
+   "key": "SP/GR"
+  },
+  {
+   "r": 1,
+   "c": 7,
+   "side": "top",
+   "key": "SP/ML"
+  },
+  {
+   "r": 2,
+   "c": 1,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 2,
+   "c": 2,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 2,
+   "c": 4,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 2,
+   "c": 5,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 2,
+   "c": 6,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 2,
+   "c": 11,
+   "side": "top",
+   "key": "SP/GR"
+  },
+  {
+   "r": 3,
+   "c": 0,
+   "side": "top",
+   "key": "SP/FA"
+  },
+  {
+   "r": 3,
+   "c": 8,
+   "side": "top",
+   "key": "SP/LT"
+  },
+  {
+   "r": 3,
+   "c": 9,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 3,
+   "c": 10,
+   "side": "top",
+   "key": "SP/FA"
+  },
+  {
+   "r": 4,
+   "c": 6,
+   "side": "top",
+   "key": "SP/LT"
+  },
+  {
+   "r": 7,
+   "c": 1,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 2,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 3,
+   "side": "bottom",
+   "key": "FR/ML"
+  },
+  {
+   "r": 7,
+   "c": 4,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 7,
+   "c": 6,
+   "side": "bottom",
+   "key": "FR/ML"
+  },
+  {
+   "r": 7,
+   "c": 7,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 9,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 7,
+   "c": 10,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 11,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 1,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 2,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 4,
+   "side": "bottom",
+   "key": "FR/FA"
+  },
+  {
+   "r": 8,
+   "c": 6,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 7,
+   "side": "bottom",
+   "key": "FR/FA"
+  },
+  {
+   "r": 8,
+   "c": 11,
+   "side": "bottom",
+   "key": "FR/LN"
+  }
+ ],
+ "leaders": [
+  {
+   "r": 1,
+   "c": 0,
+   "side": "top",
+   "name": "Del Barco"
+  },
+  {
+   "r": 2,
+   "c": 5,
+   "side": "top",
+   "name": "Losada"
+  },
+  {
+   "r": 3,
+   "c": 9,
+   "side": "top",
+   "name": "Porlier"
+  },
+  {
+   "r": 7,
+   "c": 7,
+   "side": "bottom",
+   "name": "Reille"
+  },
+  {
+   "r": 8,
+   "c": 3,
+   "side": "bottom",
+   "name": "Villatte"
+  },
+  {
+   "r": 8,
+   "c": 11,
+   "side": "bottom",
+   "name": "Lamartiniere"
+  }
+ ],
+ "objectives": [
+  {
+   "r": 1,
+   "c": 1,
+   "note": "Group majority banner, left hill group (6 hexes), temporary: the Spanish start with all three, held at the start of each side's turn (survey 117)"
+  },
+  {
+   "r": 2,
+   "c": 1,
+   "note": "Group majority banner, left hill group (6 hexes), temporary: the Spanish start with all three, held at the start of each side's turn (survey 117)"
+  },
+  {
+   "r": 2,
+   "c": 2,
+   "note": "Group majority banner, left hill group (6 hexes), temporary: the Spanish start with all three, held at the start of each side's turn (survey 117)"
+  },
+  {
+   "r": 3,
+   "c": 0,
+   "note": "Group majority banner, left hill group (6 hexes), temporary: the Spanish start with all three, held at the start of each side's turn (survey 117)"
+  },
+  {
+   "r": 3,
+   "c": 2,
+   "note": "Group majority banner, left hill group (6 hexes), temporary: the Spanish start with all three, held at the start of each side's turn (survey 117)"
+  },
+  {
+   "r": 4,
+   "c": 0,
+   "note": "Group majority banner, left hill group (6 hexes), temporary: the Spanish start with all three, held at the start of each side's turn (survey 117)"
+  },
+  {
+   "r": 1,
+   "c": 6,
+   "note": "Group majority banner, centre hill group (7 hexes), temporary: the Spanish start with all three, held at the start of each side's turn (survey 117)"
+  },
+  {
+   "r": 1,
+   "c": 7,
+   "note": "Group majority banner, centre hill group (7 hexes), temporary: the Spanish start with all three, held at the start of each side's turn (survey 117)"
+  },
+  {
+   "r": 2,
+   "c": 4,
+   "note": "Group majority banner, centre hill group (7 hexes), temporary: the Spanish start with all three, held at the start of each side's turn (survey 117)"
+  },
+  {
+   "r": 2,
+   "c": 5,
+   "note": "Group majority banner, centre hill group (7 hexes), temporary: the Spanish start with all three, held at the start of each side's turn (survey 117)"
+  },
+  {
+   "r": 2,
+   "c": 6,
+   "note": "Group majority banner, centre hill group (7 hexes), temporary: the Spanish start with all three, held at the start of each side's turn (survey 117)"
+  },
+  {
+   "r": 2,
+   "c": 8,
+   "note": "Group majority banner, centre hill group (7 hexes), temporary: the Spanish start with all three, held at the start of each side's turn (survey 117)"
+  },
+  {
+   "r": 3,
+   "c": 6,
+   "note": "Group majority banner, centre hill group (7 hexes), temporary: the Spanish start with all three, held at the start of each side's turn (survey 117)"
+  },
+  {
+   "r": 1,
+   "c": 10,
+   "note": "Group majority banner, right hill group (6 hexes), temporary: the Spanish start with all three, held at the start of each side's turn (survey 117)"
+  },
+  {
+   "r": 2,
+   "c": 11,
+   "note": "Group majority banner, right hill group (6 hexes), temporary: the Spanish start with all three, held at the start of each side's turn (survey 117)"
+  },
+  {
+   "r": 3,
+   "c": 9,
+   "note": "Group majority banner, right hill group (6 hexes), temporary: the Spanish start with all three, held at the start of each side's turn (survey 117)"
+  },
+  {
+   "r": 3,
+   "c": 10,
+   "note": "Group majority banner, right hill group (6 hexes), temporary: the Spanish start with all three, held at the start of each side's turn (survey 117)"
+  },
+  {
+   "r": 3,
+   "c": 11,
+   "note": "Group majority banner, right hill group (6 hexes), temporary: the Spanish start with all three, held at the start of each side's turn (survey 117)"
+  },
+  {
+   "r": 4,
+   "c": 12,
+   "note": "Group majority banner, right hill group (6 hexes), temporary: the Spanish start with all three, held at the start of each side's turn (survey 117)"
+  }
+ ],
+ "notes": [
+  "Counts equal the survey: SP 13 units + 3 leaders (SP/LN 6, LT 2, GR 2, ML 1, FA 2), FR 15 + 3 (LN 9, LT 2, ML 2, FA 2). No page/map differences.",
+  "Terrain: 24 hills, 11 forests, 11 river hexes (survey: 24, 11, 6 river + 5 bend). Hills under blocks are read from the ray rings (scan.py 0.13-0.17 on 3,0 3,10 4,0 3,9 etc.); 2,5 (under a leader stack) scans at 0.11, just under the threshold, but its ray ring and the dotted outline show it is a hill and the hill total then equals the survey's 24. Forest under blocks: 3,8 and 4,6 (SP/LT) read from the tree art around the block.",
+  "Bidassoa River (fordable by scenario rule, so plain river hexes with no crossing; no bridges): 7,0 7,1 7,2 6,3 6,4 6,5 7,5 7,6 7,7 7,8 8,9, entering from the left edge at 7,0 and leaving through the bottom at 8,9. One piece. FR blocks stand on the river hexes 7,1 7,2 7,6 and 7,7.",
+  "Objectives: the three black-and-white dotted outlines are the hill groups. Left 6 hexes: 1,1 2,1 2,2 3,0 3,2 4,0; centre 7 hexes: 1,6 1,7 2,4 2,5 2,6 2,8 3,6; right 6 hexes: 1,10 2,11 3,9 3,10 3,11 4,12 (the counts match the survey). The plain hexes 3,1 (left) and 2,7 (centre) lie in notches of the outlines: the dotted line runs along their sides, so they are not in a group. The Spanish start with all three group banners (three Spanish flags on the banner track).",
+  "Leaders (names read from the vertical labels at 4-6x): Del Barco (lone horse block, 1,0), Losada (2,5, on SP/LN), Porlier (3,9, on SP/LN; 'Porlier' is the likely reading of a small label that looks like 'Porker'), Reille (7,7, on FR/LN), Lamartiniere (8,11, on FR/LN), Villatte (lone horse block, 8,3).",
+  "The red dashed lines at columns 3/4 and 8/9 are section lines, not terrain. FR moves first (survey 117); the map carries no first-player marker."
+ ]
+}

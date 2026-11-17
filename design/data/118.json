@@ -1,0 +1,446 @@
+{
+ "id": "118",
+ "grid": {
+  "x0": 74.38,
+  "y0": 130.38,
+  "w": 87.0,
+  "pitch": 75.5
+ },
+ "terrain": [
+  {
+   "r": 0,
+   "c": 7,
+   "t": "hill"
+  },
+  {
+   "r": 0,
+   "c": 8,
+   "t": "hill"
+  },
+  {
+   "r": 1,
+   "c": 5,
+   "t": "hill"
+  },
+  {
+   "r": 1,
+   "c": 6,
+   "t": "hill"
+  },
+  {
+   "r": 1,
+   "c": 7,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 1,
+   "t": "forest"
+  },
+  {
+   "r": 2,
+   "c": 3,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 4,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 5,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 6,
+   "t": "forest"
+  },
+  {
+   "r": 2,
+   "c": 11,
+   "t": "forest"
+  },
+  {
+   "r": 3,
+   "c": 1,
+   "t": "forest"
+  },
+  {
+   "r": 3,
+   "c": 3,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 4,
+   "t": "fieldworks",
+   "on": "hill",
+   "sides": [
+    "SW",
+    "SE",
+    "E"
+   ]
+  },
+  {
+   "r": 3,
+   "c": 11,
+   "t": "forest"
+  },
+  {
+   "r": 4,
+   "c": 1,
+   "t": "hill"
+  },
+  {
+   "r": 4,
+   "c": 3,
+   "t": "forest"
+  },
+  {
+   "r": 4,
+   "c": 4,
+   "t": "hill"
+  },
+  {
+   "r": 4,
+   "c": 9,
+   "t": "fieldworks",
+   "on": "hill",
+   "sides": [
+    "SW",
+    "SE",
+    "E"
+   ]
+  },
+  {
+   "r": 4,
+   "c": 11,
+   "t": "forest"
+  },
+  {
+   "r": 5,
+   "c": 0,
+   "t": "hill"
+  },
+  {
+   "r": 5,
+   "c": 3,
+   "t": "fieldworks",
+   "on": "hill",
+   "sides": [
+    "SW",
+    "SE",
+    "E"
+   ]
+  },
+  {
+   "r": 5,
+   "c": 9,
+   "t": "hill"
+  },
+  {
+   "r": 6,
+   "c": 0,
+   "t": "hill"
+  },
+  {
+   "r": 6,
+   "c": 2,
+   "t": "forest"
+  },
+  {
+   "r": 6,
+   "c": 10,
+   "t": "hill"
+  },
+  {
+   "r": 7,
+   "c": 0,
+   "t": "hill"
+  },
+  {
+   "r": 7,
+   "c": 1,
+   "t": "forest"
+  },
+  {
+   "r": 7,
+   "c": 2,
+   "t": "forest"
+  },
+  {
+   "r": 7,
+   "c": 3,
+   "t": "forest"
+  },
+  {
+   "r": 7,
+   "c": 5,
+   "t": "forest"
+  },
+  {
+   "r": 7,
+   "c": 10,
+   "t": "river"
+  },
+  {
+   "r": 7,
+   "c": 11,
+   "t": "river"
+  },
+  {
+   "r": 8,
+   "c": 10,
+   "t": "river",
+   "crossing": "bridge"
+  },
+  {
+   "r": 8,
+   "c": 11,
+   "t": "forest"
+  }
+ ],
+ "units": [
+  {
+   "r": 1,
+   "c": 1,
+   "side": "top",
+   "key": "BR/LC"
+  },
+  {
+   "r": 1,
+   "c": 2,
+   "side": "top",
+   "key": "BR/LC"
+  },
+  {
+   "r": 1,
+   "c": 9,
+   "side": "top",
+   "key": "SP/GR"
+  },
+  {
+   "r": 2,
+   "c": 3,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 2,
+   "c": 6,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 2,
+   "c": 7,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 2,
+   "c": 8,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 2,
+   "c": 9,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 3,
+   "c": 4,
+   "side": "top",
+   "key": "BR/FA"
+  },
+  {
+   "r": 3,
+   "c": 5,
+   "side": "top",
+   "key": "BR/RI"
+  },
+  {
+   "r": 4,
+   "c": 1,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 4,
+   "c": 4,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 4,
+   "c": 8,
+   "side": "top",
+   "key": "SP/LC"
+  },
+  {
+   "r": 4,
+   "c": 9,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 5,
+   "c": 0,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 5,
+   "c": 3,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 6,
+   "c": 8,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 6,
+   "c": 9,
+   "side": "bottom",
+   "key": "FR/FA"
+  },
+  {
+   "r": 6,
+   "c": 10,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 6,
+   "c": 11,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 6,
+   "c": 12,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 6,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 7,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 2,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 8,
+   "c": 3,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 4,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 5,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 6,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 7,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 8,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 9,
+   "side": "bottom",
+   "key": "FR/LC"
+  },
+  {
+   "r": 8,
+   "c": 10,
+   "side": "bottom",
+   "key": "FR/LC"
+  }
+ ],
+ "leaders": [
+  {
+   "r": 2,
+   "c": 3,
+   "side": "top",
+   "name": "Reeves"
+  },
+  {
+   "r": 2,
+   "c": 7,
+   "side": "top",
+   "name": "Torres"
+  },
+  {
+   "r": 5,
+   "c": 3,
+   "side": "top",
+   "name": "Adam"
+  },
+  {
+   "r": 6,
+   "c": 8,
+   "side": "bottom",
+   "name": "Mesclop"
+  },
+  {
+   "r": 7,
+   "c": 9,
+   "side": "bottom",
+   "name": "Harispe"
+  },
+  {
+   "r": 8,
+   "c": 5,
+   "side": "bottom",
+   "name": "Habert"
+  }
+ ],
+ "objectives": [],
+ "notes": [
+  "Counts equal the survey: top 16 units + 3 leaders (SP/LN 5, GR 1, LC 1; BR/LN 5, RI 1, LC 2, FA 1), bottom FR 16 + 3 (LN 11, LT 2, LC 2, FA 1). No page/map differences.",
+  "Terrain: 16 plain hills, 3 hills with entrenchment (survey: hill 16 + hill with entrenchment 3), 13 forests, 3 river hexes. Hill 2,3 sits under a BR/LN + leader stack and scans at 0.11 (ray ring visible at the stack's edge). scan.py flags 3,4 4,9 5,3 (0.07-0.09) because the entrenchment art replaces part of the ray ring; the rays are visible around each block, so they stay hills-with-works. 8,10 is flagged (water 0.02) only because the LC block hides the river.",
+  "Fieldworks: 3,4 (BR/FA), 4,9 (SP/LN) and 5,3 (BR/LN + Adam) are hills with an entrenchment, sides SW, SE and E. 4,9 shows the three sides plainly (a brown parapet along the E, SE and SW hexsides); 5,3 shows SW, SE and a piece of E; at 3,4 the FA block hides the E segment, so E is inferred from the identical tile art (survey: orientation from the map). 4,9 holds the Spanish LN, the other two hold British units (units start on entrenchments, survey).",
+  "River: the survey lists river 1, river bend 1 and a river-with-bridge 1, and the map shows two river tiles clearly, the bridge mostly hidden. The river enters from the right edge at 7,11 (straight), bends at 7,10 and leaves through the bottom edge at 8,10; hex 8,10 holds an FR/LC block that hides the middle of the third river hex, so a bridge could lie under that block (no bridge art is visible around it). The verifier found the bridge tile on 8,10 (a dark tip shows from under the FR/LC block; the page lists River Bridge 1 and its history names the Bridge of Lledoner), so 8,10 carries crossing bridge; the river is otherwise not fordable (survey rule).",
+  "Leaders (names read from the vertical labels at 4-6x): Reeves (2,3, BR on LN), Torres (2,7, SP on LN), Adam (5,3, BR on LN), Mesclop (6,8, FR on LN), Habert (8,5, FR on LN), Harispe (lone horse block, 7,9, FR). Reeves and Mesclop are the least clear.",
+  "The red dashed lines at columns 3/4 and 8/9 are section lines, not terrain. No objectives beyond the 6 kill banners. FR moves first (survey 118); the map carries no first-player marker."
+ ]
+}

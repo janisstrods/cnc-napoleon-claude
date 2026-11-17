@@ -1,0 +1,456 @@
+{
+ "id": "110",
+ "grid": {
+  "x0": 74.38,
+  "y0": 129.88,
+  "w": 87.0,
+  "pitch": 75.5
+ },
+ "terrain": [
+  {
+   "r": 1,
+   "c": 7,
+   "t": "hill"
+  },
+  {
+   "r": 1,
+   "c": 8,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 1,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 2,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 3,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 7,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 0,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 1,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 2,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 3,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 4,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 5,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 6,
+   "t": "hill"
+  },
+  {
+   "r": 4,
+   "c": 0,
+   "t": "hill"
+  },
+  {
+   "r": 4,
+   "c": 5,
+   "t": "hill"
+  },
+  {
+   "r": 6,
+   "c": 4,
+   "t": "forest"
+  },
+  {
+   "r": 7,
+   "c": 5,
+   "t": "forest"
+  },
+  {
+   "r": 5,
+   "c": 5,
+   "t": "town",
+   "art": "Tamames"
+  },
+  {
+   "r": 5,
+   "c": 6,
+   "t": "town",
+   "art": "Tamames"
+  },
+  {
+   "r": 6,
+   "c": 6,
+   "t": "town",
+   "art": "Tamames"
+  },
+  {
+   "r": 6,
+   "c": 5,
+   "t": "river"
+  },
+  {
+   "r": 7,
+   "c": 4,
+   "t": "river"
+  },
+  {
+   "r": 7,
+   "c": 3,
+   "t": "river"
+  },
+  {
+   "r": 8,
+   "c": 3,
+   "t": "river"
+  }
+ ],
+ "units": [
+  {
+   "r": 0,
+   "c": 5,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 0,
+   "c": 6,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 0,
+   "c": 7,
+   "side": "top",
+   "key": "SP/FA"
+  },
+  {
+   "r": 0,
+   "c": 10,
+   "side": "top",
+   "key": "SP/HC"
+  },
+  {
+   "r": 0,
+   "c": 11,
+   "side": "top",
+   "key": "SP/HC"
+  },
+  {
+   "r": 0,
+   "c": 12,
+   "side": "top",
+   "key": "SP/LC"
+  },
+  {
+   "r": 1,
+   "c": 6,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 1,
+   "c": 8,
+   "side": "top",
+   "key": "SP/GR"
+  },
+  {
+   "r": 1,
+   "c": 10,
+   "side": "top",
+   "key": "SP/LC"
+  },
+  {
+   "r": 1,
+   "c": 11,
+   "side": "top",
+   "key": "SP/LC"
+  },
+  {
+   "r": 2,
+   "c": 2,
+   "side": "top",
+   "key": "SP/GR"
+  },
+  {
+   "r": 2,
+   "c": 8,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 2,
+   "c": 9,
+   "side": "top",
+   "key": "SP/FA"
+  },
+  {
+   "r": 2,
+   "c": 10,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 2,
+   "c": 11,
+   "side": "top",
+   "key": "SP/LT"
+  },
+  {
+   "r": 3,
+   "c": 0,
+   "side": "top",
+   "key": "SP/LT"
+  },
+  {
+   "r": 3,
+   "c": 1,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 3,
+   "c": 2,
+   "side": "top",
+   "key": "SP/FA"
+  },
+  {
+   "r": 3,
+   "c": 3,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 3,
+   "c": 4,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 3,
+   "c": 5,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 3,
+   "c": 6,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 3,
+   "c": 7,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 4,
+   "c": 6,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 5,
+   "c": 5,
+   "side": "top",
+   "key": "SP/LT"
+  },
+  {
+   "r": 5,
+   "c": 8,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 5,
+   "c": 10,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 5,
+   "c": 11,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 6,
+   "c": 0,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 6,
+   "c": 2,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 6,
+   "c": 3,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 6,
+   "c": 8,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 6,
+   "c": 9,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 6,
+   "c": 10,
+   "side": "bottom",
+   "key": "FR/LC"
+  },
+  {
+   "r": 6,
+   "c": 11,
+   "side": "bottom",
+   "key": "FR/LC"
+  },
+  {
+   "r": 7,
+   "c": 1,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 2,
+   "side": "bottom",
+   "key": "FR/FA"
+  },
+  {
+   "r": 7,
+   "c": 3,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 7,
+   "c": 8,
+   "side": "bottom",
+   "key": "FR/FA"
+  },
+  {
+   "r": 7,
+   "c": 10,
+   "side": "bottom",
+   "key": "FR/HA"
+  },
+  {
+   "r": 8,
+   "c": 4,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 5,
+   "side": "bottom",
+   "key": "FR/LC"
+  },
+  {
+   "r": 8,
+   "c": 6,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 11,
+   "side": "bottom",
+   "key": "FR/HC"
+  }
+ ],
+ "leaders": [
+  {
+   "r": 0,
+   "c": 6,
+   "side": "top",
+   "name": "Belveder"
+  },
+  {
+   "r": 0,
+   "c": 10,
+   "side": "top",
+   "name": "Anglona"
+  },
+  {
+   "r": 2,
+   "c": 8,
+   "side": "top",
+   "name": "La Carrera"
+  },
+  {
+   "r": 3,
+   "c": 3,
+   "side": "top",
+   "name": "Losada"
+  },
+  {
+   "r": 6,
+   "c": 8,
+   "side": "bottom",
+   "name": "Maucune"
+  },
+  {
+   "r": 7,
+   "c": 1,
+   "side": "bottom",
+   "name": "Marcognet"
+  },
+  {
+   "r": 8,
+   "c": 6,
+   "side": "bottom",
+   "name": "Labassee"
+  },
+  {
+   "r": 8,
+   "c": 11,
+   "side": "bottom",
+   "name": "Lorcet"
+  }
+ ],
+ "objectives": [],
+ "notes": [
+  "Counts equal the survey (SP 25 + 4 leaders, FR 19 + 4). The survey's 5-block SP/LN is a drawing detail, one unit.",
+  "The stream (6,5 7,4 7,3 8,3) is fordable by scenario rule; recorded as plain river hexes with no crossing field.",
+  "Tamames town: 5,5 (holds SP/LT), 5,6, 6,6. Hills 3,0-3,6 and 2,2 are read from ray rings around the blocks (scan values 0.10-0.19)."
+ ]
+}

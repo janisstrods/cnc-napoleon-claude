@@ -1,0 +1,554 @@
+{
+ "id": "116",
+ "grid": {
+  "x0": 72.5,
+  "y0": 132.38,
+  "w": 87.0,
+  "pitch": 75.5
+ },
+ "terrain": [
+  {
+   "r": 0,
+   "c": 6,
+   "t": "river"
+  },
+  {
+   "r": 0,
+   "c": 7,
+   "t": "town",
+   "art": "label: Villodas"
+  },
+  {
+   "r": 0,
+   "c": 12,
+   "t": "town",
+   "art": "label: Tres Puentes"
+  },
+  {
+   "r": 1,
+   "c": 3,
+   "t": "hill"
+  },
+  {
+   "r": 1,
+   "c": 5,
+   "t": "hill"
+  },
+  {
+   "r": 1,
+   "c": 6,
+   "t": "river"
+  },
+  {
+   "r": 1,
+   "c": 7,
+   "t": "river",
+   "crossing": "bridge"
+  },
+  {
+   "r": 1,
+   "c": 8,
+   "t": "river"
+  },
+  {
+   "r": 1,
+   "c": 9,
+   "t": "river"
+  },
+  {
+   "r": 1,
+   "c": 10,
+   "t": "river",
+   "crossing": "bridge"
+  },
+  {
+   "r": 2,
+   "c": 0,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 1,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 10,
+   "t": "hill"
+  },
+  {
+   "r": 2,
+   "c": 11,
+   "t": "river"
+  },
+  {
+   "r": 3,
+   "c": 0,
+   "t": "hill"
+  },
+  {
+   "r": 3,
+   "c": 11,
+   "t": "river"
+  },
+  {
+   "r": 4,
+   "c": 0,
+   "t": "hill"
+  },
+  {
+   "r": 4,
+   "c": 1,
+   "t": "hill"
+  },
+  {
+   "r": 4,
+   "c": 3,
+   "t": "hill"
+  },
+  {
+   "r": 4,
+   "c": 5,
+   "t": "hill"
+  },
+  {
+   "r": 4,
+   "c": 6,
+   "t": "hill"
+  },
+  {
+   "r": 4,
+   "c": 7,
+   "t": "hill"
+  },
+  {
+   "r": 4,
+   "c": 8,
+   "t": "hill"
+  },
+  {
+   "r": 4,
+   "c": 9,
+   "t": "hill"
+  },
+  {
+   "r": 4,
+   "c": 10,
+   "t": "hill"
+  },
+  {
+   "r": 4,
+   "c": 12,
+   "t": "river"
+  },
+  {
+   "r": 5,
+   "c": 0,
+   "t": "hill"
+  },
+  {
+   "r": 5,
+   "c": 1,
+   "t": "hill"
+  },
+  {
+   "r": 5,
+   "c": 3,
+   "t": "hill"
+  },
+  {
+   "r": 5,
+   "c": 4,
+   "t": "hill"
+  },
+  {
+   "r": 5,
+   "c": 11,
+   "t": "river"
+  },
+  {
+   "r": 6,
+   "c": 0,
+   "t": "hill"
+  },
+  {
+   "r": 6,
+   "c": 7,
+   "t": "town",
+   "art": "label: Arinez"
+  },
+  {
+   "r": 6,
+   "c": 12,
+   "t": "river"
+  },
+  {
+   "r": 7,
+   "c": 0,
+   "t": "hill"
+  },
+  {
+   "r": 7,
+   "c": 7,
+   "t": "hill"
+  },
+  {
+   "r": 7,
+   "c": 9,
+   "t": "hill"
+  },
+  {
+   "r": 7,
+   "c": 10,
+   "t": "hill"
+  },
+  {
+   "r": 7,
+   "c": 11,
+   "t": "hill"
+  },
+  {
+   "r": 8,
+   "c": 3,
+   "t": "hill"
+  },
+  {
+   "r": 8,
+   "c": 4,
+   "t": "hill"
+  },
+  {
+   "r": 8,
+   "c": 5,
+   "t": "hill"
+  },
+  {
+   "r": 8,
+   "c": 6,
+   "t": "hill"
+  },
+  {
+   "r": 8,
+   "c": 7,
+   "t": "hill"
+  },
+  {
+   "r": 8,
+   "c": 10,
+   "t": "hill"
+  }
+ ],
+ "units": [
+  {
+   "r": 0,
+   "c": 2,
+   "side": "top",
+   "key": "PT/LN"
+  },
+  {
+   "r": 0,
+   "c": 3,
+   "side": "top",
+   "key": "PT/LN"
+  },
+  {
+   "r": 0,
+   "c": 7,
+   "side": "top",
+   "key": "BR/LC"
+  },
+  {
+   "r": 0,
+   "c": 8,
+   "side": "top",
+   "key": "BR/HC"
+  },
+  {
+   "r": 0,
+   "c": 10,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 0,
+   "c": 11,
+   "side": "top",
+   "key": "BR/RI"
+  },
+  {
+   "r": 0,
+   "c": 12,
+   "side": "top",
+   "key": "BR/LC"
+  },
+  {
+   "r": 1,
+   "c": 0,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 1,
+   "c": 2,
+   "side": "top",
+   "key": "PT/LT"
+  },
+  {
+   "r": 1,
+   "c": 3,
+   "side": "top",
+   "key": "PT/FA"
+  },
+  {
+   "r": 1,
+   "c": 4,
+   "side": "top",
+   "key": "PT/LN"
+  },
+  {
+   "r": 1,
+   "c": 5,
+   "side": "top",
+   "key": "BR/FA"
+  },
+  {
+   "r": 1,
+   "c": 11,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 2,
+   "c": 0,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 2,
+   "c": 1,
+   "side": "top",
+   "key": "SP/LN"
+  },
+  {
+   "r": 2,
+   "c": 2,
+   "side": "top",
+   "key": "SP/FA"
+  },
+  {
+   "r": 2,
+   "c": 3,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 2,
+   "c": 4,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 2,
+   "c": 5,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 2,
+   "c": 6,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 2,
+   "c": 7,
+   "side": "top",
+   "key": "BR/LN"
+  },
+  {
+   "r": 2,
+   "c": 12,
+   "side": "top",
+   "key": "BR/LT"
+  },
+  {
+   "r": 4,
+   "c": 0,
+   "side": "bottom",
+   "key": "FR/ML"
+  },
+  {
+   "r": 4,
+   "c": 1,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 4,
+   "c": 5,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 4,
+   "c": 6,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 4,
+   "c": 7,
+   "side": "bottom",
+   "key": "FR/FA"
+  },
+  {
+   "r": 4,
+   "c": 8,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 4,
+   "c": 9,
+   "side": "bottom",
+   "key": "FR/FA"
+  },
+  {
+   "r": 4,
+   "c": 10,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 5,
+   "c": 2,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 5,
+   "c": 3,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 6,
+   "c": 8,
+   "side": "bottom",
+   "key": "FR/LC"
+  },
+  {
+   "r": 7,
+   "c": 5,
+   "side": "bottom",
+   "key": "FR/LC"
+  },
+  {
+   "r": 7,
+   "c": 6,
+   "side": "bottom",
+   "key": "FR/HA"
+  },
+  {
+   "r": 7,
+   "c": 9,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 7,
+   "c": 10,
+   "side": "bottom",
+   "key": "FR/FA"
+  },
+  {
+   "r": 7,
+   "c": 11,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 3,
+   "side": "bottom",
+   "key": "FR/LT"
+  },
+  {
+   "r": 8,
+   "c": 4,
+   "side": "bottom",
+   "key": "FR/ML"
+  },
+  {
+   "r": 8,
+   "c": 5,
+   "side": "bottom",
+   "key": "FR/LN"
+  },
+  {
+   "r": 8,
+   "c": 9,
+   "side": "bottom",
+   "key": "FR/LN"
+  }
+ ],
+ "leaders": [
+  {
+   "r": 0,
+   "c": 3,
+   "side": "top",
+   "name": "Ashworth"
+  },
+  {
+   "r": 0,
+   "c": 10,
+   "side": "top",
+   "name": "Kempt"
+  },
+  {
+   "r": 2,
+   "c": 1,
+   "side": "top",
+   "name": "Morillo"
+  },
+  {
+   "r": 2,
+   "c": 4,
+   "side": "top",
+   "name": "Stewart"
+  },
+  {
+   "r": 4,
+   "c": 10,
+   "side": "bottom",
+   "name": "Leval"
+  },
+  {
+   "r": 5,
+   "c": 2,
+   "side": "bottom",
+   "name": "Conroux"
+  },
+  {
+   "r": 5,
+   "c": 5,
+   "side": "bottom",
+   "name": "Daricau"
+  },
+  {
+   "r": 8,
+   "c": 9,
+   "side": "bottom",
+   "name": "Villatte"
+  }
+ ],
+ "objectives": [],
+ "notes": [
+  "Counts equal the survey: top 22 units + 4 leaders (BR 13 units + 2 leaders, PT 5 + 1, SP 4 + 1), bottom FR 20 + 4. FR/LDR 4 follows the map; the page's 3 is not followed (survey 116).",
+  "Block colours: red = British, brown = Portuguese, yellow = Spanish (the yellow strip at the foot of LC and the red strip of FA are the unit-type bands, not nation colours).",
+  "Terrain: 31 hills (survey 31), 11 river hexes (survey: 6 river + 3 bend + bridge on a bend + bridge on a straight), 3 towns (Villodas 0,7, Tres Puentes 0,12, Arinez 6,7). River Zadorra: 0,6 1,6 1,7(bridge) 1,8 1,9 1,10(bridge, bend) 2,11 3,11 4,12 5,11 6,12; not fordable, so no ford crossing. The bridges are on 1,7 (straight) and 1,10 (bend), as the survey layout says.",
+  "Hills under blocks read from the ray rings (scan.py 0.13-0.18 everywhere, no weak ones).",
+  "Leaders: Ashworth (0,3, PT, on PT/LN), Kempt (0,10, BR), Morillo (2,1, SP), Stewart (2,4, BR), Leval (4,10, FR), Conroux (5,2, FR), Villatte (8,9, FR), Daricau (lone horse block at 5,5, FR). Names read from the vertical labels at 4-6x.",
+  "Move First: the map shows only a 'Random Choice' marker at the left edge and no first-player marker; the page marks both sides with an asterisk, so the card reveal decides (survey 116). No objectives beyond the 9 kill banners. The red dashed lines at columns 3/4 and 8/9 are the left/centre/right section lines of the map, not terrain. scan.py flags 1,10 (water 0.02): the bridge art covers the river there; the crop shows the bend river inside the hex."
+ ]
+}
