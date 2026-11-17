@@ -1,11 +1,10 @@
 // Objectives (RR §13.3, §13.4). Temporary hexes and groups, exits and kill weights, all read from the scenario's data.
 import { checkVictory, bannerTotal, gainBanner } from './banners';
-import { distance } from './hex';
 import { attachedLeader, other, pieceById, unitAt } from './query';
 import { statsOf } from './units';
-import type { FlowCtx, GameState, HexId, Leader, Side, Unit } from './types';
+import type { FlowCtx, GameState, HexId, Leader, ObjectiveOf, Side, Unit } from './types';
 
-const hexesOf = (o: { kind: string; hex?: HexId; hexes?: readonly HexId[] }): readonly HexId[] => (o.kind === 'tempGroup' ? o.hexes! : [o.hex!]);
+const hexesOf = (o: ObjectiveOf<'tempHex' | 'tempGroup'>): readonly HexId[] => (o.kind === 'tempGroup' ? o.hexes : [o.hex]);
 
 /** Does a unit of `side` (never a lone leader, R65) stand on every hex of the objective? */
 function occupied(s: GameState, side: Side, hexes: readonly HexId[]): boolean {
@@ -47,14 +46,8 @@ export function exitAllowedFrom(s: GameState, piece: Unit | Leader, hex: HexId):
 export function exitPiece(s: GameState, ctx: FlowCtx, pieceId: string): void {
   const p = pieceById(s, pieceId);
   if (!p) return;
-  // The skeleton's applyMove leaves the piece on its start hex, so the exit it used is the nearest exit objective of its side
-  // within the hexes it moved before stepping off (`moved` counts the step off itself).
-  const reach = Math.max(0, (s.turn.ordered[pieceId]?.moved ?? 1) - 1);
-  let exit: (typeof s.scenario.objectives)[number] | undefined;
-  for (const o of s.scenario.objectives) {
-    if (o.kind !== 'exit' || o.side !== p.side || distance(p.hex, o.hex) > reach) continue;
-    if (!exit || exit.kind !== 'exit' || distance(p.hex, o.hex) < distance(p.hex, exit.hex)) exit = o;
-  }
+  const exit = s.scenario.objectives.find((o) => o.kind === 'exit' && o.side === p.side && o.hex === p.hex);
+  if (!exit) throw new Error(`piece ${pieceId} exits from hex ${p.hex}, which is no exit of the ${p.side} side`);
   const ids = [pieceId];
   const isUnit = 'key' in p;
   if (isUnit) {
@@ -68,7 +61,7 @@ export function exitPiece(s: GameState, ctx: FlowCtx, pieceId: string): void {
     ctx.emit({ t: 'removed', id, reason: 'exit' });
   }
   updateHeld(s, ctx);
-  if (exit && exit.kind === 'exit' && (isUnit || exit.leadersScore)) gainBanner(s, ctx, p.side, exit.banners, exit.text.replace('{unit}', pieceId));
+  if (exit.kind === 'exit' && (isUnit || exit.leadersScore)) gainBanner(s, ctx, p.side, exit.banners, exit.text.replace('{unit}', pieceId));
 }
 
 /** An enemy unit was eliminated: its enemy scores 1, or the weight of a matching `killWeight` objective (R65, R64). */

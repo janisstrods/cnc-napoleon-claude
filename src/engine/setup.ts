@@ -160,6 +160,12 @@ function buildGame(setup: ScenarioSetup, seed: number): GameState {
   const rngHolder = { rng: seed >>> 0, rngCalls: 0 };
   const sideRules = (setup.sideRules ?? []).map(resolveSideRule);
   const objectives = (setup.objectives ?? []).map((o) => resolveObjective(o, setup));
+  const kw = new Set<string>();
+  for (const o of objectives) {
+    if (o.kind !== 'killWeight') continue;
+    if (kw.has(`${o.side}/${o.enemyArm}`)) throw new Error(`two killWeight objectives for ${o.side} against ${o.enemyArm}`);
+    kw.add(`${o.side}/${o.enemyArm}`);
+  }
 
   const player = (side: Side): PlayerState => {
     const ss = setup[side];

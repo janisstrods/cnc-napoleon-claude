@@ -1,8 +1,8 @@
 // Rules: RR §13.1, §13.2, §13.3, §13.4 (design/rules-reference.md)
 import { describe, expect, it } from 'vitest';
-import { GameDriver, OFF_BOARD, bannerTotal, forceDice, pieceMoves, type GameEvent, type GameState } from '../../src/engine';
+import { GameDriver, OFF_BOARD, bannerTotal, createGame, exitPiece, forceDice, pieceMoves, type GameEvent, type GameState } from '../../src/engine';
 import type { ObjectiveSetup, UnitSetup } from '../../src/engine';
-import { H, attack, build, endMoves, endTurn, ev, leaderId, miss, must, n, passTurn, play, toBattle, turn } from './helpers';
+import { H, attack, build, setupOf, endMoves, endTurn, ev, leaderId, miss, must, n, passTurn, play, toBattle, turn } from './helpers';
 
 const heldEvents = (es: GameEvent[], side: 'top' | 'bottom') => es.filter((e) => e.t === 'held' && e.side === side);
 const offers = (s: GameState, id: string) => pieceMoves(s, id).some((m) => m.hex === OFF_BOARD);
@@ -48,10 +48,16 @@ describe('victory and banners', () => {
     expect(bannerTotal(d.state, 'top')).toBe(1);
     turn(d, 'attackC', ['u1']);
     endMoves(d);
+    ev(d);
     forceDice(n('infantry', 30));
     attack(d, 'u1', H(4, 6));
     expect(d.state.winner).toBe('bottom');
     expect(bannerTotal(d.state, 'top')).toBe(0);
+    const es = ev(d);
+    const lost = es.findIndex((e) => e.t === 'held' && e.side === 'top' && e.total === 0);
+    const won = es.findIndex((e) => e.t === 'victory');
+    expect(lost).toBeGreaterThanOrEqual(0);
+    expect(won).toBeGreaterThan(lost);
   });
 });
 
@@ -175,8 +181,45 @@ describe('exit objective', () => {
     expect(offers(play(s, 'attackC', ['u1']).state, 'u1')).toBe(false);
   });
 
-  // needs T5: leaderMoves checks the exit only after entering a hex, never from the start hex (a lone leader standing on the exit)
-  it.todo('exit: a lone leader standing on the exit hex may exit (needs T5 rebase)');
+  it('exit: a lone leader standing on the exit hex may exit (his start hex)', () => {
+    const s = build({
+      objectives: [exit], first: 'top',
+      units: [{ side: 'top', key: 'FR/LN', at: [3, 8] }, far], leaders: [{ side: 'top', at: [0, 4] }],
+    });
+    const d = play(s, 'attackC', [leaderId(s, 0)]);
+    expect(offers(d.state, leaderId(d.state, 0))).toBe(true);
+    must(d, { kind: 'move', piece: leaderId(d.state, 0), to: OFF_BOARD });
+    expect(d.state.leaders).toHaveLength(0);
+    expect(d.state.players.top.banners).toBe(0);
+  });
+
+  describe('against the real exitAllowedFrom (movement.ts)', () => {
+    const exitB: Extract<ObjectiveSetup, { kind: 'exit' }> = { kind: 'exit', side: 'bottom', hex: [8, 6] };
+    const enemy = { side: 'top', key: 'FR/LN', at: [1, 7] } as const satisfies { side: UnitSetup['side']; key: UnitSetup['key']; at: number[] };
+    it('a unit is offered one OFF_BOARD target even when the exit is entered across works (stopping) as well', () => {
+      const s = build({
+        objectives: [exitB], terrain: [{ at: [8, 6], t: 'fieldworks', on: 'plain', sides: ['NE'] }],
+        units: [{ side: 'bottom', key: 'BR/LC', at: [6, 6] }, enemy],
+      });
+      const d = play(s, 'probeC', ['u1']);
+      expect(pieceMoves(d.state, 'u1').filter((m) => m.hex === OFF_BOARD)).toHaveLength(1);
+    });
+    it('a leader passing a friendly unit on the exit hex may exit', () => {
+      const s = build({ objectives: [exitB], units: [{ side: 'bottom', key: 'BR/LN', at: [8, 6] }, enemy], leaders: [{ side: 'bottom', at: [6, 6] }] });
+      const d = play(s, 'probeC', [leaderId(s, 0)]);
+      expect(offers(d.state, leaderId(d.state, 0))).toBe(true);
+    });
+    it('the exiting piece stands on the exit hex when exitPiece runs; elsewhere it throws', () => {
+      const s = build({ objectives: [exitB], units: [{ side: 'bottom', key: 'BR/LC', at: [6, 6] }, enemy] });
+      const d = play(s, 'probeC', ['u1']);
+      const t = pieceMoves(d.state, 'u1').find((m) => m.hex === OFF_BOARD)!;
+      expect(t.path[t.path.length - 2]).toBe(H(8, 6));
+      must(d, { kind: 'move', piece: 'u1', to: OFF_BOARD });
+      expect(d.state.players.bottom.banners).toBe(1);
+      const s2 = build({ objectives: [exitB], units: [{ side: 'bottom', key: 'BR/LC', at: [6, 6] }, enemy] });
+      expect(() => exitPiece(s2, { emit: () => {} }, 'u1')).toThrow(/no exit/);
+    });
+  });
 
   it('exit: a lone leader reaching the hex may exit and scores nothing (leadersScore false)', () => {
     const s = build({
@@ -233,7 +276,34 @@ describe('exit objective', () => {
   });
 });
 
+describe('losing a temporary objective by a forced retreat (§13.3)', () => {
+  it('a unit retreating off the hex on the opponent’s turn loses it at once', () => {
+    const s = build({
+      objectives: [{ kind: 'tempHex', side: 'top', hex: [2, 5] }], first: 'top',
+      units: [{ side: 'top', key: 'FR/LN', at: [2, 5] }, { side: 'bottom', key: 'BR/LN', at: [3, 5] }],
+    });
+    const d = new GameDriver(s);
+    expect(bannerTotal(d.state, 'top')).toBe(1);
+    passTurn(d);
+    turn(d, 'attackC', ['u2']);
+    endMoves(d);
+    forceDice([...n('flag', 1), ...n(miss('BR/LN', 'FR/LN'), 30)]);
+    attack(d, 'u2', H(2, 5));
+    endTurn(d);
+    expect(d.state.units.find((x) => x.id === 'u1')!.hex).not.toBe(H(2, 5));
+    expect(bannerTotal(d.state, 'top')).toBe(0);
+  });
+});
+
 describe('kill weights', () => {
+  it('setup rejects two killWeight objectives for the same side and arm', () => {
+    const setup = setupOf({ objectives: [
+      { kind: 'killWeight', side: 'bottom', enemyArm: 'infantry', first: 1, later: 2 },
+      { kind: 'killWeight', side: 'bottom', enemyArm: 'infantry', first: 1, later: 1 },
+    ] });
+    expect(() => createGame(setup, 1)).toThrow(/two killWeight/);
+  });
+
   it('killWeight: first enemy infantry 1, each later one 2; other arms 1 (§13.4, R65)', () => {
     const s = build({
       objectives: [{ kind: 'killWeight', side: 'bottom', enemyArm: 'infantry', first: 1, later: 2 }], first: 'bottom',
