@@ -78,7 +78,7 @@ export function gamePrompt(c: PromptCtx): Prompt | null {
     return { title: s.active === human ? 'Resolving…' : `${s.players[ai].army} turn`, text: '', buttons: [] };
   }
   if (d.side !== human) return null;
-  if (view.generalThinking) return { title: decisionTitle(d), text: 'Your general is deciding…', buttons: [] };
+  if (view.generalThinking) return { title: decisionTitle(d, s), text: 'Your general is deciding…', buttons: [] };
   const p = decisionPrompt(c, d);
   // no undo once a Scout's two cards are on show: it would put them back on the deck, known
   const undo = d.kind === 'scoutKeep' ? null : undoButton(c);
@@ -228,7 +228,8 @@ function movePrompt(c: PromptCtx): Prompt {
   // RR §6.2: a leader leaves his unit only by moving first
   const detach = movers.some((id) => {
     const u = unitById(s, id);
-    return !!u && !!s.turn.ordered[id] && !!attachedLeader(s, u);
+    const l = u && attachedLeader(s, u);
+    return !!u && !!s.turn.ordered[id] && !!l && !!s.turn.ordered[l.id];
   });
   if (detach) text += ' To detach a leader, move him before his unit.';
   const buttons = [btn('End movement', () => c.answer({ kind: 'endMove' }), { variant: 'secondary' })];
@@ -301,10 +302,12 @@ function leaderRetreatPrompt(c: PromptCtx, d: D<'leaderRetreat'>): Prompt {
   const { s } = c;
   const spec = promptSpec(s, d);
   const l = leaderById(s, d.leader);
-  const choices = leaderRetreatChoices(s, d);
+  const all = leaderRetreatChoices(s, d);
+  // above the cap a plain hex is chosen on the board; a join, an escape, leaving or falling keeps its button
+  const choices = all.filter((o) => all.length <= MAX_CHOICE_BUTTONS || o.kind !== 'hex' || o.attach || o.escapes > 0);
   const buttons: JSX.Element[] = choices.map((o) => (
     <Button
-      key={`${o.kind}${o.index}`} variant={o.kind === 'hex' && !o.escapes ? 'ghost' : 'secondary'}
+      key={`${o.kind}${o.index}`} variant={o.kind === 'hex' && !o.escapes ? 'secondary' : 'ghost'}
       onClick={() => c.answer({ kind: 'choose', index: o.index })}
       onMouseEnter={() => c.setUi((u) => ({ ...u, hoverHex: o.end }))}
     >
@@ -312,10 +315,10 @@ function leaderRetreatPrompt(c: PromptCtx, d: D<'leaderRetreat'>): Prompt {
     </Button>
   ));
   buttons.push(autoButton(c));
-  const risky = choices.some((o) => o.kind === 'hex' && o.escapes > 0);
+  const risky = all.some((o) => o.kind !== 'dead' && o.escapes > 0);
   return {
     title: spec.title,
-    text: `${l?.name || 'Your leader'} must retreat. Click a hex (joining a friendly unit is safest).${risky ? ' An amber hex means passing enemy units: each may strike at him as he slips by.' : ''}`,
+    text: `${l?.name || 'Your leader'} must retreat. Click a hex (joining a friendly unit is safest).${risky ? ' An amber hex, or leaving the battlefield, means passing enemy units: each may strike at him as he slips by.' : ''}`,
     buttons,
   };
 }

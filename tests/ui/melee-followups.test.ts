@@ -2,7 +2,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import {
-  hexLabel, meleeDice, neighbours, retreatOptions, leaderRetreatOptions, type Decision, type GameState, type HexId, type LeaderRetreatOption,
+  CARD_DEFS, cardKind, eligiblePieces, hexLabel, meleeDice, neighbours, stopsOnEntry, terrainAt, retreatOptions, leaderRetreatOptions, type Decision, type GameState, type HexId, type LeaderRetreatOption,
 } from '../../src/engine';
 import { GameController, newSessionConfig, type ViewState } from '../../src/ui/game/controller';
 import { DECISION_TITLES, decisionTitle, promptSpec } from '../../src/ui/game/promptSpec';
@@ -103,11 +103,27 @@ describe('take ground, breakthrough, bonus melee', () => {
     const s = build(pos('bottom'));
     const h = neighbours(s.units[0].hex)[0];
     const adv = (how: 'takeGround' | 'breakthrough'): Decision => ({ kind: 'advance', side: 'bottom', unit: 'u1', hex: h, how });
-    expect(promptSpec(s, adv('takeGround')).text).toBe('British Heavy Cavalry may take ground in the hex it emptied.');
-    expect(promptSpec(s, adv('breakthrough')).text).toBe('British Heavy Cavalry may break through into the emptied hex, then move one more hex.');
+    expect(promptSpec(s, adv('takeGround')).text).toBe('British Heavy Cavalry may take ground in the hex its enemy left.');
+    expect(promptSpec(s, adv('breakthrough')).text).toBe('British Heavy Cavalry may break through into the hex its enemy left, then move one more hex.');
     const bt: Decision = { kind: 'breakthroughExtra', side: 'bottom', unit: 'u1', options: [h], required: false };
     expect(promptSpec(s, bt).text).toBe('British Heavy Cavalry breaks through: click a hex to move on, or stay.');
     expect(promptSpec(s, { ...bt, required: true } as Decision).text).toContain('click a hex to move on.');
+  });
+
+  it('a breakthrough that cannot go on says so: a hex that stops entry, or after a bonus melee', () => {
+    const s = build({ ...pos('bottom'), terrain: [{ at: [5, 5], t: 'town' }] });
+    const from = s.units[0].hex;
+    const town = neighbours(from).find((h) => terrainAt(s, h) === 'town');
+    const plain = neighbours(from).find((h) => !stopsOnEntry(s, from, h))!;
+    expect(town).toBeDefined();
+    const adv = (hex: number): Decision => ({ kind: 'advance', side: 'bottom', unit: 'u1', hex, how: 'breakthrough' });
+    expect(promptSpec(s, adv(town!)).text).toBe('British Heavy Cavalry may break through into the hex its enemy left; it stops there.');
+    expect(promptSpec(s, adv(plain)).text).toContain('then move one more hex');
+    s.turn.ordered.u1 = { ...(s.turn.ordered.u1 as object), id: 'u1', bonusMeleeDone: true } as never;
+    expect(promptSpec(s, adv(plain)).text).toBe('British Heavy Cavalry may take ground in the hex its enemy left (no further move after a bonus melee).');
+    expect(promptSpec(s, adv(plain)).title).toBe('Take ground?');
+    expect(decisionTitle(adv(plain), s)).toBe('Take ground?');
+    expect(decisionTitle(adv(plain))).toBe('Break through?');
   });
 
   it('bonus melee targets carry their dice', () => {
@@ -142,7 +158,8 @@ describe('the move prompt', () => {
       units: [{ side: 'top', key: 'FR/LN', at: [2, 6] }, { side: 'bottom', key: 'BR/LN', at: [8, 5] }],
       leaders: withLeader ? [{ side: 'top', at: [2, 6] }] : [],
     };
-    const d = play(build(pos), 'probeC', ['u1']);
+    const s0 = build(pos);
+    const d = play(s0, 'probeC', withLeader ? ['u1', leaderId(s0, 0)] : ['u1']);
     expect(d.pending).toMatchObject({ kind: 'move', side: 'top' });
     return gamePrompt(ctx(d.pending!, 'top', d.state))!.text;
   };
@@ -150,6 +167,17 @@ describe('the move prompt', () => {
   it('explains detaching when an ordered unit has a leader', () => {
     expect(move(true)).toContain('To detach a leader, move him before his unit.');
     expect(move(false)).not.toContain('To detach a leader');
+  });
+
+  it('says nothing about detaching when the leader himself is not ordered', () => {
+    const pos: Pos = {
+      first: 'top',
+      units: [{ side: 'top', key: 'FR/LN', at: [2, 6] }, { side: 'bottom', key: 'BR/LN', at: [8, 5] }],
+      leaders: [{ side: 'top', at: [2, 6] }],
+    };
+    const d = play(build(pos), 'probeC', ['u1']);
+    expect(d.state.turn.ordered[leaderId(d.state, 0)]).toBeUndefined();
+    expect(gamePrompt(ctx(d.pending!, 'top', d.state))!.text).not.toContain('To detach a leader');
   });
 });
 
@@ -196,7 +224,7 @@ describe('retreats', () => {
     expect(hexChoices.length).toBeGreaterThan(0);
     const p = gamePrompt(ctx(d, 'bottom', s))!;
     expect(text(p.buttons).filter((b) => b.includes('Let the general decide'))).toHaveLength(1);
-    expect(p.buttons.length).toBe(ch.length + 1);
+    expect(p.buttons.length).toBeLessThanOrEqual(ch.length + 1);
   });
 
   it('a leader retreat with escapes shows the risk on its button and the path on hover', () => {
@@ -223,7 +251,7 @@ describe('undo at the Scout keep', () => {
     try {
       await runToHuman(c);
       const s = c.driver.state;
-      const card = s.players.bottom.hand.find((x) => ['probeC', 'attackC', 'probeL', 'attackL', 'probeR', 'attackR'].length > 0)!;
+      const card = s.players.bottom.hand.find((x) => CARD_DEFS[cardKind(x)].group === 'section' && eligiblePieces(s, 'bottom', cardKind(x)).length > 0)!;
       c.answer({ kind: 'playCard', card });
       await runToHuman(c);
       const undoable = (d: Decision | null) => (c as unknown as { undoable(d: Decision | null): string | null }).undoable(d);
@@ -235,5 +263,58 @@ describe('undo at the Scout keep', () => {
     } finally {
       c.dispose();
     }
+  });
+});
+
+describe('leader retreat buttons', () => {
+  const base = () => build({ units: [{ side: 'top', key: 'FR/LN', at: [6, 6] }, { side: 'bottom', key: 'BR/LN', at: [6, 5] }], leaders: [{ side: 'bottom', at: [5, 6] }] });
+  const opt = (path: HexId[], o: Partial<LeaderRetreatOption> = {}): LeaderRetreatOption =>
+    ({ path, end: path[path.length - 1], offBoard: false, escapes: [], attach: null, eliminated: false, ...o });
+
+  it('safe choices are emphasised, risky ones plain; one off-board and one fall button', () => {
+    const s = base();
+    const l = leaderId(s, 0);
+    const d: Decision = { kind: 'leaderRetreat', side: 'bottom', leader: l, options: [
+      opt([H(6, 4)]), opt([H(7, 6), H(8, 6)], { escapes: ['u1'] }),
+      opt([H(8, 0)], { offBoard: true, escapes: ['u1', 'u1'] }), opt([H(8, 1)], { offBoard: true, escapes: ['u1'] }),
+      opt([], { eliminated: true, end: s.leaders[0].hex }), opt([], { eliminated: true, end: s.leaders[0].hex }),
+    ] };
+    const ch = leaderRetreatChoices(s, d);
+    expect(ch.filter((c) => c.kind === 'off')).toHaveLength(1);
+    expect(ch.find((c) => c.kind === 'off')!.escapes).toBe(1);
+    expect(ch.filter((c) => c.kind === 'dead')).toHaveLength(1);
+    expect(ch.find((c) => c.kind === 'dead')!.label).toBe('He cannot escape');
+    const html = gamePrompt(ctx(d, 'bottom', s))!.buttons.map((b) => renderToStaticMarkup(b));
+    const variant = (frag: string) => html.find((h) => h.includes(frag))!;
+    expect(variant(hexLabel(H(6, 4)))).toContain('kit-btn--secondary');
+    expect(variant('escape past 1')).toContain('kit-btn--ghost');
+    expect(variant('Leave the battlefield')).toContain('kit-btn--ghost');
+    expect(variant('cannot escape')).toContain('kit-btn--ghost');
+    expect(gamePrompt(ctx(d, 'bottom', s))!.text).toContain('amber');
+    const offOnly: Decision = { ...d, options: [opt([H(6, 4)]), d.options[3]] };
+    expect(gamePrompt(ctx(offOnly, 'bottom', s))!.text).toContain('leaving the battlefield');
+    expect(gamePrompt(ctx({ ...d, options: [opt([H(6, 4)])] }, 'bottom', s))!.text).not.toContain('amber');
+  });
+
+  it('above the cap only meaningful choices get buttons', () => {
+    const s = base();
+    const l = leaderId(s, 0);
+    const plain = [H(6, 0), H(6, 1), H(6, 2), H(6, 3), H(6, 4), H(7, 0), H(7, 1)].map((h) => opt([h]));
+    const d: Decision = { kind: 'leaderRetreat', side: 'bottom', leader: l, options: [...plain, opt([H(7, 2)], { attach: 'u2' }), opt([H(7, 3), H(8, 3)], { escapes: ['u1'] })] };
+    const p = gamePrompt(ctx(d, 'bottom', s))!;
+    const labels = text(p.buttons);
+    expect(labels).toHaveLength(3);
+    expect(labels[0]).toContain('join');
+    expect(labels[1]).toContain('escape');
+    expect(labels[2]).toBe('Let the general decide');
+  });
+});
+
+describe('bonus melee dice for guns only', () => {
+  it('a target no melee die reaches says "0 dice + guns"', () => {
+    const s = build({ units: [{ side: 'bottom', key: 'BR/FA', at: [4, 6] }, { side: 'top', key: 'FR/LN', at: [3, 6] }] });
+    const d = { kind: 'bonusMelee', side: 'bottom', unit: 'u1', targets: [H(3, 6)] } as Extract<Decision, { kind: 'bonusMelee' }>;
+    const n = meleeDice(s, s.units[0], s.units[1], { role: 'bonus', moved: 0, declared: true });
+    expect(bonusBadges(s, d).get(H(3, 6))).toBe(n === 0 ? '0 dice + guns' : `${n} ${n === 1 ? 'die' : 'dice'}`);
   });
 });

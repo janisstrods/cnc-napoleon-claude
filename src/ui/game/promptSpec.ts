@@ -3,7 +3,7 @@
 // the last button is always "Let the general decide". The bespoke choosers of the game screen (card, orders, move, battle,
 // retreat, leader retreat, flags) add their board interaction on top of the title and that button.
 import {
-  CARD_DEFS, UNIT_STATS, cardKind, hexLabel, pieceHex, statsOf, unitById,
+  CARD_DEFS, UNIT_STATS, cardKind, hexLabel, pieceHex, statsOf, stopsOnEntry, unitById,
   type Answer, type Decision, type DefendChoice, type GameState, type HexId,
 } from '../../engine';
 import { suggestAssign } from './assign';
@@ -36,11 +36,16 @@ export const DECISION_TITLES: Readonly<Record<Decision['kind'], string>> = {
  * The title of decision `d`: the table's, except for the refinements that tell the player which rule is at work (take ground
  * or breakthrough, Retire and Reform, a bonus melee against the player's own unit).
  */
-export function decisionTitle(d: Decision): string {
-  if (d.kind === 'advance') return d.how === 'breakthrough' ? 'Break through?' : 'Take ground?';
+export function decisionTitle(d: Decision, s?: GameState): string {
+  if (d.kind === 'advance') return d.how === 'breakthrough' && !(s && afterBonus(s, d.unit)) ? 'Break through?' : 'Take ground?';
   if (d.kind === 'retreat' && d.reason === 'retireReform') return 'Retire and Reform';
   if (d.kind === 'defend' && d.bonus) return `${DECISION_TITLES.defend} (bonus melee)`;
   return DECISION_TITLES[d.kind];
+}
+
+/** True when the unit has fought its bonus melee this turn: the move that follows takes the hex and no more (R36). */
+function afterBonus(s: GameState, unit: string): boolean {
+  return !!s.turn.ordered[unit]?.bonusMeleeDone;
 }
 
 /** What a flag not ignored costs the unit (RR §10.1): hexes back by its own row, or blocks for a unit in square. */
@@ -79,7 +84,7 @@ const hexesOf = (s: GameState, ids: readonly string[]): HexId[] =>
 
 /** The prompt of decision `d` in state `s`. */
 export function promptSpec(s: GameState, d: Decision): PromptSpec {
-  const title = decisionTitle(d);
+  const title = decisionTitle(d, s);
   const actions: PromptAction[] = [];
   let text = '';
   let hexes: HexId[] = [];
@@ -125,9 +130,10 @@ export function promptSpec(s: GameState, d: Decision): PromptSpec {
       text = 'Click a hex to choose where the leader goes.';
       break;
     case 'advance':
-      text = d.how === 'breakthrough'
-        ? `${unitLabel(s, d.unit)} may break through into the emptied hex, then move one more hex.`
-        : `${unitLabel(s, d.unit)} may take ground in the hex it emptied.`;
+      if (d.how === 'takeGround') text = `${unitLabel(s, d.unit)} may take ground in the hex its enemy left.`;
+      else if (afterBonus(s, d.unit)) text = `${unitLabel(s, d.unit)} may take ground in the hex its enemy left (no further move after a bonus melee).`;
+      else if (stopsOnEntry(s, pieceHex(s, d.unit) ?? -1, d.hex)) text = `${unitLabel(s, d.unit)} may break through into the hex its enemy left; it stops there.`;
+      else text = `${unitLabel(s, d.unit)} may break through into the hex its enemy left, then move one more hex.`;
       hexes = [d.hex];
       actions.push(
         { key: 'yes', label: 'Advance', answer: { kind: 'yesno', yes: true } },

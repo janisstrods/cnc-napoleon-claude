@@ -100,7 +100,7 @@ export function retreatChoices(s: GameState, d: D<'retreat'>): RetreatChoice[] {
 }
 
 /** One answer of a leader's retreat: an end hex (the safest way there), leaving the battlefield, or falling. */
-export interface LeaderRetreatChoice { index: number; kind: 'hex' | 'off' | 'dead'; end: HexId; escapes: number; label: string }
+export interface LeaderRetreatChoice { index: number; kind: 'hex' | 'off' | 'dead'; end: HexId; escapes: number; attach: string | null; label: string }
 
 const escapeText = (n: number) => `escape past ${n} enemy unit${n === 1 ? '' : 's'}`;
 
@@ -111,22 +111,27 @@ export function leaderRetreatChoices(s: GameState, d: D<'leaderRetreat'>): Leade
   d.options.forEach((o, i) => {
     const n = o.escapes.length;
     if (o.eliminated) {
-      rest.push({ index: i, kind: 'dead', end: o.end, escapes: n, label: 'Fall with his unit' });
+      if (!rest.some((c) => c.kind === 'dead')) rest.push({ index: i, kind: 'dead', end: o.end, escapes: n, attach: null, label: 'He cannot escape' });
     } else if (o.offBoard) {
-      rest.push({ index: i, kind: 'off', end: o.end, escapes: n, label: `Leave the battlefield${n ? ` (${escapeText(n)})` : ''}` });
+      const known = rest.find((c) => c.kind === 'off');
+      if (known && known.escapes <= n) return;
+      const c: LeaderRetreatChoice = { index: i, kind: 'off', end: o.end, escapes: n, attach: null, label: `Leave the battlefield${n ? ` (${escapeText(n)})` : ''}` };
+      if (known) rest[rest.indexOf(known)] = c;
+      else rest.push(c);
     } else {
       const known = hexes.find((c) => c.end === o.end);
       if (known && known.escapes <= n) return;
       const join = o.attach ? `, join ${unitLabel(s, o.attach)}` : '';
-      const c: LeaderRetreatChoice = { index: i, kind: 'hex', end: o.end, escapes: n, label: `To ${hexLabel(o.end)}${join}${n ? ` (${escapeText(n)})` : ''}` };
+      const c: LeaderRetreatChoice = { index: i, kind: 'hex', end: o.end, escapes: n, attach: o.attach, label: `To ${hexLabel(o.end)}${join}${n ? ` (${escapeText(n)})` : ''}` };
       if (known) hexes[hexes.indexOf(known)] = c;
       else hexes.push(c);
     }
   });
+  rest.sort((a, b) => (a.kind === b.kind ? 0 : a.kind === 'off' ? -1 : 1));
   return [...hexes, ...rest];
 }
 
-/** The dice of the bonus melee against each of its targets, "3 dice" on the target's hex. */
+/** The dice of the bonus melee against each of its targets, "3 dice" on the target's hex ("0 dice + guns" when only guns may join). */
 export function bonusBadges(s: GameState, d: D<'bonusMelee'>): Map<HexId, string> {
   const out = new Map<HexId, string>();
   const u = unitById(s, d.unit);
@@ -134,7 +139,9 @@ export function bonusBadges(s: GameState, d: D<'bonusMelee'>): Map<HexId, string
   const moved = s.turn.ordered[u.id]?.moved ?? 0;
   for (const h of d.targets) {
     const foe = unitAt(s, h) ?? leaderAt(s, h);
-    if (foe) out.set(h, dice(meleeDice(s, u, foe, { role: 'bonus', moved, declared: true })));
+    if (!foe) continue;
+    const n = meleeDice(s, u, foe, { role: 'bonus', moved, declared: true });
+    out.set(h, n === 0 ? '0 dice + guns' : dice(n));
   }
   return out;
 }
