@@ -1234,7 +1234,7 @@ Only a battle whose data has a `guerrilla` side rule (§15.8) uses it: 101–113
   whether to take a counter, only while the pool holds at least one **[Interp S45]**. **Yes:** it takes 1 counter from
   the pool and draws **1** card. **No:** the normal Scout draw (2, keep 1, §12.4).
 * With an empty pool (6 held) it is not asked and draws normally. Six counters are the only limit on holding
-  **[Interp S20]**. The question comes even when the Scout ordered nothing (§12.4).
+  **[Interp S20]**. The question comes even when the Scout ordered nothing, as its two-card draw does (§12.4) **[Interp R51]**.
 
 **Other cards** (S21): the guerrilla side's own First Strike is never affected by counters; an opponent's
 Counter-Attack is itself a card that may be cancelled.
@@ -1293,11 +1293,12 @@ Each record is part of the scenario data, as §13.4. Fields are listed per type;
 |---|---|
 | `side` | The side that can gain it (115: bottom). |
 | `hexes` | At least 2 hexes (115: the two Albuera hexes). |
-| `timing` | `turnStart`. |
+| `timing` | Optional; setup always resolves it to `turnStart` (the only timing). |
 | `banners` | Default 1: one banner for the whole group, never one per hex. |
+| `text` | Optional: the objective's description; setup supplies a default. |
 | Gain | At the start of `side`'s turn, if a unit of `side` stands on any hex of `hexes`, the banner is gained (or kept), and the units of `side` then on those hexes become its holders (`holders`), replacing any earlier holders (S35). |
 | Lose | The instant no holder stands on a hex of `hexes`, on either turn (moved off, retreated, eliminated). A holder that moves from one hex of the group to another stays a holder. A unit of `side` that enters a hex during a turn becomes a holder only at the next start of `side`'s turn, so it does not keep the banner **[Interp S35]**. |
-| Refused | `tempAny objective needs at least 2 hexes`. |
+| Refused | `tempAny objective needs at least 2 hexes`; `tempAny banners must be a whole number, at least 1`. |
 
 **`majority`** — group majority banner, turn start (114, 117).
 
@@ -1306,12 +1307,13 @@ Each record is part of the scenario data, as §13.4. Fields are listed per type;
 | `side` | The side that can gain it. A group that both sides contest is **two records** with the same `hexes`, one per side. |
 | `hexes` | At least 2 hexes: the group. |
 | `banners` | Default 1. |
+| `text` | Optional: the objective's description; setup supplies a default. |
 | `startHeld` | Default false. True if `side` holds the banner at setup (114: top; 117: top, all three groups). Setup refuses it unless `side` then has a majority. |
 | Count | A side's count is the number of hexes of the group holding one of its units (lone leaders never count, R65). |
 | Gain | At the start of `side`'s **own** turn, if its count is greater than the enemy's (1 against 0 is enough), it gains the banner. |
 | Lose | The instant its count is no longer greater than the enemy's, on either player's turn: one of its units leaves the group (move, retreat, Retire and Reform, taking ground, breakthrough, Short Supply) or is eliminated, or an enemy unit enters a group hex to tie or pass it. It is regained only at a later start of `side`'s turn with a majority (S36). |
 | Note | The two records of a group are never held together: a holder loses the instant the enemy ties it, and the enemy gains only with a greater count at its own turn start. The banner is temporary: it counts toward victory only while held (§13.1), and a turn-start gain that reaches the target wins at once (R64). |
-| Refused | `majority objective needs at least 2 hexes`; `majority objective starts held by ${side} without a majority`. |
+| Refused | `majority objective needs at least 2 hexes`; `majority objective starts held by ${side} without a majority`; `majority banners must be a whole number, at least 1`. |
 
 **`exitEdge`** — exits off a board edge (102).
 
@@ -1321,10 +1323,11 @@ Each record is part of the scenario data, as §13.4. Fields are listed per type;
 | `row` | 0 or 8: the edge (102: 0, the top army's baseline). |
 | `free` | Default 0. Exits that score nothing before banners start (102: 3). |
 | `banners` | Default 1. Permanent banners for each unit exited after the first `free`. |
+| `text` | Optional: the objective's description; setup supplies a default. |
 | Gain | An ordered unit of `side` on a hex of `row` may step off the board during its normal move; the step costs 1 hex of its allowance, so a unit that moves 1 must start on `row`, and a unit whose move was already stopped (terrain, joining a leader) cannot step off. It is removed, not eliminated: the enemy gains nothing. The first `free` exited units score nothing; each later one gives `side` `banners` permanent banners (S31) **[Interp S31]**. |
 | Leaders | A leader may exit the same way, alone or with the unit he is attached to. He scores nothing, is not counted among `free`, and can no longer be killed. |
 | Only ordered movement | Retreats, Retire and Reform, taking ground, breakthrough and Short Supply never carry a unit off (R67). A leader retreating off his own baseline is §11.3, unchanged. |
-| Refused | `exitEdge row must be 0 or 8`. |
+| Refused | `exitEdge row must be 0 or 8`; `exitEdge free must be a whole number, at least 0`; `exitEdge banners must be a whole number, at least 1`. |
 
 **`suddenDeath`** — instant win on losses of a named enemy row (105).
 
@@ -1335,7 +1338,7 @@ Each record is part of the scenario data, as §13.4. Fields are listed per type;
 | `need` | Resolved at setup: the number of enemy units of `keys` on the board then (105: 3). |
 | Win | `side` wins the instant the `need`-th enemy unit of `keys` is eliminated (by hits or a failed retreat, on either turn, in an attack, battle back or First Strike), checked with the banner check after every elimination (R64). A win reached in an earlier event stands; an event that both completes the count and brings `side` to its banner target is a win for `side` either way (S32). |
 | `text` | The reason shown for that win. |
-| Refused | `suddenDeath: no enemy unit of ${keys}`. |
+| Refused | `suddenDeath needs at least one unit key`; `suddenDeath: unknown unit key`; `suddenDeath: no enemy unit of ${keys}`. |
 
 **`guerrilla`** side rule (§15.5).
 
@@ -1355,7 +1358,7 @@ Each record is part of the scenario data, as §13.4. Fields are listed per type;
 | `start` | Resolved at setup: the units of `side` with a key in `keys` (101: 4). |
 | Effect | The instant the `losses`-th such unit is eliminated (by hits or a failed retreat, on either turn), every remaining unit of `side` with those keys is **removed** from the board at once. The eliminations score the enemy their normal banners; the removals score nothing, cause no leader casualty check and count as an elimination for no other rule. A removed unit in square returns its card to the hand and its counter to the track (R33). A leader attached to a removed unit stays in the hex as a lone leader **[Interp S30]**. Victory is checked after the eliminating event (R64). |
 | In a combat | A removed unit takes no further part: any step still pending by or against it (its battle, battle back, retreat, Combined Arms share, or an ordered battle later that turn) does not happen; the combat that caused the elimination finishes normally. |
-| Refused | `breakOnLosses: unknown unit key`. |
+| Refused | `breakOnLosses needs at least one unit key`; `breakOnLosses: unknown unit key`; `breakOnLosses losses must be a whole number, at least 1`. |
 
 **`handShrink`** side rule (106).
 
@@ -1376,6 +1379,7 @@ Each record is part of the scenario data, as §13.4. Fields are listed per type;
 | `side` | The side capped (106: top). |
 | `units` | The most units that may ever form square in the battle (106: 2). |
 | Effect | A unit of `side` may form square only if it has formed square before in this battle (or started in square), or fewer than `units` different units of `side` have done so. Every other R26 limit still applies (S34) **[Interp S34]**. |
+| Refused | `squareCap units must be 1..4`. |
 
 **`cavalryChargeFolly`** side rule (115).
 
@@ -1409,6 +1413,7 @@ Each record is part of the scenario data, as §13.4. Fields are listed per type;
 | Field | Meaning |
 |---|---|
 | `t: 'walledFarm'` | A Walled Farm hex (a Town, name "Walled farm"). |
+| `crossing` | On a River hex only: `bridge` is always a Bridge; `ford` becomes a fordable river hex that does not stop movement (terrain `fordNoStop`) under `fordable` or `fordableNoStop`, a fordable river hex that stops movement (terrain `ford`) under `impassable`, and a brook hex under `brook`. Without a crossing, a River hex is `ford` under `fordable`, `fordNoStop` under `fordableNoStop`, impassable river under `impassable` and `brook` under `brook`. 115's four ford tiles are encoded as `crossing: 'ford'` under `rivers: 'fordable'` (§15.6). |
 | `river` | On a River hex only: `impassable`, `fordable`, `fordableNoStop` or `brook`, replacing the battle's `rivers` rule for that hex; a `crossing` there works under this rule (104: the four Shallow Stream hexes, `fordable`). Refused: `unknown river rule ${x} at (r,c)`; `river override on a non-river hex at (r,c)`. |
 
 ## 16. Expansion #1 battle special rules
@@ -1456,7 +1461,7 @@ transcriptions `design/data/1NN.json` (notes and verification logs beside them);
 * Swiss: `SP/SWI` at (2,2) and (2,3), `FR/SWI` as above, all 5 blocks (§15.1, S11) **[Interp S11]**. The Swiss leaders
   are Reding (`SP/LDR`, with the `SP/SWI` at (2,3)) and Schramm (`FR/LDR`, with the `FR/SWI` at (6,4)), ordinary leaders
   of their side (S11, S27).
-* `rivers`: fordable: the whole Rumblar, (3,1) (stream source), (4,1), (5,0), (6,1), (7,0), (8,0) (junction), (8,1)
+* `rivers`: fordable: the whole Rumblar, (3,1) (stream source), (4,1), (5,0), (6,1), (7,0), (8,0), (8,1) (Y junction)
   (S24) **[Interp S24]**.
 
 ### 16.2 102 Zornoza
@@ -1471,6 +1476,7 @@ transcriptions `design/data/1NN.json` (notes and verification logs beside them);
 
 ### 16.3 103 Gamonal
 
+* `hand` 5 / 6.
 * `rivers`: fordable (the Pico, (0,2) to (8,2)).
 * `sideRules`: `guerrilla` top, `counters` 1.
 * Towns: Vellimar (2,12), (3,11); El Palacio (4,0). The `SP/HC` at (1,3), drawn with 4 blocks, starts with 3 (S41).
@@ -1537,6 +1543,7 @@ transcriptions `design/data/1NN.json` (notes and verification logs beside them);
 
 ### 16.11 111 Ocaña (Cavalry Action)
 
+* `hand` 5 / 6.
 * Cavalry and horse artillery only: no squares and no Retire and Reform arise (S39). `SP/CU` at (0,9) (S5).
 * `sideRules`: `guerrilla` top, `counters` 1.
 
@@ -1564,7 +1571,7 @@ transcriptions `design/data/1NN.json` (notes and verification logs beside them);
   (5,2), (5,3), (5,4), (6,3), `banners` 1 each: one for top with `startHeld` true (the `SP/LN` at (3,1), (3,2), (3,3)
   hold 3 hexes against 0), one for bottom (S36).
 * `rivers`: impassable, no bridge: (0,11), (1,11), (2,12), (3,11), (4,12).
-* Town: Barrosa (4,0). The 5-block `BR/LN` of the map starts with 4 (S41).
+* Town: Barrosa (4,0). The `BR/LN` at (0,7), drawn with 5 blocks, starts with 4 (S41).
 * No `guerrilla` rule: Scout works normally (S15).
 
 ### 16.15 115 Albuera
