@@ -69,8 +69,11 @@ its cap is counted at the nodes the cap would have bought (pro rata); the matchi
 
 So the strength rows run each level at its own scale (`--scaleA`/`--scaleB`, added by this task): captain 0.85, colonel 0.35,
 marshal 0.25. CPU time is less load-sensitive than wall time, but on this loaded machine it still runs high (efficiency cores,
-shared caches), so on a quiet machine the clock buys somewhat more nodes than these scales give: the strength rows err towards
-the weaker search. At scale 1 the colonel and marshal would play with 1.6× and 2× the nodes a player's AI gets.
+shared caches), so on a quiet machine the clock buys more nodes than these scales give, and not evenly: re-measured on the final
+code on a quiet machine (below, after run 3) the matching scales are 0.87–0.9 for the colonel against the 0.35 used here, and
+0.34 for the marshal against 0.25. The loaded-machine scales therefore cost the colonel more than the marshal and favoured the
+marshal in run 3 (59 % here, 56 % at the quiet scales). At scale 1 the colonel and marshal would have played with 1.6× and 2× the
+nodes the loaded-machine clock bought.
 
 Node cost per battle (the per-battle speed probe; CPU ms per card decision at deterministic scale 1, loaded machine):
 
@@ -143,7 +146,7 @@ calibration's one kept evaluation change, the `tempGroup` fix, changes no move i
 |---|---|---|---|
 | Level 0 vs random (run 1) | ≥ 90 % wins | 30 of 30 (100 %, 95 % Wilson [89 %, 100 %]) | met |
 | Level 1 vs level 0 (run 2) | ≥ 65 % wins | 47 of 60 (78 %, [66 %, 87 %]) | met |
-| Level 2 vs level 1 (run 3) | ≥ 55 % over ≥ 120 paired games | 71 of 120 (59 %, [50 %, 68 %]) after the reshape; 65 of 120 (54 %, [45 %, 63 %]) before | met (point estimate; the interval reaches down to 50 %) |
+| Level 2 vs level 1 (run 3) | ≥ 55 % over ≥ 120 paired games | 71 of 120 (59 %, [50 %, 68 %]) after the reshape at the loaded-machine scales; 67 of 120 (56 %, [47 %, 64 %]) at the quiet-machine scales (marshal 0.35, colonel 0.9), the figure nearer shipped play; 65 of 120 (54 %, [45 %, 63 %]) before the reshape | met on the point estimate only: the quiet-scale interval includes parity, so the marshal's edge over the colonel is not statistically established |
 | Balance per battle: band (run 4) | each side 15–85 % | French 25–83 % in all 15 battles | met |
 | Balance per battle: published rate | AI within ±25 points | 11 of 15; missed at 006 (+27), 007 (+27), 008 (−28), 012 (+28), one game of 12 beyond the line each | missed |
 | Balance overall | British/Allied share 35–65 % | 78 of 180 (43 %, [36 %, 51 %]) | met |
@@ -224,7 +227,7 @@ whole search (2 of 20 over 0.8 s; matching scale 0.87, a lower bound since so fe
 113), where nodes cost 3–8× more, are not in this probe. Run 3 again at those quiet-machine scales (marshal 0.35, colonel 0.9;
 same seeds; `p5-11-r3-quiet-0..5.json`): **marshal 67, colonel 53 of 120 (56 %, 95 % Wilson [47 %, 64 %])**, 0 rejects, 0
 fallbacks, longest 55 turns. The colonel gains more from a quiet machine than the marshal (its search completes), so the margin
-narrows from 59 % to 56 %, still at the target.
+narrows from 59 % to 56 %: at the target on its point estimate, but the interval now dips below 50 %.
 
 ### Run 4: balance, level 1 against level 1
 
@@ -420,5 +423,10 @@ here):
   evaluation; worth 3–8× at 012 and 113, where a player's colonel and marshal are clock-capped to a fraction of their nodes.
 - **Hold-chance discount (carry 115):** a proxy from the threat on the target hex itself, measured on 001, 003, 013–015 and the
   Spanish objective battles together.
-- **Level 2:** its margin over the colonel is real but modest (59 %, interval from 50 %). With a faster machine or the speed work
-  above the clock buys more nodes, which the reshaped search turns into deeper sampling of its leaders.
+- **Level 2:** its margin over the colonel is modest and not statistically established (56 % at the quiet scales, interval
+  [47 %, 64 %]). On a quiet machine the reshaped marshal is limited by its search shape, not its clock: it uses about 1,160 of its
+  5,000 nodes and 0.8 s of its 2 s, and only 1 card decision in 20 hits the cap. A faster machine (or the speed work above) helps
+  the colonel, whose clock binds, more than the marshal, and narrows the margin (59 % → 56 %). The levers are the marshal's shape:
+  `kMax`, `k0` or a time-based top-up of the leaders, measured at the quiet scales (marshal 0.35, colonel 0.9) within the 3 s cap.
+  Controller ruling (fix round 2): ruling 8 stands as met on the point estimate; this lever is carried to a later release (it needs
+  another 120-game measurement, and the golden replays of Plan 8 Task 1 are recorded on this AI).
