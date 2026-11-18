@@ -2,11 +2,12 @@
 // per-die odds of odds.ts, then the engine's own flag-ignore and retreat queries. No game RNG and no forced dice are
 // touched: every number is an exact expectation over the dice, so estimates are pure and repeatable.
 //
-// A melee goes through the defender's reaction model (reactions.ts): stand, Retire and Reform, or form square (Task 4a);
-// First Strike and Combined Arms guns arrive in Task 4b through the same calls. The value of following up into a vacated
-// hex (take ground, breakthrough and a cavalry bonus-melee prospect) is part of every melee's `ev`.
+// A melee goes through the defender's reaction model (reactions.ts): stand, Retire and Reform, form square (Task 4a) or
+// First Strike (Task 4b), with the Combined Arms guns the attacker adds (`bestGuns`, carried in `MeleeCtx.artillery` as the
+// engine does). The value of following up into a vacated hex (take ground, breakthrough and a cavalry bonus-melee
+// prospect) is part of every melee's `ev`.
 import {
-  attachedLeader, bannerTotal, escapeDice, fireDice, leaderRetreatOptions, meleeDice, neighbours, noBattleAfterEntering, onBaseline,
+  artilleryShares, attachedLeader, bannerTotal, escapeDice, fireDice, leaderRetreatOptions, meleeDice, neighbours, noBattleAfterEntering, onBaseline,
   passableFor, retreatDistance, retreatOptions, squareFirstApplies, statsOf, unitById,
   type DefendChoice, type GameState, type HexId, type Leader, type MeleeCtx, type Side, type StrikeRole, type Unit,
 } from '../engine';
@@ -329,20 +330,53 @@ export function squareFirstEstimate(s: GameState, cav: Unit, sq: Unit, ec: EstCt
   return { expHits: g.expHits, pElim: g.pElim, pBounce: g.pRetreat, value: g.value };
 }
 
+/** The defender's First Strike roll at the melee unit that attacks it. */
+// approximates RR §12.3 (engine: firstStrikeRoll): the defender rolls its normal melee dice (its terrain, no cards: role
+// 'firstStrike') at the melee unit, never at a joining gun (R63); the flags are ordinary (the attacker's own ignores apply).
+// The melee unit and its guns then roll only if it is still in its hex, and the defender does not battle back
+function firstStrikeStrike(s: GameState, ec: EstCtx, atk: Unit, def: Unit): Strike {
+  const dice = meleeDice(s, def, atk, { role: 'firstStrike', moved: 0 });
+  return strike(s, ec, atk, def, dice, dieOdds('melee', statsOf(s, def), statsOf(s, atk).arm), 0, def.side);
+}
+
+/** What the defender's First Strike (`def`) does to the melee unit `atk`: hits, elimination, driven out of its hex. */
+export function firstStrikeEstimate(s: GameState, atk: Unit, def: Unit, ec: EstCtx): { expHits: number; pElim: number; pDriven: number; value: number } {
+  const g = firstStrikeStrike(s, ec, atk, def);
+  return { expHits: g.expHits, pElim: g.pElim, pDriven: g.pRetreat, value: g.value };
+}
+
+/** The dice the Combined Arms guns of `m` add to the melee unit's roll (0 without guns). */
+// approximates RR §9.6 (engine: combinedArmsStep and meleeAttack): each joining gun's dice are the engine's own count
+// (`artilleryShares`: melee dice when adjacent, range dice otherwise, with its own cards and terrain); they are rolled with
+// the melee unit's (recounted) dice and scored by the melee unit's row, and are lost when a square fighting first or a
+// First Strike eliminates the melee unit or drives it out of its hex (R40); against Retire and Reform they still roll
+function gunDice(s: GameState, m: MeleeCtx): number {
+  if (m.artillery.length === 0) return 0;
+  let n = 0;
+  for (const g of artilleryShares(s, m)) n += g.dice;
+  return n;
+}
+
+/** Which roll comes before the attacker's: a square's (against cavalry), a First Strike, or none. */
+type First = 'square' | 'firstStrike' | null;
+
 /**
- * The defender stands (in square when `squareFirst`): the attacker's roll, then the battle back at the defender's remaining
- * blocks when it survives in place, or, against a square, the square's first roll and no battle back.
+ * The defender fights: the attacker's roll (the melee unit's dice plus its guns'), then the battle back at the defender's
+ * remaining blocks when it survives in place; or, when `first` strikes before it (a square against cavalry, a First
+ * Strike), that roll first, the attacker's roll only from the states in which the melee unit is still in place (its dice
+ * recounted for its blocks, its guns' dice lost otherwise), and no battle back.
  */
-function combat(s: GameState, ec: EstCtx, attacker: Unit, defender: Unit, m: MeleeCtx, squareFirst: boolean, advance: () => number): Outcome {
+function combat(s: GameState, ec: EstCtx, attacker: Unit, defender: Unit, m: MeleeCtx, first: First, advance: () => number): Outcome {
   const ast = statsOf(s, attacker);
   const dst = statsOf(s, defender);
   const odds = dieOdds('melee', ast, dst.arm);
   const backOdds = dieOdds('melee', dst, ast.arm);
+  const guns = gunDice(s, m);
   let pre: [number, number][] = [[attacker.blocks, 1]];
   let firstLoss = 0;
   let firstHits = 0;
-  if (squareFirst) {
-    const f = squareStrike(s, ec, attacker, defender);
+  if (first) {
+    const f = first === 'square' ? squareStrike(s, ec, attacker, defender) : firstStrikeStrike(s, ec, attacker, defender);
     firstLoss = f.value;
     firstHits = f.expHits;
     pre = [...f.stay];
@@ -351,8 +385,8 @@ function combat(s: GameState, ec: EstCtx, attacker: Unit, defender: Unit, m: Mel
   const byDice = new Map<number, Strike>();
   for (const [r, q] of pre) {
     const a = r === attacker.blocks ? attacker : { ...attacker, blocks: r };
-    const dice = Math.max(0, meleeDice(s, a, defender, { role: m.role, moved: ec.moved, declared: true }));
-    let g = squareFirst ? byDice.get(dice) : undefined;
+    const dice = Math.max(0, meleeDice(s, a, defender, { role: m.role, moved: ec.moved, declared: true })) + guns;
+    let g = first ? byDice.get(dice) : undefined;
     if (!g) {
       g = strike(s, ec, defender, a, dice, odds, 0, attacker.side);
       byDice.set(dice, g);
@@ -361,7 +395,7 @@ function combat(s: GameState, ec: EstCtx, attacker: Unit, defender: Unit, m: Mel
     expHits += q * g.expHits;
     pElim += q * g.pElim;
     pRetreat += q * g.pRetreat;
-    if (squareFirst) continue; // the square already struck first: no battle back (R29)
+    if (first) continue; // the square or the First Strike unit already fought: no battle back (R29, R63)
     for (const [remaining, p] of g.stay) {
       // the engine rolls the battle back at the defender's blocks after the hits (and a failed retreat's losses)
       const back = meleeDice(s, { ...defender, blocks: remaining }, a, { role: 'back', moved: 0 });
@@ -377,20 +411,20 @@ function combat(s: GameState, ec: EstCtx, attacker: Unit, defender: Unit, m: Mel
 }
 
 /** Retire and Reform: the attacker's roll at the retiring cavalry, which leaves its hex alive or dead. */
-// approximates RR §9.4 (engine: resolveRetireReform): all the attacker's melee dice, cavalry symbols only (no flags, no
-// Cuirassier ignore); a hit triggers the leader check; every survivor retires 2 hexes, there is no battle back, and the
-// vacated hex may be taken either way
+// approximates RR §9.4 (engine: resolveRetireReform): all the attacker's melee dice and its guns' (R40), cavalry symbols
+// only (no flags, no Cuirassier ignore); a hit triggers the leader check; every survivor retires 2 hexes, there is no battle
+// back, and the vacated hex may be taken either way
 function retire(s: GameState, ec: EstCtx, attacker: Unit, defender: Unit, m: MeleeCtx, advance: () => number): Outcome {
-  const dice = Math.max(0, meleeDice(s, attacker, defender, { role: m.role, moved: ec.moved, declared: true }));
+  const dice = Math.max(0, meleeDice(s, attacker, defender, { role: m.role, moved: ec.moved, declared: true })) + gunDice(s, m);
   const g = strike(s, ec, defender, attacker, dice, dieOdds('retireReform', statsOf(s, attacker), 'cavalry'), 0, attacker.side);
   const pRetire = 1 - g.pElim;
   return { ev: g.value + pRetire * DISPLACE * 2 + advance(), expHits: g.expHits, pElim: g.pElim, pRetreat: pRetire, pVacate: 1, backLoss: 0, backHits: 0 };
 }
 
 /**
- * The outcome of each reaction of `defender` to `attacker`'s melee `m`, memoised per choice, with the follow-up value shared.
- * The defender's own costs count as the attacker's gain (`ev`): a square's card held back and its immobility, a First
- * Strike card spent.
+ * The outcome of each reaction of `defender` to `attacker`'s melee `m` (with the guns in `m.artillery`), memoised per choice,
+ * with the follow-up value shared. The defender's own costs count as the attacker's gain (`ev`): a square's card held back
+ * and its immobility, a First Strike card spent.
  */
 export function branchesOf(s: GameState, attacker: Unit, defender: Unit, m: MeleeCtx, ec: EstCtx): (c: DefendChoice) => Outcome {
   const rc = ec.role === m.role ? ec : { ...ec, role: m.role };
@@ -404,14 +438,15 @@ export function branchesOf(s: GameState, attacker: Unit, defender: Unit, m: Mele
     if (c === 'retireReform') o = retire(s, rc, attacker, defender, m, advance);
     else if (c === 'formSquare') {
       const sq: Unit = { ...defender, square: 1 };
-      const fought = combat(s, rc, attacker, sq, m, true, advance);
+      const fought = combat(s, rc, attacker, sq, m, 'square', advance);
       // a square destroyed in this melee returns its card at once (removeUnit releases it): the cost is paid only if it survives
       o = { ...fought, ev: fought.ev + squareCost(s, defender, rc.occ) * (1 - fought.pElim) };
-    } else {
-      const stood = combat(s, rc, attacker, defender, m, squareFirstApplies(s, m), advance);
-      // First Strike (Task 4b fills its sequence): until then the card is spent and strikes nothing
-      o = c === 'firstStrike' ? { ...stood, ev: stood.ev + firstStrikeCost(rc.W) } : stood;
-    }
+    } else if (c === 'firstStrike') {
+      // the engine never offers it against a square that fights first (defendOptions), so the two never stack
+      const struck = combat(s, rc, attacker, defender, m, 'firstStrike', advance);
+      // the card is spent whatever the roll does
+      o = { ...struck, ev: struck.ev + firstStrikeCost(rc.W) };
+    } else o = combat(s, rc, attacker, defender, m, squareFirstApplies(s, m) ? 'square' : null, advance);
     memo.set(c, o);
     return o;
   };
@@ -423,16 +458,22 @@ export function meleeBranch(s: GameState, attacker: Unit, defender: Unit, m: Mel
 }
 
 /**
- * Expected result of `attacker` in melee against the unit on `targetHex` (`ec.role`: 'attack' or 'bonus'), over the
- * defender's reactions (`reactionOutcomes`): the expected battle back or square's roll subtracted, the follow-up added.
+ * Expected result of `attacker` in melee against the unit on `targetHex` (`ec.role`: 'attack' or 'bonus'), with the Combined
+ * Arms guns it should add (`bestGuns`), over the defender's reactions (`reactionOutcomes`): the expected battle back, square's
+ * roll or First Strike subtracted, the follow-up added.
  */
 export function meleeEstimate(s: GameState, attacker: Unit, targetHex: HexId, ec: EstCtx): Outcome {
+  if (!ec.occ.unit[targetHex]) return loneLeaderEstimate(s, attacker, targetHex, ec);
+  return meleeWithGuns(s, attacker, targetHex, bestGuns(s, attacker, targetHex, ec), ec);
+}
+
+/** `meleeEstimate` with the Combined Arms guns given (`guns`, ids of the attacker's artillery) instead of chosen. */
+export function meleeWithGuns(s: GameState, attacker: Unit, targetHex: HexId, guns: readonly string[], ec: EstCtx): Outcome {
   const defender = ec.occ.unit[targetHex];
-  if (!defender) return loneLeaderEstimate(s, attacker, targetHex, ec);
+  if (!defender) return loneLeaderEstimate(s, attacker, targetHex, ec); // no Combined Arms against a lone leader (R76)
   const m: MeleeCtx = {
-    attacker: attacker.id, target: defender.id, targetHex, role: ec.role === 'bonus' ? 'bonus' : 'attack', artillery: [], reaction: null, declaredMoved: ec.moved,
+    attacker: attacker.id, target: defender.id, targetHex, role: ec.role === 'bonus' ? 'bonus' : 'attack', artillery: [...guns], reaction: null, declaredMoved: ec.moved,
   };
-  m.artillery = bestGuns(s, attacker, targetHex, ec);
   const out: Outcome = { ...ZERO };
   for (const r of reactionsFor(s, m, ec, defender, branchesOf(s, attacker, defender, m, ec))) {
     out.ev += r.p * r.o.ev;
