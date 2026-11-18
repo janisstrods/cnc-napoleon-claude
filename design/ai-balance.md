@@ -21,10 +21,10 @@ units together, so the spend rate below is higher than in AI-vs-AI play.
     of very uneven cards.
   - **To look at:** whether 0.3 overprices a counter against card value, or whether the rule should compare it with the
     keep-one gain times a factor.
-- **The spend rate is about 55% in random-play fuzz (a hypothesis, superseded for AI-vs-AI play).** 846 of 1,440 spend questions in the Task 19 fuzz and 495 of 927 in the run above answered
+- **The spend rate is about 55% in random-play fuzz (measured; not the AI-vs-AI rate).** 846 of 1,440 spend questions in the Task 19 fuzz and 495 of 927 in the run above answered
   yes. Every card ordering a melee at good odds draws a counter. This rate came from random opponents crowding units together; in
-  AI-vs-AI play it is 21-27 % (Plan 7C Task 21 section below), so the claim that counters go early is untested there.
-  - **To look at:** in AI-vs-AI games, whether counters go early on middling cards, leaving none for the opponent's strong
+  AI-vs-AI play it is 21-27 % (Plan 7C Task 21 section below), so the hypothesis below, that counters go early, is untested there.
+  - **Hypothesis, to look at:** in AI-vs-AI games, whether counters go early on middling cards, leaving none for the opponent's strong
     Tactic cards. A reserve term (keep the last counter for a card above some value) is the obvious lever; `counterValue`'s
     ×1.5 for the last counter is its only form now.
 - **The 116 opening pick often moves second.**
@@ -487,31 +487,32 @@ the whole player. Scratch script, not committed (`p7c21-diag116.ts`).
 | French forced to move first (the reverse) | French, 23 of 24 (one tie went to the Allies) | 19 of 23 French first (83 %) |
 | Every answer random and legal (no AI at all) | Allies 14 of 24, French 10 of 24 | 16 of 24 (67 %); 8 of 14 Allies first, 8 of 10 French first |
 
-- **The pick logic is not what hands the French the game.** Natural picks leave the first move almost even (14 against 10), the
-  average pick values are the same for both sides (top 3.7, bottom 3.5), and with the Allies forced to move first the French
-  still win 63 %.
-- **Moving first is worth about 20 points to the French (63 % to 83 %).** Both runs have n of 23-24, so each is about +-20
-  points wide; the direction is the same in the random-play row (8 of 14 against 8 of 10).
-- **There is an asymmetry in the battle itself that does not come from the AI.** With every answer random the French still win
-  two games in three (turns 104 on average, so these are long games decided by dice and geometry). The Allies have 22 units to
-  the French 20 and a hand of 5 against 4, both nominally in their favour, so the cause is not a headcount. Untested
-  hypotheses: the Allied line is spread out and has to cross the Zadorra at two bridges, so the French reach it first with local
-  superiority; several hill hexes in the French half (rows 4-8) give them defensive ground; both need 9 banners, which is 9 of 22 Allied units
-  against 9 of 20 French units.
-- **Why 12 of 12 in Task 11:** a true rate near 65-70 % gives 12 straight wins about once in 100 runs (0.7^12 is 1.4 %); that
-  run was probably the unlucky tail plus the lower scale (0.5), not a different cause. Today's 3 of 4 at scale 0.9 is
-  consistent with it.
-- **Recommendation to the controller (no AI code was changed).** Treat 116's skew as the battle's (an AI-free 67 %), not a pick
-  bug; if it is to be moved, the lever is the scenario's Move First value or the French opening card, not `moveFirstPick`.
-  `moveFirstPick` still ignores the value of moving first (Task 19 section above), which is worth about 20 points in this run,
-  so a tempo term there is still a real improvement to the AI's own play. None of the runs had a reject or a fallback.
+- **The pick logic is not the cause (the supported conclusion).** Natural picks leave the first move almost even (14 against 10),
+  the average pick values are the same for both sides (top 3.7, bottom 3.5), the French win 71 % of natural games, 67 % of random
+  ones and 63 % with the Allies forced to move first: about the same in every condition.
+- **The French lead in every condition**: 67 of 96 games pooled (70 %).
+- **Random play: 16 of 24 French (67 %, Wilson [47 %, 82 %]).** Two more of the 24 random games hit the 150-turn cap with no
+  winner (they are not in the 16; the average of 104 turns includes them). Random play cannot by itself separate a battle
+  asymmetry from AI behaviour, so "the battle favours the French" is a hypothesis that this row hints at, not a finding. Untested
+  ideas for why: the Allied line is spread out and crosses the Zadorra at two bridges; hill hexes in the French half (rows 4-8) give
+  defensive ground; 9 banners is 9 of 22 Allied units against 9 of 20 French units.
+- **"Moving first" cannot be priced from these runs.** The forced rows (63 % against 83 %) are confounded: the side made to move
+  second also picks its highest-valued card (Forward, Force March, Cold Steel), so the opening card's strength changes together
+  with the first move. The natural-pick row shows no first-move effect (French 10 of 14 with the Allies first, 7 of 10 with the
+  French first). No figure is claimed.
+- **Why 12 of 12 in Task 11:** those 12 games were three runs of the same two seeds with both sides, and the final code replayed
+  the baseline's games exactly (Spanish sanity table above), so the 12-0 is in effect a 4-0 (about 24 % at a 70 % rate), not a
+  1-in-70 event. Today's 3 of 4 at scale 0.9 is consistent with a French rate of 65-70 %.
+- **Recommendation to the controller (no AI code was changed).** Do not treat `moveFirstPick` as the cause of 116's skew. If the
+  skew is to be moved, look at the scenario side first. `moveFirstPick` still ignores the value of moving first (Task 19
+  section above), which is a separate question. None of the runs had a reject or a fallback.
 
 ### Follow-ups for the controller (not tuned here)
 
 - **Guerrilla spend is low in AI-vs-AI play: 99 of 366 (27 %)** (Plan 5 Task 11 saw 21 %). The 55 % of Task 19's fuzz was random
   play. Per battle: 101 4 of 9, 103 6 of 26, 105 11 of 43, 106 7 of 25, 107 5 of 28, 109 10 of 38, 110 6 of 26, 117 8 of 42, 118
   10 of 35. Whether it is too low is a design question: the guerrilla side that holds 1-2 counters keeps them for strong
-  cards; there is no reserve problem to fix as long as Spanish results stay near even (109 and 117 are the Spanish wins).
+  cards; whether that is a problem is open: over the 72 games the French won 46 (64 %, Wilson [52 %, 74 %]), and only 109 and 117 went to the Spanish side 4-0.
 - **Scout is always yes: 60 of 60.** Unchanged since Task 19; `counterValue` 0.3 against a keep-one gain near 0.06.
 - **102 Zornoza: exits 0 in four games.** The AI never walks a unit off the baseline in 102 (the French won 4-0, 6-3 banners);
   `EDGE_PROGRESS` is the open Plan 5 carry. Together with 101 and 108 at 4-0, the Spanish side of these three is the weak one.

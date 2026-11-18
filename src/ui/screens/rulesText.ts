@@ -438,7 +438,7 @@ export const RULES_TEXT: Record<RulesTab, RulesBlock[]> = {
     {
       heading: 'New objectives',
       paragraphs: [
-        'Some objectives are held by any unit on one of several hexes (Albuera), or by having more units than the enemy on a group of hexes (the Barrosa ridge and the San Marcial hills). Both are temporary banners, counted only while held. Zornoza adds exits: the Spanish may move units off the board by their own baseline, and after the first three each further unit that leaves scores a permanent banner (a leader leaves for nothing). At Somosierra the French win the instant the third Spanish gun is destroyed.',
+        'Some objectives are held by any unit on one of several hexes (Albuera), or by having more units than the enemy on a group of hexes (the Barrosa ridge and the San Marcial hills). Both are temporary banners, counted only while held. Zornoza adds exits: the Spanish may move units off the board by their own baseline, by ordered movement only (a retreat never takes a unit off), and after the first three each further unit that leaves scores a permanent banner (a leader leaves for nothing). At Somosierra the French win the instant the third Spanish gun is destroyed.',
         'A majority banner is taken at the start of your own turn when you hold more of the group than the enemy; one hex against none is enough, and lone leaders never count.',
       ],
       reading: 'A majority banner is lost at once, on either player’s turn, the moment the holder’s count is no longer greater than the enemy’s, and it can be taken again only at the start of its owner’s own turn.',
