@@ -29,6 +29,6 @@ export function unitTokenProps(u: Unit, humanSide: Side): UnitTokenProps {
 }
 
 /** `LeaderToken` props of leader `l` (name aside, which the caller gives), `attached` to a unit or alone. */
-export function leaderTokenProps(s: GameState, l: Leader, attached: boolean, humanSide: Side = 'bottom'): Omit<LeaderTokenProps, 'name'> {
+export function leaderTokenProps(s: GameState, l: Leader, attached: boolean, humanSide: Side): Omit<LeaderTokenProps, 'name'> {
   return { nation: s.players[l.side].nation, attached, facing: facingFor(l.side, humanSide) };
 }

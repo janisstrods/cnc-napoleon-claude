@@ -109,6 +109,8 @@ export function eventLog(e: GameEvent, before: GameState, after: GameState, huma
       if (e.purpose === 'elan' || e.purpose === 'rally') {
         return line(`${a} rolls for ${e.purpose === 'elan' ? 'Élan' : 'Rally'} ${dice}.`, 'combat', sideOf(e.attacker));
       }
+      // the attacker rolls against a defender who is falling back: say who retires
+      if (e.purpose === 'retireReform') return line(`${a} attacks ${who(e.target)} ${dice}; the defender retires and reforms.`, 'combat', sideOf(e.attacker));
       return line(`${a} ${VERB[e.purpose]} ${who(e.target)} ${dice}.`, 'combat', sideOf(e.attacker));
     }
     case 'roll': {
