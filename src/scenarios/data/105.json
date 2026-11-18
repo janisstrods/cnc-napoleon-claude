@@ -66,9 +66,9 @@
     {"side":"bottom","key":"FR/GLC","r":8,"c":6}
   ],
   "leaders": [
-    {"side":"top","name":"unlabelled","r":1,"c":7},
-    {"side":"top","name":"unlabelled","r":2,"c":1},
-    {"side":"top","name":"unlabelled","r":3,"c":10},
+    {"side":"top","name":"","r":1,"c":7},
+    {"side":"top","name":"","r":2,"c":1},
+    {"side":"top","name":"","r":3,"c":10},
     {"side":"bottom","name":"Pires","r":8,"c":1},
     {"side":"bottom","name":"Ruffin","r":8,"c":7}
   ],

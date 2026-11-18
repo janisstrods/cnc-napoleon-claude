@@ -39,9 +39,9 @@ export const MANIFEST_EXP1: Record<string, BattleManifest> = {
   },
   '105': {
     name: 'Somosierra', year: '1808', banners: 7, first: 'bottom', sides: { top: side('Spanish', 'SP', 'San Juan', 4), bottom: side('French', 'FR', 'Napoleon', 6) },
-    leaders: { top: L('unlabelled, unlabelled, unlabelled'), bottom: L('Pires, Ruffin') },
+    leaders: { top: ['', '', ''], bottom: L('Pires, Ruffin') },
     units: { top: U('SP/FA 3, SP/GR 2, SP/LC 2, SP/LN 9, SP/LT 1'), bottom: U('FR/GA 1, FR/GLC 2, FR/LC 2, FR/LN 7, FR/LT 3') },
-    terrain: T('forest 7, hill 13', { hexes: 1, sides: 4 }), checksum: CS('fab0343f', '1028ef00'),
+    terrain: T('forest 7, hill 13', { hexes: 1, sides: 4 }), checksum: CS('fab0343f', '5649220c'),
   },
   '106': {
     name: 'Medellín', year: '1809', banners: 6, first: 'top', sides: { top: side('Spanish', 'SP', 'Cuesta', 6), bottom: side('French', 'FR', 'Victor', 5) },

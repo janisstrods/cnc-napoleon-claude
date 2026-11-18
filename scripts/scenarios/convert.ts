@@ -102,7 +102,7 @@ export function convertBattle(raw: RawBattle, meta: BattleMeta, entry: Catalogue
   const names = meta.leaderNames ?? {};
   const leaders: LeaderSetup[] = raw.leaders.map((l) => {
     const name = names[l.name] ?? l.name;
-    if (name.startsWith('(')) throw new Error(`leader name "${name}" at (${l.r},${l.c}) needs a leaderNames entry (${id})`);
+    if (name.startsWith('(') || name === 'unlabelled') throw new Error(`leader name "${name}" at (${l.r},${l.c}) needs a leaderNames entry (${id})`);
     return { side: l.side as Side, name, r: l.r, c: l.c };
   });
 

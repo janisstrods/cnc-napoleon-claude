@@ -15,7 +15,7 @@ const bottom = (commander: string, cards: number): BattleMeta['bottom'] => ({ ar
 const guerrilla = (counters: number): Rule => ({ kind: 'guerrilla', side: 'top', counters });
 const hexes = (...h: [number, number][]): [number, number][] => h;
 
-/** One battle: `first` bottom unless said, no objectives or rules beyond the guerrilla counters unless given. */
+/** One battle's meta, hidden while EXP1_HIDDEN holds. */
 function battle(b: Omit<BattleMeta, 'hidden'>): BattleMeta {
   return { ...b, ...(EXP1_HIDDEN ? { hidden: true } : {}) };
 }
@@ -48,6 +48,7 @@ export const EXP1_META: Readonly<Record<string, BattleMeta>> = {
   }),
   '105': battle({
     top: top('Spanish', 'SP', 'San Juan', 4), bottom: bottom('Napoleon', 6), first: 'bottom', banners: 7, rivers: 'none',
+    leaderNames: { unlabelled: '' },   // the map's three Spanish leaders carry no name; '' gives the UI's unnamed fallback
     objectives: [{ kind: 'suddenDeath', side: 'bottom', keys: ['SP/FA'], text: 'Every Spanish battery is lost.' }],
     sideRules: [guerrilla(1)],
   }),

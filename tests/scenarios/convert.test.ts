@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { convertBattle, formatScenario, unsupportedFeatures, type BattleMeta, type RawBattle } from '../../scripts/scenarios/convert';
+import { META } from '../../scripts/scenarios/meta';
 import { catalogueEntry } from '../../src/scenarios/catalogue';
 
 const files = import.meta.glob<RawBattle>('../../design/data/*.json', { eager: true, import: 'default' });
@@ -39,6 +40,12 @@ describe('convertBattle', () => {
     const j = convertBattle(RAW['002'], meta(), e('002'));
     expect(j.leaders.filter((l) => l.side === 'bottom').map((l) => l.name)).toEqual(['Delaborde', 'Brennier']);
     expect(() => convertBattle(RAW['002'], meta({ leaderNames: undefined }), e('002'))).toThrow(/leader name "\(unnamed\)".*\(002\)/);
+  });
+
+  it('a bare "unlabelled" leader name needs a leaderNames entry, like a bracketed one', () => {
+    const raw = synth({ leaders: [{ r: 2, c: 2, side: 'top', name: 'unlabelled' }, { r: 6, c: 2, side: 'bottom', name: 'B' }] });
+    expect(() => convertBattle(raw, meta({ leaderNames: undefined }), e('002'))).toThrow(/leader name "unlabelled".*\(002\)/);
+    expect(convertBattle(raw, meta({ leaderNames: { unlabelled: '' } }), e('002')).leaders[0].name).toBe('');
   });
 
   it('squares attach to the unit on the hex; a square on an empty hex throws', () => {
@@ -148,9 +155,7 @@ describe('convertBattle (Expansion #1 features, Plan 7C Task 11)', () => {
     expect('river' in j.terrain[0]).toBe(false);
     expect(() => convertBattle(raw, meta({ rivers: 'impassable', riverRules: { 'No Such River': 'fordable' } }), e('002'))).toThrow(/riverRules.*No Such River.*\(002\)/);
     // 104 for real: the Trueba stays impassable, the Shallow Stream and its source are fordable
-    const m104 = { top: { army: 'Spanish', nation: 'SP', commander: 'Blake', cards: 5 }, bottom: { army: 'French', nation: 'FR', commander: 'Victor', cards: 5 },
-      first: 'bottom', banners: 7, rivers: 'impassable', riverRules: { 'Shallow Stream': 'fordable', 'Shallow Stream (source)': 'fordable' } } as BattleMeta;
-    const j104 = convertBattle(RAW['104'], { ...m104, leaderNames: undefined }, e('104'));
+    const j104 = convertBattle(RAW['104'], META['104'], e('104'));
     expect(j104.terrain.filter((t) => t.river === 'fordable').map((t) => [t.r, t.c])).toEqual([[5, 10], [6, 11], [7, 11], [8, 12]]);
   });
 
