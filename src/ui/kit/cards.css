@@ -251,7 +251,7 @@
 }
 .kit-card__maplabels span.is-on { font-weight: 700; color: var(--g-dark); opacity: 1; }
 
-.kit-card__helmet,
+.kit-card__detach,
 .kit-card__mirror {
   position: absolute;
   bottom: -1.25em;
@@ -267,8 +267,8 @@
 }
 /* Badges go in the left corner, which stays visible where hand cards overlap. The mirror badge (only on
    mirrored section and Inspired cards, never in the hand) takes the right corner. */
-.kit-card__helmet { left: .1em; }
-/* Troop-class badge: a small ivory die face (no card has both it and the helmet). */
+.kit-card__detach { left: .1em; }
+/* Troop-class badge: a small ivory die face (no card has both it and the detach badge). */
 .kit-card__class {
   position: absolute;
   left: .1em;
@@ -286,7 +286,7 @@
 }
 /* The die symbols fill about half of their 100-unit box; enlarge so the shape fills the badge. */
 .kit-card__class svg { position: absolute; inset: -14%; width: 128%; height: 128%; overflow: visible; }
-.kit-card__helmet svg { display: block; filter: drop-shadow(0 .04em 0 rgba(255, 240, 200, .6)); }
+.kit-card__detach svg { display: block; filter: drop-shadow(0 .04em 0 rgba(255, 240, 200, .6)); }
 .kit-card__mirror {
   right: .1em;
   display: grid;
@@ -351,7 +351,7 @@
   padding-left: .34em;
 }
 
-/* Small (hand) cards: title, art and helmet only. */
+/* Small (hand) cards: title, art and detach badge only. */
 .kit-card--sm .kit-card__text,
 .kit-card--sm .kit-card__rule,
 .kit-card--sm .kit-card__maplabels { display: none; }
@@ -362,7 +362,7 @@
 .kit-card--sm.kit-card--leadership .kit-card__medallion { width: 8em; height: 8em; }
 .kit-card--sm .kit-card__minimap { width: 12em; }
 .kit-card--sm .kit-card__leadmap svg { width: 7em; }
-.kit-card--sm .kit-card__helmet { width: 3em; height: 3em; bottom: -1.6em; }
+.kit-card--sm .kit-card__detach { width: 3em; height: 3em; bottom: -1.6em; }
 .kit-card--sm .kit-card__class { width: 3em; height: 3em; bottom: -1.6em; }
 .kit-card--sm .kit-card__mirror { width: 2.6em; height: 2.6em; bottom: -1.4em; }
 .kit-card--sm .kit-card__footer { margin-bottom: 1.1em; }

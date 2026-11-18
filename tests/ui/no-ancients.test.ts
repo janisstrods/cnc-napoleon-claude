@@ -9,21 +9,29 @@ import { ICON_PATHS } from '../../src/ui/kit/icons/paths';
 import { NAP_GLYPHS } from '../../src/ui/kit/icons/napGlyphs';
 import { CreditsText } from '../../src/ui/screens/Menus';
 
-const ui = import.meta.glob<string>('../../src/ui/**/*.{ts,tsx,css}', { eager: true, query: '?raw', import: 'default' });
-const art = import.meta.glob<string>('../../src/art/*.{ts,tsx}', { eager: true, query: '?raw', import: 'default' });
-const dev = import.meta.glob<string>('../../src/dev/*.tsx', { eager: true, query: '?raw', import: 'default' });
+// The globs give paths only: vitest loads every .css file as '' (even with ?raw), so each file is read from disk.
+const ui = import.meta.glob('../../src/ui/**/*.{ts,tsx,css}');
+const art = import.meta.glob('../../src/art/*.{ts,tsx}');
+const dev = import.meta.glob('../../src/dev/*.tsx');
+const menus = import.meta.glob<string>('../../src/ui/screens/Menus.tsx', { eager: true, query: '?raw', import: 'default' });
+// A variable specifier: the project has no Node type definitions.
+const FS = 'node:fs';
+const readText = async (p: string): Promise<string> => (await import(FS)).readFileSync(new URL(p, import.meta.url), 'utf8');
 
 // 'Times New Roman' (font stacks) and "Roman numerals" (SectionMiniMap.tsx:14) are not Ancients words
 const ANCIENT = /\b(Ancients?|Carthag\w*|Syracus\w*|(?<!New )Roman(?! numerals)|Rome|Caesar|Spartan?|Spartacus|legions?)\b/;
 
 describe('Ancients remnants', () => {
-  it('no Ancients words in the UI, kit, top-level art, dev galleries, index.html or CREDITS.md', () => {
-    const files: Record<string, string> = {};
-    for (const g of [ui, art, dev]) for (const [p, s] of Object.entries(g)) if (!p.includes('/src/ui/history/')) files[p] = s;
-    files['index.html'] = indexHtml;
-    files['CREDITS.md'] = credits;
+  it('no Ancients words in the UI, kit, top-level art, dev galleries, index.html or CREDITS.md', async () => {
+    const paths = [ui, art, dev].flatMap((g) => Object.keys(g)).filter((p) => !p.includes('/src/ui/history/'));
+    const files: Record<string, string> = { 'index.html': indexHtml, 'CREDITS.md': credits };
+    for (const p of paths) files[p] = await readText(p);
     expect(Object.keys(files).length).toBeGreaterThan(50);
-    for (const [p, s] of Object.entries(files)) expect(s.match(ANCIENT), p).toBeNull();
+    expect(paths.filter((p) => p.endsWith('.css')).length).toBeGreaterThan(5);
+    for (const [p, s] of Object.entries(files)) {
+      expect(s.length, p).toBeGreaterThan(0);
+      expect(s.match(ANCIENT), p).toBeNull();
+    }
   });
 
   it('the card icons are Napoleonic: no caesar, romanShield, helmet, spartan, sling or bowman glyph', () => {
@@ -54,5 +62,7 @@ describe('Ancients remnants', () => {
     const html = renderToStaticMarkup(createElement(CreditsText));
     expect(html.split('Commands &amp; Colors: Napoleonics').length - 1).toBe(1);
     expect(html).toContain('Commands &amp; Colors is a trademark of GMT Games LLC');
+    // the menu's Credits dialog still shows it
+    expect(Object.values(menus)[0]).toMatch(/title="Credits"[^\n]*>\s*<CreditsText \/>/);
   });
 });

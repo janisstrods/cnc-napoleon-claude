@@ -10,7 +10,6 @@ export type CardSize = 'sm' | 'md' | 'lg';
 /** Illustration of each tactic card (game-icons.net, CC BY 3.0, or our own glyphs); section cards show the mini-map instead. */
 export const CARD_ICONS: Partial<Record<CardKind, IconName | NapGlyph>> = {
   coordinatedAdvance: 'laurels',
-  flankAttack: 'horseHead',
   forward: 'run',
   reconInForce: 'spyglass',
   bayonetCharge: 'spears',
@@ -58,9 +57,9 @@ export function Ornament({ className }: { className?: string }) {
   );
 }
 
-function HelmetBadge() {
+function DetachBadge() {
   return (
-    <div className="kit-card__helmet" title="Leaders may detach from their units">
+    <div className="kit-card__detach" title="Leaders may detach from their units">
       <Icon name="bicorne" size="100%" />
     </div>
   );
@@ -145,7 +144,7 @@ export function CardView(p: {
         <Corner pos="br" />
         <header className="kit-card__header">
           <span className="kit-card__title">{def.title}</span>
-          {def.detach ? <HelmetBadge /> : null}
+          {def.detach ? <DetachBadge /> : null}
           {p.mirrored ? (
             <div className="kit-card__mirror" title="Left and right swapped">
               &#8644;

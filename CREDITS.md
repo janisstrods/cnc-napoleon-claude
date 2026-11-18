@@ -15,18 +15,17 @@ The original SVGs are kept in `src/ui/kit/icons/`. Their glyph paths are extract
 
 | Icon | Author | Used for | Licence | Link |
 | --- | --- | --- | --- | --- |
-| Crossed swords | Lorc | Swords die face, card back | CC BY 3.0 | https://game-icons.net/1x1/lorc/crossed-swords.html |
-| Horse head | Lorc | Flank Attack | CC BY 3.0 | https://game-icons.net/1x1/lorc/horse-head.html |
+| Crossed swords | Lorc | Swords die face, card back, Cold Steel, menu emblem | CC BY 3.0 | https://game-icons.net/1x1/lorc/crossed-swords.html |
 | Laurel crown | Lorc | Grand Manoeuvre | CC BY 3.0 | https://game-icons.net/1x1/lorc/laurel-crown.html |
 | Shield echoes | Lorc | Fire and Hold | CC BY 3.0 | https://game-icons.net/1x1/lorc/shield-echoes.html |
 | Shield reflect | Lorc | Counter Attack | CC BY 3.0 | https://game-icons.net/1x1/lorc/shield-reflect.html |
 | Striking arrows | Lorc | Bombard | CC BY 3.0 | https://game-icons.net/1x1/lorc/striking-arrows.html |
-| Run | Lorc | Forward, Force March | CC BY 3.0 | https://game-icons.net/1x1/lorc/run.html |
+| Run | Lorc | Force March | CC BY 3.0 | https://game-icons.net/1x1/lorc/run.html |
 | Sword wound | Lorc | First Strike | CC BY 3.0 | https://game-icons.net/1x1/lorc/sword-wound.html |
 | Spears | Lorc | Bayonet Charge | CC BY 3.0 | https://game-icons.net/1x1/lorc/spears.html |
 | Cavalry | Delapouite | Cavalry Charge | CC BY 3.0 | https://game-icons.net/1x1/delapouite/cavalry.html |
 | Trumpet flag | Delapouite | Élan, Rally | CC BY 3.0 | https://game-icons.net/1x1/delapouite/trumpet-flag.html |
-| Laurels | Lorc | Card back wreath, menu and medal wreath | CC BY 3.0 | https://game-icons.net/1x1/lorc/laurels.html |
+| Laurels | Lorc | Card back wreath, Coordinated Advance, menu and medal wreath | CC BY 3.0 | https://game-icons.net/1x1/lorc/laurels.html |
 
 The bicorne, spyglass and haversack card glyphs (`src/ui/kit/icons/napGlyphs.ts`) are drawn for this project.
 
