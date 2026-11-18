@@ -6,10 +6,11 @@
 //   --a/--b: captain, colonel, marshal or 0, 1, 2. --random: side B plays uniformly random legal answers instead.
 //   --scale: the thinking budget (AiOptions.budgetScale). --deterministic: no clock is read (the node budget limits the work),
 //   so results do not depend on machine load. --scenarios takes any battle id, the Spanish battles 101-118 included.
+//   With --a = --b (and no --random) the swapped game of a pair is played on the seed + 7 (it would otherwise replay the first).
 import { GameDriver, bannerTotal, createGame, other, randomAnswer, type Side } from '../src/engine';
 import { SCENARIOS, scenarioById } from '../src/scenarios';
 import { personalityFor, type AiOptions, type Difficulty } from '../src/ai';
-import { arg, flag, jobSeed, lcg, levelArg, playAiGame, scenarioList, shardJobs } from './lib';
+import { arg, flag, jobSeed, lcg, levelArg, mirrored, playAiGame, scenarioList, shardJobs } from './lib';
 
 const A = levelArg('a', 'colonel');
 const B = levelArg('b', 'captain');
@@ -30,7 +31,8 @@ const timeA: number[] = [];
 const timeB: number[] = [];
 for (const job of mine) {
   const info = scenarioById(job.sc);
-  const seed = jobSeed(job, seedOffset);
+  // the same AI on both sides: the swapped game would replay the first, so it gets its own seed (jobSeed's `mirror`)
+  const seed = jobSeed(job, seedOffset, mirrored(A, randomB ? 'random' : B, scale, scale));
   const d = new GameDriver(createGame(info.setup, seed));
   const bSide = other(job.aSide);
   const mk = (side: Side, diff: Difficulty): AiOptions => ({

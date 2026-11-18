@@ -590,15 +590,14 @@ function enterOdds(s: GameState, occ: Occ, side: Side, h: HexId, odds: OrderOdds
 
 /**
  * `enterOdds` of a side for a hex, next turn only (`oneTurn`) or within two, its units on `exclude` left out; each side, hex and
- * excluded group worked out once per evaluation (a group is keyed by its first hex and size: the two records of a contested
- * group share their hexes).
+ * excluded group worked out once per evaluation (a group is keyed by its hexes: the two records of a contested group share them).
  */
 type EnterOf = (side: Side, h: HexId, oneTurn?: boolean, exclude?: readonly HexId[]) => number;
 
 function enterOddsOf(s: GameState, occ: Occ, oddsOf: (side: Side) => OrderOdds): EnterOf {
   const known = new Map<string, [number, number]>();
   return (side, h, oneTurn = false, exclude) => {
-    const key = `${side}|${h}|${exclude ? `${exclude[0]}.${exclude.length}` : ''}`;
+    const key = `${side}|${h}|${exclude ? exclude.join('.') : ''}`;
     let e = known.get(key);
     if (!e) known.set(key, (e = enterOdds(s, occ, side, h, oddsOf(side), exclude)));
     return oneTurn ? e[0] : e[1];
@@ -640,8 +639,10 @@ function objectiveTerm(s: GameState, occ: Occ, me: Side, threatsOn: (side: Side)
         const blocked = occ.unit[h] ? theirs.get(h) ?? 0 : 1;
         let pull = (OBJ_PULL * Math.max(0, OBJ_RANGE - d)) / OBJ_RANGE;
         if (occ.unit[h]) pull *= OBJ_BLOCKED + (1 - OBJ_BLOCKED) * blocked;
-        // a majority counts hexes: a unit already on the group adds nothing by stepping to another hex of it
-        const potential = CAPTURE_SHARE * HOLD_DISCOUNT * blocked * enterOf(X, h, false, o.kind === 'majority' ? hexes : undefined);
+        // a majority counts hexes, and a group needs every hex: a unit already on the group adds nothing by stepping to another
+        // hex of it (it leaves its own hex free)
+        const group = o.kind === 'majority' || o.kind === 'tempGroup';
+        const potential = CAPTURE_SHARE * HOLD_DISCOUNT * blocked * enterOf(X, h, false, group ? hexes : undefined);
         return Math.max(pull, potential);
       };
       if (o.kind === 'tempAny') {

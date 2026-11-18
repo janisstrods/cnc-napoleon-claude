@@ -130,6 +130,29 @@ export function flagOutcome(
 }
 
 /**
+ * Flag results already worked out, per board (`ec.occ` is rebuilt for every position, as for the prospects below). The result
+ * depends only on the position, the victim (its id, hex and square), the source's hex (field works), the flag count, the
+ * leader's state and `bounce`, so every strike on the same board shares it: a speed cache (Task 11 speed probe, carry 113),
+ * the values are those `flagOutcome` returns.
+ */
+const boardFlags = new WeakMap<Occ, Map<string, FlagResult>>();
+
+function boardFlagOutcome(
+  s: GameState, occ: Occ, victim: Unit, source: Unit, flags: number, leaderOk: boolean, bounce: boolean, memo: Map<number, FlagResult>,
+): FlagResult {
+  const mk = flags * 2 + (leaderOk ? 1 : 0);
+  const near = memo.get(mk);
+  if (near) return near;
+  let known = boardFlags.get(occ);
+  if (!known) boardFlags.set(occ, (known = new Map()));
+  const key = `${victim.id}|${victim.hex}|${victim.square ?? ''}|${source.hex}|${flags}|${leaderOk ? 1 : 0}|${bounce ? 1 : 0}`;
+  let out = known.get(key);
+  if (!out) known.set(key, (out = flagOutcome(s, victim, source, flags, { leaderOk, bounce })));
+  memo.set(mk, out);
+  return out;
+}
+
+/**
  * P(the attached leader dies in the casualty check after his unit took a hit): 2 dice and 2 sabres when the unit survives,
  * 1 die and a sabre when it was eliminated.
  */
@@ -331,7 +354,7 @@ function strike(
           stayAt(left, q);
           continue;
         }
-        const fo = flagOutcome(s, victim, source, f, { leaderOk, memo, bounce });
+        const fo = boardFlagOutcome(s, ec.occ, victim, source, f, leaderOk, bounce, memo);
         if (fo.lost >= left) {
           // eliminated by a blocked retreat: a leader killed by the hit is gone; otherwise he is checked now if not yet
           out.value += q * (worth(left) + kill + (leaderOk ? elimLeader(!checked) : 0));

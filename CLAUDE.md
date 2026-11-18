@@ -5,6 +5,7 @@ Browser game: TypeScript + Vite + React, pure rules engine in `src/engine`, AI i
 ## Status
 
 - **The engine is the Napoleonics base game (RR §1–§14), complete (Plan 2B).** The computer's general is the real AI (`src/ai`, Plan 5), and the UI covers every decision: each of the 20 decision kinds has its own prompt (Plan 4), and `tests/ui/full-games.slow.test.ts` plays battles 000 and 001–015 to the end through the controller. This project was started from the Commands & Colors: Ancients edition (v1.6.2); its identity has changed (`ccn-` storage keys, `window.__ccn`, title, version 1.0.0 "Talavera").
+- `src/ai` is the Plan 5 planner: card plans played out on determinised clones under one node budget per decision, three levels `captain`/`colonel`/`marshal`, calibrated in `design/ai-balance.md`.
 - Spanish battles 101–118 (Expansion #1, Plan 7C) are playable from the battle picker ("The Spanish Army" tab, Plan 7C), with histories; Plan 7C's own notes carry the details.
 - Ancients content (battles, texts, histories, golden fixtures, art and terrain hash pins, scenario-bound tests) was removed in Plan 2A.
 - Battles 001–015 are generated from `design/data` (Plan 3B) and playable; `000` stays the hidden drill (the picker and random battle skip `hidden` battles).
@@ -22,7 +23,12 @@ Browser game: TypeScript + Vite + React, pure rules engine in `src/engine`, AI i
 | `npm run typecheck` | `tsc --noEmit -p .` and `tsc --noEmit -p tsconfig.scripts.json` (adds `@types/node`; checks `scripts/` too) |
 | `npm run build` | Type-check, then build the static site into `docs/` |
 
-Slow opt-in AI matches: `npx vite-node scripts/ai-match.ts -- --a colonel --b captain --games 2` (see the file header for flags).
+Slow opt-in AI runs (levels `captain`, `colonel`, `marshal` or 0/1/2; `--deterministic` reads no clock, so results do not depend on machine
+load; see each file header for flags):
+- `npx vite-node scripts/ai-match.ts -- --a colonel --b captain --games 2 --deterministic` (add `--random` for a random side B);
+- `npx vite-node scripts/ai-balance.ts -- --a colonel --b colonel --scale 0.5 --games 6 --deterministic --shard 0/4 --json bal-0.json`,
+  then `npx vite-node scripts/ai-balance-report.ts -- bal-*.json` (wins with Wilson intervals, behaviour counters);
+- `npx vite-node scripts/ai-probe.ts -- --scenarios 001,012,113` (per-battle node cost and the scale that matches the time caps).
 
 ## Publishing (GitHub Pages)
 
@@ -74,7 +80,30 @@ Slow opt-in AI matches: `npx vite-node scripts/ai-match.ts -- --a colonel --b ca
   has `on` for the base terrain and `sides` for the works hexsides), `rivers` (one rule per battle), `square` on a unit at setup,
   `objectives` of kinds `tempHex` / `tempGroup` / `exit` / `killWeight`, `sideRules`, and `unitOverrides` (rows changed for one key).
 - The AI calls the engine's rules, passing its `Occ` board index as a `PieceIndex` (`src/engine/query.ts`) rather than
-  copying them. Deliberate approximations in `src/ai/board.ts` say so in a comment.
+  copying them. Deliberate approximations say so in a comment (`// approximates RR §x (engine: <generator>)`).
+- `src/ai` modules, lowest first (a few type-level and function-scoped cycles aside), one line each:
+  - `rand`: the AI's own generator (never the game's RNG).
+  - `budget`: the one node budget of a decision (ruling 2; no clock in deterministic mode).
+  - `board`: the `Occ` board index and distance helpers.
+  - `personality`: commander temperaments (`personalityFor`).
+  - `values`: unit, banner and weight values (`weightsFor`).
+  - `odds`: dice distributions from the engine's scoring.
+  - `view`: the hidden-information boundary: the only file that reads hidden fields (`deck`, `hand`, `squareTrack`, `rng`) and the
+    only `cloneState` caller (`blindClone`, `determinize`); `tests/ai/hidden-scan.test.ts` enforces it.
+  - `voice`: the commanders' lines.
+  - `estimate`: the expected value of one battle.
+  - `reactions`: the defender's choice and the Combined Arms guns.
+  - `evaluate`: the static evaluation.
+  - `cardsense`: card keep values, Guerrilla and Move First.
+  - `ordering`: order candidates and the quick card score.
+  - `moves`: move scoring.
+  - `sim`: engine turns on determinised clones.
+  - `policies`: fast answers to every decision kind.
+  - `planner`: turn plans, battle rollouts and `LEVELS`.
+  - `index`: `chooseAnswer`, the entry point.
+  - `worker`: the Web Worker entry.
+  - `client`: the main-thread wrapper, with the in-thread fallback.
+- `design/ai-balance.md`: the AI calibration log (reference win rates, strength and balance runs, behaviour counters, timings).
 - The player's record (Triumphs: medals per battle, side and opponent level) is `src/ui/record.ts`, in localStorage
   `ccn-record-v1`; the controller records a battle once when it ends. Medal art and the dialog: `src/ui/screens/Medal.tsx`,
   `Triumphs.tsx`.

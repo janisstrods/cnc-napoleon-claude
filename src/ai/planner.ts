@@ -93,8 +93,11 @@ export const LEVELS: readonly [LevelCfg, LevelCfg, LevelCfg] = [
     battleRollouts: 24, battleCands: 3, battleNoise: 0, mistakeRate: 0, extraVariants: 2, topUp: 48, hastyShare: 0,
   },
   {
-    budgetMs: 2000, maxSims: 5000, orderCands: 4, moveVariants: 5, topCards: 6, k0: 12, kMax: 64, evalNoise: 0, pickTemp: 0,
-    battleRollouts: 32, battleCands: 6, battleNoise: 0, mistakeRate: 0, extraVariants: 16, topUp: 64, hastyShare: 0,
+    // Task 11 (ruling 8): the shipped 2 s buys about 1,200 nodes (ai-probe), where the Task 8 shape (k0 12, topCards 6, orderCands 4,
+    // moveVariants 5, extraVariants 16) spent them all on building and screening and never reached the halving; this shape screens
+    // fewer, better plans and samples the leaders deeply within the same nodes
+    budgetMs: 2000, maxSims: 5000, orderCands: 3, moveVariants: 3, topCards: 3, k0: 6, kMax: 48, evalNoise: 0, pickTemp: 0,
+    battleRollouts: 32, battleCands: 6, battleNoise: 0, mistakeRate: 0, extraVariants: 4, topUp: 64, hastyShare: 0,
   },
 ];
 

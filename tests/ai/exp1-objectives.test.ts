@@ -3,7 +3,7 @@
 // breakOnLosses and handShrink. Positions are the real battles' setups with a few units moved or removed.
 import { describe, expect, it } from 'vitest';
 import {
-  GameDriver, OFF_BOARD, cloneState, createGame, distance, rowOf, hexId, neighbours, sectionsOf, type Answer, type CardKind, type GameState, type HexId, type Side,
+  GameDriver, OFF_BOARD, bannerTotal, cloneState, createGame, distance, rowOf, hexId, neighbours, sectionsOf, type Answer, type CardKind, type GameState, type HexId, type Side,
 } from '../../src/engine';
 import { scenarioById } from '../../src/scenarios';
 import { occOf } from '../../src/ai/board';
@@ -13,7 +13,7 @@ import { makeBudget } from '../../src/ai/budget';
 import { greedyMoveStep, type MoveCtx } from '../../src/ai/moves';
 import { pieceBenefits } from '../../src/ai/ordering';
 import { Rng } from '../../src/ai/rand';
-import { CARD_VALUE, NEUTRAL_W, bannerStep, bannerScore, unitValue } from '../../src/ai/values';
+import { CARD_VALUE, NEUTRAL_W, bannerStep, bannerScore, bannersWorth, unitValue } from '../../src/ai/values';
 import { build, giveCard, must, noFirstStrike } from '../rules/helpers';
 import { failOnAiErrors } from './no-ai-errors';
 
@@ -306,6 +306,22 @@ describe('review round 1: the pieces of the new pricing, one by one', () => {
     const b = evalTerms(need1, 'bottom', W).objectives;
     expect(a).toBeGreaterThan(0);
     expect(a).toBeLessThan(0.9 * b);
+    // exactly (best + second best) / 2 of the free hexes' scores, the British majority's own term aside (Task 11: the 7C T20 carry).
+    // A hex's score is what a one-hex objective there scores (same banners, so the same worth): `approachOf` sees the same board.
+    const [topMaj, botMaj] = need2.scenario.objectives;
+    if (botMaj.kind !== 'majority') throw new Error('114: no majority');
+    const only = (objectives: typeof need2.scenario.objectives, objState: typeof need2.special.objState): number => {
+      const x = cloneState(need2);
+      x.scenario = { ...x.scenario, objectives };
+      x.special.objState = objState;
+      return evalTerms(x, 'bottom', W).objectives;
+    };
+    const british = only([topMaj], [need2.special.objState[0]]);
+    const free = botMaj.hexes.filter((h) => need2.units.every((u) => u.hex !== h || u.side !== 'bottom'));
+    const scores = free.map((h) => only([{ kind: 'tempHex', side: 'bottom', hex: h, timing: 'turnStart', banners: botMaj.banners, text: '' }], [{ held: false, count: 0 }]));
+    scores.sort((x, y) => y - x);
+    expect(scores[1]).toBeGreaterThan(0);
+    expect(a).toBeCloseTo(british + (scores[0] + scores[1]) / 2, 9);
   });
 
   it('114: ordering pulls a French unit towards a ridge it is behind on', () => {
@@ -410,5 +426,17 @@ describe('review round 1: the pieces of the new pricing, one by one', () => {
     const firstGain = fire(make(false, true)) - fire(make(false, false));
     expect(firstGain).toBeGreaterThan(0.1);
     expect(lastGain).toBeLessThan(firstGain - 0.1);
+  });
+});
+
+describe('tempGroup: a unit already on the group (Task 11 carry from Plan 7C T20)', () => {
+  it('003: a French unit on one Vimiero hex is no entry for the other: only the held hex scores', () => {
+    // the lone French line stands on (1,3); the British unit is far off, so (1,3) is safe and no other French unit can come
+    const s = keep(real('003'), { u18: H(1, 3), u1: H(8, 12) });
+    const o = s.scenario.objectives[0];
+    expect(o.kind === 'tempGroup' && o.hexes).toEqual([H(1, 3), H(1, 4)]);
+    const worth = bannersWorth(bannerTotal(s, 'bottom'), 2, s.bannersToWin);
+    // GROUP_PARTIAL × CAPTURE_SHARE for the held hex, nothing for (1,4): stepping across leaves (1,3) free
+    expect(evalTerms(s, 'bottom', W).objectives).toBeCloseTo((worth * 0.5 * 0.85) / 2, 9);
   });
 });
