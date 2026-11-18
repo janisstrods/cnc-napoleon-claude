@@ -225,7 +225,7 @@
 /* ---------- rules */
 .rules { display: flex; flex-direction: column; gap: 10px; color: var(--kit-ink); max-height: 72vh; }
 /* a battle's special rules (in play) can be long (308 has ten): they scroll on their own, so the tabs stay in view */
-.rules-battle { flex: 0 1 auto; min-height: 0; max-height: 30vh; overflow-y: auto; padding: 8px 12px; background: rgba(142, 27, 27, .07); border: 1px solid rgba(142, 27, 27, .3); border-left: 4px solid #8e1b1b; border-radius: 6px; }
+.rules-battle { flex: 0 0 auto; max-height: 30vh; overflow-y: auto; padding: 8px 12px; background: rgba(142, 27, 27, .07); border: 1px solid rgba(142, 27, 27, .3); border-left: 4px solid #8e1b1b; border-radius: 6px; }
 .rules-battle h3 { font-family: var(--kit-font-title); font-weight: 400; color: #6e1a14; margin: 0 0 4px; font-size: 17px; }
 .rules-battle ul { margin: 0; padding-left: 20px; }
 .rules-battle li { font-size: 15.5px; line-height: 1.42; }
@@ -242,7 +242,7 @@
   cursor: pointer;
 }
 .rules-tabs button.active { background: #8e1b1b; color: #fbe7a6; border-color: #e8c45a; }
-.rules-body { overflow-y: auto; padding-right: 6px; }
+.rules-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-right: 6px; }
 .rules-text h3 { font-family: var(--kit-font-title); font-weight: 400; color: #6e1a14; margin: 12px 0 4px; font-size: 17px; }
 .rules-text p, .rules-text li { font-size: 15.5px; line-height: 1.42; }
 .dice-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; font-size: 15px; }
@@ -321,3 +321,12 @@
 .triumphs-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding-top: 8px; border-top: 1px solid rgba(176, 130, 58, .4); }
 .triumphs-foot .kit-btn { padding: 5px 16px; font-size: 14px; }
 .triumphs-note { flex: 1 1 260px; margin: 0; font-size: 13.5px; font-style: italic; line-height: 1.35; color: var(--kit-ink-soft); }
+.rules-reading { font-size: 14.5px; font-style: italic; color: #5d4a2c; background: rgba(176, 130, 58, .12); border-left: 3px solid #b0823a; border-radius: 0 6px 6px 0; padding: 4px 10px; margin: 6px 0 4px; }
+.rules-conditions { margin: 2px 0 6px; padding-left: 26px; }
+.rules-conditions li { font-size: 15px; line-height: 1.4; }
+.dice-table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 4px 0 6px; }
+.dice-table th, .dice-table td { padding: 5px 8px 5px 0; border-bottom: 1px solid rgba(176, 130, 58, .3); text-align: left; vertical-align: middle; line-height: 1.3; }
+.dice-table thead th { font-family: var(--kit-font-title); font-weight: 400; color: #6e1a14; }
+.dice-table tbody th { font-weight: 400; white-space: nowrap; }
+.dice-table tbody th > * { vertical-align: middle; }
+.rules-text section > .rules-cards, .rules-text section > .terrain-table { margin-bottom: 6px; }

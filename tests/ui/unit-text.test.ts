@@ -62,7 +62,7 @@ describe('the rules reference', () => {
   it('opens on the basics, with a tab for each general topic and none for a box', () => {
     const html = renderToStaticMarkup(createElement(RulesReference));
     const tabs = [...html.matchAll(/<nav class="rules-tabs">([\s\S]*?)<\/nav>/g)][0][1];
-    expect([...tabs.matchAll(/<button[^>]*>([^<]*)<\/button>/g)].map((m) => m[1])).toEqual(['Basics', 'Units', 'Combat', 'Terrain', 'Cards']);
+    expect([...tabs.matchAll(/<button[^>]*>([^<]*)<\/button>/g)].map((m) => m[1])).toEqual(['Basics', 'Units', 'Combat', 'Squares &amp; Combined Arms', 'Terrain', 'Cards']);
     expect(html).toContain('Victory Banners');
     expect(html).not.toMatch(/Greece|Barbarians|Roman|legion/i);
   });

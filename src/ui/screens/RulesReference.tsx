@@ -1,34 +1,22 @@
-// The in-game rules reference. Until Plan 6 writes the full text, the tabs are built from the tables: units from
-// `UNIT_STATS`, terrain from `TERRAIN_STATS` (and the works and hill rows), command cards from `CARD_DEFS`.
+// The in-game rules reference: our own text (rulesText.ts, from design/rules-reference.md) around tables read from the
+// engine: units from `UNIT_STATS`, terrain from `TERRAIN_STATS` (and the works and hill rows), cards from `CARD_DEFS`.
 import { useState, type JSX } from 'react';
 import {
-  ARM_OF, CARD_DEFS, HILL_RELATION, NATIONS, NATION_NAMES, TERRAIN_STATS, TERRAIN_TYPES, UNIT_KEYS, UNIT_STATS, WORKS, codeOf, nationOf,
+  ARM_OF, CARD_DEFS, DIE_FACES, HILL_RELATION, NATIONS, NATION_NAMES, TERRAIN_STATS, TERRAIN_TYPES, UNIT_KEYS, UNIT_STATS, WORKS, codeOf, nationOf,
   type ArmValues, type CardKind, type Nation, type Reductions, type RowKey, type TerrainType,
 } from '../../engine';
 import type { ScenarioInfo } from '../../scenarios';
 import { UnitIcon } from '../../art';
 import { CardView, DieView } from '../kit';
+import { FACE_LABEL } from '../kit/Dice';
 import { TerrainIcon } from '../terrain';
 import { unitCardLines } from '../game/unitText';
+import { DICE_ROWS, RULES_TEXT, SQUARE_CONDITIONS, rulesTabs, type RulesBlock, type RulesTab } from './rulesText';
 import './screens.css';
-
-type Tab = 'basics' | 'units' | 'combat' | 'terrain' | 'cards';
-
-const TABS: [Tab, string][] = [
-  ['basics', 'Basics'],
-  ['units', 'Units'],
-  ['combat', 'Combat'],
-  ['terrain', 'Terrain'],
-  ['cards', 'Cards'],
-];
-
-/** The body of each tab. */
-const TAB_BODY: Record<Tab, () => JSX.Element> = { basics: Basics, units: Units, combat: Combat, terrain: Terrain, cards: Cards };
 
 /** In a battle, pass its scenario to show that battle's special rules above the tabs. */
 export function RulesReference({ scenario }: { scenario?: ScenarioInfo } = {}) {
-  const [tab, setTab] = useState<Tab>('basics');
-  const Body = TAB_BODY[tab];
+  const [tab, setTab] = useState<RulesTab>('basics');
   return (
     <div className="rules">
       {scenario && scenario.specialText.length > 0 && (
@@ -40,33 +28,50 @@ export function RulesReference({ scenario }: { scenario?: ScenarioInfo } = {}) {
         </section>
       )}
       <nav className="rules-tabs">
-        {TABS.map(([t, label]) => (
+        {rulesTabs().map(([t, label]) => (
           <button key={t} className={tab === t ? 'active' : ''} onClick={() => setTab(t)}>{label}</button>
         ))}
       </nav>
       <div className="rules-body">
-        <Body />
+        <RulesTabBody tab={tab} />
       </div>
     </div>
   );
 }
 
-function Basics() {
+/** What each tab adds after the text of a block, by the block's heading: tables read from the engine. */
+function extras(tab: RulesTab, b: RulesBlock): JSX.Element | null {
+  switch (tab) {
+    case 'units': {
+      const n = NATIONS.find((x: Nation) => NATION_NAMES[x] === b.heading);
+      const keys = n ? UNIT_KEYS.filter((k) => nationOf(k) === n && UNIT_STATS[k].expansion === 'base') : [];
+      return keys.length ? <UnitCards keys={keys} /> : null;
+    }
+    case 'combat':
+      return b.heading === 'The battle dice' ? <DiceTable /> : null;
+    case 'squares':
+      return b.heading === 'Forming a square' ? <ol className="rules-conditions" type="a">{SQUARE_CONDITIONS.map((c) => <li key={c}>{c}</li>)}</ol> : null;
+    case 'terrain':
+      return b.heading === 'Reading the table' ? <Terrain /> : null;
+    case 'cards':
+      return b.heading === 'Section cards' ? <Cards group="section" /> : b.heading === 'Tactic cards' ? <Cards group="tactic" /> : null;
+    default:
+      return null;
+  }
+}
+
+/** One tab: its blocks of text, each followed by its table or cards. */
+export function RulesTabBody({ tab }: { tab: RulesTab }) {
   return (
     <div className="rules-text">
-      <p className="rules-note">The full rules reference arrives with the Napoleonic battles; these pages follow the game&apos;s tables.</p>
-      <h3>Goal</h3>
-      <p>Be the first to capture the number of <b>Victory Banners</b> the battle requires. You win a banner for every enemy unit you destroy and every enemy leader you kill (some battles add objectives).</p>
-      <h3>Your turn</h3>
-      <ol>
-        <li><b>Play a command card.</b> It tells you where (left, centre or right section) and how many units you may order.</li>
-        <li><b>Order units</b> and play out the card.</li>
-        <li><b>Move</b> the ordered units one at a time.</li>
-        <li><b>Battle</b> with the ordered units: melee against an adjacent enemy, or fire at range.</li>
-        <li>You then <b>draw</b> a new card.</li>
-      </ol>
-      <h3>Controls</h3>
-      <p>Click to select; hover a unit for its stats, any hex for what its terrain does, and a card to preview it. <b>Let the general decide</b> answers any decision for you.</p>
+      {RULES_TEXT[tab].map((b) => (
+        <section key={b.heading}>
+          <h3>{b.heading}</h3>
+          {b.paragraphs.map((p) => <p key={p}>{p}</p>)}
+          {b.reading && <p className="rules-reading">Our reading: {b.reading}</p>}
+          {extras(tab, b)}
+        </section>
+      ))}
     </div>
   );
 }
@@ -95,39 +100,27 @@ export function UnitCards({ keys }: { keys: readonly RowKey[] }) {
   );
 }
 
-/** Units tab: every row of `UNIT_STATS`, by nation. */
+/** Units tab: the nations of the base game, each with its notes and its unit cards. */
 export function Units() {
-  return (
-    <>
-      {NATIONS.map((n: Nation) => {
-        const keys = UNIT_KEYS.filter((k) => nationOf(k) === n);
-        return keys.length ? (
-          <section key={n}>
-            <h3>{NATION_NAMES[n]}</h3>
-            <UnitCards keys={keys} />
-          </section>
-        ) : null;
-      })}
-    </>
-  );
+  return <RulesTabBody tab="units" />;
 }
 
-function Combat() {
+/** The dice table: each face, and what it does in fire, melee, against a lone leader and in Retire and Reform. */
+function DiceTable() {
   return (
-    <div className="rules-text">
-      <h3>The battle dice</h3>
-      <div className="dice-legend">
-        <span><DieView face="infantry" size={30} /> hits infantry</span>
-        <span><DieView face="cavalry" size={30} /> hits cavalry</span>
-        <span><DieView face="artillery" size={30} /> hits artillery</span>
-        <span><DieView face="sabre" size={30} /> hits in melee for units whose sabres count</span>
-        <span><DieView face="flag" size={30} /> forces a retreat</span>
-      </div>
-      <h3>Melee and fire</h3>
-      <p>A unit rolls dice by its blocks and its row in the unit table (see the Units tab): more against infantry for some, fewer for others, and fire by range. Terrain takes dice away (see the Terrain tab).</p>
-      <h3>Retreats</h3>
-      <p>Each flag pushes a unit back toward its own baseline by its retreat distance. A unit may ignore as many flags as its row says, and a supported unit ignores one. Every hex a unit cannot retreat costs a block.</p>
-    </div>
+    <table className="dice-table">
+      <thead>
+        <tr><th>Face</th><th>Fire</th><th>Melee</th><th>Against a lone leader</th><th>Retire and Reform</th></tr>
+      </thead>
+      <tbody>
+        {DIE_FACES.map((f) => (
+          <tr key={f}>
+            <th><DieView face={f} size={30} /> <span>{FACE_LABEL[f]}</span></th>
+            {DICE_ROWS[f].map((c, i) => <td key={i}>{c}</td>)}
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
@@ -161,23 +154,41 @@ function terrainText(t: TerrainType): string {
   if (out.length) parts.push(`Out of it: ${out.join('; ')}.`);
   if (st.noMeleeInto) parts.push('No melee into it.');
   if (!st.squareAllowed && !st.impassable) parts.push('No square.');
-  parts.push(st.blocksSight ? 'Blocks line of sight.' : 'Does not block line of sight.');
+  if (st.cancelsCavalryCharge) parts.push('Cavalry lose the dice of a Cavalry Charge card battling into or out of it.');
+  if (t === 'bridge') parts.push('Carries units across a river with no movement or battle effect.');
+  if (t === 'brook') parts.push('Only some battles use it; its special rules say how.');
+  parts.push(st.hill ? 'Blocks line of sight in between, except across the top of one connected hill (see below).' : st.blocksSight ? 'Blocks line of sight.' : 'Does not block line of sight.');
   return parts.join(' ');
 }
 
-function Terrain() {
-  const rows: [TerrainType | 'works', string, string][] = [
-    ...TERRAIN_TYPES.filter((t) => t !== 'plain' && t !== 'void').map((t): [TerrainType, string, string] => [t, TERRAIN_STATS[t].name, terrainText(t)]),
-    ['works', 'Field works', `Along some hexsides. Into: ${reductions(WORKS.into).join('; ')}. Out of: ${reductions(WORKS.out).join('; ')}. Defenders ignore a flag (infantry ${WORKS.flagIgnore.infantry}, artillery ${WORKS.flagIgnore.artillery}).`],
-    ['hill', 'Hill relations', `Uphill: ${reductions(HILL_RELATION.uphill).join('; ') || 'no change'}. Downhill: ${reductions(HILL_RELATION.downhill).join('; ') || 'no change'}. Hill to hill: ${reductions(HILL_RELATION.hillToHill).join('; ') || 'no change'}.`],
+export interface TerrainRow { key: string; name: string; icon: JSX.Element | null; text: string }
+
+/** The rows of the terrain table, each with a unique key: the Hill row has its icon, the hill relations none. */
+export function terrainRows(): TerrainRow[] {
+  const hillRel = (r: Reductions) => reductions(r).join('; ') || 'no change';
+  return [
+    ...TERRAIN_TYPES.filter((t) => t !== 'plain' && t !== 'void').map((t): TerrainRow => ({
+      key: `terrain:${t}`, name: t === 'fordNoStop' ? `${TERRAIN_STATS[t].name} (no stop)` : TERRAIN_STATS[t].name, icon: <TerrainIcon t={t} size={28} />, text: terrainText(t),
+    })),
+    {
+      key: 'works', name: 'Field works', icon: <TerrainIcon t="plain" works size={28} />,
+      text: `Along some hexsides. Into: ${reductions(WORKS.into).join('; ')}. Out of: ${reductions(WORKS.out).join('; ')}. Defenders ignore a flag (infantry ${WORKS.flagIgnore.infantry}, artillery ${WORKS.flagIgnore.artillery}).`,
+    },
+    {
+      key: 'hill-relations', name: 'Hill relations', icon: null,
+      text: `Uphill: ${hillRel(HILL_RELATION.uphill)}. Downhill: ${hillRel(HILL_RELATION.downhill)}. Hill to hill: ${hillRel(HILL_RELATION.hillToHill)}.`,
+    },
   ];
+}
+
+function Terrain() {
   return (
     <table className="terrain-table">
       <tbody>
-        {rows.map(([t, name, text]) => (
-          <tr key={name}>
-            <th>{t === 'works' ? <TerrainIcon t="plain" works size={28} /> : t === 'hill' ? null : <TerrainIcon t={t} size={28} />} {name}</th>
-            <td>{text}</td>
+        {terrainRows().map((r) => (
+          <tr key={r.key}>
+            <th>{r.icon} {r.name}</th>
+            <td>{r.text}</td>
           </tr>
         ))}
       </tbody>
@@ -185,8 +196,9 @@ function Terrain() {
   );
 }
 
-function Cards() {
-  const kinds = Object.keys(CARD_DEFS) as CardKind[];
+/** The cards of one group (section cards, then tactic cards), each with its count and the card's own text. */
+function Cards({ group }: { group: 'section' | 'tactic' }) {
+  const kinds = (Object.keys(CARD_DEFS) as CardKind[]).filter((k) => CARD_DEFS[k].group === group);
   return (
     <div className="rules-cards">
       {kinds.map((k) => (
