@@ -8,6 +8,7 @@ import { must, violations } from '../rules/helpers';
 
 const CAP = 6000;
 const ids = Array.from({ length: 15 }, (_, i) => String(i + 1).padStart(3, '0'));
+const expIds = Array.from({ length: 18 }, (_, i) => String(101 + i));
 
 /** Checked after every decision, so it throws plainly (expect() per step is too slow). */
 function invariants(d: GameDriver): void {
@@ -79,5 +80,24 @@ describe('soak of the base battles 001-015', () => {
         err.mockRestore();
       }
     });
+  }
+});
+
+describe('soak of the Expansion #1 battles 101-118 (random answers exercise Guerrilla, Move First and every side rule)', () => {
+  for (const id of expIds) {
+    for (const k of [0, 1]) {
+      it(`${id} random play, seed ${k}, ends with a winner within ${CAP} decisions`, () => {
+        const seed = 7000 + 10 * Number(id) + k;
+        const d = new GameDriver(createGame(scenarioById(id).setup, seed));
+        const rnd = mulberry32(seed);
+        let steps = 0;
+        while (d.pending && steps < CAP) {
+          must(d, randomAnswer(d.state, d.pending, rnd));
+          steps++;
+          invariants(d);
+        }
+        finished(d, steps);
+      });
+    }
   }
 });
