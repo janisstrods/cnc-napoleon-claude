@@ -6,13 +6,31 @@ import type { Answer, CardKind, Decision, GameState, Side } from '../engine';
 import { PERSONALITIES, personalityById, personalityFor, type Personality } from './personality';
 import { Rng, entropySeed } from './rand';
 
-export type Difficulty = 'recruit' | 'tribune' | 'consul'; // renamed in Plan 4
+/** Strength levels, weakest first; per-level settings are indexed by position (`levelOf`). */
+export const DIFFICULTIES = ['captain', 'colonel', 'marshal'] as const;
+export type Difficulty = (typeof DIFFICULTIES)[number];
+/** Transitional (removed in Plan 5 Task 9): the Ancients-era slugs that src/ui and the soak scripts still pass. */
+export type LegacyDifficulty = 'recruit' | 'tribune' | 'consul';
+
+/** Level index of a difficulty: captain/recruit 0, colonel/tribune 1, marshal/consul 2. */
+export function levelOf(d: Difficulty | LegacyDifficulty): 0 | 1 | 2 {
+  switch (d) {
+    case 'captain':
+    case 'recruit':
+      return 0;
+    case 'colonel':
+    case 'tribune':
+      return 1;
+    default:
+      return 2;
+  }
+}
 export type { Personality };
 export { PERSONALITIES, personalityById, personalityFor };
 
 export interface AiOptions {
   side: Side;
-  difficulty: Difficulty;
+  difficulty: Difficulty | LegacyDifficulty;
   personality: Personality;
   seed?: number;
   /** Scales thinking time (unused by the stub). */
@@ -76,8 +94,9 @@ export function chooseAnswer(state: GameState, decision: Decision, opts: AiOptio
     if (typeof console !== 'undefined') console.error('AI error', e);
     mem.fallbacks = (mem.fallbacks ?? 0) + 1;
     answer = randomAnswer(state, decision, () => rng.next());
+  } finally {
+    mem.rngState = rng.state; // saved even when the fallback throws, so a retry does not repeat the same draws
   }
-  mem.rngState = rng.state;
   mem.last = { kind: decision.kind, ms: now() - t0 };
   return { answer };
 }
