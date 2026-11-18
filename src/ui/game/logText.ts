@@ -116,7 +116,8 @@ export function eventLog(e: GameEvent, before: GameState, after: GameState, huma
       const summary = rollSummary(e.purpose, e.faces, e.scoring);
       // a roll that no combat line announced says what it is for; the short arrow follows an attack's own line
       const alone = e.purpose === 'elan' || e.purpose === 'rally' || e.purpose === 'leaderCheck' || e.purpose === 'escape';
-      const text = alone ? `${rollTitle(e.purpose, e.by, e.against, before)}: ${summary}${/[.!]$/.test(summary) ? '' : '.'}` : `→ ${summary}.`;
+      const tail = (e.purpose === 'escape' ? summary.charAt(0).toLowerCase() + summary.slice(1) : summary).replace(/[.!]$/, '');
+      const text = alone ? `${rollTitle(e.purpose, e.by, e.against, before)}: ${tail}.` : `→ ${summary}.`;
       return line(text, 'combat', by ? sideOf(by) : undefined);
     }
     case 'damage':

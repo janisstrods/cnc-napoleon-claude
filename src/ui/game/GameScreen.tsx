@@ -12,7 +12,7 @@ import { HoverTip, LogPanel } from './panels';
 import { gamePrompt } from './prompts';
 import { bannerCounts, objectiveSummary, objectiveTipLines } from './objectiveText';
 import { boardMarks, selectionDeps, type UiSel } from './uiModel';
-import { assignClick, assignClickRefusal, currentAssign, type ElanOrRally } from './assign';
+import { assignClick, assignClickRefusal, assignOptions, currentAssign, nextDie, type ElanOrRally } from './assign';
 import { leaderTraitLines, unitSummary } from './unitText';
 import { TerrainTipBlock } from './TerrainTipBlock';
 import { terrainTip } from './terrainTips';
@@ -41,7 +41,8 @@ export function GameScreen({ controller, onExit, onRematch }: {
   const [ui, setUi] = useState<UiSel>(EMPTY_SEL);
   const [showRules, setShowRules] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
-  const [assignNote, setAssignNote] = useState<string | null>(null);
+  // a refused click's reason, kept only while the assignment it was refused against is the one on show
+  const [refusal, setRefusal] = useState<{ text: string; assign: UiSel['assign'] } | null>(null);
   const [mutedState, setMutedState] = useState(isMuted());
 
   useEffect(() => {
@@ -61,7 +62,11 @@ export function GameScreen({ controller, onExit, onRematch }: {
         const btn = document.querySelector<HTMLButtonElement>('.prompt-buttons .kit-btn--primary:not(:disabled)');
         if (btn) { e.preventDefault(); btn.click(); }
       } else if (e.key === 'Escape') {
-        setUi((u) => ({ ...u, selPiece: null, selCard: null }));
+        // Escape also disarms the Élan / Rally die
+        setUi((u) => ({
+          ...u, selPiece: null, selCard: null,
+          assign: (d?.kind === 'elan' || d?.kind === 'rally') && d.side === human ? { ...currentAssign(s, d, u.assign), die: null } : u.assign,
+        }));
       } else if (/^[1-9]$/.test(e.key) && d?.kind === 'playCard' && d.side === human) {
         const c = s.players[human].hand[Number(e.key) - 1];
         if (c !== undefined) setUi((u) => ({ ...u, selCard: c }));
@@ -74,7 +79,7 @@ export function GameScreen({ controller, onExit, onRematch }: {
   // reset local selection whenever a new decision arrives
   useEffect(() => {
     shownAt.current = performance.now();
-    setAssignNote(null);
+    setRefusal(null);
     setUi((u) => ({ ...EMPTY_SEL, hoverHex: u.hoverHex }));
     if (d?.kind === 'move' && d.side === human) {
       const movers = movablePieces(s);
@@ -200,6 +205,9 @@ export function GameScreen({ controller, onExit, onRematch }: {
       return true;
     }
     if (d.kind === 'elan' || d.kind === 'rally') {
+      // a leader token takes the click only when the armed die may order him; else it falls through to his unit
+      const die = currentAssign(s, d, ui.assign).die;
+      if (die === null || !assignOptions(s, d, die).some((o) => o.id === id)) return false;
       clickAssign(d, id);
       return true;
     }
@@ -210,8 +218,12 @@ export function GameScreen({ controller, onExit, onRematch }: {
   const clickAssign = (d: ElanOrRally, id: string) => {
     const cur = currentAssign(s, d, ui.assign);
     const ids = assignClick(s, d, cur, id);
-    setAssignNote(ids === cur.ids ? assignClickRefusal(s, d, cur, id) : null);
-    if (ids !== cur.ids) setUi({ ...ui, assign: { die: cur.die, ids } });
+    const why = ids === cur.ids ? assignClickRefusal(s, d, cur, id) : null;
+    setRefusal(why ? { text: why, assign: ui.assign } : null);
+    if (ids !== cur.ids) {
+      const placed = cur.die !== null && ids[cur.die] !== null;
+      setUi({ ...ui, assign: { die: placed && cur.die !== null ? nextDie(s, d, cur.die, ids) : cur.die, ids } });
+    }
   };
 
   const toggleOrder = (id: string) => {
@@ -227,7 +239,7 @@ export function GameScreen({ controller, onExit, onRematch }: {
   const onHexHoverS = useCallback((h: HexId | null) => setUi((u) => (u.hoverHex === h ? u : { ...u, hoverHex: h })), []);
 
   // ------------------------------------------------------------------ prompt
-  const prompt = gamePrompt({ controller, view, s, human, ai, ui, setUi, answer, onExit, assignNote });
+  const prompt = gamePrompt({ controller, view, s, human, ai, ui, setUi, answer, onExit, assignNote: refusal && refusal.assign === ui.assign ? refusal.text : null });
 
   // ------------------------------------------------------------------ hover tooltip
   const hoverInfo = useMemo(() => {

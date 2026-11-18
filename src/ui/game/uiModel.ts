@@ -185,7 +185,10 @@ export function boardMarks(s: GameState, d: Decision | null, ui: Omit<UiSel, 'ho
       // the armed die's options, and the pieces the dice are on now
       const cur = currentAssign(s, d, ui.assign);
       if (cur.die !== null) for (const o of assignOptions(s, d, cur.die)) markPiece(o.id, 'option');
-      for (const id of cur.ids) if (id !== null) markPiece(id, 'selected');
+      cur.ids.forEach((id, i) => { if (id !== null && i !== cur.die) markPiece(id, 'selected'); });
+      // the armed die's own piece stands out from the pieces of the other dice
+      const mine = cur.die !== null ? cur.ids[cur.die] : null;
+      if (mine) markPiece(mine, 'focus');
       break;
     }
     case 'shortSupplyTarget': {

@@ -111,7 +111,7 @@ describe('log wording', () => {
     expect(line(roll('elan', null, null))!.text).toBe('Élan: 1 flag, 1 sabre.');
     expect(line(roll('rally', null, null))!.text).toBe('Rally: 1 flag, 1 sabre.');
     expect(line(roll('leaderCheck', null, lead))!.text).toBe('Wellesley — leader casualty check: 1 sabre rolled.');
-    expect(line(roll('escape', FR_LC, lead))!.text).toBe('Wellesley tries to escape: The leader is hit!');
+    expect(line(roll('escape', FR_LC, lead))!.text).toBe('Wellesley tries to escape: the leader is hit.');
     expect(line(roll('fire', FR_LN, BR_LN))!.text).toMatch(/^→ /);
   });
 

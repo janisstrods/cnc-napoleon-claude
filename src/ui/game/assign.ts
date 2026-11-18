@@ -1,7 +1,7 @@
 // Pure helpers of the Élan and Rally choosers: which pieces each die may take, the general's suggestion, the validator's
 // message in the player's words, and what a click on the board does to the assignment.
 import {
-  ROWS, UNIT_STATS, greedyAssign, pieceById, rowOf, sectionsOf, statsOf, validateElan, validateRally,
+  ROWS, UNIT_STATS, hexLabel, greedyAssign, pieceById, pieceHex, rowOf, sectionsOf, statsOf, validateElan, validateRally,
   type Decision, type DieFace, type GameState, type SectionName, type Unit,
 } from '../../engine';
 import { unitLabel } from './promptSpec';
@@ -25,8 +25,22 @@ const unitOption = (s: GameState, u: Unit): AssignOption => ({
   id: u.id, label: `${UNIT_STATS[u.key].name} (${u.blocks}/${u.maxBlocks}) — ${where(s, u.side, u.hex)}`,
 });
 
+/** Identical labels (two full-strength lines on the same flank) get their hex, so the list is never ambiguous. */
+function distinct(s: GameState, opts: AssignOption[]): AssignOption[] {
+  const count = new Map<string, number>();
+  for (const o of opts) count.set(o.label, (count.get(o.label) ?? 0) + 1);
+  return opts.map((o) => {
+    const h = pieceHex(s, o.id);
+    return (count.get(o.label) ?? 0) > 1 && h !== undefined && h >= 0 ? { ...o, label: `${o.label} (${hexLabel(h)})` } : o;
+  });
+}
+
 /** The pieces die `i` of `d` may be given to (empty: the die can do nothing). */
 export function assignOptions(s: GameState, d: ElanOrRally, i: number): AssignOption[] {
+  return distinct(s, rawOptions(s, d, i));
+}
+
+function rawOptions(s: GameState, d: ElanOrRally, i: number): AssignOption[] {
   const face: DieFace | undefined = d.faces[i];
   if (face === undefined || face === 'sabre') return [];
   const mine = s.units.filter((u) => u.side === d.side && u.hex >= 0);
@@ -77,6 +91,15 @@ export function assignClick(s: GameState, d: ElanOrRally, sel: AssignSel, pieceI
   if (!assignOptions(s, d, die).some((o) => o.id === pieceId)) return ids;
   const trial = ids.map((x, i) => (i === die ? (x === pieceId ? null : pieceId) : x));
   return assignError(s, d, trial) ? ids : trial;
+}
+
+/** The die to arm after `die` took a piece: the next one that can act and has none yet, else the same die. */
+export function nextDie(s: GameState, d: ElanOrRally, die: number, ids: readonly (string | null)[]): number {
+  for (let k = 1; k < d.faces.length; k++) {
+    const i = (die + k) % d.faces.length;
+    if (ids[i] === null && assignOptions(s, d, i).length > 0) return i;
+  }
+  return die;
 }
 
 /** The refusal behind an `assignClick` that left the ids as they were (null when the click was accepted or meant nothing). */

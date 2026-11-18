@@ -80,7 +80,8 @@ export function gamePrompt(c: PromptCtx): Prompt | null {
   if (d.side !== human) return null;
   if (view.generalThinking) return { title: DECISION_TITLES[d.kind], text: 'Your general is deciding…', buttons: [] };
   const p = decisionPrompt(c, d);
-  const undo = undoButton(c);
+  // no undo once a Scout's two cards are on show: it would put them back on the deck, known
+  const undo = d.kind === 'scoutKeep' ? null : undoButton(c);
   return undo ? { ...p, buttons: [...p.buttons, undo] } : p;
 }
 
@@ -121,11 +122,10 @@ function assignPrompt(c: PromptCtx, d: ElanOrRally): Prompt {
   const { s, ui } = c;
   const spec = promptSpec(s, d);
   const cur = currentAssign(s, d, ui.assign);
-  const err = assignError(s, d, cur.ids);
+  const err = assignError(s, d, cur.ids); // shown once, in the panel
   return {
     title: spec.title,
-    text: err ?? 'Pick a die, then click a piece on the board or choose one from the list.',
-    tone: err ? 'warn' : undefined,
+    text: 'Pick a die, then click a piece on the board or choose one from the list.',
     buttons: [btn('Confirm', () => c.answer({ kind: 'assign', ids: cur.ids }), { disabled: !!err, key: 'confirm' }), autoButton(c)],
     panel: <AssignPanel s={s} d={d} ui={ui} setUi={c.setUi} note={c.assignNote ?? null} text={spec.text} />,
   };
@@ -141,7 +141,7 @@ function scoutPrompt(c: PromptCtx, d: D<'scoutKeep'>): Prompt {
     extra: (
       <div className="scout-cards">
         {d.cards.map((card, i) => (
-          <CardView key={card} kind={cardKind(card)} size="md" onClick={() => c.answer({ kind: 'choose', index: i })} />
+          <CardView key={card} kind={cardKind(card)} size="sm" onClick={() => c.answer({ kind: 'choose', index: i })} />
         ))}
       </div>
     ),

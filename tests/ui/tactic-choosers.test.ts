@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { CARD_DEFS, answerError, cardKind, shortSupplyTargets, type Decision, type DieFace, type GameState } from '../../src/engine';
 import type { GameController, ViewState } from '../../src/ui/game/controller';
-import { assignClick, assignClickRefusal, assignError, assignOptions, suggestAssign, type ElanOrRally } from '../../src/ui/game/assign';
+import { assignClick, nextDie, assignClickRefusal, assignError, assignOptions, suggestAssign, type ElanOrRally } from '../../src/ui/game/assign';
 import { promptSpec } from '../../src/ui/game/promptSpec';
 import { gamePrompt } from '../../src/ui/game/prompts';
 import { boardMarks, type UiSel } from '../../src/ui/game/uiModel';
@@ -139,5 +139,57 @@ describe('Scout and Short Supply', () => {
     expect(m.highlights.get(s.units.find((u) => u.id === 'u2')!.hex)).toBe('option');
     expect(m.highlights.get(s.units.find((u) => u.id === 'u1')!.hex)).toBe('selected');
     expect(m.highlights.has(s.units.find((u) => u.id === 'u4')!.hex)).toBe(false);
+  });
+});
+
+describe('fix round 1', () => {
+  it('identical option labels carry their hex', () => {
+    const t = build({ units: [{ side: 'bottom', key: 'BR/LN', at: [6, 10] }, { side: 'bottom', key: 'BR/LN', at: [6, 11] }, { side: 'bottom', key: 'BR/HC', at: [6, 6] }] });
+    const labels = assignOptions(t, elan(t, ['infantry', 'cavalry']), 0).map((o) => o.label);
+    expect(new Set(labels).size).toBe(2);
+    expect(labels[0]).toMatch(/\(\d+,\d+\)$/);
+    expect(assignOptions(t, elan(t, ['infantry', 'cavalry']), 1)[0].label).not.toMatch(/\(\d+,\d+\)$/);
+  });
+
+  it("the armed die's piece is 'focus', the other dice's pieces 'selected'", () => {
+    const d = elan(s, ['infantry', 'cavalry']);
+    const hex = (id: string) => s.units.find((u) => u.id === id)!.hex;
+    const m = boardMarks(s, d, { ...SEL, assign: { die: 1, ids: ['u1', 'u2'] } }, 'bottom');
+    expect(m.highlights.get(hex('u2'))).toBe('focus');
+    expect(m.highlights.get(hex('u1'))).toBe('selected');
+  });
+
+  it('the next die to arm is the next that can act and is still unused', () => {
+    const d = elan(s, ['infantry', 'sabre', 'cavalry']);
+    expect(nextDie(s, d, 0, ['u1', null, null])).toBe(2);
+    expect(nextDie(s, d, 0, ['u1', null, 'u2'])).toBe(0);
+  });
+
+  it('a leader cannot detach from a square: refused with its reason', () => {
+    const q = build({ units: [{ side: 'bottom', key: 'BR/LN', at: [6, 6] }], leaders: [{ side: 'bottom', at: [6, 6] }] });
+    q.units[0].square = 1;
+    const d = elan(q, ['flag', 'flag']);
+    const L = leaderId(q, 0);
+    expect(assignClickRefusal(q, d, { die: 0, ids: [null, null] }, L)).toBe('A leader cannot detach from a square.');
+    expect(assignClick(q, d, { die: 0, ids: [null, null] }, L)).toEqual([null, null]);
+    expect(assignError(q, d, [L, 'u1'])).toBeNull();
+  });
+
+  it("the opponent's Élan or Scout never reaches the view; the Scout keep has no undo", () => {
+    const e: Decision = { kind: 'elan', side: 'top', faces: ['flag'] };
+    expect(gamePrompt(ctx(e, 'bottom'))).toBeNull();
+    const m = boardMarks(s, e, SEL, 'bottom');
+    expect(m.highlights.size + m.badges.size + m.leaderHighlights.size).toBe(0);
+    const hand = s.players.bottom.hand;
+    const d: Decision = { kind: 'scoutKeep', side: 'bottom', cards: [hand[0], hand[1]] };
+    const c = ctx(d, 'bottom');
+    (c.view as { undo: string | null }).undo = 'card';
+    const labels = gamePrompt(c)!.buttons.map((b) => renderToStaticMarkup(b).replace(/<[^>]+>/g, ''));
+    expect(labels).toEqual(['Let the general decide']);
+    // while another decision of the same view keeps its undo
+    const play: Decision = { kind: 'playCard', side: 'bottom' };
+    const c2 = ctx(play, 'bottom');
+    (c2.view as { undo: string | null }).undo = 'card';
+    expect(gamePrompt({ ...c2, controller: { undo: () => {} } as unknown as GameController })!.buttons.length).toBeGreaterThan(1);
   });
 });
