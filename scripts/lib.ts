@@ -1,7 +1,10 @@
 // Shared plumbing for the dev scripts (scripts/ai-match.ts): command-line flags, the scripts' fallback generator, the
 // tournament job list, and the AI-vs-AI game loop.
-import { GameDriver, randomAnswer, type Answer, type Decision, type GameEvent, type Side } from '../src/engine';
-import { chooseAnswer, newMemory, type AiMemory, type AiOptions } from '../src/ai';
+import {
+  GameDriver, OFF_BOARD, bannerTotal, distance, randomAnswer, statsOf, type Answer, type Decision, type GameEvent, type GameState, type Side, type Unit,
+} from '../src/engine';
+import { SCENARIOS, scenarioById } from '../src/scenarios';
+import { DIFFICULTIES, chooseAnswer, newMemory, type AiMemory, type AiOptions, type Difficulty } from '../src/ai';
 
 /** The value after `--name` on the command line, or `def`. */
 export function arg(name: string, def: string): string {
@@ -82,4 +85,166 @@ export function playAiGame(d: GameDriver, opts: Record<Side, AiOptions>, hooks: 
     hooks.after?.(dec, events);
   }
   return mems;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Arguments
+
+/** A level named `captain`, `colonel` or `marshal`, or numbered 0, 1 or 2. Anything else throws. */
+export function parseLevel(text: string): Difficulty {
+  if ((DIFFICULTIES as readonly string[]).includes(text)) return text as Difficulty;
+  if (/^[0-2]$/.test(text)) return DIFFICULTIES[Number(text)];
+  throw new Error(`Unknown level "${text}": use captain, colonel, marshal or 0, 1, 2`);
+}
+
+/** The level after `--name` (names or 0/1/2), or `def`. */
+export const levelArg = (name: string, def: Difficulty): Difficulty => parseLevel(arg(name, def));
+
+/** A comma-separated list of battle ids (the Spanish battles 101-118 included); an unknown id throws. */
+export function scenarioList(text: string): string[] {
+  const ids = text.split(',').map((x) => x.trim()).filter(Boolean);
+  for (const id of ids) scenarioById(id);
+  return ids;
+}
+
+/** The ids of every battle the pickers offer (the hidden drill 000 is left out). */
+export const visibleScenarioIds = (): string[] => SCENARIOS.filter((s) => !s.hidden).map((s) => s.id);
+
+/** The 95 % Wilson score interval of `wins` in `n` games ([0, 1] when there are none). */
+export function wilson(wins: number, n: number, z = 1.96): [number, number] {
+  if (n === 0) return [0, 1];
+  const p = wins / n;
+  const d = 1 + (z * z) / n;
+  const centre = p + (z * z) / (2 * n);
+  const half = z * Math.sqrt((p * (1 - p)) / n + (z * z) / (4 * n * n));
+  return [Math.max(0, (centre - half) / d), Math.min(1, (centre + half) / d)];
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Behaviour counters (ai-balance): the anti-goal checks of Plan 5 Task 11, read from decisions, answers and GameEvents only
+
+export interface Counters {
+  /** Defend decisions that offered a reaction, and how often it was chosen. */
+  squareOffers: number; squaresFormed: number; rrOffers: number; rrUsed: number; fsOffers: number; fsPlayed: number;
+  /** Combat events that had guns joining (Combined Arms). */
+  combinedArms: number;
+  /** Artillery fire events by distance 1..5 (index 0 is distance 1). */
+  gunShotsByRange: number[];
+  /** Infantry at 2 blocks or fewer declaring melee (an attack or a bonus melee) on full-strength infantry. */
+  wornAttacks: number;
+  leadersLost: number;
+  exits: number;
+  /** Turns (at the card decision) that began with the active side holding a temporary-objective banner. */
+  heldTurns: number;
+}
+
+export const zeroCounters = (): Counters => ({
+  squareOffers: 0, squaresFormed: 0, rrOffers: 0, rrUsed: 0, fsOffers: 0, fsPlayed: 0, combinedArms: 0, gunShotsByRange: [0, 0, 0, 0, 0],
+  wornAttacks: 0, leadersLost: 0, exits: 0, heldTurns: 0,
+});
+
+/** Add `b` into `a`. */
+export function addCounters(a: Counters, b: Counters): Counters {
+  for (const k of Object.keys(a) as (keyof Counters)[]) {
+    const x = a[k];
+    const y = b[k];
+    if (Array.isArray(x) && Array.isArray(y)) y.forEach((v, i) => { x[i] = (x[i] ?? 0) + v; });
+    else (a as unknown as Record<string, number>)[k] += y as number;
+  }
+  return a;
+}
+
+/** The units as they stand now, by id (copies): events describe what happened to them, after the answer changed the state. */
+export function snapshotUnits(s: GameState): Map<string, Unit> {
+  return new Map(s.units.map((u) => [u.id, { ...u }]));
+}
+
+/** Count one decision and its answer (before the answer is applied). */
+export function countDecision(c: Counters, _s: GameState, dec: Decision, ans: Answer): void {
+  if (dec.kind !== 'defend') return;
+  const choice = ans.kind === 'defend' ? ans.choice : null;
+  if (dec.options.includes('formSquare')) { c.squareOffers++; if (choice === 'formSquare') c.squaresFormed++; }
+  if (dec.options.includes('retireReform')) { c.rrOffers++; if (choice === 'retireReform') c.rrUsed++; }
+  if (dec.options.includes('firstStrike')) { c.fsOffers++; if (choice === 'firstStrike') c.fsPlayed++; }
+}
+
+/** A card decision: count the turn if the side to act starts it holding objective banners. */
+export function countTurnStart(c: Counters, s: GameState, dec: Decision): void {
+  if (dec.kind === 'playCard' && bannerTotal(s, dec.side) > s.players[dec.side].banners) c.heldTurns++;
+}
+
+/** Count the events of one answer; `known` is `snapshotUnits` taken before it, `s` the scenario's state (for unit stats). */
+export function countEvents(c: Counters, s: GameState, known: Map<string, Unit>, events: GameEvent[]): void {
+  for (const e of events) {
+    if (e.t === 'leaderKilled') c.leadersLost++;
+    else if (e.t === 'move' && e.path[e.path.length - 1] === OFF_BOARD) c.exits++;
+    else if (e.t === 'combat') {
+      if (e.artillery && e.artillery.length > 0) c.combinedArms++;
+      const a = known.get(e.attacker);
+      const t = known.get(e.target);
+      if (!a || !t) continue;
+      const sa = statsOf(s, a);
+      if (e.purpose === 'fire' && sa.arm === 'artillery') {
+        const r = distance(a.hex, t.hex);
+        if (r >= 1 && r <= 5) c.gunShotsByRange[r - 1]++;
+      } else if ((e.purpose === 'melee' || e.purpose === 'bonus') && sa.arm === 'infantry' && a.blocks <= 2 &&
+        statsOf(s, t).arm === 'infantry' && t.blocks >= t.maxBlocks) c.wornAttacks++;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ai-balance results and their report
+
+/** One game of ai-balance, as written to the JSON file. `timing` is the only machine-dependent field. */
+export interface GameRow {
+  sc: string; aSide: Side; seed: number; winner: string; banners: [number, number]; turns: number; reason: string;
+  a: Difficulty; b: Difficulty;
+  rejects: number; fallbacks: number;
+  /** Nodes of work the two sides' decisions were charged (AiMemory.last.sims summed over every decision). */
+  nodes: number;
+  timing: { A: { avg: number; max: number }; B: { avg: number; max: number } };
+  c: Counters;
+}
+
+const pct = (x: number) => `${Math.round(100 * x)} %`;
+const avgOf = (x: number[]) => (x.length ? x.reduce((a, b) => a + b, 0) / x.length : 0);
+
+/** The markdown report of a set of games: a table per battle, then the counter totals. Banners are bottom-top. */
+export function balanceReport(rows: GameRow[], flagAt = 0.85): string {
+  const out: string[] = [];
+  const by = new Map<string, GameRow[]>();
+  for (const r of rows) by.set(r.sc, [...(by.get(r.sc) ?? []), r]);
+  out.push('| Battle | Games | Bottom wins | Top wins | Bottom win rate (95 % Wilson) | Banners (bottom-top, avg) | Turns (avg, max) | Nodes (avg) | Flag |');
+  out.push('|---|---|---|---|---|---|---|---|---|');
+  let flagged = 0;
+  const all = zeroCounters();
+  for (const sc of SCENARIOS) {
+    const rs = by.get(sc.id);
+    if (!rs) continue;
+    const n = rs.length;
+    const bw = rs.filter((r) => r.winner === 'bottom').length;
+    const tw = rs.filter((r) => r.winner === 'top').length;
+    const share = Math.max(bw, tw) / n;
+    const flag = share >= flagAt ? `${bw > tw ? 'bottom' : 'top'} ${pct(share)}` : '';
+    if (flag) flagged++;
+    for (const r of rs) addCounters(all, r.c);
+    const [lo, hi] = wilson(bw, n);
+    out.push(`| ${sc.id} ${sc.name} | ${n} | ${bw} (${sc.setup.bottom.army}) | ${tw} (${sc.setup.top.army}) | ${pct(bw / n)} [${pct(lo)}, ${pct(hi)}] | ` +
+      `${avgOf(rs.map((r) => r.banners[0])).toFixed(1)}-${avgOf(rs.map((r) => r.banners[1])).toFixed(1)} | ` +
+      `${Math.round(avgOf(rs.map((r) => r.turns)))}, ${Math.max(...rs.map((r) => r.turns))} | ${Math.round(avgOf(rs.map((r) => r.nodes)))} | ${flag} |`);
+  }
+  const aWins = rows.filter((r) => r.winner === r.aSide).length;
+  const bWins = rows.filter((r) => r.winner !== 'none' && r.winner !== 'draw' && r.winner !== r.aSide).length;
+  const levels = [...new Set(rows.map((r) => `${r.a}/${r.b}`))].join(', ');
+  const aName = rows[0]?.a ?? '?';
+  const ms = rows.flatMap((r) => [r.timing.A.avg, r.timing.B.avg]);
+  const mx = rows.flatMap((r) => [r.timing.A.max, r.timing.B.max]);
+  out.push('');
+  out.push(`Games ${rows.length}; flagged battles ${flagged}; levels A/B ${levels}; A (${aName}) won ${aWins} of ${rows.length}, B won ${bWins}; ` +
+    `rejects ${rows.reduce((n, r) => n + r.rejects, 0)}, fallbacks ${rows.reduce((n, r) => n + r.fallbacks, 0)}; ` +
+    `card decision avg ${avgOf(ms).toFixed(0)} ms, max ${Math.max(0, ...mx).toFixed(0)} ms`);
+  const fmt = (k: keyof Counters) => (k === 'gunShotsByRange' ? `${k} ${all.gunShotsByRange.join('/')}` : `${k} ${all[k] as number}`);
+  out.push(`Counters: ${(Object.keys(all) as (keyof Counters)[]).map(fmt).join(', ')}`);
+  return out.join('\n');
 }

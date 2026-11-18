@@ -127,7 +127,7 @@ const LINES: Record<Voice, Record<Moment, readonly string[]>> = {
   },
   cunning: {
     cardPlayed: [
-      'They will not see the point of this until too late.', 'Patience now, and a heavier hand later.', 'Let them guess; guessing tires a man.',
+      'They will not see the point of this until too late.', 'Patience now; the blow will come in its time.', 'Let them guess; guessing tires a man.',
       'Patience has a sharp edge, as you shall see.', '{card}. Watch the left, gentlemen, and then the right.',
     ],
     bigHit: [

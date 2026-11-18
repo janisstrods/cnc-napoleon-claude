@@ -1,11 +1,14 @@
 // The battle soak, part one (battles 001-008): level 0 on both sides, one seed each, budgetScale 0.25, deterministic. Each battle ends
 // with a winner by turn 150, with no fallback on either side and no console.error (failOnAiErrors). Budget: 25 s.
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { bannerTotal } from '../../src/engine';
 import { failOnAiErrors } from './no-ai-errors';
 import { playBattle } from './soak';
 
 failOnAiErrors();
+
+// a machine 15-20x slower than the dev machine must not time a soak out (the default is 120 s)
+vi.setConfig({ testTimeout: 300_000 });
 
 const IDS = ['001', '002', '003', '004', '005', '006', '007', '008'];
 

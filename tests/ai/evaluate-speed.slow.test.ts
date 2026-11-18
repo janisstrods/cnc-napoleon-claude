@@ -1,6 +1,6 @@
 // The evaluation's speed budget (Plan 5 Task 5): the mean over 1000 calls on the 015 setup (40 units) stays under 2 ms (asserted only with CCN_PERF=1: `npm run test:perf`).
 // In `npm test` only a short run (20 evaluations) checks that the values are finite.
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import { createGame } from '../../src/engine';
 import { scenarioById } from '../../src/scenarios';
 import { evaluate } from '../../src/ai/evaluate';
@@ -8,6 +8,9 @@ import { NEUTRAL_W } from '../../src/ai/values';
 import { failOnAiErrors } from './no-ai-errors';
 
 failOnAiErrors();
+
+// a machine 15-20x slower than the dev machine must not time a soak out (the default is 120 s)
+vi.setConfig({ testTimeout: 300_000 });
 
 const perf = !!process.env.CCN_PERF;
 
