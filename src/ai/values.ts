@@ -27,9 +27,6 @@ const SOFT_TARGET = 1.15;
 /** A gun's reach beyond distance 2, in dice per hex. */
 const GUN_REACH = 0.3;
 
-/** A live unit is always worth something, however poor its row. */
-const MIN_POWER = 0.5;
-
 /** The share of an unwounded unit's staying power that `blocks` blocks still carry: a worn unit dies to the next hit. */
 function staying(blocks: number): number {
   return blocks / (blocks + 2);
@@ -50,8 +47,9 @@ function rawPower(st: UnitStats, blocks: number): number {
   if (st.arm === 'cavalry') melee *= CAVALRY_SHOCK;
   const reach = st.move.reduce((m, o) => Math.max(m, o.battle ? o.max : o.max / 2), 0);
   const grit = FLAG_DIE * st.flagIgnore - RETREAT_DIE * (st.retreat.first - 1) - (st.sabreHits ? 0 : NO_SABRE_DIE);
-  const power = Math.max(fire, melee) + SECOND_ARM * Math.min(fire, melee) + MOVE_DIE * reach + grit;
-  return Math.max(MIN_POWER, power) * staying(blocks) * (st.arm === 'infantry' ? 1 : SOFT_TARGET);
+  // The flag, retreat and sabre adjustments scale the whole row, so a worn unit keeps its share of a sound one.
+  const power = (Math.max(fire, melee) + SECOND_ARM * Math.min(fire, melee) + MOVE_DIE * reach) * Math.max(0.2, 1 + grit / 6);
+  return power * staying(blocks) * (st.arm === 'infantry' ? 1 : SOFT_TARGET);
 }
 
 const NORM = LINE_WORTH / rawPower(UNIT_STATS['FR/LN'], 4);

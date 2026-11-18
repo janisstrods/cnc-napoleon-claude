@@ -65,4 +65,18 @@ describe('values', () => {
     expect(full('FR/FA')).toBeGreaterThanOrEqual(0.75 * full('FR/LN'));
     expect(full('BR/FA')).toBeGreaterThanOrEqual(0.75 * full('BR/LN'));
   });
+
+  it('a worn militia unit keeps its share of a line unit, and marginal block values never grow as blocks fall', () => {
+    expect(rowValue(UNIT_STATS['FR/ML'], 2)).toBeGreaterThanOrEqual(0.4 * rowValue(UNIT_STATS['FR/LN'], 2));
+    expect(rowValue(UNIT_STATS['AL/LN'], 2)).toBeGreaterThanOrEqual(0.4 * rowValue(UNIT_STATS['FR/LN'], 2));
+    for (const k of UNIT_KEYS) {
+      const st = UNIT_STATS[k];
+      if (st.arm === 'artillery') continue;  // a gun's dice table jumps at 2 blocks, so its marginal values legitimately level off
+      for (let b = 2; b <= st.blocks; b++) {
+        const hi = rowValue(st, b) - rowValue(st, b - 1);
+        const lo = b > 2 ? rowValue(st, b - 1) - rowValue(st, b - 2) : rowValue(st, 1);
+        expect(hi, `${k} block ${b}`).toBeGreaterThanOrEqual(lo - 1e-9);
+      }
+    }
+  });
 });
