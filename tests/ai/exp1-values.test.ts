@@ -2,7 +2,8 @@
 import { describe, expect, it } from 'vitest';
 import { UNIT_KEYS, UNIT_STATS } from '../../src/engine';
 import { scenarioById } from '../../src/scenarios';
-import { rowValue, MOVED_MELEE_DIE, REROLL_DIE, REROLL_IMMUNE_DIE } from '../../src/ai/values';
+import { build } from '../rules/helpers';
+import { rowValue, unitValue, MOVED_MELEE_DIE, REROLL_DIE, REROLL_IMMUNE_DIE } from '../../src/ai/values';
 import { PERSONALITIES, personalityById, personalityFor } from '../../src/ai/personality';
 
 const full = (k: keyof typeof UNIT_STATS) => rowValue(UNIT_STATS[k], UNIT_STATS[k].blocks);
@@ -29,9 +30,26 @@ describe('exp1 row values', () => {
     expect(full('FR/SWI')).toBeGreaterThan(full('SP/LN'));
   });
 
-  it('a cuirassier immune to lancers is worth a little more than the same row without the trait', () => {
-    const cu = UNIT_STATS['SP/CU'];
-    expect(rowValue(cu, 3)).toBeGreaterThan(rowValue({ ...cu, immuneToFlagReroll: false }, 3));
+  it('a -1 movedPlus costs value: SP/LN is worth less than the same row with movedPlus 0', () => {
+    const ln = UNIT_STATS['SP/LN'];
+    if (ln.melee.kind !== 'blocks') throw new Error('SP/LN melees with blocks');
+    const flat = { ...ln, melee: { ...ln.melee, movedPlus: 0 } };
+    expect(rowValue(flat, 4)).toBeGreaterThan(rowValue(ln, 4));
+    // the whole cost is MOVED_MELEE_DIE dice of melee, so it is a visible share of the row, not noise
+    expect(rowValue(ln, 4) / rowValue(flat, 4)).toBeLessThan(0.97);
+  });
+
+  it('lancer immunity is worth something only against lancers (rowValue flag and unitValue gate)', () => {
+    const cu = UNIT_STATS['FR/CU'];
+    expect(rowValue(cu, 4, true)).toBeGreaterThan(rowValue(cu, 4));
+    expect(rowValue(cu, 4)).toBe(rowValue({ ...cu, immuneToFlagReroll: false }, 4));
+    const base = build({ units: [{ side: 'top', key: 'FR/CU', at: [0, 0] }, { side: 'bottom', key: 'FR/LN', at: [5, 5] }] });
+    const lancers = build({ units: [{ side: 'top', key: 'FR/CU', at: [0, 0] }, { side: 'bottom', key: 'FR/LNC', at: [5, 5] }] });
+    expect(unitValue(base, base.units[0])).toBe(rowValue(cu, 4));
+    expect(unitValue(lancers, lancers.units[0])).toBeGreaterThan(unitValue(base, base.units[0]));
+    // a lancer on the unit's own side does not count
+    const own = build({ units: [{ side: 'top', key: 'FR/CU', at: [0, 0] }, { side: 'top', key: 'FR/LNC', at: [0, 1] }, { side: 'bottom', key: 'FR/LN', at: [5, 5] }] });
+    expect(unitValue(own, own.units[0])).toBe(rowValue(cu, 4));
   });
 
   it('every exp1 row has a finite positive value at every block count', () => {
@@ -60,8 +78,15 @@ describe('Spanish-war temperaments', () => {
     expect(personalityFor('Nobody', 'Spanish', 'SP').id).toBe('del_parque');
   });
 
+  it('names written with decomposed accents still match', () => {
+    expect(personalityFor('Castan\u0303os', 'Spanish', 'SP').id).toBe('castanos');
+    expect(personalityFor('Are\u0301izaga', 'Spanish', 'SP').id).toBe('areizaga');
+    expect(personalityFor('Mass\u00e9na', 'French', 'FR').id).toBe('massena');
+    expect(personalityFor('Masse\u0301na', 'French', 'FR').id).toBe('massena');
+  });
+
   it('every 101–118 commander resolves to a named temperament, not a nation default', () => {
-    // Base-game commanders keep their Plan 5 temperaments; Adam (101's British brigade general) is the one with only his nation's default.
+    // Base-game commanders keep their Plan 5 temperaments; Adam (118's British brigade general) is the one with only his nation's default.
     const NAMED = new Set([...NAMES.map((n) => n[3]), 'wellington', 'beresford', 'soult', 'napoleon']);
     let seen = 0;
     for (let n = 101; n <= 118; n++) {

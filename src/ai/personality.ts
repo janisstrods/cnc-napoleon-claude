@@ -1,5 +1,5 @@
 // Commander temperaments: plain data weights that tune the evaluation and the commentary voice. They come from the
-// commanders of the fifteen battles (Napoleon commands at 015; the drill scenario 000 adds no one), not from the Ancients tables.
+// commanders of the thirty-three battles (base 001–015, Expansion #1 101–118; the drill scenario 000 adds no one), not from the Ancients tables.
 import type { Nation } from '../engine';
 
 export type Voice = 'bold' | 'methodical' | 'reckless' | 'cunning' | 'stoic';
@@ -68,7 +68,7 @@ export function personalityById(id: string): Personality {
   return PERSONALITIES.find((p) => p.id === id) ?? VETERAN;
 }
 
-/** Commander patterns, tried in order against the commander's name (matched case-insensitively). */
+/** Commander patterns, tried in order against the commander's name (matched case- and accent-insensitively: the name is stripped of accents first, so the patterns are plain ASCII). */
 const BY_NAME: [RegExp, string][] = [
   [/wellesley|wellington/i, 'wellington'],
   [/moore/i, 'moore'],
@@ -80,18 +80,18 @@ const BY_NAME: [RegExp, string][] = [
   [/napoleon/i, 'napoleon'],
   [/\bney\b/i, 'ney'],
   [/soult/i, 'soult'],
-  [/mass[eé]na/i, 'massena'],
+  [/massena/i, 'massena'],
   [/junot/i, 'junot'],
   [/marmont/i, 'marmont'],
   [/reynier/i, 'reynier'],
-  [/casta[nñ]os/i, 'castanos'],
+  [/castanos/i, 'castanos'],
   [/\bblake\b/i, 'blake'],
   [/cuesta/i, 'cuesta'],
   [/belveder/i, 'belveder'],
   [/san juan/i, 'san_juan'],
   [/del parque/i, 'del_parque'],
   [/freire/i, 'freire'],
-  [/ar[eé]izaga/i, 'areizaga'],
+  [/areizaga/i, 'areizaga'],
   [/graham/i, 'graham'],
   [/dupont/i, 'dupont'],
   [/lefebvre/i, 'lefebvre'],
@@ -111,7 +111,8 @@ const NATION_DEFAULT: Readonly<Record<Nation, string>> = { FR: 'reynier', BR: 'h
  * the army's name decides (a French army is French, anything else British). The Veteran is the last resort only.
  */
 export function personalityFor(commander: string, army: string, nation?: Nation): Personality {
-  for (const [re, id] of BY_NAME) if (re.test(commander)) return personalityById(id);
+  const plain = commander.normalize('NFD').replace(/\p{M}/gu, '');
+  for (const [re, id] of BY_NAME) if (re.test(plain)) return personalityById(id);
   const n: Nation = nation ?? (/french/i.test(army) ? 'FR' : 'BR');
   return personalityById(NATION_DEFAULT[n] ?? 'veteran');
 }
