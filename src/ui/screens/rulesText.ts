@@ -1,7 +1,8 @@
 // The text of the in-game rules reference, written in our own words from design/rules-reference.md (the RR; the section of
 // each block is named in the comment above it). A `reading` is a play-affecting interpretation, shown as a plain
 // "Our reading:" note without its ruling mark (the marks live in the RR and design/rulings.md). Numbers that a table
-// holds (unit rows, terrain, cards) are not written here: the tabs read them from the tables.
+// holds (unit rows, terrain, cards) are not written here: the tabs read them from the tables. The Controls and Keyboard
+// blocks are UI help, not from the RR.
 import { EXPANSIONS, SQUARE_MIN_HAND, SQUARE_TRACK, UNIT_KEYS, UNIT_STATS, type Expansion } from '../../engine';
 
 /** The Rifles' firing range, read from the table (a musket rule; narrowing, not a cast). */
@@ -100,12 +101,14 @@ export const RULES_TEXT: Record<RulesTab, RulesBlock[]> = {
         'A banner total is permanent banners plus the objective banners held right now. Holding a hex for many turns still gives only one banner.',
       ],
     },
+    // UI help, not from the RR
     {
       heading: 'Controls',
       paragraphs: [
         'Click to select. Hover a unit for its stats, any hex for what its terrain does, and a card to preview it. “Let the general decide” answers any decision for you.',
       ],
     },
+    // UI help, not from the RR
     {
       heading: 'Keyboard',
       paragraphs: [

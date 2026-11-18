@@ -484,3 +484,33 @@ body {
 .army-row .committed-card { flex: none; width: 48px; }
 .army-row .committed-label { order: 2; white-space: normal; text-align: center; font-size: 10px; line-height: 1.05; }
 .hand-slot .hand-committed-label { position: absolute; top: -14px; left: 0; right: 0; text-align: center; pointer-events: none; }
+
+/* ---------- side column fit (Plan 4 Task 11): the log keeps a usable height at 1280x800 and 1024x768; the army panel gives way
+   first, scrolling as a last resort, and the title strip never wraps */
+.side-col { gap: 6px; }
+.army-panel { flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.army-panel > .kit-panel__inner { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 8px 12px 8px; }
+.army-panel .kit-panel__body { flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
+.army-panel .kit-banners { padding: 5px 10px 6px; gap: 3px; }
+.army-panel .kit-banners__slot, .army-panel .kit-banners__slot svg { height: 38px; width: auto; }
+.army-panel .divider { margin: 5px 0; }
+.army-panel .square-track { margin-top: 3px; }
+.army-panel .deck-row { margin-top: 3px; }
+.dice-slot { min-height: 112px; }
+.log-panel { flex: 1 1 0; min-height: 170px; }
+.log-panel > .kit-panel__inner { padding: 8px 12px 10px; }
+.log-panel .kit-panel__head { margin-bottom: 4px; }
+.log-scroll { overflow-wrap: anywhere; }
+.game-top { min-width: 0; }
+.game-title { min-width: 0; flex: 0 1 auto; }
+.gt-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.gt-year { flex: none; }
+.game-turn { flex: none; white-space: nowrap; }
+.game-actions { flex: none; }
+@media (max-width: 1100px) {
+  .game-top { gap: 8px; padding: 0 8px; }
+  .game-actions { gap: 5px; }
+  .game-actions .kit-btn { padding: 4px 8px; }
+  .speed { gap: 4px; }
+  .game-root { grid-template-columns: 1fr 296px; }
+}

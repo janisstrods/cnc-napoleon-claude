@@ -135,6 +135,8 @@ export function GameScreen({ controller, onExit, onRematch }: {
     const inBoard = !!document.activeElement?.closest('.board-svg');
     const jump = jumpTarget(s, d, human, overBoard.current, inBoard, flipped);
     if (jump) setCursor(jump.cursor);
+    // the keyboard stays in the board: its tooltip and path preview appear at once, as when it steps there
+    if (jump && jump.keepFocus) setUi((u) => (u.hoverHex === jump.cursor ? u : { ...u, hoverHex: jump.cursor }));
     if (jump?.keepFocus) return;
     focusNewDecision(d, human, inBoard ? false : overBoard.current, document);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -153,6 +155,14 @@ export function GameScreen({ controller, onExit, onRematch }: {
     () => hexLabel(s, cursor, bui.highlights, { badges: bui.badges, decision: d, leaderMarks: bui.leaderHighlights }),
     [s, cursor, bui, d],
   );
+  // the live region speaks when the cursor moves or jumps (or the keyboard takes the board), not whenever the hex's label
+  // changes under a resting cursor: the label is read through a ref
+  const labelRef = useRef(cursorLabel);
+  labelRef.current = cursorLabel;
+  const [live, setLive] = useState('');
+  useEffect(() => {
+    setLive(kbd ? labelRef.current : '');
+  }, [kbd, cursor]);
   // the tooltip of the cursor hex sits at the cursor while the keyboard drives it
   useEffect(() => {
     if (!kbd) { setAnchor(null); return; }
@@ -243,7 +253,7 @@ export function GameScreen({ controller, onExit, onRematch }: {
     <div className="game-root" style={{ '--side-me': nationInk(me.nation), '--side-them': nationInk(them.nation) } as React.CSSProperties}>
       <header className="game-top">
         <div className="game-title">
-          <span className="gt-name">{controller.scenario.name}</span>
+          <span className="gt-name" title={`${controller.scenario.name} ${controller.scenario.year}`}>{controller.scenario.name}</span>
           <span className="gt-year">{controller.scenario.year}</span>
         </div>
         <div className="game-turn">
@@ -299,7 +309,7 @@ export function GameScreen({ controller, onExit, onRematch }: {
             onBoardBlur={onBoardBlur}
             onBoardPointerDown={() => setKbd(false)}
           />
-          <div className="board-live" role="status" aria-live="polite">{kbd ? cursorLabel : ''}</div>
+          <div className="board-live" role="status" aria-live="polite">{live}</div>
           {view.toast && (
             <div
               className={`turn-toast ${view.toast.kind === 'notice' ? 'toast-notice' : ''}`}
