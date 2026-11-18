@@ -33,18 +33,18 @@ body {
   z-index: 3;
 }
 .game-title { display: flex; align-items: baseline; gap: 10px; }
-.gt-name { font-family: var(--kit-font-title); font-size: 20px; letter-spacing: .05em; color: var(--kit-ink); }
-.gt-year { font-size: 15px; color: var(--kit-ink-soft); font-style: italic; }
+.gt-name { font-family: var(--kit-font-title); font-size: 19px; letter-spacing: .06em; color: var(--kit-ink); }
+.gt-year { font-size: 14px; color: var(--kit-ink-soft); font-style: italic; }
 .game-turn { font-family: var(--kit-font-title); font-size: 14px; letter-spacing: .05em; color: var(--kit-ink); display: flex; align-items: center; gap: 8px; }
 .side-chip { padding: 1px 10px; border-radius: 2px; font-size: 13px; }
-.side-me { color: #2f5d2a; background: rgba(47, 93, 42, .08); border: 1px solid rgba(47, 93, 42, .55); }
+.side-me { color: var(--kit-green); background: rgba(47, 93, 42, .08); border: 1px solid rgba(47, 93, 42, .55); }
 .side-them { color: var(--kit-crimson); background: rgba(163, 38, 42, .07); border: 1px solid rgba(163, 38, 42, .55); }
 .thinking-dots { font-style: italic; color: var(--kit-ink-soft); font-family: var(--kit-font-body); font-size: 14px; }
 .thinking-dots::after { content: '…'; animation: dots 1.2s steps(4) infinite; display: inline-block; width: 1.2em; overflow: hidden; vertical-align: bottom; }
 @keyframes dots { 0% { width: 0; } 100% { width: 1.2em; } }
 .game-actions { display: flex; gap: 8px; align-items: center; }
 .game-actions .kit-btn { padding: 4px 12px; font-size: 13px; }
-.speed { font-size: 14px; display: flex; gap: 6px; align-items: center; color: var(--kit-ink-soft); }
+.speed { font-size: 13px; display: flex; gap: 6px; align-items: center; color: var(--kit-ink-soft); }
 .speed select {
   appearance: none;
   -webkit-appearance: none;
@@ -94,16 +94,16 @@ body {
 .army-panel .kit-banners__row { justify-content: space-between; }
 .army-name { font-family: var(--kit-font-title); font-size: 15px; letter-spacing: .05em; }
 .army-name.them { color: var(--kit-crimson); }
-.army-name.me { color: #2f5d2a; }
-.army-name .you { font-size: 12px; color: var(--kit-ink-soft); }
-.army-cmd { font-size: 13.5px; color: var(--kit-ink-soft); font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.army-name.me { color: var(--kit-green); }
+.army-name .you { font-size: 11px; color: var(--kit-ink-soft); }
+.army-cmd { font-size: 13px; color: var(--kit-ink-soft); font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ai-hand { display: flex; flex-wrap: nowrap; flex: none; padding-top: 2px; }
 /* dice orders (310): an enemy that holds no cards shows its last order roll instead */
 .ai-dice { display: flex; align-items: center; gap: 4px; flex: none; padding-top: 2px; }
 .ai-dice-label { font-family: var(--kit-font-title); font-size: 11px; letter-spacing: .06em; color: var(--kit-ink-soft); margin-right: 2px; white-space: nowrap; }
 .ai-hand .kit-cardback { pointer-events: none; box-shadow: -1px 1px 2px rgba(34, 28, 22, .35); }
 .divider { height: 1px; background: rgba(59, 49, 39, .3); margin: 8px 0; }
-.deck-row { margin-top: 6px; font-size: 12.5px; color: var(--kit-ink-soft); text-align: right; }
+.deck-row { margin-top: 6px; font-size: 12px; color: var(--kit-ink-soft); text-align: right; }
 
 .log-panel { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .log-panel > .kit-panel__inner { flex: 1; min-height: 0; display: flex; flex-direction: column; }
@@ -194,7 +194,7 @@ body {
 .dice-panel-die:focus-visible { outline: 2px solid var(--kit-royal); outline-offset: 2px; }
 .dice-panel-die.is-active { border-color: var(--kit-royal); box-shadow: 0 0 0 1px var(--kit-royal); }
 .dice-panel-die.is-now .dice-panel-text { color: var(--kit-crimson); font-weight: 600; }
-.dice-panel-die.is-done .dice-panel-text { color: #2f5d2a; }
+.dice-panel-die.is-done .dice-panel-text { color: var(--kit-green); }
 .dice-panel-die.is-lost { opacity: .6; }
 .dice-panel-die .kit-die { flex: none; }
 .dice-panel-text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
@@ -223,9 +223,9 @@ body {
 .prompt-bar.tone-danger { border-color: var(--kit-crimson); box-shadow: inset 0 0 0 3px var(--kit-leather), inset 0 0 0 4px rgba(163, 38, 42, .6), 0 0 0 2px rgba(163, 38, 42, .18), var(--kit-shadow-soft); }
 .prompt-bar.tone-warn .prompt-sub { color: var(--kit-crimson); }
 .prompt-main { flex: 1 1 220px; min-width: 180px; }
-.prompt-title { font-family: var(--kit-font-title); font-size: 16px; color: var(--kit-ink); letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.prompt-sub { font-size: 14px; color: var(--kit-ink); line-height: 1.2; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
-.prompt-err { font-size: 13.5px; color: var(--kit-crimson); margin-top: 2px; }
+.prompt-title { font-family: var(--kit-font-title); font-size: 15px; color: var(--kit-ink); letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prompt-sub { font-size: 13.5px; color: var(--kit-ink); line-height: 1.2; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
+.prompt-err { font-size: 13px; color: var(--kit-crimson); margin-top: 2px; }
 .prompt-buttons { display: flex; gap: 6px; flex: 0 1 auto; flex-wrap: wrap; justify-content: flex-end; }
 .prompt-buttons .kit-btn { padding: 6px 12px; font-size: 13px; white-space: nowrap; }
 
@@ -295,7 +295,7 @@ body {
   line-height: 1.3;
 }
 .tip-head { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
-.tip-title { font-family: var(--kit-font-title); font-size: 15px; color: var(--kit-parchment-light); }
+.tip-title { font-family: var(--kit-font-title); font-size: 14px; color: var(--kit-parchment-light); }
 .tip-sub { color: rgba(240, 227, 194, .7); font-style: italic; }
 .tip-line { color: rgba(240, 227, 194, .9); }
 .tip-leader { color: #f3dc9a; margin-top: 3px; }
@@ -320,7 +320,7 @@ body {
 .victory-reason { margin: 0 0 12px; text-align: center; font-style: italic; font-size: 17px; }
 .victory-score {
   display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: 12px; row-gap: 6px;
-  padding: 10px 14px; border-radius: 8px; background: rgba(154, 111, 44, .1); box-shadow: inset 0 0 0 1px rgba(154, 111, 44, .3);
+  padding: 10px 14px; border-radius: 2px; background: var(--kit-parchment-light); box-shadow: inset 0 0 0 1px rgba(59, 49, 39, .3);
 }
 .victory-row { display: contents; }
 .victory-army { font-size: 16px; white-space: nowrap; }
@@ -333,8 +333,8 @@ body {
 .victory-medal { display: flex; align-items: center; justify-content: center; gap: 10px; margin: -6px 0 16px; font-size: 16px; color: #4a3820; }
 .victory-medal b { text-transform: capitalize; color: #6a1512; }
 .match {
-  margin: 0 0 16px; padding: 8px 14px 10px; border-radius: 8px;
-  background: rgba(154, 111, 44, .1); box-shadow: inset 0 0 0 1px rgba(154, 111, 44, .3);
+  margin: 0 0 16px; padding: 8px 14px 10px; border-radius: 2px;
+  background: var(--kit-parchment-light); box-shadow: inset 0 0 0 1px rgba(59, 49, 39, .3);
 }
 .match-title {
   margin: 0 0 2px; text-align: center; font-family: var(--kit-font-title); font-size: 13px; font-weight: 400;
@@ -349,7 +349,7 @@ body {
 .match-table .match-outcome.is-won { color: #6a1512; }
 .match-n { width: 4.6em; text-align: right; font-family: var(--kit-font-title); font-weight: 700; font-size: 17px; color: #5a4630; }
 .match-n.is-ahead { color: #6a1512; }
-.match-table tfoot th, .match-table tfoot td { border-top: 1px solid rgba(154, 111, 44, .4); padding-top: 5px; }
+.match-table tfoot th, .match-table tfoot td { border-top: 1px solid rgba(59, 49, 39, .3); padding-top: 5px; }
 .match-table tfoot th { text-align: left; font-family: var(--kit-font-title); font-weight: 700; font-size: 15px; color: #5a4630; }
 .match-verdict { margin: 6px 0 0; text-align: center; font-size: 16px; font-weight: 700; color: #4a3820; }
 .victory-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr)); gap: 12px; }
@@ -380,7 +380,7 @@ body {
 
 .dice-slot { flex: none; min-height: 150px; display: flex; align-items: stretch; }
 .dice-slot > * { width: 100%; box-sizing: border-box; }
-.dice-empty { display: flex; align-items: center; justify-content: center; border: 1px dashed rgba(59, 49, 39, .3); border-radius: 2px; color: var(--kit-ink-soft); font-style: italic; font-size: 14px; }
+.dice-empty { display: flex; align-items: center; justify-content: center; border: 1px dashed rgba(59, 49, 39, .3); border-radius: 2px; color: var(--kit-ink-soft); font-style: italic; font-size: 13px; }
 
 .turn-toast {
   position: absolute;
@@ -388,23 +388,24 @@ body {
   top: 42%;
   transform: translate(-50%, -50%);
   font-family: var(--kit-font-title);
-  font-size: 38px;
-  letter-spacing: .14em;
-  color: #fbe7a6;
-  text-shadow: 0 3px 10px rgba(0, 0, 0, .9), 0 0 24px rgba(232, 196, 90, .5);
+  font-size: 34px;
+  letter-spacing: .12em;
+  padding: 6px 28px 8px;
+  color: var(--kit-ink);
+  /* a paper slip ruled in ink, with a fine British-red line inside */
+  background: rgba(246, 240, 222, .95);
+  border: 1.5px solid var(--kit-rule);
+  box-shadow: inset 0 0 0 3px rgba(246, 240, 222, .95), inset 0 0 0 4px rgba(163, 38, 42, .6), var(--kit-shadow-soft);
   pointer-events: none;
   z-index: 6;
   animation: toast 1.4s ease-out forwards;
   white-space: nowrap;
 }
-/* a notice (a lost command card) stays up longer, smaller, on a dark plate; a long card title wraps on a narrow board */
+/* a notice (a lost command card) stays up longer and smaller on the same slip; a long card title wraps on a narrow board */
 .turn-toast.toast-notice {
   font-size: 22px;
   letter-spacing: .05em;
   padding: 10px 22px;
-  border-radius: 10px;
-  background: rgba(30, 37, 50, .9);
-  border: 1px solid rgba(236, 227, 200, .4);
   animation-duration: 2.8s;
   white-space: normal;
   width: max-content;
@@ -418,7 +419,7 @@ body {
 
 /* ---------- Élan / Rally dice (beside the board) and the Scout's cards (in the prompt bar) */
 .assign-panel { flex: none; padding: 8px 10px; background: var(--kit-leather); border: 1.5px solid var(--kit-rule); border-radius: 2px; box-shadow: inset 0 0 0 3px var(--kit-leather), inset 0 0 0 4px rgba(59, 49, 39, .42); }
-.assign-text { margin: 0 0 4px; font-size: 12.5px; line-height: 1.2; color: var(--kit-ink-soft); }
+.assign-text { margin: 0 0 4px; font-size: 12px; line-height: 1.2; color: var(--kit-ink-soft); }
 .assign-row { padding: 2px 4px; border-radius: 6px; border: 1px solid transparent; }
 .assign-row.is-armed { border-color: var(--kit-royal); background: rgba(31, 63, 138, .06); }
 .assign-die { flex: none; padding: 0; background: none; border: 0; cursor: pointer; line-height: 0; border-radius: 6px; }
@@ -445,7 +446,7 @@ body {
 .square-counter circle { fill: #2a2318; stroke: #e2bd72; stroke-width: 2; }
 .square-counter text { fill: #f6e7b6; font-family: var(--kit-font-title); font-size: 14px; font-weight: 700; pointer-events: none; }
 .square-counter { pointer-events: none; }
-.prompt-hint { min-height: 3.6em; font-size: 13px; font-style: italic; color: var(--kit-ink-soft); line-height: 1.2; margin-top: 2px; }
+.prompt-hint { min-height: 3.6em; font-size: 12.5px; font-style: italic; color: var(--kit-ink-soft); line-height: 1.2; margin-top: 2px; }
 .tip-square { color: #e2bd72; }
 .army-cmd.army-hand { white-space: normal; font-style: normal; font-size: 12.5px; }
 
@@ -456,7 +457,7 @@ body {
 
 .prompt-hint--compact { min-height: 0; font-style: normal; font-weight: 600; }
 .prompt-pick { display: flex; align-items: center; gap: 6px; flex: 0 1 auto; min-width: 0; }
-.prompt-pick label { display: flex; align-items: center; gap: 6px; font-size: 13.5px; color: var(--kit-ink-soft); }
+.prompt-pick label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--kit-ink-soft); }
 .prompt-pick select { max-width: 280px; font: inherit; font-size: 13px; padding: 4px 6px; background: var(--kit-parchment-light); color: var(--kit-ink); border: 1px solid rgba(59, 49, 39, .6); border-radius: 2px; }
 .gun-toggles { display: flex; flex-wrap: wrap; gap: 6px; flex: 0 1 auto; min-width: 0; }
 .gun-toggle.kit-btn { padding: 4px 10px; font-size: 12.5px; white-space: nowrap; }

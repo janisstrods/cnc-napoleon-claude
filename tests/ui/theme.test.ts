@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { theme } from '../../src/ui/kit/theme';
 import { MainMenu } from '../../src/ui/screens/Menus';
+import { Frame } from '../../src/ui/terrain/base';
 import { stubStorage, useStubStorageCleanup } from '../support/storage';
 
 const FS = 'node:fs';
@@ -59,7 +60,7 @@ describe('theme tokens', () => {
   });
 
   it('has the campaign-map palette: paper, ink, rules and the three national accents', () => {
-    for (const k of ['parchment', 'parchmentLight', 'parchmentDark', 'ink', 'inkSoft', 'rule', 'crimson', 'royal', 'spanish', 'gold'] as const) {
+    for (const k of ['parchment', 'parchmentLight', 'parchmentDark', 'ink', 'inkSoft', 'rule', 'green', 'crimson', 'royal', 'spanish', 'gold'] as const) {
       expect(theme.color[k], k).toMatch(/^#[0-9a-f]{6}$/);
     }
   });
@@ -84,11 +85,33 @@ describe('theme tokens', () => {
       [c.parchmentLight, c.royal, 4.5, 'label on a French-blue plate'],
       [c.parchment, c.wood, 4.5, 'text on the ink-blue map margin (tooltips, notices)'],
       [c.parchment, c.woodLight, 4.5, 'text on the lighter map margin'],
-      [c.ink, c.felt, 3, 'large text in the dice well'],
+      [c.inkSoft, c.felt, 4.5, '"no dice yet" text in the dice well'],
+      [c.green, c.leather, 4.5, 'your side (army name, chip, done order) on a buff card'],
+      [c.green, c.parchment, 4.5, 'your side on paper'],
+      [c.green, c.parchmentLight, 4.5, 'your side on light paper'],
     ];
     for (const [fg, bg, min, what] of pairs) {
       expect(contrast(fg, bg), `${what}: ${fg} on ${bg}`).toBeGreaterThanOrEqual(min);
     }
+  });
+
+  it('ruled accents stand out from the paper (non-text contrast, 3:1)', () => {
+    const c = theme.color;
+    expect(contrast(c.spanish, c.parchmentLight), 'Spanish-yellow tab underline on its tab').toBeGreaterThanOrEqual(3);
+    expect(contrast(c.spanish, c.parchment), 'Spanish yellow on paper').toBeGreaterThanOrEqual(3);
+  });
+
+  it('the board margin\'s LEFT / RIGHT captions are AA on the buff margin', () => {
+    const svg = renderToStaticMarkup(createElement('svg', null, createElement(Frame, { outline: '', x1: 300, x2: 700 })));
+    const captions = [...svg.matchAll(/<text[^>]*fill="([^"]+)"[^>]*>(LEFT|RIGHT)<\/text>/g)];
+    expect(captions).toHaveLength(4);
+    for (const [, fill] of captions) expect(contrast(fill, theme.color.leather), `caption ${fill} on the margin`).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('game.css names your side\'s green by its token', async () => {
+    const game = await readText('../../src/ui/game/game.css');
+    expect(game).not.toMatch(/#2f5d2a/i);
+    expect(game).toContain('var(--kit-green)');
   });
 
   it('the surfaces are paper and ink, not wood, leather or bronze', async () => {

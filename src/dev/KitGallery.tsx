@@ -35,18 +35,17 @@ function Heading({ children, sub }: { children: ReactNode; sub?: string }) {
         style={{
           margin: 0,
           fontFamily: 'var(--kit-font-title)',
-          fontWeight: 700,
+          fontWeight: 400,
           fontSize: 22,
           letterSpacing: '.14em',
           textTransform: 'uppercase',
-          color: '#f0d690',
-          textShadow: '0 2px 3px rgba(0,0,0,.7)',
+          color: 'var(--kit-ink)',
         }}
       >
         {children}
       </h2>
-      {sub ? <div style={{ fontStyle: 'italic', color: '#cdb98d', fontSize: 16, marginTop: 2 }}>{sub}</div> : null}
-      <div style={{ height: 1, marginTop: 10, background: 'linear-gradient(90deg, rgba(226,189,114,.6), rgba(226,189,114,0) 70%)' }} />
+      {sub ? <div style={{ fontStyle: 'italic', color: 'var(--kit-ink-soft)', fontSize: 16, marginTop: 2 }}>{sub}</div> : null}
+      <div style={{ height: 1, marginTop: 10, background: 'linear-gradient(90deg, rgba(59,49,39,.55), rgba(59,49,39,0) 70%)' }} />
     </div>
   );
 }
@@ -59,7 +58,7 @@ function Label({ children }: { children: ReactNode }) {
         fontSize: 11,
         letterSpacing: '.16em',
         textTransform: 'uppercase',
-        color: '#bfa776',
+        color: 'var(--kit-ink-soft)',
         textAlign: 'center',
         marginTop: 10,
       }}
@@ -93,23 +92,22 @@ export default function KitGallery() {
   return (
     <Tabletop style={{ position: 'fixed', inset: 0, overflow: 'auto', padding: '36px 48px 80px', boxSizing: 'border-box' }}>
       <header style={{ textAlign: 'center', marginBottom: 8 }}>
-        <div style={{ fontFamily: 'var(--kit-font-title)', fontSize: 13, letterSpacing: '.4em', color: '#bfa776', textTransform: 'uppercase' }}>
+        <div style={{ fontFamily: 'var(--kit-font-title)', fontSize: 13, letterSpacing: '.4em', color: 'var(--kit-ink-soft)', textTransform: 'uppercase' }}>
           Commands &amp; Colours · Napoleonics
         </div>
         <h1
           style={{
             margin: '6px 0 4px',
             fontFamily: 'var(--kit-font-title)',
-            fontWeight: 700,
+            fontWeight: 400,
             fontSize: 40,
             letterSpacing: '.08em',
-            color: '#f3d98f',
-            textShadow: '0 3px 6px rgba(0,0,0,.8)',
+            color: 'var(--kit-ink)',
           }}
         >
           UI Kit
         </h1>
-        <div style={{ fontStyle: 'italic', fontSize: 18, color: '#d8c49a' }}>Cards, dice, banners and furniture for the war table</div>
+        <div style={{ fontStyle: 'italic', fontSize: 18, color: 'var(--kit-ink-soft)' }}>Cards, dice, banners and furniture for the war table</div>
       </header>
 
       {GROUPS.map(({ group, title, blurb }) => (
@@ -306,7 +304,7 @@ export default function KitGallery() {
                 style={{ width: 22, height: 22, borderRadius: 4, background: bannerCloth(nation)[t], boxShadow: '0 0 0 1px rgba(0,0,0,.5)' }}
               />
             ))}
-            <span style={{ fontFamily: 'var(--kit-font-title)', fontSize: 12, letterSpacing: '.14em', textTransform: 'uppercase', color: '#d8c49a' }}>{f}</span>
+            <span style={{ fontFamily: 'var(--kit-font-title)', fontSize: 12, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--kit-ink-soft)' }}>{f}</span>
           </div>
         ))}
       </div>
@@ -341,11 +339,11 @@ export default function KitGallery() {
         <Panel title="Battle Log" style={{ width: 340 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <div>
-              <b style={{ color: '#f0c46a' }}>The British</b> play <i>Attack Centre</i>.
+              <b style={{ color: 'var(--kit-crimson)' }}>The British</b> play <i>Attack Centre</i>.
             </div>
             <div>Line Infantry melee — 4 dice: 2 hits, 1 flag.</div>
             <div>French Line Infantry retreats 1 hex.</div>
-            <div style={{ color: '#f0c46a' }}>The British capture a banner (3 / 6).</div>
+            <div style={{ color: 'var(--kit-crimson)' }}>The British capture a banner (3 / 6).</div>
           </div>
         </Panel>
         <Panel title="Orders" variant="parchment" style={{ width: 300 }}>
@@ -357,13 +355,13 @@ export default function KitGallery() {
             </Button>
           </div>
         </Panel>
-        <div style={{ position: 'relative', width: 380, height: 170, borderRadius: 10, background: 'rgba(0,0,0,.2)', boxShadow: 'inset 0 0 0 1px rgba(226,189,114,.2)' }}>
+        <div style={{ position: 'relative', width: 380, height: 170, borderRadius: 10, background: 'rgba(59,49,39,.05)', boxShadow: 'inset 0 0 0 1px rgba(59,49,39,.25)' }}>
           <div style={{ position: 'absolute', left: 28, top: 30, width: 14, height: 14, borderRadius: '50%', background: '#f0c46a' }} />
           <Tooltip x={35} y={37} position="absolute" offset={14}>
             <div className="kit-tooltip__title">French Line Infantry</div>
             4 blocks · melee by its blocks
             <br />
-            <i style={{ color: '#d8c49a' }}>vs British Line Infantry: 1.3 expected hits</i>
+            <i style={{ color: 'var(--kit-ink-soft)' }}>vs British Line Infantry: 1.3 expected hits</i>
           </Tooltip>
         </div>
       </div>

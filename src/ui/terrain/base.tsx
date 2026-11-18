@@ -151,6 +151,8 @@ const MARGIN_PAPER = 'var(--kit-leather, #f3ecd8)';
 const CARTOUCHE_PAPER = 'var(--kit-parchment-light, #f6f0de)';
 const RULE = '#3b3127';
 const RULE_SOFT = 'rgba(59,49,39,0.62)';
+/** The LEFT / RIGHT captions are text: full ink (the kit's `--kit-rule`), AA on the margin paper. */
+const CAPTION_INK = '#3b3127';
 
 /**
  * The board's surround, drawn as the margin of a printed map: buff paper outside the hexes, a neatline (a firm outer
@@ -196,7 +198,7 @@ export function Frame({
       y={fmt(y)}
       textAnchor="middle"
       dominantBaseline="central"
-      fill={RULE_SOFT}
+      fill={CAPTION_INK}
       transform={rot ? `rotate(180 ${fmt(x)} ${fmt(y)})` : undefined}
       style={capStyle}
     >

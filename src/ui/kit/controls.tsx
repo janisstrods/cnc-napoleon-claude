@@ -24,10 +24,6 @@ export function Panel(p: {
   return (
     <section className={`kit-panel kit-panel--${variant} ${p.className ?? ''}`} style={p.style}>
       <div className={`kit-panel__inner ${variant === 'leather' ? 'kit-leather' : 'kit-parchment'}`}>
-        <span className="kit-panel__stud kit-panel__stud--tl" />
-        <span className="kit-panel__stud kit-panel__stud--tr" />
-        <span className="kit-panel__stud kit-panel__stud--bl" />
-        <span className="kit-panel__stud kit-panel__stud--br" />
         {p.title ? (
           <header className="kit-panel__head">
             <Ornament className="kit-panel__orn" />

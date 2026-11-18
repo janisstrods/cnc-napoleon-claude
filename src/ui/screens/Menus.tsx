@@ -134,12 +134,15 @@ function SetupPreview({ state, flipped, humanSide }: { state: GameState; flipped
   );
 }
 
-/** A picker tab's medals won, when there are any: a small gold medal and the count. */
+/** A picker tab's medals won (of any metal), when there are any: a plain ink medal on a red ribbon, and the count. */
 function TabMedals({ won, of }: { won: number; of: number }) {
   if (!won) return null;
   return (
     <span className="tab-medals" role="img" aria-label={`${won} of ${of} medals won`} title={`${won} of ${of} medals won`}>
-      <Medal standing="gold" size={11} />
+      <svg viewBox="0 0 12 14" width={10} height={12} aria-hidden="true" focusable="false">
+        <path d="M3.5 0.5h5l-1.2 5h-2.6z" fill="var(--kit-crimson)" />
+        <circle cx="6" cy="9.5" r="3.4" fill="none" stroke="currentColor" strokeWidth="1.2" />
+      </svg>
       {won}
     </span>
   );

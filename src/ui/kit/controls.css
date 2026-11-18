@@ -143,7 +143,6 @@
   pointer-events: none;
 }
 .kit-panel--leather .kit-panel__inner { color: var(--kit-ink); }
-.kit-panel__stud { display: none; }
 .kit-panel__head {
   display: flex;
   align-items: center;
