@@ -57,7 +57,8 @@ export function rollSummary(p: RollPurpose, faces: DieFace[], scoring: boolean[]
     const parts = (['infantry', 'cavalry', 'artillery', 'flag', 'sabre'] as DieFace[]).filter(n).map((f) => `${n(f)} ${f}`);
     return parts.join(', ') || 'No dice';
   }
-  if (p === 'leaderCheck' || p === 'escape') return faces.includes('sabre') ? 'The leader is hit!' : 'The leader is safe';
+  if (p === 'escape') return faces.includes('sabre') ? 'The leader is hit!' : 'The leader is safe';
+  if (p === 'leaderCheck') return `${plural(faces.filter((f) => f === 'sabre').length, 'sabre')} rolled`;
   const hits = scoring.filter(Boolean).length;
   const flags = faces.filter((f) => f === 'flag').length;
   const parts = [`${hits} ${hits === 1 ? 'hit' : 'hits'}`];
@@ -112,7 +113,7 @@ export function eventLog(e: GameEvent, before: GameState, after: GameState, huma
     }
     case 'roll': {
       const by = e.by ?? e.against;
-      return line(`${rollTitle(e.purpose, e.by, e.against, after)}: ${rollSummary(e.purpose, e.faces, e.scoring)}.`, 'combat', by ? sideOf(by) : undefined);
+      return line(`→ ${rollSummary(e.purpose, e.faces, e.scoring)}.`, 'combat', by ? sideOf(by) : undefined);
     }
     case 'damage':
       return line(`${who(e.id)} loses ${plural(e.amount, 'block')} (${e.reason}).`, 'result', sideOf(e.id));
@@ -151,11 +152,13 @@ export function eventLog(e: GameEvent, before: GameState, after: GameState, huma
     case 'scoutDrew':
       return line(`The ${army(e.side)} army draws two cards and keeps one.`, 'info', e.side);
     case 'discarded':
-      // the Scout's dropped card is the owner's business until it is shown: only the human's own is named
-      return line(e.side === human ? `The ${army(e.side)} army discards ${CARD_DEFS[cardKind(e.card)].title}.` : `The ${army(e.side)} army discards a card.`, 'card', e.side);
+      // a Scout's second card is discarded face up (RR §12.4): named for either side
+      return line(`The ${army(e.side)} army discards ${CARD_DEFS[cardKind(e.card)].title}.`, 'card', e.side);
     case 'reshuffle':
       return line('The command deck is reshuffled.', 'info');
     case 'log':
+      // the engine's own casualty notes repeat the worded `eliminated` / `leaderKilled` lines (with raw ids)
+      if (/ is (eliminated|killed) \(/.test(e.text)) return null;
       return line(e.text, 'info', e.side);
     case 'victory':
       return line(`Victory: ${e.winner === 'draw' ? 'Draw' : army(e.winner)} — ${e.reason}.`, 'victory');

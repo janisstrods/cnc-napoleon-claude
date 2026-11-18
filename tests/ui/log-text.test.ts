@@ -1,8 +1,10 @@
 // Plan 4 Task 3: every engine event has its own wording in the log; the banner track lists the battle's objectives.
 import { describe, expect, it } from 'vitest';
-import { CARD_DEFS, type GameEvent, type GameState } from '../../src/engine';
+import { CARD_DEFS, cardKind, type GameEvent, type GameState } from '../../src/engine';
 import { eventLog, rollSummary } from '../../src/ui/game/logText';
-import { objectiveSummary } from '../../src/ui/game/objectiveText';
+import { createGame } from '../../src/engine';
+import { scenarioById } from '../../src/scenarios';
+import { objectiveSummary, objectiveTipLines } from '../../src/ui/game/objectiveText';
 import { build, H, leaderId } from '../rules/helpers';
 
 const s: GameState = build({
@@ -51,6 +53,7 @@ const SAMPLES: Record<GameEvent['t'], GameEvent> = {
   log: { t: 'log', text: 'Something happened.' },
   victory: { t: 'victory', winner: 'bottom', reason: 'six banners' },
 };
+const KILL = 'Each enemy unit or leader eliminated: 1 banner';
 const line = (e: GameEvent, human: 'top' | 'bottom' = HUMAN) => eventLog(e, s, s, human);
 
 describe('log wording', () => {
@@ -97,7 +100,27 @@ describe('log wording', () => {
 
   it('a killWeight objective is listed for its side', () => {
     const k = build({ units: [{ side: 'top', key: 'FR/LN', at: [2, 6] }], objectives: [{ kind: 'killWeight', side: 'bottom', enemyArm: 'infantry', first: 1, later: 2 }] });
-    expect(objectiveSummary(k, 'bottom')).toEqual(['First French infantry unit eliminated: 1 banner; each later one: 2']);
-    expect(objectiveSummary(k, 'top')).toEqual([]);
+    expect(objectiveSummary(k, 'bottom')).toEqual(['First French infantry unit eliminated: 1 banner; each later one: 2', KILL]);
+    expect(objectiveSummary(k, 'top')).toEqual([KILL]);
+  });
+
+  it("001's two identical hill objectives are one line, without a stray full stop", () => {
+    const g = createGame(scenarioById('001').setup, 1);
+    const sum = objectiveSummary(g, 'top');
+    expect(sum).toEqual([
+      'Anglo-Portuguese hold a hill on the French baseline (2 hexes): 1 banner each while held at the start of their turn',
+      KILL,
+    ]);
+    for (const o of g.scenario.objectives) if (o.kind === 'tempHex') for (const l of objectiveTipLines(g, o.hex)) expect(l).not.toContain('.:');
+  });
+
+  it("the Scout's discard is named for both sides (it is face up)", () => {
+    for (const side of ['top', 'bottom'] as const) {
+      expect(eventLog({ t: 'discarded', side, card: 0 }, s, s, HUMAN)!.text).toContain(CARD_DEFS[cardKind(0)].title);
+    }
+  });
+
+  it("the engine's raw casualty notes are dropped", () => {
+    expect(line({ t: 'log', text: 'u5 is eliminated (melee).' })).toBeNull();
   });
 });
