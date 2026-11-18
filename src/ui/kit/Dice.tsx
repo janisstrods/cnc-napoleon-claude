@@ -18,7 +18,7 @@ export const FACE_LABEL: Record<DieFace, string> = {
 };
 
 /** Accent of each arm: a tinted roundel behind the glyph and a ground bar under it. */
-const ARM_ACCENT: Partial<Record<DieFace, string>> = {
+const ARM_ACCENT: Record<'infantry' | 'cavalry' | 'artillery', string> = {
   infantry: theme.dice.infantry,
   cavalry: theme.dice.cavalry,
   artillery: theme.dice.artillery,
