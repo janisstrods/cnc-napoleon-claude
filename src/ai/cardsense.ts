@@ -1,5 +1,6 @@
 // Card sense (Plan 5 Task 6a): what it is worth to keep a card in hand for a later turn, how a hand is managed, which of two
-// Scout cards to keep, and the cost of a hand too short to form a square.
+// Scout cards to keep, and the cost of a hand too short to form a square. Plan 7C Task 19 adds the Spanish expansion's card
+// rules: when to spend or gain a Guerrilla counter (RR §15.5) and which opening card to pick at 116 (RR §15.8).
 //
 // A card's keep value is its base value (the value of using it in full) scaled by how many of our units the engine says it
 // could order (`eligiblePieces`, `orderLimit`: no copy of the rules) and by Command. It reads only our own hand and public
@@ -8,14 +9,16 @@
 // Command here is the Command a card played now would have: the hand, the played card included, never counting square-track
 // cards (R28, RR §5.3). Cards on the track are not in the hand, so the hand size is the number.
 import {
-  CARD_DEFS, DIE_SIDES, SQUARE_MIN_HAND, TERRAIN_STATS, cardKind, distance, eligiblePieces, fallbackActive, greedyAssign, mirrorKind, orderLimit, other,
-  statsOf, terrainAt, unitsOf, validateRally, worksForbidSquare,
+  CARD_DEFS, CARD_LIST, DIE_SIDES, MOVE_FIRST_VALUE, SQUARE_MIN_HAND, TERRAIN_STATS, cardKind, distance, eligiblePieces, fallbackActive, greedyAssign,
+  guerrillaHeld, guerrillaPool, guerrillaSide, mirrorKind, moveFirstValue, orderLimit, other, squareCapReached, statsOf, terrainAt, unitsOf,
+  validateRally, worksForbidSquare,
   type CardKind, type DieFace, type GameState, type Side, type Unit,
 } from '../engine';
 import { occOf, type Occ } from './board';
-import { bannerValue } from './estimate';
+import { bannerValue, makeEstCtx } from './estimate';
 import { reachOf } from './evaluate';
-import { handSize, myHand, myTrack } from './view';
+import { pieceBenefits, quickCardScore } from './ordering';
+import { blindClone, handSize, isDeterminised, myHand, myTrack, oppHoldsP, originToken, trackFilled, unseenCards, type OriginToken } from './view';
 import { CARD_VALUE, ELAN_SHARE, rowValue, unitValue, type Weights } from './values';
 
 /** The Command a card played from `me`'s hand now would have (R28): the hand, including that card; track cards excluded. */
@@ -309,13 +312,17 @@ export function scoutKeepIndex(s: GameState, me: Side, cards: readonly [number, 
  */
 // approximates RR §5.3, R26 (engine: canFormSquare; its conditions are applied here except the attacker's role)
 export function handFloorPenalty(s: GameState, me: Side, drop = 0): number {
-  if (handSize(s, me) - drop >= SQUARE_MIN_HAND) return 0;
+  // the hand never holds more than the hand size less the track (a 106 shrink owed after the next draw takes the rest, S46)
+  const held = Math.min(handSize(s, me), (s.special.handSize?.[me] ?? Infinity) - trackFilled(s, me));
+  if (held - drop >= SQUARE_MIN_HAND) return 0;
   const occ = occOf(s);
   const track = myTrack(s, me);
   const slotFree = track.some((c) => c === null || c === undefined);
   const threatened: number[] = [];
   for (const u of occ.bySide[me]) {
     if (statsOf(s, u).arm !== 'infantry' || u.square !== undefined) continue;
+    // approximates RR §16.6, S34 (engine: squareCapReached): a unit the square cap shuts out never forms square, whatever the hand
+    if (squareCapReached(s, u)) continue;
     // the engine's square conditions that do not depend on the hand: a free track slot, terrain, works (R26)
     if (!slotFree || !TERRAIN_STATS[terrainAt(s, u.hex)].squareAllowed) continue;
     for (const e of occ.bySide[other(me)]) {
@@ -328,5 +335,185 @@ export function handFloorPenalty(s: GameState, me: Side, drop = 0): number {
     }
   }
   threatened.sort((x, y) => y - x);
-  return SQUARE_SAVES * threatened.slice(0, FLOOR_UNITS).reduce((a, v) => a + v, 0);
+  const saved = SQUARE_SAVES * threatened.slice(0, FLOOR_UNITS).reduce((a, v) => a + v, 0);
+  // approximates RR §16.15, S37 (engine: follyActive): under Stewart's Folly no square forms against an enemy Cavalry Charge,
+  // so a short hand costs nothing on such a turn; the chance the enemy holds one stands in for the chance it plays it (a
+  // Counter-Attack copying our Cavalry Charge, which also starts the Folly, is left out)
+  return follyRule(s, me) ? saved * (1 - oppHoldsP(s, me, 'cavalryCharge')) : saved;
+}
+
+/** Does a `cavalryChargeFolly` rule bind `side` (115)? */
+function follyRule(s: GameState, side: Side): boolean {
+  return s.scenario.sideRules.some((r) => r.kind === 'cavalryChargeFolly' && r.side === side);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Expansion #1: Guerrilla counters (RR §15.5, S15–S21, S45) and the 116 opening card (RR §15.8, S38, S43, S44)
+
+/** The value of one Guerrilla counter held, in banners. */
+export const COUNTER_VALUE = 0.3;
+/** The last counter held (or the only one gained) is worth this much more: with none left the threat is gone. */
+const LAST_COUNTER = 1.5;
+/** The chance that a spent counter cancels the card: any face but a sabre on one die (S18). */
+const CANCEL_P = 5 / 6;
+/** Fewer counters held than this: a Scout always takes one. */
+const SCOUT_TAKE_BELOW = 2;
+/** Opening values closer than this tie (then the lower Move First value wins). */
+const TIE = 1e-9;
+
+/** The value to `me` (the guerrilla side) of the counter in question: `COUNTER_VALUE`, ×1.5 for the last one held. */
+export function counterValue(s: GameState, me: Side): number {
+  if (guerrillaSide(s) !== me) return COUNTER_VALUE;
+  return guerrillaHeld(s) <= 1 ? COUNTER_VALUE * LAST_COUNTER : COUNTER_VALUE;
+}
+
+/**
+ * What the opponent of `me` gains by playing its card `card` (the effective kind just played) this turn: the quick card score
+ * from its side, on a blind clone (its hand and the deck re-dealt from what `me` cannot see). A Rally or Élan is valued with the
+ * turn's own Command (the played card counted), as the engine fixed it when the card was played.
+ *
+ * Inside a simulation (a determinised clone) the blind clone is taken from the card player's side instead: its own hand is
+ * kept (in the planner's samples that is the planning AI's real hand, never a hidden one) and the guerrilla side's sampled
+ * hand is re-dealt, so the value is the same in every sample of the decision and is worked out once (`turnMemo`). Only at the
+ * spend point (`atSpendPoint`): elsewhere it throws in development.
+ */
+export function opponentTurnValue(s: GameState, me: Side, card: CardKind, W: Weights): number {
+  const opp = other(me);
+  if (!atSpendPoint(s, me)) {
+    // the value (and the memo's key) assume the card step just played: a call elsewhere is a bug, loud in development
+    if (import.meta.env.DEV) throw new Error(`opponentTurnValue: not at the spend point (turn ${s.turn.number}, ${s.turn.phase}, active ${s.active}, asked for ${me})`);
+    return turnValue(blindClone(s, me), opp, card, W);
+  }
+  if (!isDeterminised(s)) return turnValue(blindClone(s, me), opp, card, W);
+  const root = originToken(s);
+  let byW = turnMemo.get(root);
+  if (!byW) turnMemo.set(root, (byW = new WeakMap()));
+  let memo = byW.get(W);
+  if (!memo) byW.set(W, (memo = new Map()));
+  const key = `${publicKey(s, opp)}|${card}`;
+  let v = memo.get(key);
+  if (v === undefined) memo.set(key, (v = turnValue(blindClone(s, opp), opp, card, W)));
+  return v;
+}
+
+/** `opponentTurnValue`s already worked out in the simulations of one decision, keyed by its root's token and the weights. */
+const turnMemo = new WeakMap<OriginToken, WeakMap<Weights, Map<string, number>>>();
+
+/**
+ * The spend point (RR §15.5, S17): `me`'s opponent has just played its turn card and nothing is ordered yet, no counter tried.
+ * The only position at which the guerrilla side is asked to spend.
+ */
+function atSpendPoint(s: GameState, me: Side): boolean {
+  const t = s.turn;
+  return s.active === other(me) && t.card !== null && t.phase === 'orders' && Object.keys(t.ordered).length === 0 && t.guerrilla === 'none';
+}
+
+/**
+ * Everything a blind clone seen from `side` is made of: the turn, the pieces, banners, last cards, hand sizes, the play state (`special`,
+ * counters), `side`'s own hand and track, the discard and the card in play (the unseen pool is their complement, dealt
+ * canonically).
+ */
+function publicKey(s: GameState, side: Side): string {
+  const units = s.units.map((u) => `${u.id}@${u.hex}/${u.blocks}/${u.square ?? 0}`).join(',');
+  const leaders = s.leaders.map((l) => `${l.id}@${l.hex}`).join(',');
+  const t = s.turn;
+  return [
+    `${t.number}/${s.active}/${t.phase}/${t.card}/${t.effective}/${t.command}/${t.mirrored}`, units, leaders,
+    `${s.players.top.banners}/${s.players.bottom.banners}`, `${s.lastCard.top}/${s.lastCard.bottom}`, `${handSize(s, 'top')}/${handSize(s, 'bottom')}`,
+    myHand(s, side).join(','), myTrack(s, side).join(','), s.discard.join(','), JSON.stringify(s.special),
+    JSON.stringify(s.players.top.resources), JSON.stringify(s.players.bottom.resources),
+  ].join(';');
+}
+
+/** The quick score of `opp` playing `card` now, on the blind clone `c`. */
+function turnValue(c: GameState, opp: Side, card: CardKind, W: Weights): number {
+  const ec = makeEstCtx(c, opp, W);
+  const sel = CARD_DEFS[card].select;
+  if (sel.kind === 'dice' && c.turn.phase === 'orders' && c.turn.effective === card) {
+    const command = c.turn.command;
+    if (sel.roll === 'rally') return rallyGain(c, opp, command);
+    // Élan: as `quickCardScore`, with the turn's Command
+    const top = [...pieceBenefits(c, opp, card, W, ec).values()].sort((x, y) => y - x);
+    return top.slice(0, Math.max(1, Math.round(ELAN_SHARE * command))).reduce((a, x) => a + Math.max(0, x), 0);
+  }
+  return quickCardScore(c, opp, CARD_LIST.indexOf(card), W, ec);
+}
+
+/**
+ * Spend a counter against the opponent's card `card` (RR §15.5, S17): when the chance of cancelling it (5/6) times what the
+ * card would gain the opponent (`opponentTurnValue`) reaches the counter's value. Never without a counter held.
+ */
+export function guerrillaSpend(s: GameState, me: Side, card: CardKind, W: Weights): boolean {
+  if (guerrillaSide(s) !== me || guerrillaHeld(s) < 1) return false;
+  return CANCEL_P * opponentTurnValue(s, me, card, W) >= counterValue(s, me);
+}
+
+/**
+ * What a Scout's two-and-keep-one draw is worth over a single draw (S20, §12.4): E[the better keep value of two cards] less
+ * E[the keep value of one], over the cards `me` cannot see (the deck is drawn from them; which are in the opponent's hand is
+ * unknown, so every unseen card counts alike).
+ */
+export function scoutKeepGain(s: GameState, me: Side, W: Weights): number {
+  const pool = unseenCards(s, me);
+  const n = pool.length;
+  if (n < 2) return 0;
+  const occ = occOf(s);
+  const byKind = new Map<CardKind, number>();
+  const vals = pool.map((c) => {
+    const k = cardKind(c);
+    let v = byKind.get(k);
+    if (v === undefined) byKind.set(k, (v = keepValue(s, me, c, W, occ)));
+    return v;
+  }).sort((x, y) => y - x);
+  // the i-th best (0-based) is the better of a pair when the other card is one of the n − 1 − i below it
+  let best = 0;
+  let mean = 0;
+  for (let i = 0; i < n; i++) {
+    best += (vals[i] * 2 * (n - 1 - i)) / (n * (n - 1));
+    mean += vals[i] / n;
+  }
+  return best - mean;
+}
+
+/**
+ * Take a counter in the Draw phase of our Scout, drawing one card instead of two and keeping one (S20): always while fewer
+ * than two are held, otherwise when the counter is worth at least the Scout's keep-one gain. Never with an empty pool.
+ */
+export function guerrillaScoutTake(s: GameState, me: Side, W: Weights): boolean {
+  if (guerrillaSide(s) !== me || guerrillaPool(s) < 1) return false;
+  if (guerrillaHeld(s) < SCOUT_TAKE_BELOW) return true;
+  return counterValue(s, me) >= scoutKeepGain(s, me, W);
+}
+
+/**
+ * The opening card `side` must play on its first turn at 116 (RR §15.8, S38): its revealed pick until that turn is played, else
+ * null (no reveal, no pick, or the turn is done). Public once revealed.
+ */
+export function openingCard(s: GameState, side: Side): number | null {
+  const mf = s.special.moveFirst;
+  return mf && mf.done && s.special.turnsDone[side] === 0 ? mf.committed[side] : null;
+}
+
+/**
+ * The opening card to pick at 116 (RR §15.8, S38): the option with the highest opening value (the quick card score of playing
+ * it on turn 1, which the pick binds us to), ties to the lower Move First value (moving first), then the lower id. Scored on a
+ * blind clone, so nothing of the opponent's (its hand, or a pick it may have made) is read.
+ */
+export function moveFirstPick(s: GameState, me: Side, options: readonly number[], W: Weights): number {
+  const c = blindClone(s, me);
+  const ec = makeEstCtx(c, me, W);
+  const byKind = new Map<CardKind, number>();
+  const score = (card: number): number => {
+    const k = cardKind(card);
+    let v = byKind.get(k);
+    if (v === undefined) byKind.set(k, (v = quickCardScore(c, me, card, W, ec)));
+    return v;
+  };
+  const order = (card: number): number => (MOVE_FIRST_VALUE[cardKind(card)] === undefined ? Infinity : moveFirstValue(c, me, card));
+  let best = options[0];
+  for (const card of options.slice(1)) {
+    const d = score(card) - score(best);
+    if (d > TIE || (Math.abs(d) <= TIE && (order(card) < order(best) || (order(card) === order(best) && card < best)))) best = card;
+  }
+  return best;
 }

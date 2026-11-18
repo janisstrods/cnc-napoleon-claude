@@ -8,7 +8,8 @@
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
-const FIELDS = new Set(['deck', 'hand', 'squareTrack', 'rng', 'rngCalls']);
+// `picks`: a side's Move First pick (special.moveFirst.picks), secret until the reveal (RR §15.8, S44); view.ts redacts it
+const FIELDS = new Set(['deck', 'hand', 'squareTrack', 'rng', 'rngCalls', 'picks']);
 /** Identifiers that copy or replay a state with its real hidden data (GameDriver's constructor clones deck and rng). */
 const BANNED = new Set(['cloneState', 'structuredClone', 'GameDriver']);
 
@@ -51,7 +52,7 @@ const VIEW = '../../src/ai/view.ts';
 const files = import.meta.glob('../../src/ai/**/*.{ts,tsx,js,mjs}', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
 
 describe('hidden information', () => {
-  it('only view.ts touches deck, hand, squareTrack, rng, rngCalls, cloneState, structuredClone, JSON.parse or GameDriver', () => {
+  it('only view.ts touches deck, hand, squareTrack, rng, rngCalls, moveFirst.picks, cloneState, structuredClone, JSON.parse or GameDriver', () => {
     const names = Object.keys(files).filter((f) => f !== VIEW);
     expect(names.length).toBeGreaterThan(3);
     expect(Object.keys(files)).toContain(VIEW);
@@ -74,6 +75,8 @@ describe('hidden information', () => {
       'nested destructuring': 'const { players: { top: { hand: hh } } } = s;',
       'multi-line destructuring': 'const {\n  discard,\n  rngCalls,\n} = s;',
       'renamed destructuring': 'const { rng: r } = s;',
+      'move first pick': 'const p = s.special.moveFirst?.picks[side];',
+      'move first picks destructured': 'const { picks } = s.special.moveFirst!;',
       'destructuring assignment': 'let hand; ({ hand } = p);',
       cloneState: 'const c = cloneState(s);',
       structuredClone: 'const c = structuredClone(s);',
