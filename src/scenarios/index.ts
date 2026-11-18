@@ -8,7 +8,7 @@ export type { Expansion };
 
 /**
  * A scenario file in src/scenarios/data: the `ScenarioSetup` fields (terrain, rivers, units, leaders, objectives, sideRules,
- * unitOverrides) plus the picker's `year`, its box (`expansion`, left out for the base game) and `hidden`. Any other top-level
+ * unitOverrides, moveFirst) plus the picker's `year`, its box (`expansion`, left out for the base game) and `hidden`. Any other top-level
  * field (`grid`, `notes`, copied rule text) is ignored.
  */
 export interface ScenarioJson extends ScenarioSetup {
@@ -48,6 +48,7 @@ export function scenarioFromJson(j: ScenarioJson): ScenarioInfo {
   if (j.objectives !== undefined) setup.objectives = structuredClone(j.objectives);
   if (j.sideRules !== undefined) setup.sideRules = structuredClone(j.sideRules);
   if (j.unitOverrides !== undefined) setup.unitOverrides = structuredClone(j.unitOverrides);
+  if (j.moveFirst !== undefined) setup.moveFirst = j.moveFirst;
   return {
     id: j.id,
     name: j.name,

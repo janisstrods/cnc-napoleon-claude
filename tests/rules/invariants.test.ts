@@ -8,14 +8,18 @@ import { scenarioById } from '../../src/scenarios';
 import { lcg } from '../support/rng';
 import { violations } from './helpers';
 
-/** Event kinds that may carry a card id (the only two the UI may show). Every other event must carry none. */
-const CARD_EVENTS: ReadonlySet<GameEvent['t']> = new Set(['cardPlayed', 'discarded']);
+/** Event kinds that may carry a card id (the only ones the UI may show; moveFirst reveals both picks). Every other event must carry none. */
+const CARD_EVENTS: ReadonlySet<GameEvent['t']> = new Set(['cardPlayed', 'discarded', 'moveFirst']);
 
-/** The victory invariant (6): the winner has the banners, and nobody else has them while the battle goes on. */
+/**
+ * The victory invariant (6): the winner has the banners (or won by a `suddenDeath` objective, whose text is the reason), and
+ * nobody else has them while the battle goes on.
+ */
 function victoryViolations(s: GameState, pending: boolean): string[] {
   const out: string[] = [];
   if (s.winner) {
-    if (s.winner !== 'draw' && bannerTotal(s, s.winner) < s.bannersToWin) out.push(`${s.winner} won with ${bannerTotal(s, s.winner)} of ${s.bannersToWin} banners`);
+    const suddenDeath = s.scenario.objectives.some((o) => o.kind === 'suddenDeath' && o.side === s.winner && o.text === s.winReason);
+    if (s.winner !== 'draw' && !suddenDeath && bannerTotal(s, s.winner) < s.bannersToWin) out.push(`${s.winner} won with ${bannerTotal(s, s.winner)} of ${s.bannersToWin} banners`);
     if (pending) out.push('a decision is pending after the victory');
   } else {
     for (const side of SIDES) if (bannerTotal(s, side) >= s.bannersToWin) out.push(`${side} has ${bannerTotal(s, side)} banners but no winner`);

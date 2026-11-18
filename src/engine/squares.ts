@@ -16,24 +16,29 @@ function freeSlot(s: GameState, side: Side): number {
   return s.players[side].squareTrack.findIndex((c) => c === null || c === undefined);
 }
 
-/** May `target` form square against `attacker`'s melee (R26 a, b, c, g; d-f by the role and the single defend decision)? */
-export function canFormSquare(s: GameState, target: Unit, attacker: Unit, m: MeleeCtx): boolean {
+/** May `target` form square against `attacker`'s melee (R26 a, b, c, g; d-f by the single defend decision)? */
+export function canFormSquare(s: GameState, target: Unit, attacker: Unit, _m: MeleeCtx): boolean {
   if (statsOf(s, target).arm !== 'infantry' || target.square !== undefined) return false;
   if (statsOf(s, attacker).arm !== 'cavalry') return false;
-  if (m.role !== 'attack' && m.role !== 'bonus') return false;
   if (s.players[target.side].hand.length < SQUARE_MIN_HAND) return false;
   if (!TERRAIN_STATS[terrainAt(s, target.hex)].squareAllowed) return false;
   if (worksForbidSquare(s, target, attacker.hex)) return false;
   return freeSlot(s, target.side) >= 0;
 }
 
-/** Form square: a random hand card goes face down on the lowest free slot (R27); the event names no card. */
+/**
+ * Form square: a random hand card goes face down on the lowest free slot (R27); the event names no card. The unit joins the
+ * side's `squared` record once. Before the side's first turn ends, its committed Move First card is never the one taken (S38).
+ */
 export function formSquare(s: GameState, ctx: FlowCtx, u: Unit): void {
   const p = s.players[u.side];
   const i = freeSlot(s, u.side);
-  const card = p.hand.splice(randInt(s, p.hand.length), 1)[0];
+  const committed = s.special.turnsDone[u.side] === 0 ? (s.special.moveFirst?.committed[u.side] ?? null) : null;
+  const eligible = p.hand.map((_, k) => k).filter((k) => p.hand[k] !== committed);
+  const card = p.hand.splice(eligible[randInt(s, eligible.length)], 1)[0];
   p.squareTrack[i] = card;
   u.square = (i + 1) as SquareSlot;
+  if (!s.special.squared[u.side].includes(u.id)) s.special.squared[u.side].push(u.id);
   ctx.emit({ t: 'squareFormed', id: u.id, slot: u.square });
 }
 

@@ -64,13 +64,21 @@ const SAMPLES: Refusals = {
     d: { kind: 'shortSupplyHex', side: 'bottom', unit: 'u1', options: [H(8, 6)] },
     bad: [{ kind: 'endMove' }, { kind: 'hex', hex: H(0, 0) }, { kind: 'hex', hex: null }], ok: { kind: 'hex', hex: H(8, 6) },
   },
+  guerrilla: {
+    d: { kind: 'guerrilla', side: 'bottom', mode: 'spend', card: 'attackC', held: 1, pool: 5 },
+    bad: [{ kind: 'endMove' }, { kind: 'playCard', card: s.players.bottom.hand[0] }], ok: { kind: 'yesno', yes: true },
+  },
+  moveFirst: {
+    d: { kind: 'moveFirst', side: 'bottom', options: [s.players.bottom.hand[0]] },
+    bad: [{ kind: 'endMove' }, { kind: 'yesno', yes: true }, { kind: 'playCard', card: s.players.bottom.hand[1] }], ok: { kind: 'playCard', card: s.players.bottom.hand[0] },
+  },
 };
 
 describe('answerError', () => {
-  it('has a sample for each of the 18 decision kinds', () => {
+  it('has a sample for each of the 20 decision kinds', () => {
     expect(Object.keys(SAMPLES).sort()).toEqual([
       'advance', 'battle', 'bonusMelee', 'breakthroughExtra', 'combinedArms', 'defend', 'elan', 'ignoreFlags', 'leaderRetreat', 'leaveSquare',
-      'move', 'orders', 'playCard', 'rally', 'retreat', 'scoutKeep', 'shortSupplyHex', 'shortSupplyTarget',
+      'move', 'orders', 'playCard', 'rally', 'retreat', 'scoutKeep', 'shortSupplyHex', 'shortSupplyTarget', 'guerrilla', 'moveFirst',
     ].sort());
   });
 

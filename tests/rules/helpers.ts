@@ -193,7 +193,9 @@ export function endTurn(d: GameDriver): void {
       case 'battle': must(d, { kind: 'endBattle' }); break;
       case 'orders': must(d, { kind: 'orders', pieces: [] }); break;
       case 'leaveSquare':
-      case 'advance': must(d, { kind: 'yesno', yes: false }); break;
+      case 'advance':
+      case 'guerrilla': must(d, { kind: 'yesno', yes: false }); break;
+      case 'moveFirst': must(d, { kind: 'playCard', card: p.options[0] }); break;
       case 'combinedArms': must(d, { kind: 'select', ids: [] }); break;
       case 'defend': must(d, { kind: 'defend', choice: 'stand' }); break;
       case 'ignoreFlags': must(d, { kind: 'ignoreFlags', count: 0 }); break;
@@ -289,11 +291,11 @@ export function violations(s: GameState, atPlayCard: boolean): string[] {
   const counts = new Map<number, number>();
   for (const c of all) counts.set(c, (counts.get(c) ?? 0) + 1);
   if (all.length !== CARD_LIST.length || counts.size !== CARD_LIST.length || [...counts.values()].some((k) => k !== 1)) out.push(`cards: ${all.length} held, ${counts.size} distinct`);
-  // 2. hand plus filled track slots is the hand size at every card decision
+  // 2. hand plus filled track slots is the hand size (special.handSize: the scenario's, until a shrinking hand, S33) at every card decision
   if (atPlayCard) {
     for (const side of SIDES) {
       const p = s.players[side];
-      if (p.hand.length + p.squareTrack.filter((c) => c !== null).length !== p.cards) out.push(`${side} holds ${p.hand.length} cards`);
+      if (p.hand.length + p.squareTrack.filter((c) => c !== null).length !== s.special.handSize[side]) out.push(`${side} holds ${p.hand.length} cards`);
     }
   }
   // 3. one unit and one leader per hex; no leader on an enemy; every piece on a board hex passable for it
