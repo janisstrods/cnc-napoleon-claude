@@ -1,7 +1,7 @@
 // Rules: RR §9.6 (design/rules-reference.md)
 import { describe, expect, it } from 'vitest';
 import { answerError, battleTargets, randomAnswer, type CardKind, type DieFace, type GameDriver, type GameEvent } from '../../src/engine';
-import { H, attack, build, endMoves, ev, forceDice, must, n, play, toBattle, u, type Pos } from './helpers';
+import { H, attack, build, endMoves, ev, forceDice, giveCard, must, n, play, toBattle, u, type Pos } from './helpers';
 
 const PAD = n('artillery', 60); // an artillery face never hits infantry or cavalry
 type Unit1 = NonNullable<Pos['units']>[number];
@@ -201,6 +201,35 @@ describe('Combined Arms (§9.6)', () => {
       must(d, { kind: 'hex', hex: H(2, 6) });
       expect(d.pending?.kind).not.toBe('combinedArms');
     });
+  });
+
+  it('the defend decision carries the joined guns, [] when they are declined (R40: declared before the reaction)', () => {
+    for (const ids of [['u3'], []]) {
+      const d = toBattle(build(P([6, 5])), 'attackC', ['u1', 'u3']);
+      giveCard(d.state, 'top', 'firstStrike'); // so the defender has a choice to make
+      must(d, { kind: 'attack', unit: 'u1', target: H(4, 6) });
+      must(d, { kind: 'select', ids });
+      expect(d.pending).toMatchObject({ kind: 'defend', side: 'top', attacker: 'u1', target: 'u2', options: ['stand', 'firstStrike'], artillery: ids });
+    }
+  });
+
+  it('on a bonus melee the defend decision carries only the guns of that melee (R41)', () => {
+    // u1 BR/HC breaks through the worn FR/LN at (4,6) with u3; u5 is declined there and joins the bonus melee on (2,6)
+    const s = build({ units: [bot('BR/HC', [5, 6]), top('FR/LN', [4, 6], { blocks: 1 }), bot('BR/FA', [3, 5]), top('FR/LN', [2, 6]), bot('BR/FA', [3, 7])] });
+    const d = toBattle(s, 'attackC', ['u1', 'u3', 'u5']);
+    forceDice([...n('infantry', 10), ...PAD]);
+    must(d, { kind: 'attack', unit: 'u1', target: H(4, 6) });
+    expect(d.pending).toMatchObject({ kind: 'combinedArms', options: ['u3', 'u5'] });
+    must(d, { kind: 'select', ids: ['u3'] });
+    expect(d.pending).toMatchObject({ kind: 'defend', bonus: false, artillery: ['u3'] }); // infantry may form square against cavalry
+    must(d, { kind: 'defend', choice: 'stand' });
+    must(d, { kind: 'yesno', yes: true });
+    must(d, { kind: 'hex', hex: H(3, 6) });
+    must(d, { kind: 'hex', hex: H(2, 6) });
+    expect(d.pending).toMatchObject({ kind: 'combinedArms', target: H(2, 6), options: ['u5'] });
+    must(d, { kind: 'select', ids: ['u5'] });
+    expect(d.pending).toMatchObject({ kind: 'defend', bonus: true, target: 'u4', artillery: ['u5'] });
+    forceDice([]);
   });
 
   it('Cold Steel: a gun adjacent to the same target joins and both get +1 (R61)', () => {

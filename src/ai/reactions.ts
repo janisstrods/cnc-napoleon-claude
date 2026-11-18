@@ -57,7 +57,8 @@ export function squareCost(s: GameState, unit: Unit, occ: Occ): number {
 /**
  * The cost of playing First Strike: the card's keep value (a mean card, `CARD_VALUE`, plus `W.firstStrikeReserve`) less the
  * replacement its owner draws at the end of that turn (R63, R78), a card of mean value: unlike a square's card, it leaves
- * the hand no shorter by the defender's next turn, so only the premium of holding First Strike is lost.
+ * the hand no shorter by the defender's next turn, so only the premium of holding First Strike is lost. Not priced (Task 11):
+ * until that draw the hand is one card short, which can take a later square this turn below `SQUARE_MIN_HAND`.
  */
 export function firstStrikeCost(W: Weights): number {
   const keep = CARD_VALUE + W.firstStrikeReserve;
@@ -122,9 +123,8 @@ export function reactionOutcomes(s: GameState, m: MeleeCtx, ec: EstCtx): Reactio
 
 /**
  * The value of each offered reaction to the defender of `d` (−Infinity for one not offered), from the defender's side:
- * minus the attacker's `ev` of that branch, so a square's cost and a First Strike card count against it. The `defend`
- * decision does not say which Combined Arms guns joined, so they are taken as `bestGuns` would have chosen them at the
- * declaration (`declaredGuns`; the eligible guns are public, ruling M-8).
+ * minus the attacker's `ev` of that branch, so a square's cost and a First Strike card count against it. The Combined Arms
+ * guns are the ones the decision says joined (`d.artillery`: declared before the reaction, R40, and public).
  */
 export function defendValue(s: GameState, d: Extract<Decision, { kind: 'defend' }>, W: Weights): Record<DefendChoice, number> {
   const out: Record<DefendChoice, number> = { stand: -Infinity, retireReform: -Infinity, formSquare: -Infinity, firstStrike: -Infinity };
@@ -135,8 +135,7 @@ export function defendValue(s: GameState, d: Extract<Decision, { kind: 'defend' 
   const moved = s.turn.ordered[d.attacker]?.moved ?? 0;
   // the defender's own context (its side is the viewer, so the attacker's reactions in a bonus prospect are its own units')
   const ec: EstCtx = { ...makeEstCtx(s, d.side, W), moved, role };
-  const artillery = declaredGuns(s, d, attacker, defender, ec);
-  const m: MeleeCtx = { attacker: d.attacker, target: d.target, targetHex: defender.hex, role, artillery, reaction: null, declaredMoved: moved };
+  const m: MeleeCtx = { attacker: d.attacker, target: d.target, targetHex: defender.hex, role, artillery: [...d.artillery], reaction: null, declaredMoved: moved };
   const branch = branchesOf(s, attacker, defender, m, ec);
   for (const c of d.options) out[c] = -branch(c).ev;
   return out;
@@ -157,16 +156,17 @@ function ownShot(s: GameState, g: Unit, ec: EstCtx): number {
 }
 
 /**
- * Greedy Combined Arms choice: add the candidate gun (the engine's `combinedArmsCandidates`, asked on `pool`) that raises the
- * melee's value to the attacker (`evOf`, given the guns) most net of the gun's own shot (asked on `pool` too), while that
- * gain is positive. When the melee unit has no dice of its own the engine requires a gun (R15), so the best one joins even
+ * Greedy Combined Arms choice: add the candidate gun (the engine's `combinedArmsCandidates`) that raises the melee's value to
+ * the attacker (`evOf`, given the guns) most net of the gun's own shot, while that gain is positive. When the melee unit has no dice of its own the engine requires a gun (R15), so the best one joins even
  * at a loss.
  */
-function chooseGuns(s: GameState, pool: GameState, unit: Unit, target: HexId, ec: EstCtx, evOf: (guns: string[]) => number): string[] {
+function chooseGuns(s: GameState, unit: Unit, target: HexId, ec: EstCtx, evOf: (guns: string[]) => number): string[] {
   const foe = ec.occ.unit[target];
   if (!foe) return []; // no Combined Arms against a lone leader (R76)
   const role = ec.role === 'bonus' ? 'bonus' : 'attack';
-  const options = combinedArmsCandidates(pool, unit, foe, role);
+  // guns already joined to this unit's first melee (`ec.spentGuns`, a bonus prospect) are spent: the engine has not yet
+  // marked them on the estimate's state
+  const options = combinedArmsCandidates(s, unit, foe, role).filter((id) => !ec.spentGuns?.includes(id));
   if (options.length === 0) return [];
   // approximates RR §9.6, R15 (engine: combinedArmsStep's `required`): no dice of its own, so at least one gun must join
   const required = meleeDice(s, unit, foe, { role, moved: ec.moved, declared: true }) < 1;
@@ -179,9 +179,9 @@ function chooseGuns(s: GameState, pool: GameState, unit: Unit, target: HexId, ec
     let pickEv = 0;
     for (const id of options) {
       if (chosen.includes(id)) continue;
-      const g = unitById(pool, id);
+      const g = unitById(s, id);
       if (!g) continue;
-      if (!shot.has(id)) shot.set(id, ownShot(pool, g, ec));
+      if (!shot.has(id)) shot.set(id, ownShot(s, g, ec));
       const e = evOf([...chosen, id]);
       const gain = e - base - shot.get(id)!;
       if (gain > pickGain) {
@@ -199,34 +199,5 @@ function chooseGuns(s: GameState, pool: GameState, unit: Unit, target: HexId, ec
 
 /** The Combined Arms guns `unit` should add to its melee on `target`: each one only while it raises `ev` net of its own shot. */
 export function bestGuns(s: GameState, unit: Unit, target: HexId, ec: EstCtx): string[] {
-  return chooseGuns(s, s, unit, target, ec, (guns) => meleeWithGuns(s, unit, target, guns, ec).ev);
-}
-
-/**
- * The guns the attacker of the declared melee `d` is taken to have joined (for `defendValue`, `ec` the defender's context):
- * `bestGuns` as at the declaration (ruling M-8). Two things differ from asking `bestGuns` on the defend decision's state:
- * - the engine has already marked the joined guns as having battled (combinedArmsStep), so the candidates and their own
- *   shots are asked on a view of the turn in which the attacker's ordered guns have not battled;
- * - the attacker chose without seeing the defender's hand, so each gun set is valued against the defender's reactions
- *   other than First Strike (the worst for the attacker of them), not against the defender's actual choice.
- */
-// approximates RR §9.6 (engine: combinedArmsStep, whose choice the defend decision does not carry): a gun that battled
-// earlier in the turn is also taken as free, so it may be counted as joining when it could not; the attacker's chance of
-// meeting a First Strike (about 0.1–0.2) is left out of its choice
-function declaredGuns(s: GameState, d: Extract<Decision, { kind: 'defend' }>, unit: Unit, defender: Unit, ec: EstCtx): string[] {
-  const ordered = { ...s.turn.ordered };
-  for (const [id, op] of Object.entries(ordered)) {
-    const g = op.battled && !op.isLeader ? unitById(s, id) : undefined;
-    if (g && g.side === unit.side && statsOf(s, g).arm === 'artillery') ordered[id] = { ...op, battled: false };
-  }
-  // a turn-only view (players, deck and RNG are those of `s`): only for the engine's gun queries, never mutated or driven
-  const asDeclared: GameState = { ...s, turn: { ...s.turn, ordered } };
-  const seen = d.options.filter((c) => c !== 'firstStrike');
-  const role = d.bonus ? 'bonus' : 'attack';
-  const evOf = (artillery: string[]): number => {
-    const m: MeleeCtx = { attacker: unit.id, target: defender.id, targetHex: defender.hex, role, artillery, reaction: null, declaredMoved: ec.moved };
-    const branch = branchesOf(s, unit, defender, m, ec);
-    return Math.min(...seen.map((c) => branch(c).ev));
-  };
-  return chooseGuns(s, asDeclared, unit, defender.hex, ec, evOf);
+  return chooseGuns(s, unit, target, ec, (guns) => meleeWithGuns(s, unit, target, guns, ec).ev);
 }

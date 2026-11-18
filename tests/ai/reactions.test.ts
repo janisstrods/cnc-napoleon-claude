@@ -464,28 +464,42 @@ describe('First Strike', () => {
     expect(not).toBeGreaterThan(0);
   });
 
-  it('the AI defender prices First Strike against the declared Combined Arms guns (M-8: bestGuns as at the declaration)', () => {
-    // BR/LN attacks FR/LN (top, holding First Strike) with its gun BR/FA at range 2: the gun joins (bestGuns says so)
+  it('the AI defender prices its reactions against the guns the defend decision says joined (M-8: d.artillery)', () => {
+    // BR/LN attacks FR/LN (top, holding First Strike) with its gun BR/FA at range 2
     const units: Units = [bot('BR/LN', [5, 6]), top('FR/LN', [4, 6]), bot('BR/FA', [6, 5])];
     const make = kit(units, { first: 'bottom' }, (s) => void giveCard(s, 'top', 'firstStrike'), ['u1', 'u3']);
-    const s0 = make(1).state;
-    expect(bestGuns(s0, unit(s0, 'u1'), H(4, 6), ctx(s0, 'bottom'))).toEqual(['u3']);
-    const d = make(1);
-    must(d, { kind: 'attack', unit: 'u1', target: H(4, 6) });
-    must(d, { kind: 'select', ids: ['u3'] });
-    expect(d.pending?.kind).toBe('defend');
-    const dec = d.pending as Extract<Decision, { kind: 'defend' }>;
-    const s = d.state;
-    // the joined gun is already spent: asked on the live state, bestGuns would no longer see it
-    expect(s.turn.ordered.u3.battled).toBe(true);
-    expect(bestGuns(s, unit(s, 'u1'), H(4, 6), ctx(s, 'top'))).toEqual([]);
-    const v = defendValue(s, dec, NEUTRAL_W);
-    const ec: EstCtx = { ...makeEstCtx(s, 'top', NEUTRAL_W), moved: 0, role: 'attack' };
-    for (const c of ['stand', 'firstStrike'] as const) {
-      const withGun = meleeBranch(s, unit(s, 'u1'), unit(s, 'u2'), mOf(s, 'u1', H(4, 6), 'attack', ['u3']), c, ec).ev;
-      const noGun = meleeBranch(s, unit(s, 'u1'), unit(s, 'u2'), mOf(s, 'u1', H(4, 6)), c, ec).ev;
-      expect(v[c]).toBeCloseTo(-withGun, 10);
-      expect(withGun).toBeGreaterThan(noGun + 0.1);
+    /** The defend decision after `before` (e.g. the gun fires first) and the attack with `guns`. */
+    const toDec = (guns: string[] | null, before?: (d: GameDriver) => void) => {
+      const d = make(1);
+      before?.(d);
+      must(d, { kind: 'attack', unit: 'u1', target: H(4, 6) });
+      if (guns) must(d, { kind: 'select', ids: guns });
+      expect(d.pending?.kind).toBe('defend');
+      return { s: d.state, dec: d.pending as Extract<Decision, { kind: 'defend' }> };
+    };
+    const values = (s: GameState, guns: string[]) => {
+      const ec: EstCtx = { ...makeEstCtx(s, 'top', NEUTRAL_W), moved: 0, role: 'attack' };
+      return (c: DefendChoice): number => meleeBranch(s, unit(s, 'u1'), unit(s, 'u2'), mOf(s, 'u1', H(4, 6), 'attack', guns), c, ec).ev;
+    };
+    const cases: { label: string; guns: string[] | null; before?: (d: GameDriver) => void; priced: string[]; spent: boolean }[] = [
+      { label: 'the gun joined', guns: ['u3'], priced: ['u3'], spent: true },
+      { label: 'the gun was declined', guns: [], priced: [], spent: false },
+      // the gun fired at the target first (every die misses), so it cannot join: no combinedArms decision at all
+      { label: 'the gun fired earlier', guns: null, before: (d) => { forceDice(n('artillery', 3)); must(d, { kind: 'attack', unit: 'u3', target: H(4, 6) }); forceDice([]); }, priced: [], spent: true },
+    ];
+    for (const c of cases) {
+      const { s, dec } = toDec(c.guns, c.before);
+      expect(dec.artillery, c.label).toEqual(c.priced);
+      // a joined gun and one that fired earlier are both spent: only the decision tells them apart
+      expect(s.turn.ordered.u3.battled, c.label).toBe(c.spent);
+      const v = defendValue(s, dec, NEUTRAL_W);
+      const priced = values(s, c.priced);
+      const withGun = values(s, ['u3']);
+      for (const choice of ['stand', 'firstStrike'] as const) {
+        expect(v[choice], `${c.label}: ${choice}`).toBeCloseTo(-priced(choice), 10);
+        // the gun is worth pricing correctly: it moves each value by more than 0.1
+        if (c.priced.length === 0) expect(withGun(choice), `${c.label}: ${choice}`).toBeGreaterThan(priced(choice) + 0.1);
+      }
     }
   });
 });
@@ -572,6 +586,44 @@ describe('Combined Arms', () => {
       expect(always - o.expHits, c.label).toBeGreaterThan(6 * seMean(t.hits.sd));
       expect(o.expHits).toBeGreaterThan(noGun.expHits);
       expect(o.backHits).toBeCloseTo(noGun.backHits, 12); // the first roll is aimed at the melee unit only
+    }
+  });
+});
+
+describe('Combined Arms: spent guns and bounce flags', () => {
+  it('a gun joined to the first melee is spent: the bonus-melee prospect does not add it again (M-3)', () => {
+    // BR/HC with BR/FA (2,4) attacks a worn FR/LN; after breaking through, FR/LN (4,7) is a bonus target the gun could join
+    const units: Units = [bot('BR/HC', [5, 6]), top('FR/LN', [4, 6], { blocks: 2 }), bot('BR/FA', [2, 4]), top('FR/LN', [4, 7])];
+    const make = (prep?: (s: GameState) => void) => kit(units, { first: 'bottom', topCards: 2 }, prep, ['u1', 'u3']);
+    const s = make()(1).state;
+    const ec = ctx(s, 'bottom');
+    const moved: Unit = { ...unit(s, 'u1'), hex: H(4, 6) };
+    expect(bestGuns(s, moved, H(4, 7), { ...ec, role: 'bonus' })).toEqual(['u3']);
+    expect(bestGuns(s, moved, H(4, 7), { ...ec, role: 'bonus', spentGuns: ['u3'] })).toEqual([]);
+    const spent = takeGround(s, unit(s, 'u1'), H(4, 6), { ...ec, spentGuns: ['u3'] }).value;
+    expect(spent).toBeLessThan(takeGround(s, unit(s, 'u1'), H(4, 6), ec).value - 0.1);
+    // a melee with the gun prices its follow-up with the gun spent (the stuck attacker has no follow-up at all)
+    const stuck = make((st) => void (st.turn.ordered.u1.stopEntered = true))(1).state;
+    const free = meleeBranch(s, unit(s, 'u1'), unit(s, 'u2'), mOf(s, 'u1', H(4, 6), 'attack', ['u3']), 'stand', ec);
+    const held = meleeBranch(stuck, unit(stuck, 'u1'), unit(stuck, 'u2'), mOf(stuck, 'u1', H(4, 6), 'attack', ['u3']), 'stand', ctx(stuck, 'bottom'));
+    expect(free.ev - held.ev).toBeCloseTo(free.pVacate * spent, 10);
+  });
+
+  it("a square attacking cavalry rolls bounce flags, its gun's flags included (R30, engine cross-check)", () => {
+    // BR/LN in square with BR/FA attacks FR/LC, which two friends support (it could ignore an ordinary flag)
+    const units: Units = [bot('BR/LN', [5, 6], { square: 1 }), top('FR/LC', [4, 6], { blocks: 3 }), bot('BR/FA', [6, 5]), top('FR/LN', [4, 5]), top('FR/LN', [4, 7])];
+    const make = kit(units, { first: 'bottom' }, undefined, ['u1', 'u3']);
+    const s = make(1).state;
+    const ec = ctx(s, 'bottom');
+    for (const guns of [[], ['u3']]) {
+      const o = meleeBranch(s, unit(s, 'u1'), unit(s, 'u2'), mOf(s, 'u1', H(4, 6), 'attack', guns), 'stand', ec);
+      const t = engineTrials(make, (d) => attack(d, 'u1', H(4, 6), { guns }), TRIALS);
+      const label = `square attacks cavalry${guns.length ? ' with a gun' : ''}`;
+      near(`${label}: hits`, o.expHits, t.meanHits, seMean(t.sdHits));
+      near(`${label}: pRetreat`, o.pRetreat, t.pRetreat, se(o.pRetreat));
+      near(`${label}: pElim`, o.pElim, t.pElim, se(o.pElim));
+      near(`${label}: back`, o.backHits, t.meanBack, seMean(t.sdBack));
+      expect(o.pRetreat, label).toBeGreaterThan(0.1);
     }
   });
 });

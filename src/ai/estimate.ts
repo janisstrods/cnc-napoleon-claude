@@ -36,6 +36,8 @@ interface EstBase {
   /** Hexes the attacker moved this turn (the engine's `DiceCtx.moved`). */
   moved: number;
   role: StrikeRole;
+  /** Guns already joined to the attacker's first melee: spent, so its bonus-melee prospect may not add them again (R4). */
+  spentGuns?: readonly string[];
 }
 
 /**
@@ -385,11 +387,16 @@ function combat(s: GameState, ec: EstCtx, attacker: Unit, defender: Unit, m: Mel
   const byDice = new Map<number, Strike>();
   for (const [r, q] of pre) {
     const a = r === attacker.blocks ? attacker : { ...attacker, blocks: r };
-    const dice = Math.max(0, meleeDice(s, a, defender, { role: m.role, moved: ec.moved, declared: true })) + guns;
-    let g = first ? byDice.get(dice) : undefined;
+    const own = Math.max(0, meleeDice(s, a, defender, { role: m.role, moved: ec.moved, declared: true }));
+    const dice = own + guns;
+    // approximates RR §10.3, R30 (engine: meleeAttack's bounce): a square with a die of its own attacking cavalry rolls
+    // bounce flags, its guns' flags included, none of which may be ignored
+    const bounce = own >= 1 && attacker.square !== undefined && dst.arm === 'cavalry';
+    const key = dice * 2 + (bounce ? 1 : 0);
+    let g = first ? byDice.get(key) : undefined;
     if (!g) {
-      g = strike(s, ec, defender, a, dice, odds, 0, attacker.side);
-      byDice.set(dice, g);
+      g = strike(s, ec, defender, a, dice, odds, 0, attacker.side, bounce);
+      byDice.set(key, g);
     }
     value += q * g.value;
     expHits += q * g.expHits;
@@ -429,7 +436,7 @@ function retire(s: GameState, ec: EstCtx, attacker: Unit, defender: Unit, m: Mel
 export function branchesOf(s: GameState, attacker: Unit, defender: Unit, m: MeleeCtx, ec: EstCtx): (c: DefendChoice) => Outcome {
   const rc = ec.role === m.role ? ec : { ...ec, role: m.role };
   let adv: number | undefined;
-  const advance = (): number => (adv ??= takeGround(s, attacker, m.targetHex, rc).value);
+  const advance = (): number => (adv ??= takeGround(s, attacker, m.targetHex, m.artillery.length ? { ...rc, spentGuns: m.artillery } : rc).value);
   const memo = new Map<DefendChoice, Outcome>();
   return (c) => {
     const known = memo.get(c);

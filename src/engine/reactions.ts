@@ -39,7 +39,7 @@ export function* defenderReaction(s: GameState, ctx: FlowCtx, m: MeleeCtx): Gen<
   const options = defendOptions(s, m);
   if (options.length <= 1) return options[0];
   const target = unitById(s, m.target)!;
-  const a = yield* ask(s, ctx, { kind: 'defend', side: target.side, attacker: m.attacker, target: m.target, options, bonus: m.role === 'bonus' });
+  const a = yield* ask(s, ctx, { kind: 'defend', side: target.side, attacker: m.attacker, target: m.target, options, bonus: m.role === 'bonus', artillery: [...m.artillery] });
   return (a as { choice: DefendChoice }).choice;
 }
 

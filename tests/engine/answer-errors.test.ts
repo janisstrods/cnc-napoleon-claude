@@ -40,7 +40,7 @@ const SAMPLES: Refusals = {
     bad: [{ kind: 'endMove' }, { kind: 'select', ids: ['u9'] }, { kind: 'select', ids: ['u3', 'u3'] }, { kind: 'select', ids: [] }],
     ok: { kind: 'select', ids: ['u3'] },
   },
-  defend: { d: { kind: 'defend', side: 'top', attacker: 'u1', target: 'u2', options: ['stand', 'formSquare'], bonus: false }, bad: [{ kind: 'endMove' }, { kind: 'defend', choice: 'retireReform' }], ok: { kind: 'defend', choice: 'stand' } },
+  defend: { d: { kind: 'defend', side: 'top', attacker: 'u1', target: 'u2', options: ['stand', 'formSquare'], bonus: false, artillery: [] }, bad: [{ kind: 'endMove' }, { kind: 'defend', choice: 'retireReform' }], ok: { kind: 'defend', choice: 'stand' } },
   ignoreFlags: { d: { kind: 'ignoreFlags', side: 'top', unit: 'u2', flags: 2, max: 1 }, bad: [{ kind: 'endMove' }, { kind: 'ignoreFlags', count: 2 }, { kind: 'ignoreFlags', count: -1 }], ok: { kind: 'ignoreFlags', count: 1 } },
   retreat: {
     d: { kind: 'retreat', side: 'top', unit: 'u2', options: [{ path: [H(3, 6)], end: H(3, 6), losses: 0, attach: null }], reason: 'retreat' },

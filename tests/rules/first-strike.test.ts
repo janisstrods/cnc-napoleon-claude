@@ -162,7 +162,7 @@ describe('First Strike (§12.3)', () => {
     giveCard(d.state, 'top', 'firstStrike');
     must(d, { kind: 'attack', unit: 'u1', target: H(4, 6) });
     must(d, { kind: 'select', ids: ['u3'] });
-    expect(d.pending).toMatchObject({ kind: 'defend', options: ['stand', 'firstStrike'] });
+    expect(d.pending).toMatchObject({ kind: 'defend', options: ['stand', 'firstStrike'], artillery: ['u3'] }); // the defender sees the joined gun
     ev(d);
     strike(d, n('infantry', 5));
     const es = ev(d);
