@@ -181,7 +181,7 @@ describe('the game screen', () => {
     const { GameController, newSessionConfig } = await import('../../src/ui/game/controller');
     const { SeededOpponent } = await import('./controller-helpers');
     for (const human of ['bottom', 'top'] as const) {
-      const c = new GameController({ ...newSessionConfig('012', human, 'recruit'), seed: 5 }, new SeededOpponent());
+      const c = new GameController({ ...newSessionConfig('012', human, 'captain'), seed: 5 }, new SeededOpponent());
       const ai = human === 'bottom' ? 'top' : 'bottom';
       const shown = c.view.display;
       shown.players[ai].squareTrack = [CARD, null, null, null];

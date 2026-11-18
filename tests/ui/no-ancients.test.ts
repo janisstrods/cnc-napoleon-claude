@@ -19,7 +19,7 @@ const FS = 'node:fs';
 const readText = async (p: string): Promise<string> => (await import(FS)).readFileSync(new URL(p, import.meta.url), 'utf8');
 
 // 'Times New Roman' (font stacks) and "Roman numerals" (SectionMiniMap.tsx:14) are not Ancients words
-const ANCIENT = /\b(Ancients?|Carthag\w*|Syracus\w*|(?<!New )Roman(?! numerals)|Rome|Caesar|Spartan?|Spartacus|legions?)\b/;
+const ANCIENT = /\b(Ancients?|Carthag\w*|Syracus\w*|(?<!New )Roman(?! numerals)|Rome|Caesar|Spartan?|Spartacus|legions?|Recruit|Tribune|Consul)\b/;
 
 describe('Ancients remnants', () => {
   it('no Ancients words in the UI, kit, top-level art, dev galleries, index.html or CREDITS.md', async () => {

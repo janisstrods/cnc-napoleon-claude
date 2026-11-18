@@ -283,6 +283,7 @@
 .medal-ring { stroke: rgba(226, 189, 114, .6); fill: rgba(10, 6, 2, .35); }
 .medal.is-none .medal-ring { stroke: rgba(226, 189, 114, .32); fill: none; }
 .medal.is-faint { opacity: .4; filter: saturate(.6); }
+.medal-ribbon { fill: #8e1b1b; stroke: rgba(40, 10, 10, .65); stroke-width: .8; }
 .medal-pair { display: inline-flex; gap: 3px; }
 .kit-parchment .medal-ring { stroke: rgba(110, 70, 30, .6); fill: rgba(110, 70, 30, .1); }
 .kit-parchment .medal.is-none .medal-ring { stroke: rgba(110, 70, 30, .35); fill: none; }
@@ -316,6 +317,9 @@
 }
 .tri-cell:hover { background: rgba(255, 255, 255, .55); border-color: #8e1b1b; }
 .tri-cell:focus-visible { outline: 2px solid #8e1b1b; outline-offset: 1px; }
+.tri-cell.is-missing { cursor: default; opacity: .6; }
+.tri-cell.is-missing:hover { background: rgba(255, 255, 255, .32); border-color: rgba(176, 130, 58, .38); }
+.tri-missing { font-size: 12.5px; font-style: italic; color: var(--kit-ink-soft); }
 .tri-num { font-family: var(--kit-font-title); font-size: 14px; color: #8a5a20; text-align: center; }
 .tri-name { overflow: hidden; font-size: 14.5px; line-height: 1.25; white-space: nowrap; text-overflow: ellipsis; }
 .triumphs-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding-top: 8px; border-top: 1px solid rgba(176, 130, 58, .4); }

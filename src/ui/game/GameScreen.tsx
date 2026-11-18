@@ -26,7 +26,7 @@ import './game.css';
 
 const EMPTY_SEL: UiSel = { selCard: null, hoverCard: null, orderSel: [], selPiece: null, hoverHex: null, hoverAction: null, assign: null, gunSel: [] };
 
-const DIFF_LABEL = { recruit: 'Recruit', tribune: 'Tribune', consul: 'Consul' } as const;
+const DIFF_LABEL = { captain: 'Captain', colonel: 'Colonel', marshal: 'Marshal' } as const;
 
 export function GameScreen({ controller, onExit, onRematch }: {
   controller: GameController;

@@ -1,14 +1,16 @@
 // Triumphs: the player's battle record on the main menu. A one-line tally of medals and battles fought, and a dialog
-// with every battle, box by box, each with its two medals; a battle clicked there opens in the picker. The record can
+// with every battle of the catalogue, box by box, each playable one with its two medals; a battle clicked there opens in the picker. The record can
 // be saved to a file and loaded back (merged), as a backup or to carry it to another browser.
 import { useRef, useState } from 'react';
 import { SCENARIOS } from '../../scenarios';
+import { CATALOGUE } from '../../scenarios/catalogue';
 import { Button, Modal } from '../kit';
 import { exportRecord, importRecord, mergeRecords, recordTotals, saveRecord, type BattleRecord, type Totals } from '../record';
 import { Medal, MedalPair, pairText } from './Medal';
 import { PICKER_TABS, battlesOf, visibleBattles } from './picker';
 
-const ALL_IDS = visibleBattles(SCENARIOS).map((s) => s.id);
+const PLAYABLE = visibleBattles(SCENARIOS);
+const ALL_IDS = PLAYABLE.map((s) => s.id);
 
 export function tallyText(t: Totals): string {
   return `${t.gold} gold, ${t.silver} silver, ${t.bronze} bronze of ${t.sides} medals; ${t.fought} of ${t.battles} battles fought`;
@@ -34,9 +36,9 @@ export function MenuTally({ record }: { record: BattleRecord }) {
 }
 
 const LEGEND: { standing: 'gold' | 'silver' | 'bronze' | 'fought' | 'none'; text: string }[] = [
-  { standing: 'gold', text: 'beat the Consul' },
-  { standing: 'silver', text: 'beat the Tribune' },
-  { standing: 'bronze', text: 'beat the Recruit' },
+  { standing: 'gold', text: 'beat the Marshal' },
+  { standing: 'silver', text: 'beat the Colonel' },
+  { standing: 'bronze', text: 'beat the Captain' },
   { standing: 'fought', text: 'fought, not won' },
   { standing: 'none', text: 'not fought' },
 ];
@@ -90,8 +92,8 @@ export function TriumphsDialog(p: {
     <Modal open={p.open} title="Triumphs" onClose={close} width={980}>
       <div className="triumphs">
         <p className="triumphs-intro">
-          Win a battle to earn a medal for the army you commanded: bronze against the Recruit, silver against the
-          Tribune, gold against the Consul. Every battle has two to win, one for each side.
+          Win a battle to earn a medal for the army you commanded: bronze against the Captain, silver against the
+          Colonel, gold against the Marshal. Every battle has two to win, one for each side.
         </p>
         <div className="triumphs-top">
           <MedalTally totals={recordTotals(record, ALL_IDS)} />
@@ -108,16 +110,25 @@ export function TriumphsDialog(p: {
               <section key={t.id} className="triumphs-box" aria-label={t.label}>
                 <h3>
                   {t.label}
-                  <MedalTally totals={recordTotals(record, battles.map((s) => s.id))} className="is-small" />
+                  {battles.length > 0 && <MedalTally totals={recordTotals(record, battles.map((s) => s.id))} className="is-small" />}
                 </h3>
                 <div className="triumphs-grid">
-                  {battles.map((s) => (
-                    <button key={s.id} type="button" className="tri-cell" onClick={() => p.onPick(s.id)} title={`${s.name}: ${pairText(record, s)}`}>
-                      <span className="tri-num">{Number(s.id)}</span>
-                      <span className="tri-name">{s.name}</span>
-                      <MedalPair rec={record} sc={s} size={18} />
-                    </button>
-                  ))}
+                  {CATALOGUE.filter((c) => c.box === t.id).map((c) => {
+                    const s = PLAYABLE.find((b) => b.id === c.id);
+                    return s ? (
+                      <button key={c.id} type="button" className="tri-cell" onClick={() => p.onPick(s.id)} title={`${s.name}: ${pairText(record, s)}`}>
+                        <span className="tri-num">{Number(s.id)}</span>
+                        <span className="tri-name">{s.name}</span>
+                        <MedalPair rec={record} sc={s} size={18} />
+                      </button>
+                    ) : (
+                      <div key={c.id} className="tri-cell is-missing" title={`${c.name}: not yet available`}>
+                        <span className="tri-num">{Number(c.id)}</span>
+                        <span className="tri-name">{c.name}</span>
+                        <span className="tri-missing">Not yet available</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </section>
             );

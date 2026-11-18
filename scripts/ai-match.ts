@@ -1,6 +1,6 @@
 // AI match runner. The computer opponent is the seeded random stub of Plan 2B T1c-3a, so a match is the stub against itself
 // (or against uniformly random answers) on each battle: a smoke test that every game finishes, and a timing of its turns.
-// Usage: npx vite-node scripts/ai-match.ts -- [--games 2] [--scenarios 000] [--a tribune] [--b recruit] [--random]
+// Usage: npx vite-node scripts/ai-match.ts -- [--games 2] [--scenarios 000] [--a colonel] [--b captain] [--random]
 //        [--shard 0/4] [--seedOffset 0]
 //   --random: side B plays uniformly random legal answers instead of the stub.
 import { GameDriver, bannerTotal, createGame, other, randomAnswer, type Side } from '../src/engine';
@@ -8,8 +8,8 @@ import { SCENARIOS, scenarioById } from '../src/scenarios';
 import { personalityFor, type AiOptions, type Difficulty } from '../src/ai';
 import { arg, flag, jobSeed, lcg, playAiGame, shardJobs } from './lib';
 
-const A = arg('a', 'tribune') as Difficulty;
-const B = arg('b', 'recruit') as Difficulty;
+const A = arg('a', 'colonel') as Difficulty;
+const B = arg('b', 'captain') as Difficulty;
 const games = Number(arg('games', '1'));
 const scen = arg('scenarios', SCENARIOS.map((s) => s.id).join(',')).split(',');
 const randomB = flag('random');
