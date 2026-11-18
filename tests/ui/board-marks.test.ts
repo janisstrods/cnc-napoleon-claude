@@ -60,8 +60,8 @@ describe('board marks and the hovered hex', () => {
     const s = createGame(scenarioById('000').setup, 1);
     const dec: Decision = { kind: 'breakthroughExtra', side: 'top', unit: 'u1', options: [hexId(3, 5), hexId(3, 6)], required: false };
     const marks = boardMarks(s, dec, SEL, 'top');
-    expect(marks.highlights.get(hexId(3, 5))).toBe('option');
-    expect(marks.highlights.get(hexId(3, 6))).toBe('option');
+    expect(marks.highlights.get(hexId(3, 5))).toBe('move');
+    expect(marks.highlights.get(hexId(3, 6))).toBe('move');
     expect(marks.highlights.get(s.units.find((u) => u.id === 'u1')!.hex)).toBe('focus');
   });
 

@@ -33,13 +33,18 @@ export class GameDriver {
   private queue: QueuedEvent[] = [];
   private snapshots: boolean;
   private ctx: FlowCtx;
+  /** Index of the answer during which a Scout draw last showed deck cards (-1: none). Deck draws use no dice, so undo stops here. */
+  private scoutAt = -1;
 
   constructor(initial: GameState, opts: DriverOptions = {}) {
     this.initial = cloneState(initial);
     this.state = cloneState(initial);
     this.snapshots = !!opts.snapshots;
     this.ctx = {
-      emit: (e) => this.queue.push({ e, state: this.snapshots ? cloneState(this.state) : undefined }),
+      emit: (e) => {
+        if (e.t === 'scoutDrew') this.scoutAt = this.answers.length;
+        this.queue.push({ e, state: this.snapshots ? cloneState(this.state) : undefined });
+      },
       invalid: (m) => { this.lastError = m; },
     };
     this.gen = gameFlow(this.state, this.ctx);
@@ -100,6 +105,7 @@ export class GameDriver {
     const last = i === n - 1 && k === 'move' && this.answers[i].kind === 'move';
     if (!last && k !== 'playCard') return -1;
     for (let j = i; j < n; j++) if (this.sides[j] !== this.pending.side) return -1;
+    if (this.scoutAt >= i) return -1;   // a Scout draw has shown deck cards since the step began
     return this.rngBefore[i] === this.state.rngCalls ? i : -1;
   }
 

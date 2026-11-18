@@ -1,12 +1,12 @@
 // Pure helpers that turn (state, pending decision, local UI selection) into board highlights and badges. The prompts'
 // content is in promptSpec.ts, the unit descriptions in unitText.ts, the objective tooltips in objectiveText.ts.
 import {
-  ALL_HEXES, CARD_DEFS, OFF_BOARD, UNIT_STATS, statsOf, leaderAt, battleReady, battleTargets, effectiveCard, eligiblePieces, inSection,
-  leaderUnit, movablePieces, pieceById, pieceHex, pieceMoves, unitAt,
+  ALL_HEXES, CARD_DEFS, OFF_BOARD, hexLabel, meleeDice, UNIT_STATS, statsOf, leaderAt, battleReady, battleTargets, effectiveCard, eligiblePieces, inSection,
+  leaderUnit, movablePieces, pieceById, pieceHex, pieceMoves, unitAt, unitById,
   type Decision, type GameState, type HexId, type SectionName, type Side, type Unit,
 } from '../../engine';
 import type { Highlight } from './Board';
-import { promptSpec } from './promptSpec';
+import { promptSpec, unitLabel } from './promptSpec';
 import { assignOptions, currentAssign } from './assign';
 
 export interface UiSel {
@@ -76,6 +76,74 @@ export function expectedHits(s: GameState, attacker: Unit, hex: HexId): number {
 export function boardUi(s: GameState, d: Decision | null, ui: UiSel, human: Side): BoardUi {
   const { pathAt, ...marks } = boardMarks(s, d, ui, human);
   return { ...marks, pathPreview: pathAt(ui.hoverHex) };
+}
+
+type D<K extends Decision['kind']> = Extract<Decision, { kind: K }>;
+
+/** One button and one board click of a retreat: the first option (the engine lists the safest first) for an end hex. */
+export interface RetreatChoice { index: number; end: HexId; label: string }
+
+/** A unit's retreat options, one per end hex, each named by its hex ("Stay" when the end is the unit's own hex). */
+export function retreatChoices(s: GameState, d: D<'retreat'>): RetreatChoice[] {
+  const here = pieceHex(s, d.unit) ?? -1;
+  const out: RetreatChoice[] = [];
+  d.options.forEach((o, i) => {
+    if (out.some((c) => c.end === o.end)) return;
+    const losses = o.losses ? `, lose ${o.losses} block${o.losses === 1 ? '' : 's'}` : '';
+    const join = o.attach ? ', join the leader' : '';
+    const label = o.end === here
+      ? `Stay${losses}`
+      : `To ${hexLabel(o.end)} (${o.path.length} hex${o.path.length === 1 ? '' : 'es'}${losses}${join})`;
+    out.push({ index: i, end: o.end, label });
+  });
+  return out;
+}
+
+/** One answer of a leader's retreat: an end hex (the safest way there), leaving the battlefield, or falling. */
+export interface LeaderRetreatChoice { index: number; kind: 'hex' | 'off' | 'dead'; end: HexId; escapes: number; attach: string | null; label: string }
+
+const escapeText = (n: number) => `escape past ${n} enemy unit${n === 1 ? '' : 's'}`;
+
+/** A leader's options as the player chooses them: one per end hex, the one with fewest escape rolls; then off-board; then death. */
+export function leaderRetreatChoices(s: GameState, d: D<'leaderRetreat'>): LeaderRetreatChoice[] {
+  const hexes: LeaderRetreatChoice[] = [];
+  const rest: LeaderRetreatChoice[] = [];
+  d.options.forEach((o, i) => {
+    const n = o.escapes.length;
+    if (o.eliminated) {
+      if (!rest.some((c) => c.kind === 'dead')) rest.push({ index: i, kind: 'dead', end: o.end, escapes: n, attach: null, label: 'He cannot escape' });
+    } else if (o.offBoard) {
+      const known = rest.find((c) => c.kind === 'off');
+      if (known && known.escapes <= n) return;
+      const c: LeaderRetreatChoice = { index: i, kind: 'off', end: o.end, escapes: n, attach: null, label: `Leave the battlefield${n ? ` (${escapeText(n)})` : ''}` };
+      if (known) rest[rest.indexOf(known)] = c;
+      else rest.push(c);
+    } else {
+      const known = hexes.find((c) => c.end === o.end);
+      if (known && known.escapes <= n) return;
+      const join = o.attach ? `, join ${unitLabel(s, o.attach)}` : '';
+      const c: LeaderRetreatChoice = { index: i, kind: 'hex', end: o.end, escapes: n, attach: o.attach, label: `To ${hexLabel(o.end)}${join}${n ? ` (${escapeText(n)})` : ''}` };
+      if (known) hexes[hexes.indexOf(known)] = c;
+      else hexes.push(c);
+    }
+  });
+  rest.sort((a, b) => (a.kind === b.kind ? 0 : a.kind === 'off' ? -1 : 1));
+  return [...hexes, ...rest];
+}
+
+/** The dice of the bonus melee against each of its targets, "3 dice" on the target's hex ("0 dice + guns" when only guns may join). */
+export function bonusBadges(s: GameState, d: D<'bonusMelee'>): Map<HexId, string> {
+  const out = new Map<HexId, string>();
+  const u = unitById(s, d.unit);
+  if (!u) return out;
+  const moved = s.turn.ordered[u.id]?.moved ?? 0;
+  for (const h of d.targets) {
+    const foe = unitAt(s, h) ?? leaderAt(s, h);
+    if (!foe) continue;
+    const n = meleeDice(s, u, foe, { role: 'bonus', moved, declared: true });
+    out.set(h, n === 0 ? '0 dice + guns' : dice(n));
+  }
+  return out;
 }
 
 const dice = (n: number) => `${n} ${n === 1 ? 'die' : 'dice'}`;
@@ -161,12 +229,38 @@ export function boardMarks(s: GameState, d: Decision | null, ui: Omit<UiSel, 'ho
       const id = d.kind === 'retreat' ? d.unit : d.leader;
       const h = pieceHex(s, id) ?? -1;
       if (h >= 0) highlights.set(h, 'focus');
-      for (const o of d.options) if (!('offBoard' in o && o.offBoard) && o.end >= 0) highlights.set(o.end, 'option');
-      const options = d.options;
+      // the hex each end names (the first option for it is the safest)
+      if (d.kind === 'leaderRetreat') {
+        for (const c of leaderRetreatChoices(s, d)) {
+          if (c.kind !== 'hex') continue;
+          highlights.set(c.end, c.escapes ? 'targetRanged' : 'option');
+          if (c.escapes) badges.set(c.end, `Escape ×${c.escapes}`);
+        }
+      } else {
+        for (const o of d.options) if (o.end >= 0 && o.end !== h) highlights.set(o.end, 'option');
+      }
+      const options: readonly { path: HexId[]; end: HexId; offBoard?: boolean }[] = d.options;
       pathAt = (hover) => {
         const o = hover === null ? undefined : options.find((x) => x.end === hover);
         return o && h >= 0 ? [h, ...o.path] : null;
       };
+      break;
+    }
+    case 'advance':
+    case 'breakthroughExtra': {
+      // the hex (or hexes) the unit may enter, and the arrow from where it stands now
+      const from = pieceHex(s, d.unit) ?? -1;
+      if (from >= 0) highlights.set(from, 'focus');
+      const to = d.kind === 'advance' ? [d.hex] : d.options;
+      for (const h of to) highlights.set(h, 'move');
+      pathAt = (hover) => (hover !== null && from >= 0 && to.includes(hover) ? [from, hover] : null);
+      break;
+    }
+    case 'bonusMelee': {
+      const from = pieceHex(s, d.unit) ?? -1;
+      if (from >= 0) highlights.set(from, 'focus');
+      for (const h of d.targets) highlights.set(h, 'targetClose');
+      for (const [h, b] of bonusBadges(s, d)) badges.set(h, b);
       break;
     }
     case 'defend':
@@ -208,7 +302,7 @@ export function boardMarks(s: GameState, d: Decision | null, ui: Omit<UiSel, 'ho
         if (h >= 0) highlights.set(h, 'focus');
       }
       if (d.kind === 'combinedArms') highlights.set(d.target, 'targetClose');
-      for (const h of promptSpec(s, d).hexes) highlights.set(h, d.kind === 'bonusMelee' ? 'targetClose' : 'option');
+      for (const h of promptSpec(s, d).hexes) highlights.set(h, 'option');
       break;
     }
   }

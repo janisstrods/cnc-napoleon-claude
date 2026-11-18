@@ -11,7 +11,7 @@ import type { GameController } from './controller';
 import { HoverTip, LogPanel } from './panels';
 import { gamePrompt } from './prompts';
 import { bannerCounts, objectiveSummary, objectiveTipLines } from './objectiveText';
-import { boardMarks, selectionDeps, type UiSel } from './uiModel';
+import { boardMarks, leaderRetreatChoices, retreatChoices, selectionDeps, type UiSel } from './uiModel';
 import { assignClick, assignClickRefusal, assignOptions, currentAssign, nextDie, type ElanOrRally } from './assign';
 import { leaderTraitLines, unitSummary } from './unitText';
 import { TerrainTipBlock } from './TerrainTipBlock';
@@ -152,10 +152,15 @@ export function GameScreen({ controller, onExit, onRematch }: {
         else setUi({ ...ui, selPiece: null });
         return;
       }
-      case 'retreat':
+      case 'retreat': {
+        const c = retreatChoices(s, d).find((x) => x.end === h);
+        if (c) answer({ kind: 'choose', index: c.index });
+        return;
+      }
       case 'leaderRetreat': {
-        const i = d.options.findIndex((o) => o.end === h && !('offBoard' in o && o.offBoard));
-        if (i >= 0) answer({ kind: 'choose', index: i });
+        // the safest way to the hex clicked
+        const c = leaderRetreatChoices(s, d).find((x) => x.kind === 'hex' && x.end === h);
+        if (c) answer({ kind: 'choose', index: c.index });
         return;
       }
       case 'advance':

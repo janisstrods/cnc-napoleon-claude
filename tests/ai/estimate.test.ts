@@ -17,7 +17,14 @@ const kit = (units: Units, extra: Pos = {}) => (seed: number): GameDriver => {
   void seed;
   return toBattle(build({ first: 'top', ...extra, units }), 'attackC', ['u1']);
 };
-const ctxOf = (s: GameState): EstCtx => makeEstCtx(s, s.active, NEUTRAL_W);
+/**
+ * The attacker's estimate context, told the defender holds no First Strike: the kit's positions strip it from both hands
+ * (tests/rules/helpers `play`), so the engine's defender always stands and the model must price the same reaction.
+ */
+const ctxOf = (s: GameState): EstCtx => {
+  const ec = makeEstCtx(s, s.active, NEUTRAL_W);
+  return ec.determinised ? ec : { ...ec, oppHands: { ...ec.oppHands, pFS: 0 } };
+};
 const unit = (s: GameState, id: string): Unit => unitById(s, id)!;
 
 const TRIALS = 4000;

@@ -7,7 +7,7 @@ import {
 } from '../../src/engine';
 import { scenarioById } from '../../src/scenarios';
 import { GameController, newSessionConfig } from '../../src/ui/game/controller';
-import { DECISION_TITLES, promptSpec } from '../../src/ui/game/promptSpec';
+import { DECISION_TITLES, decisionTitle, promptSpec } from '../../src/ui/game/promptSpec';
 import { SeededOpponent, useFakeClock } from './controller-helpers';
 
 const s: GameState = createGame(scenarioById('000').setup, 1);
@@ -25,7 +25,7 @@ const SAMPLES: Decision[] = [
   { kind: 'move', side: 'bottom' },
   { kind: 'battle', side: 'bottom' },
   { kind: 'combinedArms', side: 'bottom', unit: 'u7', target: hexId(2, 6), options: ['u10'], required: false },
-  { kind: 'defend', side: 'bottom', attacker: 'u1', target: 'u6', options: DEFENCES, bonus: false },
+  { kind: 'defend', side: 'bottom', attacker: 'u1', target: 'u6', options: DEFENCES, bonus: false, artillery: [] },
   { kind: 'ignoreFlags', side: 'bottom', unit: 'u6', flags: 2, max: 1 },
   { kind: 'retreat', side: 'bottom', unit: 'u6', options: [{ path: [hexId(7, 4)], end: hexId(7, 4), losses: 0, attach: null }], reason: 'retreat' },
   { kind: 'leaderRetreat', side: 'bottom', leader: 'L12', options: [{ path: [], end: hexId(6, 6), offBoard: false, escapes: [], attach: null, eliminated: false }] },
@@ -45,7 +45,7 @@ describe('a prompt for every decision', () => {
     expect(Object.keys(DECISION_TITLES)).toHaveLength(18);
     for (const d of SAMPLES) {
       const p = promptSpec(s, d);
-      expect(p.title, d.kind).toBe(DECISION_TITLES[d.kind]);
+      expect(p.title, d.kind).toBe(decisionTitle(d));
       expect(p.title.length, d.kind).toBeGreaterThan(0);
       expect(p.actions.at(-1), d.kind).toEqual({ key: 'auto', label: 'Let the general decide', answer: 'auto' });
     }
@@ -88,6 +88,13 @@ describe('a prompt for every decision', () => {
     expect(all.answer).toEqual({ kind: 'select', ids: ['u10', 'u6'] });
     expect(answerError(s, d, all.answer as never)).toBeNull();
     expect(promptSpec(s, SAMPLES.find((x) => x.kind === 'combinedArms')!).actions.map((a) => a.key)).not.toContain('all');
+  });
+
+  it('a required Combined Arms (no dice of its own) has no "none" action, and every action is legal', () => {
+    const d: Decision = { kind: 'combinedArms', side: 'bottom', unit: 'u7', target: hexId(2, 6), options: ['u10'], required: true };
+    const spec = promptSpec(s, d);
+    expect(spec.actions.map((a) => a.key)).toEqual(['u10', 'auto']);
+    for (const a of spec.actions) if (a.answer !== 'auto') expect(answerError(s, d, a.answer), a.key).toBeNull();
   });
 
   it('Élan and Rally offer the suggested assignment, then the general; Scout names its two cards', () => {

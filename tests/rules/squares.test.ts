@@ -112,12 +112,23 @@ describe('Infantry squares (§9.5)', () => {
     const s = build({ units: [bot('BR/LN', [5, 6]), top('FR/LT', [4, 6], { square: 1 })] });
     const d = toBattle(s, 'attackC', ['u1']);
     ev(d);
-    forceDice(n('cavalry', 40));
+    forceDice([...n('cavalry', 4), 'flag', ...n('cavalry', 40)]);   // the square's single die is a flag
     attack(d, 'u1', H(4, 6));
     const es = ev(d);
     expect(combatDice(es, 'squareFirst')).toBeUndefined();
     expect(combatDice(es, 'melee')).toBe(4);
     expect(combatDice(es, 'battleBack')).toBe(1);
+    expect(es.find((e) => e.t === 'flags')).toMatchObject({ id: 'u1', flags: 1, bounce: false });   // ordinary: only a square against cavalry bounces (§10.3)
+  });
+
+  it('infantry and artillery attacking infantry offer no defend choice and no square (§9.5)', () => {
+    for (const atk of ['BR/LN', 'BR/FA'] as RowKey[]) {
+      const d = attackOn(atk, 'FR/LN');
+      expect(d.pending?.kind, atk).not.toBe('defend');
+      expect(ev(d).some((e) => e.t === 'squareFormed'), atk).toBe(false);
+      expect(u(d, 'u2')?.square, atk).toBeUndefined();
+      forceDice([]);
+    }
   });
 
   it('a square ordered to attack cavalry: no fight-first; the cavalry battles back with 1 die (§9.5)', () => {

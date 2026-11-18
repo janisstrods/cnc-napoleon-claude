@@ -39,7 +39,7 @@ export function* defenderReaction(s: GameState, ctx: FlowCtx, m: MeleeCtx): Gen<
   const options = defendOptions(s, m);
   if (options.length <= 1) return options[0];
   const target = unitById(s, m.target)!;
-  const a = yield* ask(s, ctx, { kind: 'defend', side: target.side, attacker: m.attacker, target: m.target, options, bonus: m.role === 'bonus' });
+  const a = yield* ask(s, ctx, { kind: 'defend', side: target.side, attacker: m.attacker, target: m.target, options, bonus: m.role === 'bonus', artillery: [...m.artillery] });
   return (a as { choice: DefendChoice }).choice;
 }
 
@@ -98,7 +98,9 @@ export function* firstStrikeRoll(s: GameState, ctx: FlowCtx, m: MeleeCtx): Gen<'
   const def = unitById(s, m.target)!;
   const atk = unitById(s, m.attacker)!;
   const hand = s.players[def.side].hand;
-  const card = hand.splice(hand.findIndex((c) => cardKind(c) === 'firstStrike'), 1)[0];
+  const at = hand.findIndex((c) => cardKind(c) === 'firstStrike');
+  if (at < 0) throw new Error('firstStrikeRoll: the defender holds no First Strike');
+  const card = hand.splice(at, 1)[0];
   s.discard.push(card);
   s.turn.firstStrikes[def.side]++;
   ctx.emit({ t: 'cardPlayed', side: def.side, card, kind: 'firstStrike', effective: null });
