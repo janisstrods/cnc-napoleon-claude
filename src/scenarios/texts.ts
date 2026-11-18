@@ -166,7 +166,7 @@ export const TEXTS: Record<string, ScenarioTexts> = {
     hint: "Storm up the pass and silence the guns before they wear you down.",
   },
   '106': {
-    blurb: "Cuesta, newly reinforced, turned on Victor's 1st Corps and on 28 March 1809 attacked it at Medellín, a plain bounded by the Guadiana and a ravine, with a long bridge at the town. Cavalry charges broke the Spanish horse and exposed its infantry, which was cut to pieces. Cuesta himself got away.",
+    blurb: "Cuesta, newly reinforced, turned on Victor's 1st Corps and on 28 March 1809 attacked it at Medellín, a plain bounded by the Guadiana and a ravine, with a long bridge at the town. Cavalry charges broke the Spanish horse and exposed the infantry, which was cut to pieces. Cuesta himself got away.",
     specialText: [
       "Each banner the French gain costs the Spanish a random card from their hand, until their hand is down to 3.",
       "Only two Spanish units may ever form square in this battle.",
@@ -184,15 +184,15 @@ export const TEXTS: Record<string, ScenarioTexts> = {
     hint: "Hold the three hills and let Suchet's attack wear itself out.",
   },
   '108': {
-    blurb: "Blake marched his enlarged army, swollen by Valencian troops, down the Huerba valley in June 1809 to threaten Suchet's communications with Zaragoza. Suchet set up at the Abbey of Santa Fe and, learning that Areizaga's division stood apart on the far bank at Botorrita, struck the main body at María on 15 June and drove it away.",
+    blurb: "Blake marched his army, swollen by Valencian troops, down the Huerba valley in June 1809 to threaten Suchet's communications with Zaragoza. Suchet set up at the Abbey of Santa Fe and, learning that Areizaga's division stood apart on the far bank at Botorrita, struck the main body at María on 15 June and drove it away.",
     specialText: [
       "The Abbey of Santa Fe counts as a town.",
       "Guerrilla Action: the Spanish start with 1 counter.",
     ],
-    hint: "Strike Blake's main body while the rest of his army is far off.",
+    hint: "Strike Blake's main body while Areizaga is across the river.",
   },
   '109': {
-    blurb: "At Talavera on 28 July 1809 Cuesta's Spaniards held the town and the enclosed groves to its north, joining Campbell's British 4th Division near the Pajar de Vergara, while Wellesley fought on the Cerro de Medellín. Leval's German division, Baden, Nassau, Hessian and Dutch troops, stormed the Pajar twice and was broken by canister, Campbell's charge and Spanish cavalry.",
+    blurb: "At Talavera on 28 July 1809 Cuesta's Spaniards held the town and the enclosed groves to its north, joining Campbell's British 4th Division near the Pajar de Vergara, while Wellesley fought on the Cerro de Medellín. Leval's German division (Baden, Nassau, Hessian and Dutch troops) attacked the Pajar twice and was broken by canister, Campbell's charge and Spanish cavalry.",
     specialText: [
       "The Portina Brook stops movement but gives no battle penalties; a unit that entered it this turn may not take ground.",
       "Spanish and British units share one hand of cards.",
