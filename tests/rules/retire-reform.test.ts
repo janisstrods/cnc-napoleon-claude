@@ -124,7 +124,7 @@ describe('Retire and Reform (§9.4)', () => {
     expect(u(e, 'u2')).toBeUndefined();
   });
 
-  it.skip('the infantry may then take ground (R34) — needs T7 (rebase)', () => {
+  it('the infantry may then take ground (R34)', () => {
     const d = charge({}, ['cavalry', 'infantry', 'infantry', 'infantry']);
     must(d, { kind: 'defend', choice: 'retireReform' });
     if (d.pending?.kind === 'retreat') must(d, { kind: 'choose', index: 0 });
@@ -164,6 +164,15 @@ describe('Retire and Reform (§9.4)', () => {
     must(e, { kind: 'attack', unit: 'u1', target: H(4, 6) });
     must(e, { kind: 'defend', choice: 'retireReform' });
     expect(u(e, 'u2')!.blocks).toBe(u(e, 'u2')!.maxBlocks - 1);
+  });
+
+  it('the infantry may take ground after the cavalry is eliminated by the roll (R34)', () => {
+    const d = charge({}, n('cavalry', 12));
+    must(d, { kind: 'defend', choice: 'retireReform' });
+    expect(u(d, 'u2')).toBeUndefined();
+    expect(d.pending).toMatchObject({ kind: 'advance', unit: 'u1', hex: H(4, 6), how: 'takeGround' });
+    must(d, { kind: 'yesno', yes: true });
+    expect(u(d, 'u1')!.hex).toBe(H(4, 6));
   });
 
   it('a square ordered to attack cavalry: the cavalry may still retire (R34)', () => {
