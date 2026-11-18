@@ -1,6 +1,6 @@
 // Every Decision kind refuses a malformed or illegal answer with a message (answerError, the one validator the UI and the AI share).
 import { describe, expect, it } from 'vitest';
-import { answerError, orderLimit, type Answer, type Decision, type GameState } from '../../src/engine';
+import { answerError, orderLimit, pieceMoves, type Answer, type Decision, type GameState } from '../../src/engine';
 import { H, build, toBattle } from '../rules/helpers';
 
 type Refusals = { [K in Decision['kind']]: { d: Extract<Decision, { kind: K }>; bad: Answer[]; ok?: Answer } };
@@ -22,13 +22,15 @@ function zeroDiceState(town = true): GameState {
 }
 
 const s = battleState();
-const tooMany = Array.from({ length: orderLimit(s, 'bottom', 'attackC') + 1 }, (_, i) => `u${i + 1}`);
+const own = s.units.filter((x) => x.side === 'bottom').map((x) => x.id);   // u1, u3..u8
+const tooMany = own.slice(0, orderLimit(s, 'bottom', 'attackC') + 1);
 
 const SAMPLES: Refusals = {
   playCard: { d: { kind: 'playCard', side: 'bottom' }, bad: [{ kind: 'endMove' }, { kind: 'playCard', card: 9999 }] },
   orders: {
     d: { kind: 'orders', side: 'bottom', card: 'attackC', mirrored: false, single: false },
-    bad: [{ kind: 'endMove' }, { kind: 'orders', pieces: ['u1', 'nope'] }, { kind: 'orders', pieces: tooMany }, { kind: 'orders', pieces: ['u1'], single: true }],
+    bad: [{ kind: 'endMove' }, { kind: 'orders', pieces: ['u1', 'nope'] }, { kind: 'orders', pieces: ['u2'] }, { kind: 'orders', pieces: tooMany }, { kind: 'orders', pieces: ['u1'], single: true }],
+    ok: { kind: 'orders', pieces: ['u1'] },
   },
   leaveSquare: { d: { kind: 'leaveSquare', side: 'bottom', unit: 'u1' }, bad: [{ kind: 'endMove' }], ok: { kind: 'yesno', yes: true } },
   move: { d: { kind: 'move', side: 'bottom' }, bad: [{ kind: 'attack', unit: 'u1', target: H(4, 6) }, { kind: 'move', piece: 'u1', to: H(0, 0) }], ok: { kind: 'endMove' } },
@@ -83,6 +85,17 @@ describe('answerError', () => {
       }
     });
   }
+
+  it('one piece over the limit is refused as too many, not for another reason', () => {
+    expect(tooMany).toHaveLength(orderLimit(s, 'bottom', 'attackC') + 1);
+    expect(answerError(s, SAMPLES.orders.d, { kind: 'orders', pieces: tooMany })).toBe('Too many orders.');
+  });
+
+  it('a reachable move is legal, an unreachable one is refused', () => {
+    const m = pieceMoves(s, 'u1');
+    expect(m.length).toBeGreaterThan(0);
+    expect(answerError(s, SAMPLES.move.d, { kind: 'move', piece: 'u1', to: m[0].hex })).toBeNull();
+  });
 
   it('says what to do when a card is expected', () => {
     expect(answerError(s, SAMPLES.playCard.d, { kind: 'move', piece: 'u1', to: 0 })).toBe('Play a card from your hand.');

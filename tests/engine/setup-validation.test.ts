@@ -1,4 +1,4 @@
-// Rules: RR §1, §4.1, §14, §14.1–§14.15 (design/rules-reference.md)
+// Rules: RR §1, §4.1, §14, §14.12–§14.13 (design/rules-reference.md)
 // Scenario data is validated when a game is built: unknown ids and impossible positions throw, and the error names the
 // scenario. Setup also builds the board, the deck and the hands.
 import { describe, expect, it } from 'vitest';

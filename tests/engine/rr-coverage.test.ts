@@ -5,10 +5,11 @@ import rr from '../../design/rules-reference.md?raw';
 const raw = <T>(m: T) => m as Record<string, string>;
 const RULES_FILES = raw(import.meta.glob('../rules/*.test.ts', { query: '?raw', import: 'default', eager: true }));
 const ENGINE_FILES = raw(import.meta.glob('./*.test.ts', { query: '?raw', import: 'default', eager: true }));
+const SCENARIO_FILES = raw(import.meta.glob('../scenarios/*.test.ts', { query: '?raw', import: 'default', eager: true }));
 
-/** Sections to cover: every `### n.m` heading for n = 1–13, `§1` (no subsections) and `§14.1`–`§14.15`. */
+/** Sections to cover: every `### n.m` heading for n = 1–13, `§1` and `§14` (cited bare) and `§14.1`–`§14.15`. */
 function requiredSections(): string[] {
-  const out = new Set<string>(['1']);
+  const out = new Set<string>(['1', '14']);
   for (const m of rr.matchAll(/^### (\d+)\.(\d+)\b/gm)) {
     const n = Number(m[1]);
     if (n >= 1 && n <= 14) out.add(`${n}.${m[2]}`);
@@ -50,8 +51,8 @@ describe('RR coverage', () => {
     expect(cited('// Rules: RR §2.1–§2.3, §5.2, §1, §9 (x)').sort()).toEqual(['1', '2.1', '2.2', '2.3', '5.2']);
   });
 
-  it('every section is cited by a header of a tests/rules or tests/engine file', () => {
-    const files = [...Object.values(RULES_FILES), ...Object.values(ENGINE_FILES)];
+  it('every section is cited by a header of a tests/rules, tests/engine or tests/scenarios file', () => {
+    const files = [...Object.values(RULES_FILES), ...Object.values(ENGINE_FILES), ...Object.values(SCENARIO_FILES)];
     expect(files.length).toBeGreaterThan(20);
     const covered = new Set(files.flatMap((f) => cited(headerOf(f) ?? '')));
     const missing = required.filter((r) => !covered.has(r));
