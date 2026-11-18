@@ -160,7 +160,7 @@ export function stayInSquare(s: GameState, d: D<'leaveSquare'>, _W?: Weights, ec
 // Battle
 
 /** The value of one attack for its maker: the estimate, cut by an impetuous cavalry unit's forced advance, scaled for cavalry's dash. */
-function attackValue(s: GameState, u: Unit, hex: HexId, kind: 'fire' | 'melee', W: Weights, ec: EstCtx): number {
+export function attackValue(s: GameState, u: Unit, hex: HexId, kind: 'fire' | 'melee', W: Weights, ec: EstCtx): number {
   const op = s.turn.ordered[u.id];
   const ea: EstCtx = { ...ec, moved: op?.moved ?? 0, role: 'attack' };
   const victim = ec.occ.unit[hex] ?? ec.occ.leader[hex];

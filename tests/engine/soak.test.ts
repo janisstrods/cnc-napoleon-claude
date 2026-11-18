@@ -25,23 +25,27 @@ describe('random-play soak on the drill battle', () => {
   }
 });
 
-describe('the AI stub plays both sides of the drill battle', () => {
+describe('the AI plays both sides of the drill battle', () => {
+  // Whole AI games are the slow suites' work (tests/ai/*.slow.test.ts); here the weakest level, a small budget and 8 turns.
   for (let g = 0; g < 6; g++) {
-    it(`seed ${g}: a winner, no fallback, no console.error`, () => {
+    it(`seed ${g}: 8 turns, legal answers, no fallback, no console.error`, () => {
       const spy = vi.spyOn(console, 'error');
       try {
         const seed = 500 + g;
         const first: Side = g % 2 ? 'bottom' : 'top';
         const d = new GameDriver(createGame({ ...scenarioById('000').setup, first }, seed));
         const mems = { top: newMemory(), bottom: newMemory() };
-        const opts = (side: Side): AiOptions => ({ side, difficulty: 'colonel', personality: PERSONALITIES[g % PERSONALITIES.length], seed: seed * 3 + (side === 'top' ? 1 : 2), deterministic: true });
+        const opts = (side: Side): AiOptions => ({
+          side, difficulty: 'captain', personality: PERSONALITIES[g % PERSONALITIES.length], seed: seed * 3 + (side === 'top' ? 1 : 2),
+          budgetScale: 0.05, deterministic: true,
+        });
         let steps = 0;
-        while (d.pending && steps < 4000) {
+        while (d.pending && d.state.turn.number <= 8 && steps < 4000) {
           const side = d.pending.side;
           must(d, chooseAnswer(d.state, d.pending, opts(side), mems[side]).answer);
           steps++;
         }
-        expect(d.state.winner, `turn ${d.state.turn.number}`).not.toBeNull();
+        expect(steps, `turn ${d.state.turn.number}`).toBeGreaterThan(20);
         expect(mems.top.fallbacks).toBe(0);
         expect(mems.bottom.fallbacks).toBe(0);
         expect(spy.mock.calls).toEqual([]);

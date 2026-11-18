@@ -30,18 +30,17 @@
 // - strike-first piece ordering (Ancients) is not ported (optional): moves.ts plans the front units first; add it only if a
 //   shooter's only firing hex turns out to be taken by an earlier-planned piece.
 import {
-  CARD_DEFS, answerError, bannerTotal, battleReady, battleTargets, cardKind, effectiveCard, forcedDiceLeft, impetuous, other, pieceMoves,
-  statsOf, unitById,
-  type Answer, type CardKind, type Decision, type GameState, type HexId, type Side, type Unit,
+  CARD_DEFS, answerError, bannerTotal, battleReady, battleTargets, cardKind, effectiveCard, forcedDiceLeft, other, pieceMoves, unitById,
+  type Answer, type CardKind, type Decision, type GameState, type Side,
 } from '../engine';
 import { occOf } from './board';
 import { makeBudget, type Budget } from './budget';
 import { handFloorPenalty, keepValue } from './cardsense';
-import { fireEstimate, loneLeaderEstimate, makeEstCtx, meleeEstimate, type EstCtx, type Outcome } from './estimate';
-import { evaluate, impetuousCost } from './evaluate';
+import { makeEstCtx, type EstCtx } from './estimate';
+import { evaluate } from './evaluate';
 import { greedyMoveStep, type MoveCtx, type MoveStyle } from './moves';
 import { orderCandidates, quickCardScore, type OrderCandidate } from './ordering';
-import { policyFor } from './policies';
+import { attackValue, policyFor } from './policies';
 import { Rng } from './rand';
 import { Stepper, runTurn, type Policy } from './sim';
 import { WIN_SCORE, type Weights } from './values';
@@ -567,25 +566,6 @@ export function planTurn(root: GameState, ctx: PlanCtx): TurnPlan {
 
 // ---------------------------------------------------------------------------------------------------------------------
 // decideBattle
-
-/**
- * The value of one attack for its maker, as the greedy battle policy values it (mirrors policies.ts `attackValue`, which is not
- * exported): the estimate, less an impetuous cavalry unit's forced advance, scaled for cavalry's dash.
- */
-function attackValue(s: GameState, u: Unit, hex: HexId, kind: 'fire' | 'melee', W: Weights, ec: EstCtx): number {
-  const op = s.turn.ordered[u.id];
-  const ea: EstCtx = { ...ec, moved: op?.moved ?? 0, role: 'attack' };
-  const victim = ec.occ.unit[hex] ?? ec.occ.leader[hex];
-  let o: Outcome;
-  if (kind === 'fire') o = fireEstimate(s, u, hex, ea);
-  else o = ec.occ.unit[hex] ? meleeEstimate(s, u, hex, ea) : loneLeaderEstimate(s, u, hex, ea);
-  let e = o.ev;
-  const st = statsOf(s, u);
-  // approximates RR §14.15, R82 (engine: afterMelee): the forced advance of impetuous cavalry
-  if (kind === 'melee' && st.arm === 'cavalry' && victim && impetuous(s, u)) e -= impetuousCost(s, ec.occ, u, victim, o);
-  if (st.arm === 'cavalry') e *= W.cavalryDash;
-  return e;
-}
 
 /** One rollout: `first` answers the battle decision, the policies the rest of the battle phase and the draw; then the judgement. One node. */
 function rollout(s: GameState, ctx: PlanCtx, first: Answer, seed: number, ec: EstCtx): number {

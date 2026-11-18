@@ -542,6 +542,55 @@ describe('planTurn (review round 1)', () => {
   });
 });
 
+describe('planTurn and decideBattle (Task 9 carries)', () => {
+  /** The movement style a candidate's label names (`elan [] hold`, `elan [] bold o1`, `elan [] var3` = a perturbed noisy plan). */
+  const styleOfLabel = (label: string): string => {
+    const tag = label.slice(label.indexOf('] ') + 2);
+    return tag.startsWith('var') ? 'noisy' : tag.split(' ')[0];
+  };
+
+  it('an Élan plan\'s style is the style of the winning online candidate, with units two or more hexes from the enemy', () => {
+    // Élan against four plain cards; both our lines stand three hexes behind two worn enemy units, where the styles score differently
+    const styles = new Set<string>();
+    for (const [level, seed] of [[1, 1], [1, 2], [1, 3], [2, 1], [2, 2], [2, 3]] as const) {
+      const s = build({ units: [bot('BR/LN', [7, 6]), bot('BR/LN', [7, 5]), top('FR/LN', [4, 6], { blocks: 1 }), top('FR/LN', [4, 5], { blocks: 1 }), top('FR/LN', [1, 1])] });
+      const [elan] = holding(s, ME, ['elan', 'scoutL', 'scoutR', 'probeL', 'probeR']);
+      noFS(s);
+      const plan = planTurn(s, ctxOf(s, level, { seed, scale: 0.1 }));
+      expect(plan.card, `level ${level} seed ${seed}`).toBe(elan);
+      const winner = (plan.cands ?? []).find((c) => c.label === plan.label && c.n > 0)!;
+      expect(winner, 'the winning candidate is among the diagnostics').toBeDefined();
+      expect(plan.style, `level ${level} seed ${seed}: ${plan.label}`).toBe(styleOfLabel(winner.label));
+      styles.add(plan.style!);
+      // the styles did compete: more than one online candidate was sampled
+      const online = (plan.cands ?? []).filter((c) => c.card === elan && c.n > 0);
+      expect(new Set(online.map((c) => styleOfLabel(c.label))).size).toBeGreaterThan(1);
+    }
+    // and the winner is not always the default style (a plan that named 'base' regardless would pass the loop above only by luck)
+    expect([...styles].some((x) => x !== 'base')).toBe(true);
+  });
+
+  it('decideBattle judges every rollout with the determinised judgement context (the root context would be refused)', () => {
+    const d = battleKit().d;
+    const s = d.state;
+    const seen: { det: boolean; ecDet: boolean | undefined; hands: unknown }[] = [];
+    const spy = vi.spyOn(evaluateModule, 'evaluate').mockImplementation((st, me, w, ec) => {
+      if (st.turn.phase === 'done' || st.winner) seen.push({ det: isDeterminised(st), ecDet: ec?.determinised, hands: ec?.oppHands });
+      return realEvaluate(st, me, w, ec);
+    });
+    try {
+      const ctx = makeCtx(ME, W, W, new Rng(3), LEVELS[1], 0.2, true, null, s, true);
+      decideBattle(s, ctx);
+      expect(seen.length).toBeGreaterThan(0);
+      expect(seen.every((x) => x.det && x.ecDet === true && x.hands === undefined)).toBe(true);
+      // the root context (ctx.ec) is not determinised: it is the judgement of live positions only
+      expect(ctx.ec.determinised).not.toBe(true);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+});
+
 describe('decideBattle (review round 1)', () => {
   /** Two of our units, each with a target: a sure kill of a worn unit and a poor fire at a full one; five banners to win. */
   function twoAttacks(): GameDriver {
