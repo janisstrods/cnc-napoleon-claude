@@ -220,3 +220,11 @@ export function nextRegion(from: Region, back: boolean): Exclude<Region, 'other'
   if (i < 0) return 'board';
   return ORDER[(i + (back ? ORDER.length - 1 : 1)) % ORDER.length] as Exclude<Region, 'other'>;
 }
+
+/**
+ * True when the screen-wide Enter handler must leave the key alone: the card in the hand that has the focus took it (it
+ * selects itself), or something already handled it. Otherwise one Enter would select a card and press the primary button.
+ */
+export function enterBelongsToHand(target: { closest(sel: string): unknown } | null, defaultPrevented: boolean): boolean {
+  return defaultPrevented || !!target?.closest('.hand-cards');
+}

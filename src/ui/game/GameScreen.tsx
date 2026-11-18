@@ -9,9 +9,9 @@ import { nationInk } from '../kit/theme';
 import { BattleResult } from './BattleResult';
 import { Board } from './Board';
 import type { GameController } from './controller';
-import { CommittedCard, GuerrillaCounters, HandSizeLine, HandStrip, HoverTip, LogPanel } from './panels';
+import { CommittedCard, committedShown, GuerrillaCounters, HandSizeLine, HandStrip, HoverTip, LogPanel } from './panels';
 import { PromptBar, focusNewDecision, focusPromptTarget, gamePrompt } from './prompts';
-import { boardKeyStep, freshSelection, globalKeyAction, hexLabel, jumpTarget, nextRegion } from './boardKeys';
+import { boardKeyStep, enterBelongsToHand, freshSelection, globalKeyAction, hexLabel, jumpTarget, nextRegion } from './boardKeys';
 import { hexClick, leaderClick, type ClickResult } from './hexClick';
 import { bannerCounts, objectiveSummary, objectiveTipLines } from './objectiveText';
 import { boardMarks, escapeSelection, handChoices, selectionDeps, type UiSel } from './uiModel';
@@ -87,6 +87,8 @@ export function GameScreen({ controller, onExit, onRematch }: {
         { inGame: !active || active === document.body || !!active.closest('.game-root'), typing: t instanceof HTMLTextAreaElement || (t instanceof HTMLElement && t.isContentEditable), modal },
       );
       if (e.key === 'Enter') {
+        // a focused hand card selects itself on Enter: no second action on the prompt's primary button
+        if (enterBelongsToHand(t instanceof Element ? t : null, e.defaultPrevented)) return;
         // the board's own handler takes Enter while its cursor is shown; after a mouse click Enter is the main action, as elsewhere
         if (t instanceof Element && t.closest('.board-svg') && kbdRef.current) return;
         if (t instanceof HTMLButtonElement) {
@@ -96,7 +98,7 @@ export function GameScreen({ controller, onExit, onRematch }: {
         }
         if (e.repeat) return;
         if (performance.now() - shownAt.current < 400) return; // swallow double-taps into a fresh decision
-        const btn = document.querySelector<HTMLButtonElement>('.prompt-buttons .kit-btn--primary:not(:disabled)');
+        const btn = document.querySelector<HTMLButtonElement>('.prompt-buttons .kit-btn--primary:not(:disabled):not([data-nofocus])');
         if (btn) { e.preventDefault(); btn.click(); }
       } else if (e.key === 'Escape') {
         // Escape also disarms the Élan / Rally die
@@ -326,7 +328,7 @@ export function GameScreen({ controller, onExit, onRematch }: {
               </div>
               <CommittedCard s={s} side={ai} />
               <div className="ai-hand" title={`${them.hand.length} command cards`}>
-                {Array.from({ length: them.hand.length }).map((_, i) => <CardBack key={i} size="sm" style={{ fontSize: '1.7px', marginLeft: i ? -9 : 0 }} />)}
+                {Array.from({ length: them.hand.length - (committedShown(s, ai) ? 1 : 0) }).map((_, i) => <CardBack key={i} size="sm" style={{ fontSize: '1.7px', marginLeft: i ? -9 : 0 }} />)}
               </div>
             </div>
             <GuerrillaCounters s={s} side={ai} />
@@ -362,7 +364,6 @@ export function GameScreen({ controller, onExit, onRematch }: {
       </div>
 
       <footer className="bottom-strip">
-        <CommittedCard s={s} side={human} />
         <HandStrip s={s} d={d} human={human} ui={ui} setUi={setUi} />
         {ui.hoverCard !== null && me.hand.includes(ui.hoverCard) && (
           <div className="card-preview">

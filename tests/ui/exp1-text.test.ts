@@ -35,9 +35,9 @@ describe('log lines for the Spanish events', () => {
   it('moveFirst names both cards and values, or no card', () => {
     const t0 = title(0), t1 = title(1);
     const both: GameEvent = { t: 'moveFirst', picks: { top: 0, bottom: 1 }, values: { top: 3, bottom: 2 }, first: 'top' };
-    expect(line(both)!.text).toBe(`Opening cards: French ${t0} (3) against British ${t1} (2); the French army moves first.`);
+    expect(line(both)!.text).toBe(`Opening cards: French: ${t0} (3); British: ${t1} (2). The French army moves first.`);
     const none: GameEvent = { t: 'moveFirst', picks: { top: 0, bottom: null }, values: { top: 3, bottom: 99 }, first: 'top' };
-    expect(line(none)!.text).toBe(`Opening cards: French ${t0} (3) against British no card; the French army moves first.`);
+    expect(line(none)!.text).toBe(`Opening cards: French: ${t0} (3); British: no card. The French army moves first.`);
   });
 
   it('a broken unit leaves the field, and the engine note with its raw id stays silent', () => {

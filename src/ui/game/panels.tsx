@@ -91,10 +91,15 @@ export function HandSizeLine({ s, side }: { s: GameState; side: Side }) {
  * The card a side committed to at the Move First reveal, face up beside its hand while the side has not finished a turn (it
  * must play it first). Nothing before the reveal, whoever's it is, and nothing for the side that moves first.
  */
-export function CommittedCard({ s, side }: { s: GameState; side: Side }) {
+export function committedShown(s: GameState, side: Side): boolean {
   const mf = s.special.moveFirst;
   const card = mf?.done ? mf.committed[side] : null;
-  if (card === null || card === undefined || side === s.first || s.special.turnsDone[side] > 0) return null;
+  return card !== null && card !== undefined && side !== s.first && s.special.turnsDone[side] === 0;
+}
+
+export function CommittedCard({ s, side }: { s: GameState; side: Side }) {
+  const card = s.special.moveFirst?.committed[side];
+  if (!committedShown(s, side) || card === null || card === undefined) return null;
   return (
     <div className="committed-card" data-side={side} title={`Opening card: ${CARD_DEFS[cardKind(card)].title}`}>
       <span className="committed-label">Opening card</span>
@@ -107,6 +112,7 @@ export function CommittedCard({ s, side }: { s: GameState; side: Side }) {
 export function HandStrip({ s, d, human, ui, setUi }: { s: GameState; d: Decision | null; human: Side; ui: UiSel; setUi: React.Dispatch<React.SetStateAction<UiSel>> }) {
   const me = s.players[human];
   const choices = handChoices(s, d, human);
+  // the human's own opening card stays in the hand, marked and labelled: it is drawn once
   const committed = s.special.moveFirst?.done && s.special.turnsDone[human] === 0 ? s.special.moveFirst.committed[human] : null;
   return (
     <div className="hand-cards" style={{ '--n': me.hand.length } as React.CSSProperties}>
@@ -122,6 +128,7 @@ export function HandStrip({ s, d, human, ui, setUi }: { s: GameState; d: Decisio
               onClick={() => playable && setUi({ ...ui, selCard: ui.selCard === c ? null : c })}
               onHover={(hv) => setUi((u) => ({ ...u, hoverCard: hv ? c : u.hoverCard === c ? null : u.hoverCard }))}
             />
+            {c === committed && <span className="committed-label hand-committed-label">Opening card</span>}
           </div>
         );
       })}

@@ -4,7 +4,7 @@
 // flags) keep their board clicks and highlights, with the spec's title.
 import { useState, type Dispatch, type SetStateAction } from 'react';
 import {
-  answerError, CARD_DEFS, OFF_BOARD, UNIT_STATS, attachedLeader, battleReady, battleTargets, cardKind, effectiveCard, eligiblePieces, isLeaderId, leaderById,
+  answerError, CARD_DEFS, OFF_BOARD, UNIT_STATS, attachedLeader, battleReady, battleTargets, moveFirstValue, cardKind, effectiveCard, eligiblePieces, isLeaderId, leaderById,
   movablePieces, orderLimit, pieceHex, pieceMoves, unitById, validateOrders,
   type Answer, type Decision, type DieFace, type GameState, type HexId, type SectionName, type Side, type UndoStep,
 } from '../../engine';
@@ -343,7 +343,7 @@ function playCardPrompt(c: PromptCtx, d: D<'playCard'> | D<'moveFirst'>): Prompt
     buttons.push(autoButton(c));
     return {
       title: spec.title, buttons,
-      text: sel !== null ? `${spec.text} ${CARD_DEFS[cardKind(sel)].text}` : `${spec.text} Click a lit card of your hand: the opponent's choice stays hidden until both are made.`,
+      text: sel !== null ? `${CARD_DEFS[cardKind(sel)].title} (value ${moveFirstValue(s, human, sel)}). ${spec.text} ${CARD_DEFS[cardKind(sel)].text}` : `${spec.text} Click a lit card of your hand: the opponent's choice stays hidden until both are made.`,
     };
   }
   const def = sel !== null ? CARD_DEFS[cardKind(sel)] : null;
@@ -355,6 +355,7 @@ function playCardPrompt(c: PromptCtx, d: D<'playCard'> | D<'moveFirst'>): Prompt
     if (cardKind(sel) === 'counterAttack') note = eff.kind ? `Copies the enemy's ${CARD_DEFS[eff.kind].title}.` : 'The enemy has played nothing to copy.';
     else if (cardKind(sel) === 'firstStrike') note = 'First Strike is a reaction card: playing it now has no effect.';
     else note = def!.text;
+    if (bound) note = `You must play the opening card you chose. ${note}`;
   }
   const buttons = sel !== null ? [btn(`Play ${def!.title}`, () => c.answer({ kind: 'playCard', card: sel }))] : [];
   buttons.push(autoButton(c));

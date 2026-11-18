@@ -443,5 +443,5 @@ export function undoBlockedNote(s: GameState, d: Decision | null, human: Side, u
   if (g === null || g === human || undo !== null || !d || d.side !== human) return null;
   if ((d.kind !== 'orders' && d.kind !== 'move') || s.active !== human || s.turn.card === null) return null;
   if (Object.values(s.turn.ordered).some((o) => o.moved)) return null;
-  return `Undo is not available: the ${s.players[g].army} have answered the Guerrilla Action, so your card and orders stand.`;
+  return `Undo is not available: the ${s.players[g].army} have answered the Guerrilla Action, ${d.kind === 'orders' ? 'so your card stands' : 'so your card and orders stand'}.`;
 }

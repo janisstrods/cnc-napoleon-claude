@@ -483,3 +483,4 @@ body {
 .army-row .committed-card { margin-right: 6px; }
 .army-row .committed-card { flex: none; width: 48px; }
 .army-row .committed-label { order: 2; white-space: normal; text-align: center; font-size: 10px; line-height: 1.05; }
+.hand-slot .hand-committed-label { position: absolute; top: -14px; left: 0; right: 0; text-align: center; pointer-events: none; }

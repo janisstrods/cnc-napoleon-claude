@@ -8,10 +8,12 @@ import {
 } from '../../src/engine';
 import { scenarioById } from '../../src/scenarios';
 import { GameController, newSessionConfig, type ViewState } from '../../src/ui/game/controller';
+import { aiPacing } from '../../src/ui/game/controller';
+import { enterBelongsToHand, freshSelection } from '../../src/ui/game/boardKeys';
 import { gamePrompt, focusPromptTarget } from '../../src/ui/game/prompts';
 import { decisionTitle, promptSpec } from '../../src/ui/game/promptSpec';
 import { GuerrillaCounters, HandSizeLine, HandStrip } from '../../src/ui/game/panels';
-import { handChoices, type UiSel } from '../../src/ui/game/uiModel';
+import { handChoices, undoBlockedNote, type UiSel } from '../../src/ui/game/uiModel';
 import { mulberry32 } from '../support/rng';
 import { SeededOpponent, runToHuman, useFakeClock } from './controller-helpers';
 
@@ -55,18 +57,27 @@ describe('Guerrilla prompts', () => {
     for (const a of p.actions) if (a.answer !== 'auto') expect(answerError(s, scout, a.answer), a.key).toBeNull();
   });
 
-  it('keyboard: the yes is the primary button; "no", the general and Undo are skipped by the focus chain', () => {
-    for (const d of [spend, scout]) {
-      const [yes, no, auto] = markup(bar(s, d, 'top'));
-      expect(yes, d.mode).toContain('kit-btn--primary');
-      expect(yes).not.toContain('data-nofocus');
-      expect(no).toContain('data-nofocus');
-      expect(auto).toContain('data-nofocus');
-    }
-    // the chain lands on the yes button
-    const focused: string[] = [];
-    const root = { querySelector: (sel: string) => (sel.includes('--primary') ? { focus: () => focused.push('primary') } : null) };
-    expect(focusPromptTarget(root)).toBe('primary');
+  it('keyboard: spending is irreversible, so no Enter takes it by default; taking a Scout counter is the primary button', () => {
+    const [yes, no, auto] = markup(bar(s, spend, 'top'));
+    for (const b of [yes, no, auto]) expect(b).toContain('data-nofocus');
+    const [yes2, no2, auto2] = markup(bar(s, scout, 'top'));
+    expect(yes2).toContain('kit-btn--primary');
+    expect(yes2).not.toContain('data-nofocus');
+    expect(no2).toContain('data-nofocus');
+    expect(auto2).toContain('data-nofocus');
+    // a prompt with nothing safe to focus falls to the bar itself
+    expect(focusPromptTarget({ querySelector: (sel: string) => (sel === '.prompt-bar' ? { focus: () => {} } : null) })).toBe('bar');
+  });
+});
+
+describe('keyboard: Enter on a hand card', () => {
+  it('only selects it: the screen-wide Enter handler leaves a hand card (and a handled key) alone', () => {
+    const inHand = { closest: (sel: string) => (sel === '.hand-cards' ? {} : null) };
+    const elsewhere = { closest: () => null };
+    expect(enterBelongsToHand(inHand, false)).toBe(true);
+    expect(enterBelongsToHand(elsewhere, false)).toBe(false);
+    expect(enterBelongsToHand(elsewhere, true)).toBe(true);
+    expect(enterBelongsToHand(null, false)).toBe(false);
   });
 });
 
@@ -154,12 +165,13 @@ describe('the opening cards on the screen', () => {
       const second = other(probe.first);
       const title = CARD_DEFS[cardKind(probe.players[second].hand[0])].title;
       const before = await screenOf(human, edit(0, human));
-      expect(before, human).toContain('committed-card');
       expect(before).toContain('Opening card');
       expect(before).toContain(title); // face up: the title is readable (CardView), whoever the human is
-      expect(before).toContain(`data-side="${second}"`);
+      if (human === second) expect(before).toContain('is-committed'); // the human's own card is marked in its hand
+      else expect(before).toContain(`class="committed-card" data-side="${second}"`);
       const after = await screenOf(human, edit(1, human));
       expect(after, human).not.toContain('committed-card');
+      expect(after, human).not.toContain('is-committed');
     }
   });
 });
@@ -231,7 +243,7 @@ describe('the events reach the screen', () => {
       expect(c.view.display.special.moveFirst?.picks).toEqual({ top: null, bottom: null });
       c.answer(randomAnswer(c.driver.state, d, mulberry32(1)));
       await runToHuman(c);
-      expect(c.view.log.map((l) => l.text).some((x) => x.startsWith('Opening cards revealed'))).toBe(true);
+      expect(c.view.log.map((l) => l.text).some((x) => x.startsWith('Opening cards:'))).toBe(true);
       expect(c.view.display.special.moveFirst?.done).toBe(true);
     } finally {
       c.dispose();
@@ -259,7 +271,7 @@ describe('Undo after a Guerrilla answer', () => {
         const asked = c.view.undo === null;
         if (asked) {
           withNote++;
-          expect(p.note, `seed ${seed}`).toBe('Undo is not available: the Spanish have answered the Guerrilla Action, so your card and orders stand.');
+          expect(p.note, `seed ${seed}`).toBe('Undo is not available: the Spanish have answered the Guerrilla Action, so your card stands.');
           expect(markup(p).join('')).not.toContain('Undo card');
         } else {
           without++;
@@ -281,5 +293,108 @@ describe('Undo after a Guerrilla answer', () => {
     expect(guerrillaHeld(s)).toBe(1);
     const p = bar(s, { kind: 'orders', side: 'top', card: 'attackC', mirrored: false, single: false }, 'top', null);
     expect(p?.note).toBeUndefined();
+  });
+});
+
+describe('review round 1', () => {
+  const s103 = createGame(scenarioById('103').setup, 1);
+  const s116 = createGame(scenarioById('116').setup, 1);
+
+  it('the computer asking Move First shows no tell: no thinking indicator, no pause', () => {
+    expect(aiPacing({ kind: 'moveFirst', side: 'top', options: [1] })).toEqual({ indicator: false, minMs: 0 });
+  });
+
+  it('a bound opening card says so whether or not it is selected, and a Move First pick shows its value', () => {
+    const t = createGame(scenarioById('116').setup, 1);
+    const hand = t.players.bottom.hand;
+    t.special.moveFirst = { done: true, picks: { top: null, bottom: hand[0] }, committed: { top: null, bottom: hand[0] } };
+    const d: Decision = { kind: 'playCard', side: 'bottom' };
+    for (const selCard of [null, hand[0]]) {
+      const view = { pending: d, over: null, fatal: false, aiThinking: false, generalThinking: false, undo: null } as unknown as ViewState;
+      const p = gamePrompt({ controller: {} as GameController, view, s: t, human: 'bottom', ai: 'top', ui: { ...SEL, selCard }, setUi: noop, answer: noop, onExit: noop })!;
+      expect(p.text, String(selCard)).toContain('You must play the opening card you chose.');
+    }
+    // a pick: the selected card's printed value
+    const mf = new GameDriver(s116).pending as Extract<Decision, { kind: 'moveFirst' }>;
+    const card = mf.options[0];
+    const view = { pending: mf, over: null, fatal: false, aiThinking: false, generalThinking: false, undo: null } as unknown as ViewState;
+    const p = gamePrompt({ controller: {} as GameController, view, s: s116, human: mf.side, ai: other(mf.side), ui: { ...SEL, selCard: card }, setUi: noop, answer: noop, onExit: noop })!;
+    expect(p.text).toMatch(new RegExp(`${CARD_DEFS[cardKind(card)].title} \\(value \\d+\\)`));
+  });
+
+  it('the single legal card is preselected; two are not', () => {
+    const t = createGame(scenarioById('116').setup, 1);
+    const hand = t.players.bottom.hand;
+    t.special.moveFirst = { done: true, picks: { top: null, bottom: hand[1] }, committed: { top: null, bottom: hand[1] } };
+    expect(freshSelection(t, { kind: 'playCard', side: 'bottom' }, 'bottom').selCard).toBe(hand[1]);
+    t.special.turnsDone.bottom = 1;
+    expect(freshSelection(t, { kind: 'playCard', side: 'bottom' }, 'bottom').selCard).toBeNull();
+    const mf = new GameDriver(s116).pending as Extract<Decision, { kind: 'moveFirst' }>;
+    expect(freshSelection(s116, { ...mf, options: [mf.options[0]] }, mf.side).selCard).toBe(mf.options[0]);
+    expect(freshSelection(s116, { ...mf, options: mf.options.slice(0, 2) }, mf.side).selCard).toBeNull();
+  });
+
+  it('the committed card shows only for the second player', async () => {
+    const out = await screenOf('top', (s) => {
+      s.special.moveFirst = { done: true, picks: { top: s.players.top.hand[0], bottom: s.players.bottom.hand[0] }, committed: { top: s.players.top.hand[0], bottom: s.players.bottom.hand[0] } };
+      s.first = 'top';
+    });
+    // top moves first: the opponent (bottom, second) shows its card beside its hand; the human's own card is not shown apart
+    expect(out.match(/class="committed-card"/g)).toHaveLength(1);
+    expect(out).toContain('data-side="bottom"');
+  });
+
+  it("the computer's committed card is not drawn twice: one back fewer; the human's is in the hand, once", async () => {
+    const probe = createGame(scenarioById('116').setup, 5);
+    const first = probe.first;
+    const edit = (s: GameState) => {
+      const second = other(s.first);
+      const card = s.players[second].hand[0];
+      s.special.moveFirst = { done: true, picks: { top: null, bottom: null, [second]: card }, committed: { top: null, bottom: null, [second]: card } };
+    };
+    // the human is the first player: the computer is second, and its hand shows one back fewer beside the face-up card
+    const human = first;
+    const aiSecond = other(first);
+    const out = await screenOf(human, edit);
+    const plain = await screenOf(human, () => {});
+    const count = (h: string) => (h.match(/aria-label="Command card \(face down\)"/g) ?? []).length;
+    expect(count(out)).toBe(count(plain) - 1);
+    void aiSecond;
+    // the human is second: its own card is one hand slot marked and labelled, with no second copy beside the hand
+    const mine = await screenOf(aiSecond, edit);
+    expect(mine.match(/is-committed/g)).toHaveLength(1);
+    expect(mine).not.toContain('class="committed-card"');
+    expect(mine).toContain('Opening card');
+  });
+
+  it("the undo note: at orders 'your card stands'; at move 'your card and orders stand'; not once a unit has moved", () => {
+    const s = createGame(scenarioById('103').setup, 1);
+    s.active = 'bottom';
+    s.turn.card = s.players.bottom.hand[0];
+    const orders: Decision = { kind: 'orders', side: 'bottom', card: 'attackC', mirrored: false, single: false };
+    const move: Decision = { kind: 'move', side: 'bottom' };
+    expect(undoBlockedNote(s, orders, 'bottom', null)).toBe('Undo is not available: the Spanish have answered the Guerrilla Action, so your card stands.');
+    expect(undoBlockedNote(s, move, 'bottom', null)).toBe('Undo is not available: the Spanish have answered the Guerrilla Action, so your card and orders stand.');
+    expect(undoBlockedNote(s, move, 'bottom', 'move')).toBeNull();
+    s.turn.ordered = { u1: { id: 'u1', moved: 1 } } as unknown as GameState['turn']['ordered'];
+    expect(undoBlockedNote(s, move, 'bottom', null)).toBeNull();
+    s.turn.ordered = {};
+    s.turn.card = null;
+    expect(undoBlockedNote(s, orders, 'bottom', null)).toBeNull();
+    void s103;
+  });
+
+  it('the digit keys and the prompt ignore a card the decision does not allow', () => {
+    const mf = new GameDriver(s116).pending as Extract<Decision, { kind: 'moveFirst' }>;
+    const hand = s116.players[mf.side].hand;
+    const bad = hand.find((c) => !mf.options.includes(c));
+    const only: Decision = { kind: 'moveFirst', side: mf.side, options: [mf.options[0]] };
+    const other1 = hand.find((c) => c !== mf.options[0])!;
+    expect(handChoices(s116, only, mf.side)).not.toContain(other1);
+    const view = { pending: only, over: null, fatal: false, aiThinking: false, generalThinking: false, undo: null } as unknown as ViewState;
+    const p = gamePrompt({ controller: {} as GameController, view, s: s116, human: mf.side, ai: other(mf.side), ui: { ...SEL, selCard: other1 }, setUi: noop, answer: noop, onExit: noop })!;
+    // a card that is not an option is not a selection: no Choose button
+    expect(markup(p).join('')).not.toContain('Choose ');
+    void bad;
   });
 });

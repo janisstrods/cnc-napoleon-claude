@@ -208,7 +208,7 @@ export function promptSpec(s: GameState, d: Decision): PromptSpec {
         const card = d.card ? CARD_DEFS[d.card].title : 'a card';
         text = `${s.players[other(d.side)].army} played ${card}. Spend a counter (${d.held} held) and roll one die to cancel it. It fails only on a sabre: 1 chance in 6.`;
         actions.push(
-          { key: 'yes', label: 'Spend a counter', answer: { kind: 'yesno', yes: true }, hint: 'The counter goes to the pool. Any face but a sabre cancels the card.' },
+          { key: 'yes', label: 'Spend a counter', answer: { kind: 'yesno', yes: true }, hint: 'The counter goes to the pool. Any face but a sabre cancels the card.', skip: true },
           { key: 'no', label: 'Keep it', answer: { kind: 'yesno', yes: false }, hint: 'The card stands and you keep the counter.', skip: true },
         );
       } else {
