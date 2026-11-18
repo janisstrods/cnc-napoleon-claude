@@ -1,15 +1,17 @@
-import type { CSSProperties, KeyboardEvent } from 'react';
+import { useId, type CSSProperties, type KeyboardEvent } from 'react';
 import { CARD_DEFS, mirrorKind } from '../../engine/cards';
 import type { CardKind, SectionName } from '../../engine/types';
-import { Icon, type IconName, type NapGlyph } from './Icon';
+import { Icon, iconPath, type IconName, type NapGlyph } from './Icon';
 import { SectionMiniMap } from './SectionMiniMap';
 import { GROUP_COLORS } from './theme';
 
 export type CardSize = 'sm' | 'md' | 'lg';
 
-/** Illustration of each tactic card (game-icons.net, CC BY 3.0, or our own glyphs); section cards show the mini-map instead. */
+/**
+ * Illustration of each tactic card (game-icons.net, CC BY 3.0, or our own glyphs); section cards show the mini-map instead.
+ * La Grande Manoeuvre's laurel crown stays as a Napoleonic period motif (Task 10d review).
+ */
 export const CARD_ICONS: Partial<Record<CardKind, IconName | NapGlyph>> = {
-  coordinatedAdvance: 'laurels',
   forward: 'run',
   reconInForce: 'spyglass',
   bayonetCharge: 'spears',
@@ -27,18 +29,37 @@ export const CARD_ICONS: Partial<Record<CardKind, IconName | NapGlyph>> = {
   shortSupply: 'breadBag',
 };
 
-const GOLD = ['#fff0bf', '#e6c06a', '#b38532', '#8a6020'];
-
 const SWAP: Record<SectionName, SectionName> = { left: 'right', center: 'center', right: 'left' };
 
-function Corner({ pos }: { pos: 'tl' | 'tr' | 'bl' | 'br' }) {
+const f2 = (n: number) => n.toFixed(2);
+
+/** The roundel's bezel: 60 fine radial ticks, every fifth one longer, as on an engraved dial. */
+const ROUNDEL_TICKS = Array.from({ length: 60 }, (_, i) => {
+  const a = (i / 60) * Math.PI * 2;
+  const r0 = i % 5 === 0 ? 39.6 : 41.4;
+  const [c, s] = [Math.cos(a), Math.sin(a)];
+  return `M${f2(50 + c * r0)} ${f2(50 + s * r0)}L${f2(50 + c * 44.4)} ${f2(50 + s * 44.4)}`;
+}).join('');
+
+/**
+ * A tactic card's symbol as an engraved roundel: a double rule, a ticked bezel, a hatched field, and the glyph in ink
+ * with a paper halo cut out of the hatching. Plain ink on paper; the group colour tints only the glyph.
+ */
+function EngravedRoundel({ icon }: { icon?: IconName | NapGlyph }) {
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   return (
-    <svg className={`kit-card__corner kit-card__corner--${pos}`} viewBox="0 0 20 20" aria-hidden="true">
-      <path d="M2 17 V7 Q2 2 7 2 H17" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-      <path d="M5.5 13 V8.5 Q5.5 5.5 8.5 5.5 H13" fill="none" stroke="currentColor" strokeWidth="0.8" strokeLinecap="round" opacity=".7" />
-      <circle cx="2" cy="17.5" r="1.3" fill="currentColor" />
-      <circle cx="17.5" cy="2" r="1.3" fill="currentColor" />
-      <path d="M8 8 l2.2 -1 l-1 2.2 z" fill="currentColor" />
+    <svg className="kit-card__roundel" viewBox="0 0 100 100" data-device="engraved-roundel" aria-hidden="true" focusable="false">
+      <defs>
+        <pattern id={`${uid}h`} width="2.6" height="2.6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <path d="M0 0V2.6" className="kit-roundel__hatchline" />
+        </pattern>
+      </defs>
+      <circle cx="50" cy="50" r="48" className="kit-roundel__plate" />
+      <circle cx="50" cy="50" r="45.6" className="kit-roundel__fine" />
+      <path d={ROUNDEL_TICKS} className="kit-roundel__ticks" />
+      <circle cx="50" cy="50" r="38.6" className="kit-roundel__rule" />
+      <circle cx="50" cy="50" r="38" fill={`url(#${uid}h)`} className="kit-roundel__hatch" />
+      {icon ? <path d={iconPath(icon)} transform="translate(23 23) scale(0.10546875)" className="kit-roundel__icon" /> : null}
     </svg>
   );
 }
@@ -140,8 +161,6 @@ export function CardView(p: {
     >
       <div className="kit-card__face">
         <div className="kit-card__frame" />
-        <Corner pos="bl" />
-        <Corner pos="br" />
         <header className="kit-card__header">
           <span className="kit-card__title">{def.title}</span>
           {def.detach ? <DetachBadge /> : null}
@@ -164,12 +183,7 @@ export function CardView(p: {
               </div>
             </div>
           ) : (
-            <>
-              <div className="kit-card__rays" />
-              <div className="kit-card__medallion">
-                {icon ? <Icon name={icon} size="100%" gradient={[g.light, g.main, g.dark]} className="kit-card__icon" /> : null}
-              </div>
-            </>
+            <EngravedRoundel icon={icon} />
           )}
         </div>
         <Ornament className="kit-card__rule" />
@@ -182,17 +196,42 @@ export function CardView(p: {
   );
 }
 
-/** The back of a Command card. */
+/** One band of a guilloche: `n` sine-modulated rings about a centre, each a phase apart, as on a banknote's rosette. */
+function guilloche(cx: number, cy: number, r: number, amp: number, lobes: number, n: number, squash: number): string {
+  const steps = 240;
+  let d = '';
+  for (let k = 0; k < n; k++) {
+    const ph = (k / n) * Math.PI * 2;
+    for (let i = 0; i <= steps; i++) {
+      const t = (i / steps) * Math.PI * 2;
+      const rr = r + amp * Math.sin(lobes * t + ph);
+      d += `${i ? 'L' : 'M'}${f2(cx + rr * Math.cos(t))} ${f2(cy + rr * squash * Math.sin(t))}`;
+    }
+    d += 'Z';
+  }
+  return d;
+}
+
+// the card back is 145 x 210 units, the cartouche at its centre
+const BACK_ROSETTE = guilloche(72.5, 105, 39, 4.2, 14, 6, 1.18);
+const BACK_RING = guilloche(72.5, 105, 47.5, 1.6, 30, 3, 1.18);
+
+/** The back of a Command card: an engraved cartouche with crossed sabres in a guilloche rosette, ink on buff. */
 export function CardBack(p: { size?: CardSize; className?: string; style?: CSSProperties }) {
   const size = p.size ?? 'md';
   return (
     <div className={`kit-card kit-card--${size} kit-cardback ${p.className ?? ''}`} style={p.style} role="img" aria-label="Command card (face down)">
       <div className="kit-cardback__face">
-        <div className="kit-cardback__frame" />
-        <div className="kit-cardback__emblem">
-          <Icon name="laurels" size="100%" gradient={GOLD} className="kit-cardback__laurels" />
-          <Icon name="crossedSwords" size="100%" gradient={GOLD} className="kit-cardback__swords" />
-        </div>
+        <svg className="kit-cardback__art" viewBox="0 0 145 210" data-device="cartouche" aria-hidden="true" focusable="false">
+          <rect x="6" y="6" width="133" height="198" className="kit-cardback__rule" />
+          <rect x="9.5" y="9.5" width="126" height="191" className="kit-cardback__fine" />
+          <path d={BACK_RING} className="kit-cardback__ring" />
+          <path d={BACK_ROSETTE} className="kit-cardback__guilloche" />
+          <ellipse cx="72.5" cy="105" rx="27" ry="34" className="kit-cardback__cartouche" />
+          <ellipse cx="72.5" cy="105" rx="24.4" ry="31.4" className="kit-cardback__fine" />
+          <path d="M72.5 63.5l2.6 3.5l-2.6 3.5l-2.6-3.5ZM72.5 139.5l2.6 3.5l-2.6 3.5l-2.6-3.5Z" className="kit-cardback__lozenge" />
+          <path d={iconPath('crossedSabres')} transform="translate(53.5 86) scale(0.07421875)" className="kit-cardback__sabres" />
+        </svg>
         <div className="kit-cardback__caption kit-cardback__caption--top">Command</div>
         <div className="kit-cardback__caption kit-cardback__caption--bottom">Napoleonics</div>
       </div>

@@ -11,11 +11,11 @@ The icons below come from [game-icons.net](https://game-icons.net)
 ([GitHub: game-icons/icons](https://github.com/game-icons/icons)). They are licensed under
 [Creative Commons Attribution 3.0 Unported (CC BY 3.0)](https://creativecommons.org/licenses/by/3.0/).
 The original SVGs are kept in `src/ui/kit/icons/`. Their glyph paths are extracted into
-`src/ui/kit/icons/paths.ts` and drawn with new colours and gradients. The black background square of each icon is removed.
+`src/ui/kit/icons/paths.ts` and drawn with new colours (ink on the cards' engraved roundels). The black background square of each icon is removed.
 
 | Icon | Author | Used for | Licence | Link |
 | --- | --- | --- | --- | --- |
-| Crossed swords | Lorc | Card back, Cold Steel, menu emblem | CC BY 3.0 | https://game-icons.net/1x1/lorc/crossed-swords.html |
+| Crossed swords | Lorc | Cold Steel | CC BY 3.0 | https://game-icons.net/1x1/lorc/crossed-swords.html |
 | Laurel crown | Lorc | Grand Manoeuvre | CC BY 3.0 | https://game-icons.net/1x1/lorc/laurel-crown.html |
 | Shield echoes | Lorc | Fire and Hold | CC BY 3.0 | https://game-icons.net/1x1/lorc/shield-echoes.html |
 | Shield reflect | Lorc | Counter Attack | CC BY 3.0 | https://game-icons.net/1x1/lorc/shield-reflect.html |
@@ -25,9 +25,9 @@ The original SVGs are kept in `src/ui/kit/icons/`. Their glyph paths are extract
 | Spears | Lorc | Bayonet Charge | CC BY 3.0 | https://game-icons.net/1x1/lorc/spears.html |
 | Cavalry | Delapouite | Cavalry Charge | CC BY 3.0 | https://game-icons.net/1x1/delapouite/cavalry.html |
 | Trumpet flag | Delapouite | Élan, Rally | CC BY 3.0 | https://game-icons.net/1x1/delapouite/trumpet-flag.html |
-| Laurels | Lorc | Card back wreath, Coordinated Advance, menu and medal wreath | CC BY 3.0 | https://game-icons.net/1x1/lorc/laurels.html |
+| Laurels | Lorc | Medal wreath | CC BY 3.0 | https://game-icons.net/1x1/lorc/laurels.html |
 
-The bicorne, spyglass and haversack card glyphs and the infantryman, horseman, cannon and crossed sabres die glyphs (`src/ui/kit/icons/napGlyphs.ts`) are drawn for this project.
+The bicorne, spyglass and haversack card glyphs and the infantryman, horseman, cannon and crossed sabres die glyphs (`src/ui/kit/icons/napGlyphs.ts`) are drawn for this project; the crossed sabres also sit in the card back's cartouche.
 
 Authors: Lorc (https://lorcblog.blogspot.com) and Delapouite (https://delapouite.com).
 
@@ -45,8 +45,11 @@ These parts of the UI kit are original CSS/SVG made for this project:
 - section mini-maps
 - dice cubes and the infantry, cavalry, artillery, flag and sabre die faces
 - banners
-- card frames
-- parchment, wood, leather and felt textures (procedural SVG turbulence)
+- card frames (the engraved double rule and colour band)
+- the engraved roundels round the tactic cards' glyphs (ticked bezel and hatched field)
+- the card back: the guilloche rosette, the cartouche and the lattice
+- the compass rose of the main menu
+- parchment, laid-paper and felt textures (procedural SVG)
 
 No third-party assets are used for them.
 

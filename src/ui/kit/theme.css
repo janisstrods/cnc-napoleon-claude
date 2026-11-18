@@ -28,6 +28,9 @@
   --kit-crimson: #a3262a;
   --kit-royal: #1f3f8a;
   --kit-spanish: #a67a12;
+  --kit-spanish-ink: #735409;
+  --kit-portuguese: #6b4018;
+  --kit-allied: #5e3a17;
   --kit-purple: #55235f;
   --kit-olive: #6b6a2a;
   --kit-felt: #ddd2b4;
@@ -50,17 +53,11 @@
   --kit-shadow-soft: 0 1px 3px rgba(34, 28, 22, .22);
   --kit-shadow-lifted: 0 10px 24px rgba(34, 28, 22, .28), 0 2px 6px rgba(34, 28, 22, .18);
 
-  /* Metallic gradients: the command cards' rims and medallions (bronze) and the medals (gold); no screen chrome uses them. */
-  --kit-bronze-metal: linear-gradient(135deg, #7a5320 0%, #d8b064 22%, #f3dc9a 34%, #a8782f 52%, #6e4b1c 68%, #c79d50 86%, #8a6226 100%);
-  --kit-gold-metal: linear-gradient(180deg, #fbe7a6 0%, #e0b85a 45%, #a87c2c 100%);
-
   /* Procedural textures (SVG, no image assets), all faint. */
   --kit-grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n' x='0' y='0'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .30  0 0 0 0 .22  0 0 0 0 .12  .32 0 0 0 -.14'/></filter><rect width='180' height='180' filter='url(%23n)'/></svg>");
   --kit-mottle: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='500' height='500'><filter id='n' x='0' y='0' width='100%25' height='100%25'><feTurbulence type='fractalNoise' baseFrequency='.012' numOctaves='4' seed='7' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .45  0 0 0 0 .34  0 0 0 0 .16  .38 0 0 0 -.2'/></filter><rect width='500' height='500' filter='url(%23n)'/></svg>");
   /* name kept: laid paper, its fine laid lines and the wider chain lines of the mould */
   --kit-woodgrain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='96' height='4'><path d='M0 .5H96' stroke='%23493a28' stroke-opacity='.035'/><path d='M48 0V4' stroke='%23493a28' stroke-opacity='.05'/></svg>");
-  /* the command cards' backs */
-  --kit-leather-tex: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='l' x='0' y='0'><feTurbulence type='turbulence' baseFrequency='.55' numOctaves='2' seed='11' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  .5 0 0 0 -.12'/></filter><rect width='200' height='200' filter='url(%23l)'/></svg>");
 
   /* paper for cards and dialogs: a lighter centre, a faint warm edge */
   --kit-parchment-bg:
