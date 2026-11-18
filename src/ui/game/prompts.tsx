@@ -2,18 +2,18 @@
 // the computer plays, what it is doing. Every decision kind is described by `promptSpec` (title, buttons, hexes) and every
 // prompt ends with "Let the general decide"; the bespoke choosers (card, orders, move, battle, retreat, leader retreat,
 // flags) keep their board clicks and highlights, with the spec's title.
-import type { Dispatch, SetStateAction } from 'react';
+import { useState, type Dispatch, type SetStateAction } from 'react';
 import {
   answerError, CARD_DEFS, OFF_BOARD, UNIT_STATS, attachedLeader, battleReady, battleTargets, cardKind, effectiveCard, eligiblePieces, isLeaderId, leaderById,
   movablePieces, orderLimit, pieceHex, pieceMoves, unitById, validateOrders,
-  type Answer, type Decision, type DieFace, type GameState, type SectionName, type Side, type UndoStep,
+  type Answer, type Decision, type DieFace, type GameState, type HexId, type SectionName, type Side, type UndoStep,
 } from '../../engine';
-import { Button, CardView } from '../kit';
+import { Button, CardView, DieView } from '../kit';
 import { AssignPanel } from './AssignPanel';
 import { assignError, currentAssign, type ElanOrRally } from './assign';
 import type { GameController, ViewState } from './controller';
 import { AUTO_ACTION, DECISION_TITLES, decisionTitle, promptSpec, unitLabel } from './promptSpec';
-import { attackDice, chosenGuns, expectedHits, leaderRetreatChoices, retreatChoices, type UiSel } from './uiModel';
+import { attackDice, combinedArmsDice, combinedArmsTotalText, effectiveGuns, expectedHits, leaderRetreatChoices, retreatChoices, toggleGun, type UiSel } from './uiModel';
 
 /** What the prompt bar shows. `tone`: 'warn' or 'danger' colouring; `dice`: dice drawn before the text. */
 export interface Prompt {
@@ -23,6 +23,8 @@ export interface Prompt {
   tone?: string;
   /** A line under the text: what the choice under the pointer does. */
   hint?: string;
+  /** The hint is one short line (no room kept for a longer one). */
+  compactHint?: boolean;
   dice?: DieFace[];
   /** Shown in the prompt bar between the text and the buttons (the Scout's two cards). */
   extra?: JSX.Element;
@@ -54,10 +56,10 @@ function pct(x: number) {
   return `${Math.round(x * 100)}%`;
 }
 
-function btn(label: string, onClick: () => void, opts: { variant?: 'primary' | 'secondary' | 'ghost'; disabled?: boolean; key?: string; title?: string; hover?: { enter: () => void; leave: () => void } } = {}) {
+function btn(label: string, onClick: () => void, opts: { variant?: 'primary' | 'secondary' | 'ghost'; disabled?: boolean; key?: string; title?: string; noFocus?: boolean; hover?: { enter: () => void; leave: () => void } } = {}) {
   return (
     <Button
-      key={opts.key ?? label} variant={opts.variant ?? 'primary'} disabled={opts.disabled} onClick={onClick} title={opts.title}
+      key={opts.key ?? label} variant={opts.variant ?? 'primary'} disabled={opts.disabled} onClick={onClick} title={opts.title} data-nofocus={opts.noFocus ? 'true' : undefined}
       onMouseEnter={opts.hover?.enter} onFocus={opts.hover?.enter} onMouseLeave={opts.hover?.leave} onBlur={opts.hover?.leave}
     >
       {label}
@@ -67,7 +69,7 @@ function btn(label: string, onClick: () => void, opts: { variant?: 'primary' | '
 
 /** The general's button: the computer's own policy answers for the human. */
 function autoButton(c: PromptCtx): JSX.Element {
-  return btn(AUTO_ACTION.label, () => void c.controller.autoAnswer(), { variant: 'ghost', key: 'auto', title: 'The computer plays this decision for you' });
+  return btn(AUTO_ACTION.label, () => void c.controller.autoAnswer(), { variant: 'ghost', key: 'auto', noFocus: true, title: 'The computer plays this decision for you' });
 }
 
 /** The prompt bar's content: null once the battle is over, and while the computer decides something that shows nothing. */
@@ -114,14 +116,98 @@ function decisionPrompt(c: PromptCtx, d: Decision): Prompt {
       return scoutPrompt(c, d);
     case 'combinedArms':
       return combinedArmsPrompt(c, d);
-    case 'shortSupplyTarget': {
-      // a click on any unit of the board chooses it; the general's button is the only other answer
+    case 'shortSupplyTarget':
+    case 'shortSupplyHex': {
+      // a click on the board chooses (a unit, or a hex); the list in the bar is the keyboard's way; then the general's button
       const p = genericPrompt(c, d);
-      return { ...p, buttons: p.buttons.filter((b) => b.key === 'auto') };
+      const spec = promptSpec(c.s, d);
+      const choices = spec.actions.flatMap((a) => (a.answer === 'auto' ? [] : [{ key: a.key, label: a.label, answer: a.answer, hex: choiceHex(c.s, d, a.answer) }]));
+      return {
+        ...p,
+        buttons: p.buttons.filter((b) => b.key === 'auto'),
+        extra: <ChoicePicker label={d.kind === 'shortSupplyHex' ? 'Hex' : 'Unit'} choices={choices} onChoose={c.answer} onPreview={(h) => c.setUi((u) => ({ ...u, hoverHex: h }))} />,
+      };
     }
     default:
       return genericPrompt(c, d);
   }
+}
+
+/** The board hex a list entry stands for (shown under the pointer's tooltip while it is picked). */
+function choiceHex(s: GameState, d: Decision, a: Answer): HexId | null {
+  if (a.kind === 'hex') return a.hex;
+  if (a.kind === 'choose' && d.kind === 'shortSupplyTarget') return pieceHex(s, d.options[a.index]) ?? null;
+  return null;
+}
+
+export interface PickerChoice { key: string; label: string; answer: Answer; hex: HexId | null }
+
+/** A labelled list and a Choose button: the keyboard's way to answer a choice made by clicking on the board. */
+export function ChoicePicker(p: { label: string; choices: PickerChoice[]; onChoose: (a: Answer) => void; onPreview?: (hex: HexId | null) => void }) {
+  const [key, setKey] = useState(p.choices[0]?.key ?? '');
+  const cur = p.choices.find((x) => x.key === key) ?? p.choices[0];
+  return (
+    <div className="prompt-pick">
+      <label>
+        {p.label}
+        <select
+          value={cur?.key ?? ''}
+          onChange={(e) => { setKey(e.target.value); p.onPreview?.(p.choices.find((x) => x.key === e.target.value)?.hex ?? null); }}
+        >
+          {p.choices.map((x) => <option key={x.key} value={x.key}>{x.label}</option>)}
+        </select>
+      </label>
+      <Button variant="secondary" disabled={!cur} onClick={() => cur && p.onChoose(cur.answer)}>Choose</Button>
+    </div>
+  );
+}
+
+/** Where a new decision puts the keyboard focus (what `focusPromptTarget` tried first to last). */
+export type PromptFocus = 'primary' | 'pick' | 'button' | 'bar';
+
+/**
+ * A new human decision of the keyboard player takes the focus: the primary button, else a chooser's list, else the first
+ * enabled button that is not the general's or Undo (data-nofocus: an Enter must not hand the decision over or take a move
+ * back), else the bar itself. Returns what took it.
+ */
+export function focusPromptTarget(root: { querySelector(selector: string): { focus(o?: { preventScroll: boolean }): void } | null }): PromptFocus | null {
+  const chain: [PromptFocus, string][] = [
+    ['primary', '.prompt-buttons .kit-btn--primary:not(:disabled):not([data-nofocus])'],
+    ['pick', '.prompt-pick select'],
+    ['button', '.prompt-buttons .kit-btn:not(:disabled):not([data-nofocus])'],
+    ['bar', '.prompt-bar'],
+  ];
+  for (const [name, sel] of chain) {
+    const el = root.querySelector(sel);
+    if (el) { el.focus({ preventScroll: true }); return name; }
+  }
+  return null;
+}
+
+/**
+ * The prompt bar. Its text (title, line, error) is a polite live region that exists while there is no prompt too, so
+ * the next prompt is announced; the buttons and the hint are not announced. The bar takes focus (tabindex -1) when it holds no button to focus.
+ */
+export function PromptBar({ prompt, error }: { prompt: Prompt | null; error: string | null }) {
+  return (
+    <div className={prompt ? `prompt-bar ${prompt.tone ? `tone-${prompt.tone}` : ''}` : 'prompt-bar prompt-bar--idle'} tabIndex={-1}>
+      <div className="prompt-main">
+        <div className="prompt-text" role="status" aria-live="polite">
+          {prompt && <div className="prompt-title">{prompt.title}</div>}
+          {prompt?.text && <div className="prompt-sub" title={prompt.text}>{prompt.text}</div>}
+          {error && <div className="prompt-err">{error}</div>}
+        </div>
+        {prompt?.hint && <div className={`prompt-hint ${prompt.compactHint ? 'prompt-hint--compact' : ''}`}>{prompt.hint}</div>}
+      </div>
+      {prompt?.dice && (
+        <div className="prompt-dice" aria-hidden>
+          {prompt.dice.map((f, i) => <DieView key={i} face={f} size={30} />)}
+        </div>
+      )}
+      {prompt?.extra}
+      {prompt && <div className="prompt-buttons">{prompt.buttons}</div>}
+    </div>
+  );
 }
 
 /** Élan and Rally: the dice panel beside the board; Confirm answers what it shows (disabled only while it is illegal). */
@@ -144,15 +230,31 @@ function assignPrompt(c: PromptCtx, d: ElanOrRally): Prompt {
  */
 function combinedArmsPrompt(c: PromptCtx, d: D<'combinedArms'>): Prompt {
   const spec = promptSpec(c.s, d);
-  const ids = chosenGuns(c.ui.gunSel, d.options);
+  const ids = effectiveGuns(c.ui.gunSel, d);
   const k = ids.length;
   const answer: Answer = { kind: 'select', ids };
   const blocked = answerError(c.s, d, answer);
+  const role = c.s.turn.ordered[d.unit]?.bonusMeleeDone ? 'bonus' : 'attack';
   const label = k === 0 ? (d.required ? 'Choose at least one gun' : 'Attack without artillery') : `Attack with ${k} gun${k === 1 ? '' : 's'}`;
   const buttons = [btn(label, () => c.answer(answer), { disabled: !!blocked, variant: 'primary', key: 'attack' })];
-  if (d.options.length > 1) buttons.push(btn(`All ${d.options.length} guns`, () => c.answer({ kind: 'select', ids: [...d.options] }), { variant: 'secondary', key: 'all' }));
+  // "All n guns" only while some gun is still out (it would repeat the attack button when every gun is chosen)
+  if (d.options.length > 1 && k < d.options.length) buttons.push(btn(`All ${d.options.length} guns`, () => c.answer({ kind: 'select', ids: [...d.options] }), { variant: 'secondary', key: 'all' }));
   buttons.push(autoButton(c));
-  return { title: spec.title, text: spec.text, buttons };
+  // every gun is a toggle the keyboard reaches, besides the click on the board
+  const toggles = d.options.map((id) => {
+    const on = ids.includes(id);
+    const name = spec.actions.find((a) => a.key === id)?.label ?? id;
+    return (
+      <Button key={id} variant={on ? 'primary' : 'ghost'} aria-pressed={on} className="gun-toggle" onClick={() => c.setUi((u) => ({ ...u, gunSel: toggleGun(u.gunSel, id, d.options) }))}>
+        {name}
+      </Button>
+    );
+  });
+  return {
+    title: spec.title, text: spec.text, buttons,
+    hint: combinedArmsTotalText(combinedArmsDice(c.s, d, ids, role)), compactHint: true,
+    extra: <div className="gun-toggles" role="group" aria-label="Guns joining the attack">{toggles}</div>,
+  };
 }
 
 /** Scout: the two cards drawn, large; a click keeps one. Only the owner's prompt is ever built (`gamePrompt` returns null otherwise). */
@@ -201,7 +303,7 @@ const UNDO_LABEL: Record<UndoStep, { label: string; title: string }> = {
 /** The undo button, when something may be taken back: a move, or the card played until a unit moves. */
 function undoButton(c: PromptCtx): JSX.Element | null {
   const step = c.view.undo;
-  return step ? btn(UNDO_LABEL[step].label, () => c.controller.undo(), { variant: 'ghost', key: 'undo', title: UNDO_LABEL[step].title }) : null;
+  return step ? btn(UNDO_LABEL[step].label, () => c.controller.undo(), { variant: 'ghost', key: 'undo', noFocus: true, title: UNDO_LABEL[step].title }) : null;
 }
 
 function playCardPrompt(c: PromptCtx): Prompt {

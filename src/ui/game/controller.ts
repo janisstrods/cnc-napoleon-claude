@@ -219,7 +219,7 @@ export class GameController {
     } else {
       this.driver = new GameDriver(initial, { snapshots: true });
     }
-    const speed = Number(storage.get(storageKey('speed')) ?? '1') || 1;
+    const speed = initialSpeed(storage.get(storageKey('speed')), prefersReducedMotion());
     this.view = {
       display: cloneState(this.driver.state),
       pending: null,
@@ -756,13 +756,26 @@ export function aiPacing(d: Decision): { indicator: boolean; minMs: number } {
   return { indicator: true, minMs: d.kind === 'playCard' ? 700 : d.kind === 'move' || d.kind === 'battle' ? 260 : 150 };
 }
 
+/** The animation speed a new game starts at: the player's stored choice wins; else 4 under reduced motion, 1 otherwise. */
+export function initialSpeed(stored: string | null, reducedMotion: boolean): number {
+  return Number(stored) || (reducedMotion ? 4 : 1);
+}
+
+function prefersReducedMotion(): boolean {
+  try {
+    return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Dev shortcut `#/play/<scenario>/<top|bottom>/<captain|colonel|marshal>[/<seed>][?cards=k1,k2]`: the session it starts
  * (any scenario id: 000 for now), or null when the hash is not such a
  * route or names no known battle.
  */
 export function devRouteConfig(hash: string): SessionConfig | null {
-  const m = hash.match(/^#\/play\/(\d{3})\/(top|bottom)\/(captain|colonel|marshal)(?:\/(\d+))?/);
+  const m = hash.match(/^#\/play\/(\d{3})\/(top|bottom)\/(captain|colonel|marshal)(?:\/(\d+))?(?:\?.*)?$/);
   if (!m || !SCENARIOS.some((x) => x.id === m[1])) return null;
   const cfg = newSessionConfig(m[1], m[2] as Side, m[3] as Difficulty);
   if (m[4]) cfg.seed = Number(m[4]);

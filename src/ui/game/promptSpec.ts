@@ -191,6 +191,7 @@ export function promptSpec(s: GameState, d: Decision): PromptSpec {
     case 'shortSupplyHex':
       text = `Place ${unitLabel(s, d.unit)} on a hex of its own baseline (the row in front when the baseline is full).`;
       hexes = [...d.options];
+      d.options.forEach((h) => actions.push({ key: `h${h}`, label: hexLabel(h), answer: { kind: 'hex', hex: h } }));
       break;
   }
   actions.push(AUTO_ACTION);
