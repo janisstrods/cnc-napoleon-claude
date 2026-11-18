@@ -47,7 +47,7 @@ export const RANDOM_GAMES: [string, number][] = [
 export const AI_GAMES: [string, number][] = [['005', 31], ['010', 32], ['101', 33], ['116', 34]];
 
 function aiGame(scId: string, seed: number): Golden {
-  const r = playBattle(scId, { seed, budgetScale: 0.05, record: true });
+  const r = playBattle(scId, { seed, aiSeed: 0, levels: { top: 0, bottom: 0 }, budgetScale: 0.05, maxTurn: 150, record: true });
   let h = 0x811c9dc5;
   for (const e of r.events) h = fnv(e, h);
   h = fnv(JSON.stringify(digest(r.d.state)), h);
