@@ -2,6 +2,8 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import indexHtml from '../../index.html?raw';
+import { saveRecord } from '../../src/ui/record';
+import { setMuted } from '../../src/ui/sound';
 import { loadSaved } from '../../src/ui/game/controller';
 import { loadRecord } from '../../src/ui/record';
 import { CreditsText } from '../../src/ui/screens/Menus';
@@ -40,7 +42,10 @@ describe('project identity', () => {
     for (const [k, v] of Object.entries(cca)) m.set(k, v);
     expect(loadSaved()).toBeNull();
     expect(loadRecord()).toEqual({});
+    saveRecord({ '001': { top: { captain: { won: 1, lost: 0, draw: 0 } } } });
+    setMuted(true);
     for (const [k, v] of Object.entries(cca)) expect(m.get(k)).toBe(v);
+    expect([...m.keys()].filter((k) => !k.startsWith('cca-')).every((k) => k.startsWith('ccn-'))).toBe(true);
   });
   it("credits both boxes and keeps GMT's spelling to the disclaimer", () => {
     const html = renderToStaticMarkup(createElement(CreditsText));

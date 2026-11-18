@@ -23,13 +23,13 @@ This edition is no substitute for the real thing. If you enjoy it, buy the game 
    Expansion #1), the army you command, and the opponent's strength (Captain, Colonel or Marshal).
 2. Each turn: click a command card in your hand and play it, click the units it lets you order, and confirm. Move them,
    then fire or fight in melee; the dice, hits and retreats are resolved and animated for you.
-3. You are asked to decide when it is your say: whether to form square against cavalry, to play First Strike, to
+3. You are asked to decide whenever you have a choice: whether to form square against cavalry, to play First Strike, to
    take a Combined Arms attack with guns beside the infantry, to Retire and Reform, or to advance after a won melee.
 4. The first side to the scenario's number of Victory Banners wins. Games are saved automatically, and **Continue** on the
    main menu picks the last one up.
 
 **History** (in the battle briefing and in the top bar) tells the story of the real battle in slides, with a schematic
-map. **Rules** opens a reference to units, dice, terrain, every card and the rules of each expansion. **Triumphs** keeps
+map. **Rules** opens a reference to units, dice, terrain, every card and the rules of the expansion. **Triumphs** keeps
 your record: a medal for each army you win with, in bronze against the Captain, silver against the Colonel and gold
 against the Marshal, with 66 to win in all.
 
@@ -48,7 +48,7 @@ Battles 101–118 take the Peninsular War from Bailén (1808) to Ordal Cross (18
 - **Battle rules:** at Bailén the Swiss leave the field once two of them have fallen; at Medellín the Allied hand shrinks
   with each French banner and only two units may form square; at Vitoria the opening cards decide who moves first.
 
-The rules follow the Rules Reference of this edition, §15 and §16.
+The rules follow the [Rules Reference](design/rules-reference.md) of this edition, §15 and §16.
 
 ## The computer general
 

@@ -151,7 +151,7 @@ const history: BattleHistory = {
     'Charles Oman, A History of the Peninsular War, vol. 3 (1908), pp. 378–385 (the battle of Busaco)',
     'W. F. P. Napier, History of the War in the Peninsula, Book XI, ch. 7 (Busaco)',
     "J. Rickard, 'Battle of Bussaco, 27 September 1810', historyofwar.org",
-    "Commands & Colors Napoleonics, scenario 008 (commandsandcolors.net), for the scenario's sides",
+    "Scenario 008 at commandsandcolors.net, for the scenario's sides",
   ],
 };
 
