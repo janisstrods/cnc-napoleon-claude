@@ -1,6 +1,7 @@
 // Rules: RR §9.2, §12.3, §12.4 (design/rules-reference.md)
 import { describe, expect, it } from 'vitest';
 import { CARD_LIST, battleTargets, type DieFace, type GameDriver, type GameEvent, type RowKey } from '../../src/engine';
+import { firstStrikeRoll } from '../../src/engine/reactions';
 import { H, attack, build, combatDice, endTurn, ev, forceDice, giveCard, miss, must, n, play, rolls, toBattle, turn, endMoves, u, type Pos } from './helpers';
 
 const PAD = n('artillery', 60); // an artillery face never hits infantry or cavalry
@@ -43,7 +44,7 @@ describe('First Strike (§12.3)', () => {
     expect(es.some((e) => e.t === 'combat' && e.purpose === 'battleBack')).toBe(false);
   });
 
-  it('terrain reduces the First Strike dice; cards add none (R3, §12.3)', () => {
+  it('terrain reduces the First Strike dice (R3, §12.3)', () => {
     const d = fs('BR/LN', 'FR/LN', { terrain: [{ t: 'forest', at: [5, 6] }] });
     ev(d);
     strike(d, []);
@@ -56,7 +57,7 @@ describe('First Strike (§12.3)', () => {
     strike(d, n('infantry', 2));
     const es = ev(d);
     expect(combats(es).some((e) => e.purpose === 'melee')).toBe(false);
-    expect(u(d, 'u1')?.hex ?? -1).toBeLessThan(0);
+    expect(u(d, 'u1')).toBeUndefined();
     const e = fs('BR/LN', 'FR/LN');
     ev(e);
     strike(e, ['flag', ...n(miss('BR/LN', 'FR/LN'), 4)]);
@@ -64,6 +65,62 @@ describe('First Strike (§12.3)', () => {
     const es2 = ev(e);
     expect(u(e, 'u1')!.hex).not.toBe(H(5, 6));
     expect(combats(es2).some((c) => c.purpose === 'melee' || c.purpose === 'battleBack')).toBe(false);
+  });
+
+  it('its flags are ordinary: support may ignore them, nothing bounces (§10.2, §10.3)', () => {
+    const d = fs('BR/LN', 'FR/LN', { units: [bot('BR/LN', [6, 6]), bot('BR/LN', [6, 7])] });
+    ev(d);
+    strike(d, ['flag']);
+    expect(d.pending).toMatchObject({ kind: 'ignoreFlags', side: 'bottom', unit: 'u1', flags: 1, max: 1 });
+    must(d, { kind: 'ignoreFlags', count: 1 });
+    const es = ev(d);
+    expect(es.find((e) => e.t === 'flags')).toMatchObject({ id: 'u1', flags: 1, ignored: 1, bounce: false });
+    expect(u(d, 'u1')!.hex).toBe(H(5, 6));
+    expect(combats(es).map((c) => c.purpose)).toEqual(['firstStrike', 'melee']);
+  });
+
+  it('a hit on the attacker\'s leader unit makes the 2-dice casualty check; two sabres kill him (§11.1, R18)', () => {
+    const run = (check: DieFace[]) => {
+      const d = fs('BR/LN', 'FR/LN', { leaders: [{ side: 'bottom', at: [5, 6] }] });
+      ev(d);
+      strike(d, ['infantry', ...n('artillery', 4), ...check]);
+      return { d, es: ev(d) };
+    };
+    const safe = run(['artillery', 'artillery']);
+    expect(rolls(safe.es, 'leaderCheck')).toEqual([['artillery', 'artillery']]);
+    expect(safe.es.some((e) => e.t === 'leaderKilled')).toBe(false);
+    expect(safe.d.state.leaders[0].hex).toBe(H(5, 6));
+    const dead = run(['sabre', 'sabre']);
+    expect(rolls(dead.es, 'leaderCheck')).toEqual([['sabre', 'sabre']]);
+    expect(dead.es.some((e) => e.t === 'leaderKilled')).toBe(true);
+  });
+
+  it('not played against fire, nor against a lone leader (R63)', () => {
+    const s = build({ units: [bot('BR/LN', [6, 6]), top('FR/LN', [4, 6])] });
+    const d = toBattle(s, 'attackC', ['u1']);
+    giveCard(d.state, 'top', 'firstStrike');
+    forceDice(PAD);
+    must(d, { kind: 'attack', unit: 'u1', target: H(4, 6) });
+    expect(d.pending?.kind).not.toBe('defend');
+    expect(d.state.players.top.hand.some((c) => CARD_LIST[c] === 'firstStrike')).toBe(true);
+    expect(ev(d).some((e) => e.t === 'cardPlayed' && e.kind === 'firstStrike')).toBe(false);
+    // a melee against a lone leader: there is no defending unit to play it
+    const s2 = build({ units: [bot('BR/LN', [5, 6])], leaders: [{ side: 'top', at: [4, 6] }] });
+    const e = toBattle(s2, 'attackC', ['u1']);
+    giveCard(e.state, 'top', 'firstStrike');
+    forceDice(PAD);
+    must(e, { kind: 'attack', unit: 'u1', target: H(4, 6) });
+    expect(e.pending?.kind).not.toBe('defend');
+    expect(e.state.players.top.hand.some((c) => CARD_LIST[c] === 'firstStrike')).toBe(true);
+    expect(ev(e).some((x) => x.t === 'cardPlayed' && x.kind === 'firstStrike')).toBe(false);
+  });
+
+  it('the roll refuses to run without the card in hand (a bug, not a game state)', () => {
+    const d = fs('BR/LN', 'FR/LN');
+    const st = d.state;
+    st.players.top.hand = st.players.top.hand.filter((c) => CARD_LIST[c] !== 'firstStrike');
+    const m = { attacker: 'u1', target: 'u2', targetHex: H(4, 6), role: 'attack' as const, artillery: [], reaction: null, declaredMoved: 0 };
+    expect(() => firstStrikeRoll(st, { emit: () => {} }, m).next()).toThrow(/no First Strike/);
   });
 
   it('one choice per melee: First Strike or square or Retire and Reform (R77)', () => {

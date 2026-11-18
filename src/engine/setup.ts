@@ -40,7 +40,7 @@ export function newTurn(number: number): TurnState {
   };
 }
 
-// A battle with two different river rules (Spanish 104's two rivers) needs a per-river rule; it is deferred to Plan 7.
+// A battle with two different river rules (battle 104's two rivers) needs a per-river rule; it is deferred to Plan 7.
 /** What a river hex (or a crossing on one) becomes under a river rule (RR §14, §14.13). */
 function riverTerrain(rule: RiverRule, crossing: TerrainSetup['crossing']): TerrainType {
   if (crossing === 'bridge') return 'bridge';
