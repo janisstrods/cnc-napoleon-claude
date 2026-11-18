@@ -25,6 +25,12 @@ function nameOf(id: string, ...states: GameState[]): string {
   return 'key' in p ? `${states[0].players[p.side].army} ${UNIT_STATS[p.key].name}` : p.name || 'Leader';
 }
 
+/** A piece's own name without its army ("Line Infantry", a leader's name), "unit" when it is not in the states. */
+export function pieceKind(id: string, ...states: GameState[]): string {
+  const p = find(id, ...states);
+  return !p ? 'unit' : 'key' in p ? UNIT_STATS[p.key].name : p.name || 'Leader';
+}
+
 const VERB: Record<Exclude<RollPurpose, 'elan' | 'rally'>, string> = {
   fire: 'fires on', melee: 'attacks', battleBack: 'battles back against', firstStrike: 'strikes first at', bonus: 'attacks again, into',
   squareFirst: 'in square, strikes first at', retireReform: 'retires and reforms against', leaderCheck: 'threatens',
@@ -77,13 +83,14 @@ export function rollSummary(p: RollPurpose, faces: DieFace[], scoring: boolean[]
  * The log line of event `e` (`before`/`after`: the states either side of it), or null for what stays silent: the human's own
  * routine move, a retreat of no hexes, and the human's own orders.
  */
-export function eventLog(e: GameEvent, before: GameState, after: GameState, human: Side): Omit<LogLine, 'id'> | null {
+export function eventLog(e: GameEvent, before: GameState, after: GameState, human: Side, gone?: { id: string; name: string }): Omit<LogLine, 'id'> | null {
   const army = (side: Side) => after.players[side].army;
   const who = (id: string) => nameOf(id, after, before);
   // an objective's text carries the id of the unit that scored it (the engine fills in `{unit}`): say what the unit was
-  const named = (text: string) => text.replace(/[.\s]+$/, '').replace(/\b[uL]\d+\b/g, (id) => {
+  // (an exit removes the unit before the banner event, so the controller passes the name it had)
+  const named = (text: string) => text.replace(/[.\s]+(\([^)]*\))?[.\s]*$/, (_m, tail?: string) => (tail ? ` ${tail}` : '')).replace(/\b[uL]\d+\b/g, (id) => {
     const p = find(id, after, before);
-    return !p ? 'unit' : 'key' in p ? UNIT_STATS[p.key].name : p.name || 'Leader';
+    return p ? pieceKind(id, after, before) : gone && gone.id === id ? gone.name : 'unit';
   });
   const sideOf = (id: string) => find(id, after, before)?.side;
   const hexes = (path: number[]) => Math.max(0, path.filter((h) => h >= 0).length - 1);
@@ -167,7 +174,7 @@ export function eventLog(e: GameEvent, before: GameState, after: GameState, huma
     case 'banner':
       return line(`The ${army(e.side)} army gains a Victory Banner (${e.total}/${after.bannersToWin}) — ${named(e.reason)}.`, 'banner', e.side);
     case 'held':
-      return line(`The ${army(e.side)} army now holds ${plural(e.held, 'banner')} (${e.total}/${after.bannersToWin}) — ${named(e.reason)}.`, 'banner', e.side);
+      return line(`The ${army(e.side)} army now holds ${plural(Math.max(0, e.total - after.players[e.side].banners), 'banner')} (${e.total}/${after.bannersToWin}) — ${named(e.reason)}.`, 'banner', e.side);
     case 'draw':
       return line(`The ${army(e.side)} army draws a card.`, 'info', e.side);
     case 'scoutDrew':

@@ -134,9 +134,9 @@ export function GameScreen({ controller, onExit, onRematch }: {
   useEffect(() => {
     const inBoard = !!document.activeElement?.closest('.board-svg');
     const jump = jumpTarget(s, d, human, overBoard.current, inBoard, flipped);
-    if (jump) setCursor(jump.cursor);
+    if (jump) { setCursor(jump.cursor); setLiveTick((n) => n + 1); }
     // the keyboard stays in the board: its tooltip and path preview appear at once, as when it steps there
-    if (jump && jump.keepFocus) setUi((u) => (u.hoverHex === jump.cursor ? u : { ...u, hoverHex: jump.cursor }));
+    if (jump && jump.keepFocus && kbdRef.current) setUi((u) => (u.hoverHex === jump.cursor ? u : { ...u, hoverHex: jump.cursor }));
     if (jump?.keepFocus) return;
     focusNewDecision(d, human, inBoard ? false : overBoard.current, document);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -160,9 +160,14 @@ export function GameScreen({ controller, onExit, onRematch }: {
   const labelRef = useRef(cursorLabel);
   labelRef.current = cursorLabel;
   const [live, setLive] = useState('');
+  const [liveTick, setLiveTick] = useState(0);
   useEffect(() => {
-    setLive(kbd ? labelRef.current : '');
-  }, [kbd, cursor]);
+    // cleared first, so that the same words spoken again (a jump onto the hex the cursor is on) are announced again
+    setLive('');
+    if (!kbd) return;
+    const t = setTimeout(() => setLive(labelRef.current), 30);
+    return () => clearTimeout(t);
+  }, [kbd, cursor, liveTick]);
   // the tooltip of the cursor hex sits at the cursor while the keyboard drives it
   useEffect(() => {
     if (!kbd) { setAnchor(null); return; }

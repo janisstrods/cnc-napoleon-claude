@@ -7,7 +7,7 @@ import {
 import { DIFFICULTIES, chooseAnswer, newMemory, personalityById, type AiMemory, type AiOptions, type Difficulty } from '../../ai';
 import { SCENARIOS, scenarioById } from '../../scenarios';
 import type { Opponent } from './opponent';
-import { eventLog, rollSummary, rollTitle } from './logText';
+import { eventLog, pieceKind, rollSummary, rollTitle } from './logText';
 import { sfx } from '../sound';
 import { storage, storageKey } from '../storage';
 import { outcomeFor, recordFinished, type Medal } from '../record';
@@ -190,6 +190,8 @@ export class GameController {
   /** When the human declared a melee (an attack or a bonus melee) whose first card or roll is not yet shown. */
   private declaredAt: number | null = null;
   private skipAnim = false;
+  /** The piece the latest 'removed' event took off the board: the banner event after an exit names it. */
+  private gone: { id: string; name: string } | null = null;
   /** Toasts waiting for the notice on the board to run its full time (see `toast`). */
   private toastQueue: { text: string; kind: 'turn' | 'notice'; ms: number; stale?: () => boolean }[] = [];
   /** The turn whose "Your turn" toast has been shown: once per turn, also when its first decision is taken back. */
@@ -587,7 +589,7 @@ export class GameController {
     const before = this.view.display;
     const human = this.config.humanSide;
     // the log line of every event is worded in logText; each case below logs it where its animation wants it
-    const line = eventLog(e, before, after, human);
+    const line = eventLog(e, before, after, human, this.gone ?? undefined);
     const log = () => {
       if (line) this.addLog(line);
     };
@@ -673,6 +675,7 @@ export class GameController {
       case 'removed': {
         // leaves the board like an eliminated unit, but no banner is awarded
         this.flash(this.hexOf(e.id, before), 'Removed', 'info');
+        this.gone = { id: e.id, name: pieceKind(e.id, before) };
         log();
         this.set({ display: after });
         await sleep(this.dur(450));

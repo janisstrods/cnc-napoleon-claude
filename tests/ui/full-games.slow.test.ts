@@ -2,7 +2,7 @@
 // controller, the same path the screen uses: every decision it meets has a prompt whose buttons are legal answers, and the
 // log never shows a raw event kind. A `.slow` file, so the vitest sequencer starts it first. The general runs at the AI small
 // budget (Plan 5 ruling 5), the opponent is the seeded random one, and the clock is fake: the duration is the AI's work only.
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { answerError, type GameEvent } from '../../src/engine';
 import { GameController, newSessionConfig, type SessionConfig } from '../../src/ui/game/controller';
 import { promptSpec } from '../../src/ui/game/promptSpec';
@@ -28,6 +28,18 @@ async function playToEnd(id: string) {
   };
   const c = new GameController(config, new SeededOpponent(), []);
   let decisions = 0;
+  // the controller falls back to a random answer, with a console.error, when the general fails: that must never go unseen
+  const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const kinds = new Set(Object.keys(EVENT_KINDS));
+  let lastLogId = 0;
+  /** Every log line added since the last look (the log keeps only its last 400 lines, so it is read at each step). */
+  const checkNewLog = () => {
+    for (const l of c.view.log) {
+      if (l.id <= lastLogId) continue;
+      lastLogId = l.id;
+      expect(kinds.has(l.text), `${id} log line "${l.text}"`).toBe(false);
+    }
+  };
   try {
     for (; decisions < MAX_DECISIONS && !c.view.over; decisions++) {
       await runToHuman(c).catch((e) => {
@@ -42,12 +54,14 @@ async function playToEnd(id: string) {
         if (a.answer !== 'auto') expect(answerError(c.driver.state, d, a.answer), `${id} ${d.kind}/${a.key}`).toBeNull();
       }
       await c.autoAnswer();
+      checkNewLog();
     }
     expect(c.view.over, `${id} ended after ${decisions} decisions`).not.toBeNull();
-    const kinds = new Set(Object.keys(EVENT_KINDS));
-    for (const l of c.view.log) expect(kinds.has(l.text), `${id} log line "${l.text}"`).toBe(false);
-    expect(c.view.log.length).toBeGreaterThan(0);
+    checkNewLog();
+    expect(lastLogId).toBeGreaterThan(0);
+    expect(errors.mock.calls, `${id} console.error calls`).toEqual([]);
   } finally {
+    errors.mockRestore();
     c.dispose();
   }
   return decisions;

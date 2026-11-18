@@ -400,7 +400,8 @@ function movePrompt(c: PromptCtx): Prompt {
   if (sel) {
     const name = isLeaderId(sel) ? leaderById(s, sel)?.name || 'Leader' : unitLabel(s, sel);
     const moves = pieceMoves(s, sel);
-    text = `${name}: green = may battle after moving, amber = no battle after moving.${
+    // a leader never battles, so the colours are not explained for him
+    text = `${name}:${isLeaderId(sel) ? ' click a destination.' : ' green = may battle after moving, amber = no battle after moving.'}${
       moves.some((m) => m.hex === OFF_BOARD) ? ` This ${isLeaderId(sel) ? 'leader' : 'unit'} can exit the battlefield.` : ''}`;
   }
   // RR §6.2: a leader leaves his unit only by moving first
