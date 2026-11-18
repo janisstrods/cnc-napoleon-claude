@@ -367,7 +367,7 @@ export const RULES_TEXT: Record<RulesTab, RulesBlock[]> = {
     {
       heading: 'Lancers and Guard light cavalry',
       paragraphs: [
-        'After an ordered lancer rolls its melee, it rolls once more every die that showed a flag, and the new faces count: matching symbols and sabres score, and a flag adds to the flags already rolled. The re-roll works against a square and against a lone leader, but never against a cuirassier, never in a battle back, and never in a roll at an escaping leader.',
+        'After an ordered lancer rolls its melee, it rolls once more every die that showed a flag, and the new faces count: matching symbols and sabres score, and a flag adds to the flags already rolled. The re-roll works against a square and against a lone leader, but never against a cuirassier, never in a battle back, and never in a roll at an escaping leader. A defending lancer re-rolls in its own First Strike as well, but not against a cuirassier.',
         'The French Guard light cavalry ignores two flags, retreats one hex for each flag, may Retire and Reform, and gets the two extra dice that Cavalry Charge gives Guard cavalry.',
       ],
     },
@@ -378,14 +378,14 @@ export const RULES_TEXT: Record<RulesTab, RulesBlock[]> = {
         'A Spanish or Swiss unit that changed hex in its own Movement phase has moved, under any card, Force March and Bayonet Charge included. Moving fire rounds down, and the Spanish line and Militia lose a further die. Moving melee is a die less for the Spanish line, Light infantry and Militia; Grenadiers, Swiss and cavalry lose none.',
         'A unit that stays put, only comes out of square, is rallied or is placed by Short Supply has not moved. Taking ground after a melee changes nothing.',
       ],
-      reading: 'Battle back and First Strike always use the standing dice, and so does a roll at an escaping leader, because they fall on the enemy’s turn.',
+      reading: 'Battle back and First Strike always use the standing dice, and so does a roll at an escaping leader, since that roll is not the unit’s own ordered attack.',
     },
     // RR §15.2
     {
       heading: 'Cells with no dice',
       paragraphs: [
         'Where the moving formula gives no fire dice, the unit cannot fire and no card creates the shot: a moved Spanish line or Militia unit with one to three blocks, or a moved Light infantry, Grenadier or Swiss unit with a single block.',
-        'A one-block unit that moved has no melee dice of its own, but that is a value, not a ban. Cards and terrain adjust it as usual, and the unit may melee whenever the total, with any Combined Arms artillery dice, reaches one.',
+        'A moved Spanish line, Light infantry or Militia unit with one block has no melee dice of its own, but that is a value, not a ban. Cards and terrain adjust it as usual, and the unit may melee whenever the total, with any Combined Arms artillery dice, reaches one.',
       ],
       reading: 'A moved one-block unit with 0 dice may still declare a melee with a card die, or by leading a Combined Arms attack whose artillery rolls, but it never fires.',
     },
@@ -435,7 +435,7 @@ export const RULES_TEXT: Record<RulesTab, RulesBlock[]> = {
     {
       heading: 'New objectives',
       paragraphs: [
-        'Some objectives are held by any unit on one of several hexes (Albuera), or by having more units than the enemy on a group of hexes (the Barrosa ridge and the San Marcial hills). Both are temporary banners, counted only while held. Zornoza adds exits: after the first three, each unit your side moves off the far edge scores a banner. At Somosierra the French win the instant the third Spanish gun is destroyed.',
+        'Some objectives are held by any unit on one of several hexes (Albuera), or by having more units than the enemy on a group of hexes (the Barrosa ridge and the San Marcial hills). Both are temporary banners, counted only while held. Zornoza adds exits: the Spanish may move units off the board by their own baseline, and after the first three each further unit that leaves scores a permanent banner (a leader leaves for nothing). At Somosierra the French win the instant the third Spanish gun is destroyed.',
         'A majority banner is taken at the start of your own turn when you hold more of the group than the enemy; one hex against none is enough, and lone leaders never count.',
       ],
       reading: 'A majority banner is lost at once, on either player’s turn, the moment the holder’s count is no longer greater than the enemy’s, and it can be taken again only at the start of its owner’s own turn.',
@@ -462,7 +462,7 @@ export const RULES_TEXT: Record<RulesTab, RulesBlock[]> = {
       paragraphs: [
         'Before the first turn each side secretly picks one card from its hand, the Allied side first, and both are revealed together. Counter-Attack, Élan, First Strike, Leadership and Rally cannot be picked. The lower value moves first, and a tie goes to the Allied side; each side must play its pick on its first turn.',
       ],
-      reading: 'The value of a card is the units it orders: Scout is 1, Probe 2, Attack and Recon in Force 3, Coordinated Advance and Flank Attack 4, Forward 6, Assault the picker’s Command, and Short Supply 1.',
+      reading: 'Most values are the number of units a card orders: Scout is 1, Probe 2, Attack and Recon in Force 3, Coordinated Advance and Flank Attack 4, Forward 6, Assault the picker’s Command; Bayonet Charge, Bombard, Cavalry Charge, Fire and Hold and La Grande Manoeuvre count 4, Short Supply 1, and Force March and Give Them the Cold Steel rank above every numbered card.',
     },
     // RR §15.8, §16.16
     {

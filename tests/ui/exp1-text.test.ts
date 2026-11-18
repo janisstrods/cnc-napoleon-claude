@@ -41,7 +41,7 @@ describe('log lines for the Spanish events', () => {
   });
 
   it('a broken unit leaves the field, and the engine note with its raw id stays silent', () => {
-    expect(line({ t: 'removed', id: FR_SWI, reason: 'broken' })!.text).toBe('French Swiss Infantry leaves the field.');
+    expect(line({ t: 'removed', id: FR_SWI, reason: 'broken' })!.text).toBe('French Swiss Infantry breaks and leaves the field.');
     expect(line({ t: 'log', text: 'u4 leaves the field (broken).', side: 'top' })).toBeNull();
   });
 

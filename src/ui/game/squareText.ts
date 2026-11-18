@@ -16,7 +16,7 @@ export function commandText(s: GameState, side: Side): string {
 /** The note on the hand line of a side whose hand shrinks (106): when and how far; undefined for any other side. */
 export function handShrinkNote(s: GameState, side: Side): string | undefined {
   const r = handShrinkRule(s, side);
-  return r ? `The hand falls by one with each banner lost, down to ${r.floor}.` : undefined;
+  return r ? `The hand falls by one with each banner the ${s.players[side === 'top' ? 'bottom' : 'top'].army} win, down to ${r.floor}.` : undefined;
 }
 
 /** Tooltip lines of a unit in square; none for any other unit. */

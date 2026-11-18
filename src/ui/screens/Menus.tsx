@@ -267,7 +267,7 @@ function ScenarioSelectBody(p: ScenarioSelectProps & { fallback: ScenarioInfo })
   }, [record]);
   const [persona, setPersona] = useState<string>('');
   const enemy = sel.setup[side === 'top' ? 'bottom' : 'top'];
-  const historical = personalityFor(enemy.commander, enemy.army);
+  const historical = personalityFor(enemy.commander, enemy.army, enemy.nation);
   const armies = { top: sel.setup.top, bottom: sel.setup.bottom };
   const cardsText = (sd: Side) => `${armies[sd].cards} cards`;
   const start = () => {

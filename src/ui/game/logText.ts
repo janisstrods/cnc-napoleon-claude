@@ -141,7 +141,7 @@ export function eventLog(e: GameEvent, before: GameState, after: GameState, huma
     case 'eliminated':
       return line(`${who(e.id)} is eliminated.`, 'result', sideOf(e.id));
     case 'removed':
-      return line(e.reason === 'broken' ? `${who(e.id)} leaves the field.` : `${who(e.id)} removed from the field (${e.reason}).`, 'result', sideOf(e.id));
+      return line(e.reason === 'broken' ? `${who(e.id)} breaks and leaves the field.` : `${who(e.id)} removed from the field (${e.reason}).`, 'result', sideOf(e.id));
     case 'leaderKilled':
       return line(`${who(e.id)} is slain.`, 'result', sideOf(e.id));
     case 'leaderSafe':

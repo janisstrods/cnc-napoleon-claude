@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it } from 'vitest';
-import { UNIT_KEYS, UNIT_STATS, createGame, other, type GameState, type Side } from '../../src/engine';
+import { MOVE_FIRST_VALUE, UNIT_KEYS, UNIT_STATS, CARD_DEFS, createGame, other, type GameState, type Side } from '../../src/engine';
 import { SCENARIOS, scenarioById } from '../../src/scenarios';
 import { CATALOGUE } from '../../src/scenarios/catalogue';
 import { TEXTS } from '../../src/scenarios/texts';
@@ -15,6 +15,7 @@ import { gamePrompt } from '../../src/ui/game/prompts';
 import { handShrinkNote } from '../../src/ui/game/squareText';
 import type { UiSel } from '../../src/ui/game/uiModel';
 import { recordTotals } from '../../src/ui/record';
+import { personalityFor } from '../../src/ai/personality';
 import { RulesTabBody, terrainRows } from '../../src/ui/screens/RulesReference';
 import { RULES_TEXT } from '../../src/ui/screens/rulesText';
 import { ScenarioSelect } from '../../src/ui/screens/Menus';
@@ -53,8 +54,8 @@ describe('Expansion #1 in the picker', () => {
   it('random battle may land on a Spanish battle', () => {
     const spanish = new Set<string>();
     const n = visibleBattles(SCENARIOS).length;
-    for (let i = 0; i < n; i++) {
-      const r = randomPick(SCENARIOS, '001', () => (i + 0.5) / (n - 1));
+    for (let i = 0; i < n - 1; i++) {
+      const r = randomPick(SCENARIOS, '001', () => (i + 0.5) / (n - 1)); // always below 1
       if (r && SPANISH.includes(r.battle.id)) spanish.add(r.battle.id);
     }
     expect(spanish.size).toBe(18);
@@ -209,8 +210,38 @@ describe('106 shows one hand line (Task 15 re-review)', () => {
     expect(src).not.toContain('HandSizeLine');
     expect(src).toContain('handShrinkNote(');
     const s = createGame(scenarioById('106').setup, 1);
-    expect(handShrinkNote(s, 'top')).toBe('The hand falls by one with each banner lost, down to 3.');
+    expect(handShrinkNote(s, 'top')).toBe('The hand falls by one with each banner the French win, down to 3.');
     expect(handShrinkNote(s, 'bottom')).toBeUndefined();
     expect(handShrinkNote(createGame(scenarioById('103').setup, 1), 'top')).toBeUndefined();
+  });
+});
+
+describe('rules text review round 1', () => {
+  const all = RULES_TEXT.exp1.map((b) => [...b.paragraphs, b.reading ?? ''].join(' ')).join(' ');
+  const block = (h: string) => RULES_TEXT.exp1.find((b) => b.heading === h)!;
+  it('Zornoza exits: the Spanish leave by their own baseline; lancer First Strike; one-block rows', () => {
+    const obj = block('New objectives').paragraphs.join(' ');
+    expect(obj).toMatch(/Spanish may move units off the board by their own baseline/);
+    expect(obj).not.toMatch(/far edge/);
+    expect(block('Lancers and Guard light cavalry').paragraphs.join(' ')).toMatch(/First Strike[^.]*not against a cuirassier/);
+    expect(block('Cells with no dice').paragraphs.join(' ')).toMatch(/Spanish line, Light infantry or Militia/);
+    expect(block('Moving penalties').reading).not.toMatch(/because/);
+  });
+  it('the Vitoria values name every eligible card kind', () => {
+    const text = block('Vitoria: the opening cards');
+    const t = [...text.paragraphs, text.reading ?? ''].join(' ');
+    const kinds = Object.keys(MOVE_FIRST_VALUE) as (keyof typeof MOVE_FIRST_VALUE)[];
+    for (const k of kinds) {
+      const title = CARD_DEFS[k as keyof typeof CARD_DEFS].title.replace(/ (Left|Centre|Right)$/, '');
+      expect(t.includes(title), String(k)).toBe(true);
+    }
+    expect(all).not.toMatch(/value of a card is the units it orders/);
+  });
+  it('the personality of the computer general takes the commander nation', () => {
+    const mk = readFileSync('src/ui/game/makeOpponent.ts', 'utf8');
+    const menus = readFileSync('src/ui/screens/Menus.tsx', 'utf8');
+    expect(mk).toMatch(/personalityFor\(army\.commander, army\.army, army\.nation\)/);
+    expect(menus).toMatch(/personalityFor\(enemy\.commander, enemy\.army, enemy\.nation\)/);
+    expect(personalityFor('', 'Spanish', 'SP').id).toBeTruthy();
   });
 });
