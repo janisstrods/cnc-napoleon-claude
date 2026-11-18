@@ -1,6 +1,6 @@
 // Rules: RR §2.7, §3.3, §3.4, §6.2, §11.1, §11.2, §11.3, §11.4, §12.2 (design/rules-reference.md)
 import { describe, expect, it } from 'vitest';
-import type { DieFace, GameDriver, GameEvent, LeaderRetreatOption, RowKey } from '../../src/engine';
+import type { DieFace, GameEvent, LeaderRetreatOption, RowKey } from '../../src/engine';
 import { GameDriver, battleTargets, fireDice, retreatOptions, rowOf, supportCount } from '../../src/engine';
 import { H, attack, build, combatDice, endMoves, ev, forceDice, giveCard, leaderId, noFirstStrike, miss, must, n, play, rolls, toBattle, u, duel, type Pos } from './helpers';
 
