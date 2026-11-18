@@ -1,5 +1,5 @@
 // Hidden information, end to end: chooseAnswer never reads the opponent's hand, the cards on its square track, the deck order or the game
-// generator. For each decision of a corpus (every 7th decision of deterministic level-1 games of 000, 004 and 012, plus hand-built
+// generator. For each decision of a corpus (every 7th decision of deterministic level-1 games of 000, 004, 012, 103 and 116, plus hand-built
 // positions) a variant re-deals the opponent's hand, track cards and deck (same sizes, same slots) and changes `rng`; the answer
 // (and the line spoken) must be the same. Budget: 15 s.
 import { describe, expect, it, vi } from 'vitest';
@@ -128,7 +128,7 @@ const KINDS18: Decision['kind'][] = [
 
 describe('the AI never reads hidden information', () => {
   it('chooseAnswer answers the same on re-dealt hands, tracks, decks and generators, over every kind of decision', () => {
-    const corpus: Case[] = [...handBuilt(), ...sampled('000', 41, 20), ...sampled('004', 42, 20), ...sampled('012', 43, 20)];
+    const corpus: Case[] = [...handBuilt(), ...sampled('000', 41, 20), ...sampled('004', 42, 20), ...sampled('012', 43, 20), ...sampled('103', 44, 20), ...sampled('116', 45, 20)];
     const kinds = new Set(corpus.map((c) => c.decision.kind));
     expect(KINDS18.filter((k) => !kinds.has(k))).toEqual([]);
     expect(corpus.length).toBeGreaterThan(60);

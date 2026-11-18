@@ -423,8 +423,9 @@ describe("115: Albuera (S24, S37, S42, S16)", () => {
     must(d, { kind: 'playCard', card });
     expect(bannerTotal(d.state, 'bottom')).toBe(1);
     // the ford tiles of the ground do not stop: a unit crossing (5,3) is offered hexes beyond it
-    for (const [r, c] of [[5, 0], [5, 1], [5, 3], [6, 4]]) expect(stopsOnEntry(d.state, H(r, c - 1 < 0 ? 0 : c), H(r, c)), `${r},${c}`).toBe(false);
-    for (const [r, c] of [[5, 2], [5, 5], [5, 6]]) expect(stopsOnEntry(d.state, H(5, 4), H(r, c)), `${r},${c}`).toBe(true);
+    // (entered from a real neighbour: `from` and `to` are different hexes)
+    for (const [r, c] of [[5, 0], [5, 1], [5, 3], [6, 4]]) expect(stopsOnEntry(d.state, H(r, c + 1), H(r, c)), `${r},${c}`).toBe(false);
+    for (const [r, c] of [[5, 2], [5, 5], [5, 6]]) expect(stopsOnEntry(d.state, H(5, c - 1), H(r, c)), `${r},${c}`).toBe(true);
   });
 
   it('115: a Guerrilla counter against the French Cavalry Charge: a sabre leaves the Folly on, any other face cancels the card', () => {
