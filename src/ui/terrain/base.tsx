@@ -1,5 +1,6 @@
-// Grassland base, hex grid, section dividers and the wooden frame with army plaques.
-import { BOARD_H, BOARD_MARGIN, BOARD_W } from '../geometry';
+// Grassland base, hex grid, section dividers and the map margin (neatline, graticule ticks, army cartouches).
+import { BOARD_H, BOARD_MARGIN, BOARD_W, hexCenter } from '../geometry';
+import { COLS, ROWS } from '../../engine/types';
 import { blobPath } from './field';
 import { corner, DIRS, edgeCorners, fmt, neighborRC, screenDir, type PaintCtx } from './hexmath';
 import { rng } from './noise';
@@ -58,16 +59,6 @@ export function grassDefs(id: (s: string) => string): JSX.Element {
         {tufts(7, 89, P.tuftLight, 0.55, 8)}
         {dots(5, 89, '#e9dfa6', 9)}
       </pattern>
-      <linearGradient id={id('wood')} x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stopColor={P.woodLight} />
-        <stop offset="0.05" stopColor={P.wood} />
-        <stop offset="0.95" stopColor={P.wood} />
-        <stop offset="1" stopColor={P.woodDark} />
-      </linearGradient>
-      <linearGradient id={id('plaque')} x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stopColor="#f1e4bd" />
-        <stop offset="1" stopColor={P.plaqueDark} />
-      </linearGradient>
     </>
   );
 }
@@ -155,15 +146,26 @@ export function SectionDividers({ x1, x2 }: { x1: number; x2: number }) {
   );
 }
 
+/** Map-margin inks: the margin is buff paper (the kit's `--kit-leather`), the rules iron-gall ink. */
+const MARGIN_PAPER = 'var(--kit-leather, #f3ecd8)';
+const CARTOUCHE_PAPER = 'var(--kit-parchment-light, #f6f0de)';
+const RULE = '#3b3127';
+const RULE_SOFT = 'rgba(59,49,39,0.62)';
+/** The LEFT / RIGHT captions are text: full ink (the kit's `--kit-rule`), AA on the margin paper. */
+const CAPTION_INK = '#3b3127';
+
+/**
+ * The board's surround, drawn as the margin of a printed map: buff paper outside the hexes, a neatline (a firm outer
+ * rule and a fine inner one), graticule ticks at every hex row and column, ink lozenges where the sections divide, the
+ * LEFT / RIGHT captions, and each army's name in a small cartouche.
+ */
 export function Frame({
-  id,
   outline,
   x1,
   x2,
   topLabel,
   bottomLabel,
 }: {
-  id: (s: string) => string;
   outline: string;
   x1: number;
   x2: number;
@@ -173,63 +175,48 @@ export function Frame({
   const W = BOARD_W;
   const H = BOARD_H;
   const m = BOARD_MARGIN;
-  const R = rng(55);
-  // wood grain inside the four bands
-  let grain = '';
-  let grainDark = '';
-  const hband = (y0: number) => {
-    for (let k = 0; k < 9; k++) {
-      const y = y0 + 3 + R() * (m - 6);
-      const amp = 0.6 + R() * 1.4;
-      let d = `M0,${fmt(y)}`;
-      for (let x = 0; x <= W; x += 60) d += `Q${fmt(x + 30)},${fmt(y + (R() - 0.5) * 2 * amp)} ${fmt(x + 60)},${fmt(y + (R() - 0.5) * amp)}`;
-      if (k % 3 === 0) grainDark += d;
-      else grain += d;
-    }
-  };
-  const vband = (x0: number) => {
-    for (let k = 0; k < 9; k++) {
-      const x = x0 + 3 + R() * (m - 6);
-      const amp = 0.6 + R() * 1.4;
-      let d = `M${fmt(x)},0`;
-      for (let y = 0; y <= H; y += 60) d += `Q${fmt(x + (R() - 0.5) * 2 * amp)},${fmt(y + 30)} ${fmt(x + (R() - 0.5) * amp)},${fmt(y + 60)}`;
-      if (k % 3 === 0) grainDark += d;
-      else grain += d;
-    }
-  };
-  hband(0);
-  hband(H - m);
-  vband(0);
-  vband(W - m);
   const frameD = `M0,0H${fmt(W)}V${fmt(H)}H0Z${outline}`;
   const left = (m + x1) / 2;
   const right = (x2 + W - m) / 2;
-  const capStyle = { fontFamily: "'IM Fell English SC', serif", fontSize: 11, letterSpacing: 4, fontWeight: 700 } as const;
+  // outer rule, inner rule
+  const o = 4;
+  const i = 8.5;
+  // graticule: a short tick inside the inner rule at every column (even rows) and every row
+  let ticks = '';
+  for (let c = 0; c < COLS; c++) {
+    const x = hexCenter(0, c).x;
+    ticks += `M${fmt(x)},${fmt(i)}v5M${fmt(x)},${fmt(H - i)}v-5`;
+  }
+  for (let r = 0; r < ROWS; r++) {
+    const y = hexCenter(r, 0).y;
+    ticks += `M${fmt(i)},${fmt(y)}h5M${fmt(W - i)},${fmt(y)}h-5`;
+  }
+  const capStyle = { fontFamily: "'IM Fell English SC', serif", fontSize: 11, letterSpacing: 4 } as const;
   const caption = (txt: string, x: number, y: number, rot: boolean) => (
     <text
       x={fmt(x)}
       y={fmt(y)}
       textAnchor="middle"
       dominantBaseline="central"
-      fill="rgba(231,208,160,0.62)"
+      fill={CAPTION_INK}
       transform={rot ? `rotate(180 ${fmt(x)} ${fmt(y)})` : undefined}
       style={capStyle}
     >
       {txt}
     </text>
   );
-  const plaque = (label: string, cy: number) => {
+  const cartouche = (label: string, cy: number) => {
     const fs = 16;
-    const w = Math.max(120, label.length * fs * 0.78 + 46);
-    const h = 25;
+    const w = Math.max(120, label.length * fs * 0.74 + 40);
+    const h = 24;
     const x = W / 2 - w / 2;
+    const y = cy - h / 2;
     return (
       <g>
-        <rect x={fmt(x + 1.5)} y={fmt(cy - h / 2 + 2)} width={fmt(w)} height={h} rx={3} fill="rgba(0,0,0,0.45)" />
-        <rect x={fmt(x)} y={fmt(cy - h / 2)} width={fmt(w)} height={h} rx={3} fill={`url(#${id('plaque')})`} stroke="#6b4f2c" strokeWidth={1.4} />
-        <rect x={fmt(x + 3)} y={fmt(cy - h / 2 + 3)} width={fmt(w - 6)} height={h - 6} rx={2} fill="none" stroke="rgba(107,79,44,0.55)" strokeWidth={0.8} />
-        {[x + 7.5, x + w - 7.5].map((sx, i) => (
-          <circle key={i} cx={fmt(sx)} cy={fmt(cy)} r={1.9} fill="#8a6a3a" stroke="#4a3520" strokeWidth={0.6} />
+        <rect x={fmt(x)} y={fmt(y)} width={fmt(w)} height={h} fill={CARTOUCHE_PAPER} stroke={RULE} strokeWidth={1.2} />
+        <rect x={fmt(x + 2.5)} y={fmt(y + 2.5)} width={fmt(w - 5)} height={h - 5} fill="none" stroke={RULE_SOFT} strokeWidth={0.6} />
+        {[x - 7, x + w + 7].map((lx, k) => (
+          <path key={k} d={`M${fmt(lx)},${fmt(cy - 3.5)}l3.5,3.5l-3.5,3.5l-3.5,-3.5z`} fill={RULE} />
         ))}
         <text
           x={fmt(W / 2)}
@@ -237,47 +224,32 @@ export function Frame({
           textAnchor="middle"
           dominantBaseline="central"
           fill={P.ink}
-          style={{ fontFamily: "'IM Fell English SC', serif", fontSize: fs, fontWeight: 700, letterSpacing: 2.5 }}
+          style={{ fontFamily: "'IM Fell English SC', serif", fontSize: fs, letterSpacing: 2.5 }}
         >
           {label.toUpperCase()}
         </text>
       </g>
     );
   };
-  const markers = [x1, x2].flatMap((x, i) => [
-    <path key={`t${i}`} d={`M${fmt(x)},${fmt(m - 12)}l4,6l-4,6l-4,-6z`} fill="rgba(231,208,160,0.55)" />,
-    <path key={`b${i}`} d={`M${fmt(x)},${fmt(H - m + 0)}l4,6l-4,6l-4,-6z`} fill="rgba(231,208,160,0.55)" />,
+  const markers = [x1, x2].flatMap((x, k) => [
+    <path key={`t${k}`} d={`M${fmt(x)},${fmt(m - 12)}l3,5l-3,5l-3,-5z`} fill={RULE} />,
+    <path key={`b${k}`} d={`M${fmt(x)},${fmt(H - m + 2)}l3,5l-3,5l-3,-5z`} fill={RULE} />,
   ]);
   return (
     <g className="frame">
-      {/* soft shadow the frame casts onto the field */}
-      <path d={outline} fill="none" stroke="rgba(30,22,8,0.22)" strokeWidth={16} />
-      <path d={outline} fill="none" stroke="rgba(30,22,8,0.25)" strokeWidth={7} />
-      <path d={frameD} fillRule="evenodd" fill={`url(#${id('wood')})`} />
-      <path d={grain} fill="none" stroke="rgba(255,214,160,0.07)" strokeWidth={1.4} />
-      <path d={grainDark} fill="none" stroke="rgba(0,0,0,0.22)" strokeWidth={1} />
-      <path d={outline} fill="none" stroke="#1d140c" strokeWidth={2.2} />
-      <path d={outline} fill="none" stroke="rgba(214,180,120,0.35)" strokeWidth={1} transform="translate(-0.8 -1)" />
-      <rect x={1} y={1} width={W - 2} height={H - 2} fill="none" stroke="#150e08" strokeWidth={2} />
-      <rect x={5.5} y={5.5} width={W - 11} height={H - 11} rx={2} fill="none" stroke={P.trim} strokeWidth={1} opacity={0.55} />
-      {[
-        [11, 11],
-        [W - 11, 11],
-        [11, H - 11],
-        [W - 11, H - 11],
-      ].map(([x, y], i) => (
-        <g key={i}>
-          <circle cx={x} cy={y} r={3.6} fill="#8d6c3a" stroke="#3a2814" strokeWidth={0.8} />
-          <circle cx={x - 0.9} cy={y - 0.9} r={1.2} fill="#e3c88e" opacity={0.8} />
-        </g>
-      ))}
+      <path d={frameD} fillRule="evenodd" fill={MARGIN_PAPER} />
+      {/* the edge of the field: a fine ink line round the hexes */}
+      <path d={outline} fill="none" stroke={RULE_SOFT} strokeWidth={1.1} />
+      <rect x={o} y={o} width={W - 2 * o} height={H - 2 * o} fill="none" stroke={RULE} strokeWidth={2} />
+      <rect x={i} y={i} width={W - 2 * i} height={H - 2 * i} fill="none" stroke={RULE_SOFT} strokeWidth={0.7} />
+      <path d={ticks} stroke={RULE_SOFT} strokeWidth={0.7} />
       {markers}
       {caption('LEFT', left, H - m / 2, false)}
       {caption('RIGHT', right, H - m / 2, false)}
       {caption('LEFT', right, m / 2, true)}
       {caption('RIGHT', left, m / 2, true)}
-      {topLabel && plaque(topLabel, m / 2)}
-      {bottomLabel && plaque(bottomLabel, H - m / 2)}
+      {topLabel && cartouche(topLabel, m / 2)}
+      {bottomLabel && cartouche(bottomLabel, H - m / 2)}
     </g>
   );
 }
