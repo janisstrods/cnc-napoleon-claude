@@ -415,7 +415,9 @@ export class GameController {
           return;
         }
         // AI decision (asked before the animations when it could be: see askAhead); its pacing runs from here
-        this.set({ aiThinking: true });
+        // a defend decision is raised only when the AI has something to choose (it may hold First Strike): no indicator, one pause
+        const pace = aiPacing(d);
+        this.set({ aiThinking: pace.indicator });
         const t0 = performance.now();
         let res: { answer: Answer; say?: string };
         let timer: ReturnType<typeof setTimeout> | undefined;
@@ -446,7 +448,7 @@ export class GameController {
           clearTimeout(timer);
         }
         if (this.disposed) return;
-        const minThink = d.kind === 'playCard' ? 700 : d.kind === 'move' || d.kind === 'battle' ? 260 : 150;
+        const minThink = pace.minMs;
         const spent = performance.now() - t0;
         if (spent < this.dur(minThink)) await sleep(this.dur(minThink) - spent);
         if (this.disposed) return;
@@ -727,6 +729,16 @@ export class GameController {
   opponentSide(): Side {
     return other(this.config.humanSide);
   }
+}
+
+/**
+ * How the computer's decision `d` is paced: whether the "thinking" indicator shows, and the least time it takes. A defend
+ * decision is raised only when the defender has an option besides standing (it may hold First Strike), so a visible pause
+ * there would tell the player what the computer holds: it shows no indicator and takes the same time whatever it answers.
+ */
+export function aiPacing(d: Decision): { indicator: boolean; minMs: number } {
+  if (d.kind === 'defend') return { indicator: false, minMs: 600 };
+  return { indicator: true, minMs: d.kind === 'playCard' ? 700 : d.kind === 'move' || d.kind === 'battle' ? 260 : 150 };
 }
 
 /**

@@ -13,7 +13,9 @@ import { gamePrompt } from './prompts';
 import { bannerCounts, objectiveSummary, objectiveTipLines } from './objectiveText';
 import { boardMarks, leaderRetreatChoices, retreatChoices, selectionDeps, type UiSel } from './uiModel';
 import { assignClick, assignClickRefusal, assignOptions, currentAssign, nextDie, type ElanOrRally } from './assign';
-import { leaderTraitLines, unitSummary } from './unitText';
+import { leaderLines, unitSummary } from './unitText';
+import { SquareTrack } from './SquareTrack';
+import { commandText, squareLines } from './squareText';
 import { TerrainTipBlock } from './TerrainTipBlock';
 import { terrainTip } from './terrainTips';
 import { RulesDialog } from '../screens/RulesDialog';
@@ -22,7 +24,7 @@ import { isMuted, setMuted } from '../sound';
 import { opponentPersonality } from './makeOpponent';
 import './game.css';
 
-const EMPTY_SEL: UiSel = { selCard: null, hoverCard: null, orderSel: [], selPiece: null, hoverHex: null, assign: null };
+const EMPTY_SEL: UiSel = { selCard: null, hoverCard: null, orderSel: [], selPiece: null, hoverHex: null, hoverAction: null, assign: null };
 
 const DIFF_LABEL = { recruit: 'Recruit', tribune: 'Tribune', consul: 'Consul' } as const;
 
@@ -338,21 +340,25 @@ export function GameScreen({ controller, onExit, onRematch }: {
             <div className="army-row">
               <div>
                 <div className="army-name them">{them.army}</div>
-                <div className="army-cmd" title={`${them.commander} — ${persona.name}: ${persona.epithet} · ${DIFF_LABEL[controller.config.difficulty]} · ${commandLabel(s, ai)}`}>{them.commander} · {persona.name} · {DIFF_LABEL[controller.config.difficulty]}</div>
+                <div className="army-cmd" title={`${them.commander} — ${persona.name}: ${persona.epithet} · ${DIFF_LABEL[controller.config.difficulty]}`}>{them.commander} · {persona.name} · {DIFF_LABEL[controller.config.difficulty]}</div>
+                <div className="army-cmd army-hand">{commandText(s, ai)}</div>
               </div>
               <div className="ai-hand" title={`${them.hand.length} command cards`}>
                 {Array.from({ length: them.hand.length }).map((_, i) => <CardBack key={i} size="sm" style={{ fontSize: '1.7px', marginLeft: i ? -9 : 0 }} />)}
               </div>
             </div>
             <BannerTrack count={themBanners.total} held={themBanners.held} target={s.bannersToWin} nation={me.nation} label="Banners won" detail={objectiveSummary(s, ai)} />
+            <SquareTrack side={ai} owner={false} s={s} />
             <div className="divider" />
             <div className="army-row">
               <div>
                 <div className="army-name me">{me.army} <span className="you">(you)</span></div>
-                <div className="army-cmd">{me.commander} · {commandLabel(s, human)}</div>
+                <div className="army-cmd">{me.commander}</div>
+                <div className="army-cmd army-hand">{commandText(s, human)}</div>
               </div>
             </div>
             <BannerTrack count={meBanners.total} held={meBanners.held} target={s.bannersToWin} nation={them.nation} label="Banners won" detail={objectiveSummary(s, human)} />
+            <SquareTrack side={human} owner s={s} />
             <div className="deck-row">Deck {s.deck.length} · Discards {s.discard.length}</div>
           </Panel>
           {prompt?.panel}
@@ -404,6 +410,7 @@ export function GameScreen({ controller, onExit, onRematch }: {
               <div className="prompt-text">
                 <div className="prompt-title">{prompt.title}</div>
                 {prompt.text && <div className="prompt-sub" title={prompt.text}>{prompt.text}</div>}
+                {prompt.hint && <div className="prompt-hint">{prompt.hint}</div>}
                 {view.error && <div className="prompt-err">{view.error}</div>}
               </div>
               {prompt.extra}
@@ -423,10 +430,11 @@ export function GameScreen({ controller, onExit, onRematch }: {
               </div>
             </div>
             {unitSummary(hoverInfo.u).map((x) => <div key={x} className="tip-line">{x}</div>)}
+            {squareLines(s, hoverInfo.u).map((x) => <div key={x} className="tip-line tip-square">{x}</div>)}
           </>
         )}
         {hoverInfo?.l && <div className="tip-line tip-leader">Leader: {hoverInfo.l.name || 'unnamed'}{leaderUnit(s, hoverInfo.l) ? ' (attached)' : ' (alone)'}</div>}
-        {hoverInfo?.l && leaderTraitLines(hoverInfo.l).map((x) => <div key={x} className="tip-line tip-leader">{x}</div>)}
+        {hoverInfo?.l && leaderLines(s, hoverInfo.l).map((x) => <div key={x} className="tip-line tip-leader">{x}</div>)}
         {hoverInfo?.terr && <TerrainTipBlock tip={hoverInfo.terr} alone={!hoverInfo.u && !hoverInfo.l} />}
         {hoverInfo?.obj.map((x) => <div key={x} className="tip-line tip-objective">{x}</div>)}
       </HoverTip>
@@ -448,9 +456,4 @@ export function GameScreen({ controller, onExit, onRematch }: {
       </Modal>
     </div>
   );
-}
-
-/** The size of a side's hand, for its army line. */
-function commandLabel(s: GameState, side: Side): string {
-  return `${s.players[side].cards} cards`;
 }

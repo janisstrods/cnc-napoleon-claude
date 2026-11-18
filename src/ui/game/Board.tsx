@@ -77,6 +77,17 @@ const UnitLayer = memo(function UnitLayer(p: {
           </g>
         );
       })}
+      {/* a square's counter at the token's lower-right corner, opposite the attached leader's medallion; the number never turns */}
+      {units.filter((u) => u.square !== undefined).map((u) => {
+        const { x, y } = pos(u.id, u.hex);
+        return (
+          <g key={`sq-${u.id}`} className="square-counter" transform={`translate(${x - LEADER_ATTACH_OFFSET.x}, ${y + LEADER_ATTACH_OFFSET.y})`}>
+            <title>{`Square ${u.square}`}</title>
+            <circle r={11} />
+            <text y={5} textAnchor="middle">{u.square}</text>
+          </g>
+        );
+      })}
       {p.leaders.filter((l) => l.hex >= 0).map((l) => {
         const u = leaderUnit(state, l);
         const hex = walking[l.id] ?? (u ? walking[u.id] ?? l.hex : l.hex);

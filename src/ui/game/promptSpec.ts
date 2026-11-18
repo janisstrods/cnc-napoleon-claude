@@ -8,7 +8,8 @@ import {
 } from '../../engine';
 import { suggestAssign } from './assign';
 
-export interface PromptAction { key: string; label: string; answer: Answer | 'auto' }
+/** A button of a prompt; `hint` (optional) says what the choice does: the button's `title` and a line under the text. */
+export interface PromptAction { key: string; label: string; answer: Answer | 'auto'; hint?: string }
 export interface PromptSpec { title: string; text: string; actions: PromptAction[]; hexes: HexId[] }
 
 export const DECISION_TITLES: Readonly<Record<Decision['kind'], string>> = {
@@ -67,6 +68,13 @@ const DEFEND_LABELS: Readonly<Record<DefendChoice, string>> = {
   stand: 'Stand', retireReform: 'Retire and Reform', formSquare: 'Form square', firstStrike: 'First Strike',
 };
 
+const DEFEND_HINTS: Readonly<Record<DefendChoice, string>> = {
+  stand: 'Take the attack and battle back if the unit survives in place.',
+  retireReform: 'Fall back 2 hexes before the dice: only cavalry symbols hit, and there is no battle back.',
+  formSquare: 'A random card from your hand goes face down on the square track. Your square rolls first with 1 die; your Command is a card lower until the square is left.',
+  firstStrike: 'Play First Strike: your unit battles first; if the attacker stays, it attacks and you do not battle back.',
+};
+
 /** "British Line Infantry" for a unit id (the unit as the board last showed it); "unit" when it is not there. */
 export function unitLabel(s: GameState, id: string): string {
   const u = unitById(s, id);
@@ -102,7 +110,7 @@ export function promptSpec(s: GameState, d: Decision): PromptSpec {
       text = 'Select a unit, then its target.';
       break;
     case 'leaveSquare':
-      text = `${unitLabel(s, d.unit)} stands in square. Leave it?`;
+      text = `${unitLabel(s, d.unit)} stands in square (counter ${unitById(s, d.unit)?.square ?? '?'}). Leave it? Its card returns to your hand; this turn's Command stays as it was.`;
       actions.push(
         { key: 'yes', label: 'Leave the square', answer: { kind: 'yesno', yes: true } },
         { key: 'no', label: 'Stay in square', answer: { kind: 'yesno', yes: false } },
@@ -118,13 +126,15 @@ export function promptSpec(s: GameState, d: Decision): PromptSpec {
     }
     case 'defend':
       text = `${unitLabel(s, d.attacker)} attacks your ${unitLabel(s, d.target)}${d.bonus ? ' (bonus melee)' : ''}. How do you defend?`;
-      for (const o of d.options) actions.push({ key: o, label: DEFEND_LABELS[o], answer: { kind: 'defend', choice: o } });
+      for (const o of d.options) actions.push({ key: o, label: DEFEND_LABELS[o], answer: { kind: 'defend', choice: o }, hint: DEFEND_HINTS[o] });
       break;
     case 'ignoreFlags':
       text = `${d.flags} flag${d.flags === 1 ? '' : 's'} against ${unitLabel(s, d.unit)}: it may ignore up to ${d.max}. ${flagCostText(s, d.unit)}`;
       break;
     case 'retreat':
-      text = `Click a hex to choose where ${unitLabel(s, d.unit)} ends up.`;
+      text = d.reason === 'retireReform'
+        ? `Click the hex ${unitLabel(s, d.unit)} retires to.`
+        : `Click a hex to choose where ${unitLabel(s, d.unit)} ends up.`;
       break;
     case 'leaderRetreat':
       text = 'Click a hex to choose where the leader goes.';
