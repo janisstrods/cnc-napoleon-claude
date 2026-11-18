@@ -1,11 +1,12 @@
 // Leaders in combat (RR §11): the casualty check, a leader whose unit is lost, and melee against a lone leader.
 import { ask, type Gen } from './decisions';
 import { emitRoll, killLeader } from './casualties';
-import { escapeDice, meleeDice, sabreKills } from './dice';
+import { escapeDice, flagRerollApplies, meleeDice, rerollFlags, sabreKills } from './dice';
 import { onBaseline } from './hex';
 import { attachedLeader, unitAt } from './query';
 import { leaderRetreatOptions } from './retreat';
 import { rollDice } from './rng';
+import { statsOf } from './units';
 import type { FlowCtx, GameState, Leader, MeleeCtx, Unit } from './types';
 
 /**
@@ -91,7 +92,12 @@ export function* loneLeaderMelee(s: GameState, ctx: FlowCtx, attacker: Unit, l: 
   ctx.emit({ t: 'combat', purpose, attacker: attacker.id, target: l.id, dice });
   const faces = rollDice(s, dice);
   emitRoll(ctx, purpose, faces, faces.map((f) => f === 'sabre'), attacker.id, l.id);
-  if (sabreKills(faces)) killLeader(s, ctx, l, 'melee');
+  let killed = sabreKills(faces);
+  if (flagRerollApplies(s, attacker, l, m.role)) {  // S12: a lancer's flags are re-rolled against a lone leader too; a re-rolled sabre kills
+    const again = rerollFlags(s, ctx, purpose, faces, 'leader', statsOf(s, attacker), 'infantry', { by: attacker.id, against: l.id });
+    if (again) killed ||= sabreKills(again.faces);
+  }
+  if (killed) killLeader(s, ctx, l, 'melee');
   else if (!s.winner) yield* leaderLosesUnit(s, ctx, l);
   return true;
 }

@@ -4,7 +4,7 @@ import { cardKind } from './cards';
 import { emitRoll } from './casualties';
 import { ask, type Gen } from './decisions';
 import { artilleryShares } from './combinedArms';
-import { meleeDice, scoreRoll, type Scored } from './dice';
+import { flagRerollApplies, meleeDice, rerollFlags, scoreRoll, type Scored } from './dice';
 import { relocate } from './movement';
 import { updateHeld } from './objectives';
 import { retireReformOptions } from './retreat';
@@ -58,6 +58,10 @@ export function attackerStrike(s: GameState, ctx: FlowCtx, m: MeleeCtx, purpose:
   const faces = rollDice(s, shares.reduce((sum, g) => sum + g.dice, own));
   const sc = scoreRoll(faces, kind, statsOf(s, attacker), kind === 'retireReform' ? 'cavalry' : statsOf(s, target).arm);
   emitRoll(ctx, purpose, faces, sc.scoring, m.attacker, m.target, shares.length ? [m.attacker, ...shares.map((g) => g.id)] : undefined);
+  if (kind === 'melee' && flagRerollApplies(s, attacker, target, m.role)) {  // S12: the melee unit's and the guns' flags, once; the new score adds to the first
+    const again = rerollFlags(s, ctx, purpose, faces, 'melee', statsOf(s, attacker), statsOf(s, target).arm, { by: m.attacker, against: m.target, from: shares.length ? [m.attacker, ...shares.map((g) => g.id)] : undefined });
+    if (again) return { hits: sc.hits + again.hits, flags: sc.flags + again.flags, scoring: sc.scoring, own };  // scoring is the first roll's: no caller reads it
+  }
   return { ...sc, own };
 }
 
@@ -110,6 +114,13 @@ export function* firstStrikeRoll(s: GameState, ctx: FlowCtx, m: MeleeCtx): Gen<'
   const faces = rollDice(s, dice);
   const sc = scoreRoll(faces, 'melee', statsOf(s, def), statsOf(s, atk).arm);
   emitRoll(ctx, 'firstStrike', faces, sc.scoring, def.id, atk.id);
+  if (flagRerollApplies(s, def, atk, 'firstStrike')) {  // S12: a defending lancer re-rolls only with First Strike
+    const again = rerollFlags(s, ctx, 'firstStrike', faces, 'melee', statsOf(s, def), statsOf(s, atk).arm, { by: def.id, against: atk.id });
+    if (again) {
+      sc.hits += again.hits;
+      sc.flags += again.flags;
+    }
+  }
   const applied = yield* applyOutcome(s, ctx, atk, { hits: sc.hits, flags: sc.flags, bounce: false }, def, 'first strike');
   if (s.winner || applied.eliminated || applied.left || !unitById(s, m.attacker) || atk.hex !== from) return 'stop';
   return 'continue';
