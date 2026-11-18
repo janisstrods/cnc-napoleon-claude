@@ -146,6 +146,9 @@ export function applyMove(s: GameState, ctx: FlowCtx, pieceId: string, target: M
   ctx.emit({ t: 'move', id: pieceId, path: target.path });
   if (op.isLeader) {
     const l = leaderById(s, pieceId)!;
+    // Leadership orders a unit only while its leader stays (RR §6.2, §12.2): once he leaves, it is no longer ordered.
+    const home = s.turn.effective === 'leadership' ? unitAt(s, l.hex) : undefined;
+    if (home && home.side === l.side && s.turn.ordered[home.id]?.cardMods) delete s.turn.ordered[home.id];
     if (target.hex === OFF_BOARD) {
       l.hex = target.path[target.path.length - 2];  // stand on the exit hex when exitPiece runs (T13 reads it)
       exitPiece(s, ctx, pieceId);
