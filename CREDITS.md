@@ -55,8 +55,9 @@ No third-party assets are used for them.
 
 ## Scenarios
 
-The 15 base-game battles (001–015, `design/data`) were transcribed hex by hex from the battle maps published at
-[commandsandcolors.net](https://www.commandsandcolors.net); Expansion #1, *The Spanish Army*, is to come. The setups are
+The 15 base-game battles (001–015, `design/data`) and the 18 battles of Expansion #1, *The Spanish Army* (101–118),
+were transcribed hex by hex from the battle maps and scenario pages published at
+[commandsandcolors.net](https://www.commandsandcolors.net) (the sources of 101–118 are listed in `design/exp1-survey.md`). The setups are
 data; the rules are paraphrased (`design/rules-reference.md`), the battle summaries are original, and all army and
 terrain art is original.
 

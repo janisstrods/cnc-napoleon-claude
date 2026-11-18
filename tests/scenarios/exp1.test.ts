@@ -15,7 +15,7 @@ const IDS = range(101, 118);
 it('the manifest covers 101–118, and META the same ids', () => {
   expect(Object.keys(MANIFEST_EXP1)).toEqual(IDS);
   for (const id of IDS) expect(META[id], id).toBeDefined();
-  expect(EXP1_HIDDEN).toBe(true);
+  expect(EXP1_HIDDEN).toBe(false);
 });
 
 for (const [id, m] of Object.entries(MANIFEST_EXP1)) {
@@ -43,9 +43,9 @@ for (const [id, m] of Object.entries(MANIFEST_EXP1)) {
       expect(checksums(s)).toEqual(m.checksum);
     });
 
-    it('is a hidden Expansion #1 battle until the screens are ready', () => {
+    it('is a visible Expansion #1 battle', () => {
       expect(info.expansion).toBe('exp1');
-      expect(info.hidden).toBe(true);
+      expect(info.hidden).toBeUndefined();
     });
   });
 }

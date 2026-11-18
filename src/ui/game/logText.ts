@@ -141,7 +141,7 @@ export function eventLog(e: GameEvent, before: GameState, after: GameState, huma
     case 'eliminated':
       return line(`${who(e.id)} is eliminated.`, 'result', sideOf(e.id));
     case 'removed':
-      return line(e.reason === 'broken' ? `${who(e.id)} leaves the field.` : `${who(e.id)} removed from the field (${e.reason}).`, 'result', sideOf(e.id));
+      return line(e.reason === 'broken' ? `${who(e.id)} breaks and leaves the field.` : `${who(e.id)} removed from the field (${e.reason}).`, 'result', sideOf(e.id));
     case 'leaderKilled':
       return line(`${who(e.id)} is slain.`, 'result', sideOf(e.id));
     case 'leaderSafe':
@@ -188,7 +188,7 @@ export function eventLog(e: GameEvent, before: GameState, after: GameState, huma
       // `e.side` is the guerrilla side; the card at stake is its opponent's
       if (e.what === 'gained') return line(`The ${army(e.side)} army gains a Guerrilla counter (${e.held} held).`, 'info', e.side);
       return line(
-        e.what === 'cancelled' ? `Guerrillas cut the ${army(other(e.side))} orders: the card is lost.` : `The guerrillas strike, but the ${army(other(e.side))} card stands (sabre).`,
+        e.what === 'cancelled' ? `Guerrillas cut the ${army(other(e.side))} orders: nothing moves this turn.` : `The guerrillas strike, but the ${army(other(e.side))} card stands (sabre).`,
         'result', e.side,
       );
     }

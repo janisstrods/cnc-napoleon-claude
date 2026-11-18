@@ -3,7 +3,6 @@
   "name": "Medellín",
   "year": "1809",
   "expansion": "exp1",
-  "hidden": true,
   "top": {"army":"Spanish","nation":"SP","commander":"Cuesta","cards":6},
   "bottom": {"army":"French","nation":"FR","commander":"Victor","cards":5},
   "first": "top",

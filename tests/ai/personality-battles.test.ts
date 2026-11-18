@@ -9,7 +9,7 @@ failOnAiErrors();
 /** Battle -> [top, bottom] temperament ids (a commander without one of his own gets his nation's default: Reynier's or Hill's). */
 const TABLE: Record<string, [string, string]> = {
   '001': ['wellington', 'reynier'], '002': ['wellington', 'reynier'], '003': ['wellington', 'junot'], '004': ['moore', 'soult'],
-  '005': ['wellington', 'reynier'], '006': ['craufurd', 'ney'], '007': ['wellington', 'massena'], '008': ['wellington', 'massena'],
+  '005': ['wellington', 'joseph'], '006': ['craufurd', 'ney'], '007': ['wellington', 'massena'], '008': ['wellington', 'massena'],
   '009': ['wellington', 'ney'], '010': ['wellington', 'marmont'], '011': ['wellington', 'marmont'], '012': ['bock', 'reynier'],
   '013': ['hill', 'reynier'], '014': ['wellington', 'ney'], '015': ['wellington', 'napoleon'],
 };

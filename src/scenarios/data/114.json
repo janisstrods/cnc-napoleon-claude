@@ -3,7 +3,6 @@
   "name": "Barrosa",
   "year": "1811",
   "expansion": "exp1",
-  "hidden": true,
   "top": {"army":"Anglo-Spanish","nation":"BR","commander":"Graham","cards":6},
   "bottom": {"army":"French","nation":"FR","commander":"Victor","cards":5},
   "first": "bottom",

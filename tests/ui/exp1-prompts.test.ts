@@ -3,7 +3,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import {
-  CARD_DEFS, GameDriver, answerError, cardKind, createGame, guerrillaHeld, other, randomAnswer, shrinkHand,
+  CARD_DEFS, GameDriver, answerError, cardKind, createGame, guerrillaHeld, other, randomAnswer,
   type Decision, type GameEvent, type GameState, type Side,
 } from '../../src/engine';
 import { scenarioById } from '../../src/scenarios';
@@ -12,7 +12,7 @@ import { aiPacing } from '../../src/ui/game/controller';
 import { enterBelongsToHand, freshSelection } from '../../src/ui/game/boardKeys';
 import { gamePrompt, focusPromptTarget } from '../../src/ui/game/prompts';
 import { decisionTitle, promptSpec } from '../../src/ui/game/promptSpec';
-import { GuerrillaCounters, HandSizeLine, HandStrip } from '../../src/ui/game/panels';
+import { GuerrillaCounters, HandStrip } from '../../src/ui/game/panels';
 import { handChoices, undoBlockedNote, type UiSel } from '../../src/ui/game/uiModel';
 import { mulberry32 } from '../support/rng';
 import { SeededOpponent, runToHuman, useFakeClock } from './controller-helpers';
@@ -217,17 +217,6 @@ describe('the side rules in the army panel', () => {
     const s = createGame(scenarioById('103').setup, 1);
     expect(html(createElement(GuerrillaCounters, { s, side: 'bottom' }))).toBe('');
     expect(html(createElement(GuerrillaCounters, { s: createGame(scenarioById('116').setup, 1), side: 'top' }))).toBe('');
-  });
-
-  it('the 106 hand-size line falls after a French banner', () => {
-    const s = createGame(scenarioById('106').setup, 1);
-    const line = (st: GameState) => html(createElement(HandSizeLine, { s: st, side: 'top' })).replace(/<[^>]+>/g, '');
-    const n = s.special.handSize.top;
-    expect(line(s)).toBe(`Hand size ${n} (falls with each banner lost, to 3)`);
-    shrinkHand(s, { emit: noop, invalid: noop }, 'top', 1);
-    expect(s.special.handSize.top).toBe(n - 1);
-    expect(line(s)).toBe(`Hand size ${n - 1} (falls with each banner lost, to 3)`);
-    expect(html(createElement(HandSizeLine, { s, side: 'bottom' }))).toBe('');
   });
 });
 

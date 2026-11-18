@@ -1,23 +1,30 @@
-// AI match runner. The computer opponent is the seeded random stub of Plan 2B T1c-3a, so a match is the stub against itself
-// (or against uniformly random answers) on each battle: a smoke test that every game finishes, and a timing of its turns.
-// Usage: npx vite-node scripts/ai-match.ts -- [--games 2] [--scenarios 000] [--a colonel] [--b captain] [--random]
-//        [--shard 0/4] [--seedOffset 0]
-//   --random: side B plays uniformly random legal answers instead of the stub.
+// AI match runner: the general (src/ai) at level A against level B (or against uniformly random answers) on each battle,
+// each seed played with A as bottom and then as top. Prints one line per game and a summary: wins, rejected answers, AI
+// fallbacks and the time of the card decisions.
+// Usage: npx vite-node scripts/ai-match.ts -- [--games 1] [--scenarios 001,101] [--a colonel] [--b captain] [--random]
+//        [--scale 1] [--deterministic] [--shard 0/4] [--seedOffset 0]
+//   --a/--b: captain, colonel, marshal or 0, 1, 2. --random: side B plays uniformly random legal answers instead.
+//   --scale: the thinking budget (AiOptions.budgetScale). --deterministic: no clock is read (the node budget limits the work),
+//   so results do not depend on machine load. --scenarios takes any battle id, the Spanish battles 101-118 included.
 import { GameDriver, bannerTotal, createGame, other, randomAnswer, type Side } from '../src/engine';
 import { SCENARIOS, scenarioById } from '../src/scenarios';
 import { personalityFor, type AiOptions, type Difficulty } from '../src/ai';
-import { arg, flag, jobSeed, lcg, playAiGame, shardJobs } from './lib';
+import { arg, flag, jobSeed, lcg, levelArg, playAiGame, scenarioList, shardJobs } from './lib';
 
-const A = arg('a', 'colonel') as Difficulty;
-const B = arg('b', 'captain') as Difficulty;
+const A = levelArg('a', 'colonel');
+const B = levelArg('b', 'captain');
 const games = Number(arg('games', '1'));
-const scen = arg('scenarios', SCENARIOS.map((s) => s.id).join(',')).split(',');
+const scen = scenarioList(arg('scenarios', SCENARIOS.map((s) => s.id).join(',')));
+const scale = Number(arg('scale', '1'));
+const deterministic = flag('deterministic');
 const randomB = flag('random');
 const seedOffset = Number(arg('seedOffset', '0'));
 
 const mine = shardJobs(scen, games);
 
 let aWins = 0;
+let totalRejects = 0;
+let fallbacks = 0;
 let bWins = 0;
 const timeA: number[] = [];
 const timeB: number[] = [];
@@ -27,11 +34,11 @@ for (const job of mine) {
   const d = new GameDriver(createGame(info.setup, seed));
   const bSide = other(job.aSide);
   const mk = (side: Side, diff: Difficulty): AiOptions => ({
-    side, difficulty: diff, personality: personalityFor(info.setup[side].commander, info.setup[side].army), seed: seed * 3 + (side === 'top' ? 1 : 2),
+    side, difficulty: diff, personality: personalityFor(info.setup[side].commander, info.setup[side].army, info.setup[side].nation), seed: seed * 3 + (side === 'top' ? 1 : 2), budgetScale: scale, deterministic,
   });
   const rnd = lcg(seed);
   let rejects = 0;
-  playAiGame(d, { [job.aSide]: mk(job.aSide, A), [bSide]: mk(bSide, B) } as Record<Side, AiOptions>, {
+  const mems = playAiGame(d, { [job.aSide]: mk(job.aSide, A), [bSide]: mk(bSide, B) } as Record<Side, AiOptions>, {
     answer: (dec) => (dec.side !== job.aSide && randomB ? randomAnswer(d.state, dec, rnd) : undefined),
     planMs: (side, ms) => (side === job.aSide ? timeA : timeB).push(ms),
     rejected: (dec, ans) => {
@@ -40,6 +47,8 @@ for (const job of mine) {
     },
     fallback: rnd,
   });
+  fallbacks += mems.top.fallbacks + mems.bottom.fallbacks;
+  totalRejects += rejects;
   const w = d.state.winner;
   if (w === job.aSide) aWins++;
   else if (w === bSide) bWins++;
@@ -48,5 +57,5 @@ for (const job of mine) {
 }
 const avg = (x: number[]) => (x.length ? x.reduce((a, b) => a + b, 0) / x.length : 0);
 const max = (x: number[]) => (x.length ? Math.max(...x) : 0);
-console.log(`RESULT A=${A} wins ${aWins}, B=${randomB ? 'random' : B} wins ${bWins}, games ${mine.length}`);
+console.log(`RESULT A=${A} wins ${aWins}, B=${randomB ? 'random' : B} wins ${bWins}, games ${mine.length}, rejects ${totalRejects}, fallbacks ${fallbacks}`);
 console.log(`TIME A card plans avg ${avg(timeA).toFixed(0)}ms max ${max(timeA).toFixed(0)}ms; B avg ${avg(timeB).toFixed(0)}ms max ${max(timeB).toFixed(0)}ms`);

@@ -3,7 +3,6 @@
   "name": "Vitoria",
   "year": "1813",
   "expansion": "exp1",
-  "hidden": true,
   "top": {"army":"Allied","nation":"BR","commander":"Wellington","cards":5},
   "bottom": {"army":"French","nation":"FR","commander":"King Joseph","cards":4},
   "first": "top",

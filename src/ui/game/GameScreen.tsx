@@ -9,7 +9,7 @@ import { nationInk } from '../kit/theme';
 import { BattleResult } from './BattleResult';
 import { Board } from './Board';
 import type { GameController } from './controller';
-import { CommittedCard, committedShown, GuerrillaCounters, HandSizeLine, HandStrip, HoverTip, LogPanel } from './panels';
+import { CommittedCard, committedShown, GuerrillaCounters, HandStrip, HoverTip, LogPanel } from './panels';
 import { PromptBar, focusNewDecision, focusPromptTarget, gamePrompt } from './prompts';
 import { boardKeyStep, enterBelongsToHand, freshSelection, globalKeyAction, hexLabel, jumpTarget, nextRegion } from './boardKeys';
 import { hexClick, leaderClick, type ClickResult } from './hexClick';
@@ -17,7 +17,7 @@ import { bannerCounts, objectiveSummary, objectiveTipLines } from './objectiveTe
 import { boardMarks, escapeSelection, handChoices, selectionDeps, type UiSel } from './uiModel';
 import { leaderLines, unitSummary } from './unitText';
 import { SquareTrack } from './SquareTrack';
-import { commandText, squareLines } from './squareText';
+import { commandText, handShrinkNote, squareLines } from './squareText';
 import { TerrainTipBlock } from './TerrainTipBlock';
 import { terrainTip } from './terrainTips';
 import { RulesDialog } from '../screens/RulesDialog';
@@ -333,8 +333,7 @@ export function GameScreen({ controller, onExit, onRematch }: {
               <div>
                 <div className="army-name them">{them.army}</div>
                 <div className="army-cmd" title={`${them.commander} — ${persona.name}: ${persona.epithet} · ${DIFF_LABEL[controller.config.difficulty]}`}>{them.commander} · {persona.name} · {DIFF_LABEL[controller.config.difficulty]}</div>
-                <div className="army-cmd army-hand">{commandText(s, ai)}</div>
-                <HandSizeLine s={s} side={ai} />
+                <div className="army-cmd army-hand" title={handShrinkNote(s, ai)}>{commandText(s, ai)}</div>
               </div>
               <CommittedCard s={s} side={ai} />
               <div className="ai-hand" title={`${them.hand.length} command cards`}>
@@ -349,8 +348,7 @@ export function GameScreen({ controller, onExit, onRematch }: {
               <div>
                 <div className="army-name me">{me.army} <span className="you">(you)</span></div>
                 <div className="army-cmd">{me.commander}</div>
-                <div className="army-cmd army-hand">{commandText(s, human)}</div>
-                <HandSizeLine s={s} side={human} />
+                <div className="army-cmd army-hand" title={handShrinkNote(s, human)}>{commandText(s, human)}</div>
               </div>
             </div>
             <GuerrillaCounters s={s} side={human} />
