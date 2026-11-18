@@ -11,6 +11,7 @@ import { retireReformOptions } from './retreat';
 import { rollDice } from './rng';
 import { unitById } from './query';
 import { applyOutcome } from './resolve';
+import { follyActive, squareCapReached } from './scenarioRules';
 import { canFormSquare, squareFirstApplies } from './squares';
 import { statsOf } from './units';
 import type { DefendChoice, FlowCtx, GameState, HexId, MeleeCtx, RollPurpose } from './types';
@@ -19,6 +20,8 @@ import type { DefendChoice, FlowCtx, GameState, HexId, MeleeCtx, RollPurpose } f
  * The defender's choices (one per melee, R77): Retire and Reform for cavalry attacked by infantry (a square included) when it
  * has a path (R34); form square for infantry attacked by cavalry (R26); First Strike when its owner holds the card and the
  * melee is an attack or a bonus melee, never a battle back and never against a square that already fights first (R29, R63).
+ * Two side rules take choices away: a reached square cap refuses a unit outside the record (S34), and the folly refuses both
+ * the square and First Strike for the turn (S37).
  */
 export function defendOptions(s: GameState, m: MeleeCtx): DefendChoice[] {
   const options: DefendChoice[] = ['stand'];
@@ -28,8 +31,9 @@ export function defendOptions(s: GameState, m: MeleeCtx): DefendChoice[] {
   if (statsOf(s, target).arm === 'cavalry' && statsOf(s, attacker).arm === 'infantry' && retireReformOptions(s, target).length > 0) {
     options.push('retireReform');
   }
-  if (canFormSquare(s, target, attacker, m)) options.push('formSquare');
-  if ((m.role === 'attack' || m.role === 'bonus') && !squareFirstApplies(s, m)
+  const folly = follyActive(s, target.side);
+  if (!folly && !squareCapReached(s, target) && canFormSquare(s, target, attacker, m)) options.push('formSquare');
+  if (!folly && (m.role === 'attack' || m.role === 'bonus') && !squareFirstApplies(s, m)
     && s.players[target.side].hand.some((c) => cardKind(c) === 'firstStrike')) options.push('firstStrike');
   return options;
 }
