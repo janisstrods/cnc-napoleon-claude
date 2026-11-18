@@ -54,9 +54,9 @@
     inset 0 -.32em .4em rgba(150, 122, 72, .42),
     inset 0 0 0 .05em rgba(120, 95, 55, .45),
     0 .26em 0 #bba984,
-    0 0 0 .1em #f8d878,
-    0 0 0 .17em rgba(150, 100, 20, .7),
-    0 0 1.1em .35em rgba(250, 205, 80, .85);
+    0 0 0 .08em var(--kit-parchment-light),
+    0 0 0 .18em var(--kit-crimson),
+    0 0 .7em .15em rgba(163, 38, 42, .3);
   animation: kit-die-pop .45s cubic-bezier(.2, .9, .3, 1.4) both;
 }
 .kit-die.is-flag .kit-die__body {

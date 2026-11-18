@@ -7,9 +7,11 @@ import { GROUP_COLORS } from './theme';
 
 export type CardSize = 'sm' | 'md' | 'lg';
 
-/** Illustration of each tactic card (game-icons.net, CC BY 3.0, or our own glyphs); section cards show the mini-map instead. */
+/**
+ * Illustration of each tactic card (game-icons.net, CC BY 3.0, or our own glyphs); section cards show the mini-map instead.
+ * La Grande Manoeuvre's laurel crown stays as a Napoleonic period motif (Task 10d review).
+ */
 export const CARD_ICONS: Partial<Record<CardKind, IconName | NapGlyph>> = {
-  coordinatedAdvance: 'laurels',
   forward: 'run',
   reconInForce: 'spyglass',
   bayonetCharge: 'spears',

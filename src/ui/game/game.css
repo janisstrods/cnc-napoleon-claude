@@ -120,9 +120,11 @@ body {
 .log-card { color: var(--kit-bronze-dark); }
 .log-combat { color: var(--kit-ink); }
 .log-result { color: var(--kit-ink-soft); font-size: 13px; }
-.log-banner { color: var(--kit-crimson); font-weight: 600; }
+.log-banner { color: var(--kit-ink); font-weight: 600; }
+.log-banner.log-me { color: var(--side-me); }
+.log-banner.log-them { color: var(--side-them); }
 .log-say { font-style: italic; color: var(--kit-ink-soft); background: rgba(59, 49, 39, .05); border-radius: 2px; }
-.log-victory { font-family: var(--kit-font-title); color: var(--kit-crimson); font-size: 15px; margin-top: 6px; }
+.log-victory { font-family: var(--kit-font-title); color: var(--kit-ink); font-weight: 700; font-size: 15px; margin-top: 6px; }
 .log-info { color: var(--kit-ink-soft); }
 
 /* ---------- bottom strip: hand + prompt */
@@ -330,7 +332,8 @@ body {
 .victory-banners { display: flex; flex-wrap: wrap; gap: 3px; }
 .victory-banner { display: block; }
 .victory-count { font-family: var(--kit-font-title); font-weight: 700; font-size: 18px; text-align: right; color: var(--kit-ink-soft); }
-.victory-row.is-winner .victory-army, .victory-row.is-winner .victory-count { color: var(--kit-crimson); font-weight: 700; }
+/* the dialog is portalled out of .game-root (no side colours there): the winner is in full ink and weight */
+.victory-row.is-winner .victory-army, .victory-row.is-winner .victory-count { color: var(--kit-ink); font-weight: 700; }
 .victory-turns { margin: 8px 0 16px; text-align: center; font-size: 14px; color: var(--kit-ink-soft); }
 .victory-medal { display: flex; align-items: center; justify-content: center; gap: 10px; margin: -6px 0 16px; font-size: 16px; color: var(--kit-ink); }
 .victory-medal b { text-transform: capitalize; color: var(--kit-crimson); }
@@ -348,9 +351,9 @@ body {
 .match-table tbody th { text-align: left; font-weight: 400; }
 .match-table th small { font-size: 13px; font-style: italic; color: var(--kit-ink-soft); }
 .match-table .match-outcome { padding: 3px 10px; font-style: italic; color: var(--kit-ink-soft); }
-.match-table .match-outcome.is-won { color: var(--kit-crimson); }
+.match-table .match-outcome.is-won { color: var(--kit-ink); font-weight: 700; }
 .match-n { width: 4.6em; text-align: right; font-family: var(--kit-font-title); font-weight: 700; font-size: 17px; color: var(--kit-ink-soft); }
-.match-n.is-ahead { color: var(--kit-crimson); }
+.match-n.is-ahead { color: var(--kit-ink); }
 .match-table tfoot th, .match-table tfoot td { border-top: 1px solid rgba(59, 49, 39, .3); padding-top: 5px; }
 .match-table tfoot th { text-align: left; font-family: var(--kit-font-title); font-weight: 700; font-size: 15px; color: var(--kit-ink-soft); }
 .match-verdict { margin: 6px 0 0; text-align: center; font-size: 16px; font-weight: 700; color: var(--kit-ink); }
@@ -445,8 +448,8 @@ body {
 .sq-slot.is-owner:focus-visible { outline: 2px solid var(--kit-royal); outline-offset: 2px; }
 .square-track { flex-wrap: wrap; }
 .sq-label { flex: 1 0 100%; text-align: right; margin: 0 0 1px; }
-.square-counter circle { fill: var(--kit-ink); stroke: var(--kit-parchment); stroke-width: 2; }
-.square-counter text { fill: var(--kit-parchment-light); font-family: var(--kit-font-title); font-size: 14px; font-weight: 700; pointer-events: none; }
+.square-counter circle { fill: var(--kit-parchment-light); stroke: var(--kit-ink); stroke-width: 2; }
+.square-counter text { fill: var(--kit-ink); font-family: var(--kit-font-title); font-size: 14px; font-weight: 700; pointer-events: none; }
 .square-counter { pointer-events: none; }
 .prompt-hint { min-height: 3.6em; font-size: 12.5px; font-style: italic; color: var(--kit-ink-soft); line-height: 1.2; margin-top: 2px; }
 .tip-square { color: var(--kit-parchment-light); }

@@ -54,8 +54,9 @@
   color: var(--kit-ink-soft);
   cursor: help;
 }
-.kit-banners.is-near .kit-banners__count { color: var(--kit-crimson); }
-.kit-banners.is-won { box-shadow: inset 0 0 0 1px var(--kit-crimson), inset 0 0 0 3px rgba(163, 38, 42, .12); }
+/* the track does not know whose it is: near and won are marked in ink and weight, not in one nation's red */
+.kit-banners.is-near .kit-banners__count { color: var(--kit-ink); font-weight: 700; }
+.kit-banners.is-won { box-shadow: inset 0 0 0 1.5px var(--kit-ink), inset 0 0 0 3.5px rgba(34, 28, 22, .1); }
 
 @keyframes kit-banner-in {
   0% { transform: translateY(-30%) scale(.5) rotate(-8deg); opacity: 0; }

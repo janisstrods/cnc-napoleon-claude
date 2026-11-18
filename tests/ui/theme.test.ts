@@ -159,21 +159,42 @@ describe('nation colours for both sides (Task 10d)', () => {
 
   it('the game screen colours each side by its nation, not green for you and red for the enemy', async () => {
     const game = await readText('../../src/ui/game/game.css');
-    const screen = await readText('../../src/ui/game/GameScreen.tsx');
     const rule = (sel: string) => new RegExp(`${sel.replace(/\./g, '\\.')}\\s*\\{([^}]*)\\}`).exec(game)?.[1] ?? '';
-    for (const sel of ['.side-me', '.army-name.me', '.log-me']) {
+    for (const sel of ['.side-me', '.army-name.me', '.log-me', '.log-banner.log-me']) {
       expect(rule(sel), sel).toContain('var(--side-me)');
       expect(rule(sel), sel).not.toMatch(/green|crimson/);
     }
-    for (const sel of ['.side-them', '.army-name.them', '.log-them']) {
+    for (const sel of ['.side-them', '.army-name.them', '.log-them', '.log-banner.log-them']) {
       expect(rule(sel), sel).toContain('var(--side-them)');
       expect(rule(sel), sel).not.toMatch(/green|crimson/);
     }
-    // the two custom properties are set from the armies' nations
-    expect(screen).toMatch(/'--side-me': nationInk\(me\.nation\)/);
-    expect(screen).toMatch(/'--side-them': nationInk\(them\.nation\)/);
-    // the player's own chip says so in words as well as colour
-    expect(screen).toMatch(/side-chip side-\$\{s\.active === human \? 'me' : 'them'\}`\}>\{s\.players\[s\.active\]\.army\}\{s\.active === human && <span className="you">/);
+  });
+
+  it('the rendered game screen sets each side\'s colour from its nation, and your chip says "(you)"', async () => {
+    stubStorage();
+    const { GameScreen } = await import('../../src/ui/game/GameScreen');
+    const { GameController, newSessionConfig } = await import('../../src/ui/game/controller');
+    const { SeededOpponent } = await import('./controller-helpers');
+    // [battle, human side, your colour, the enemy's colour]: 001 French v Anglo-Portuguese, 105 French v Spanish
+    const cases = [
+      ['001', 'bottom', 'royal', 'crimson'],
+      ['001', 'top', 'crimson', 'royal'],
+      ['105', 'top', 'spanish-ink', 'royal'],
+    ] as const;
+    for (const [id, human, me, them] of cases) {
+      const c = new GameController({ ...newSessionConfig(id, human, 'captain'), seed: 5 }, new SeededOpponent());
+      const html = renderToStaticMarkup(createElement(GameScreen, { controller: c, onExit: () => {} }));
+      const root = /<div class="game-root" style="([^"]*)"/.exec(html)?.[1] ?? '';
+      expect(root, `${id} ${human}`).toContain(`--side-me:var(--kit-${me})`);
+      expect(root, `${id} ${human}`).toContain(`--side-them:var(--kit-${them})`);
+      const mine = c.view.display.active === human;
+      const chipHtml = /<span class="side-chip side-(?:me|them)">(?:(?!<\/span>).)*(?:<span class="you"> \(you\)<\/span>)?<\/span>/.exec(html)?.[0] ?? '';
+      expect(chipHtml, `${id} ${human} chip`).not.toBe('');
+      expect(chipHtml, `${id} ${human}`).toContain(`side-chip side-${mine ? 'me' : 'them'}`);
+      expect(chipHtml.includes('(you)'), `${id} ${human} (you)`).toBe(mine);
+      expect(chipHtml).toContain(c.view.display.players[c.view.display.active].army);
+      c.dispose();
+    }
   });
 });
 
@@ -187,7 +208,30 @@ describe('carried from the Task 10b review', () => {
   it('the tooltip has no gold tones and the square counter no bronze ring: ink and paper', async () => {
     const game = await readText('../../src/ui/game/game.css');
     expect(game).not.toMatch(/#f3dc9a|#f6d27a|#e2bd72|#f6e7b6|#2a2318/i);
-    expect(game).toMatch(/\.square-counter circle\s*\{[^}]*fill:\s*var\(--kit-ink\)[^}]*stroke:\s*var\(--kit-parchment\)/);
+    // a paper disc with an ink ring, so it stands apart from the dark arm badge
+    expect(game).toMatch(/\.square-counter circle\s*\{[^}]*fill:\s*var\(--kit-parchment-light\)[^}]*stroke:\s*var\(--kit-ink\)/);
+    expect(game).toMatch(/\.square-counter text\s*\{[^}]*fill:\s*var\(--kit-ink\)/);
+  });
+
+  it('a won side is shown in ink and weight where the side is not known, never in British red for everyone', async () => {
+    const game = await readText('../../src/ui/game/game.css');
+    const controls = await readText('../../src/ui/kit/controls.css');
+    const rule = (css: string, sel: string) => new RegExp(`${sel.replace(/[.()]/g, (c) => `\\${c}`)}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? '';
+    for (const sel of ['.victory-row.is-winner .victory-army, .victory-row.is-winner .victory-count', '.match-table .match-outcome.is-won', '.match-n.is-ahead', '.log-victory']) {
+      expect(rule(game, sel), sel).not.toBe('');
+      expect(rule(game, sel), sel).not.toMatch(/crimson/);
+    }
+    for (const sel of ['.kit-banners.is-near .kit-banners__count', '.kit-banners.is-won']) {
+      expect(rule(controls, sel), sel).not.toBe('');
+      expect(rule(controls, sel), sel).not.toMatch(/crimson|163, 38, 42/);
+    }
+  });
+
+  it('a hit die is ringed in red ink, not a gold glow', async () => {
+    const dice = await readText('../../src/ui/kit/dice.css');
+    const hit = /\.kit-die\.is-hit \.kit-die__body\s*\{([^}]*)\}/.exec(dice)?.[1] ?? '';
+    expect(hit).toContain('var(--kit-crimson)');
+    expect(hit).not.toMatch(/#f8d878|250, 205, 80|150, 100, 20/);
   });
 
   it('the kit gallery: its tooltip line is light on the ink slip, its mini-maps are on paper, its red is the token', async () => {

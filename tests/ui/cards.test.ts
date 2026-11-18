@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { CARD_DEFS } from '../../src/engine/cards';
 import type { CardKind } from '../../src/engine/types';
-import { CardBack, CardView, type CardSize } from '../../src/ui/kit/CardView';
+import { CARD_ICONS, CardBack, CardView, type CardSize } from '../../src/ui/kit/CardView';
 import { SectionMiniMap } from '../../src/ui/kit/SectionMiniMap';
 import { GROUP_COLORS, theme } from '../../src/ui/kit/theme';
 
@@ -28,7 +28,10 @@ function contrast(a: string, b: string): number {
 const KINDS = Object.keys(CARD_DEFS) as CardKind[];
 const SIZES: CardSize[] = ['sm', 'md', 'lg'];
 
-/** The bronze-and-laurel vocabulary of the old cards: class names, ids and the gold gradient's stops. */
+/**
+ * The bronze-and-laurel vocabulary of the old cards, as class names and ids in the markup (the glyphs' path data
+ * carries no names), and the gold gradient's stops.
+ */
 const OLD = /laurel|bronze|gold|medallion|kit-card__rays|kit-card__corner/i;
 const GOLD_FILLS = ['#fff0bf', '#e6c06a', '#b38532', '#8a6020', '#f7da84', '#c79a4b', '#ecc979'];
 
@@ -36,7 +39,7 @@ const face = (kind: CardKind, size: CardSize = 'md', mirrored = false) =>
   renderToStaticMarkup(createElement(CardView, { kind, size, mirrored }));
 
 describe('the card faces', () => {
-  it('every card kind, in every size, has no bronze, laurel or gold', () => {
+  it('no card face has bronze, laurel or gold classes, or gold fills, in any size', () => {
     for (const kind of KINDS) {
       for (const size of SIZES) {
         for (const mirrored of [false, true]) {
@@ -46,6 +49,17 @@ describe('the card faces', () => {
         }
       }
     }
+  });
+
+  it('La Grande Manoeuvre\'s laurel crown is the one laurel glyph left: an accepted period motif (Napoleonic, not the Roman wreath)', () => {
+    expect(CARD_ICONS.grandManoeuvre).toBe('laurelCrown');
+    const laurel = Object.entries(CARD_ICONS).filter(([, g]) => /laurel/i.test(g!)).map(([k]) => k);
+    expect(laurel).toEqual(['grandManoeuvre']);
+  });
+
+  it('Coordinated Advance has no icon entry: it is a section card, which shows the mini-map', () => {
+    expect(CARD_DEFS.coordinatedAdvance.group).toBe('section');
+    expect(CARD_ICONS).not.toHaveProperty('coordinatedAdvance');
   });
 
   it('keeps everything the card shows: title, text, group label and the orders per section', () => {
