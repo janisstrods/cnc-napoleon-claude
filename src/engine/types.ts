@@ -149,7 +149,7 @@ export type Decision =
   | { kind: 'move'; side: Side }
   | { kind: 'battle'; side: Side }
   | { kind: 'combinedArms'; side: Side; unit: string; target: HexId; options: string[]; required: boolean }
-  | { kind: 'defend'; side: Side; attacker: string; target: string; options: DefendChoice[]; bonus: boolean }
+  | { kind: 'defend'; side: Side; attacker: string; target: string; options: DefendChoice[]; bonus: boolean; artillery: string[] }  // artillery: the Combined Arms guns that joined (declared before the reaction, R40)
   | { kind: 'ignoreFlags'; side: Side; unit: string; flags: number; max: number }
   | { kind: 'retreat'; side: Side; unit: string; options: RetreatOption[]; reason: 'retreat' | 'retireReform' }
   | { kind: 'leaderRetreat'; side: Side; leader: string; options: LeaderRetreatOption[] }

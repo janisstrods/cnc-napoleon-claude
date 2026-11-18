@@ -148,7 +148,7 @@ describe('answer validation (answerError)', () => {
     const retreat: Decision = { kind: 'retreat', side: 'bottom', unit: 'u1', options: [stay, stay], reason: 'retreat' };
     expect(answerError(s, retreat, { kind: 'choose', index: 1 })).toBeNull();
     expect([2, -1, 0.5].map((index) => answerError(s, retreat, { kind: 'choose', index }))).toEqual(Array(3).fill('Choose a destination.'));
-    const defend: Decision = { kind: 'defend', side: 'top', attacker: 'u1', target: 'u3', options: ['stand'], bonus: false };
+    const defend: Decision = { kind: 'defend', side: 'top', attacker: 'u1', target: 'u3', options: ['stand'], bonus: false, artillery: [] };
     expect(answerError(s, defend, { kind: 'defend', choice: 'stand' })).toBeNull();
     expect(answerError(s, defend, { kind: 'defend', choice: 'firstStrike' })).not.toBeNull();
     const flags: Decision = { kind: 'ignoreFlags', side: 'top', unit: 'u3', flags: 2, max: 1 };
