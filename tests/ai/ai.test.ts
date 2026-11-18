@@ -114,11 +114,13 @@ describe('the stub branches', () => {
       if (++calls > 1) throw new Error('planted failure');
       return real.call(this);
     });
+    const err = vi.spyOn(console, 'error').mockImplementation(() => undefined); // the expected 'AI error' report
     try {
       expect(() => chooseAnswer(d.state, d.pending!, o, mem)).toThrow('planted failure');
+      expect(err.mock.calls.map((c) => String(c[0]))).toEqual(['AI error']);
     } finally {
       spy.mockRestore();
-      vi.mocked(console.error).mockClear();
+      err.mockClear(); // the planted failure was reported on purpose; failOnAiErrors must not see it
     }
     expect(calls).toBeGreaterThan(1);
     expect(mem.rngState).not.toBe(o.seed);
@@ -135,6 +137,7 @@ describe('difficulty levels', () => {
     expect(levelOf('recruit')).toBe(0);
     expect(levelOf('tribune')).toBe(1);
     expect(levelOf('consul')).toBe(2);
+    expect(levelOf('veteran' as never)).toBe(1); // an unknown slug is never read as marshal
   });
 });
 

@@ -4,7 +4,7 @@ import { CARD_LIST, cardKind, createGame, GameDriver, randomAnswer, type CardKin
 import { scenarioById } from '../../src/scenarios';
 import { Rng } from '../../src/ai/rand';
 import {
-  assumeOppHand, blindClone, determinize, handSize, myHand, myTrack, oppHoldsP, sampledOppHolds, trackFilled, unseenCards, unseenOf,
+  assumeOppHand, blindClone, determinize, driverOn, handSize, myHand, myTrack, oppHoldsP, sampledOppHolds, trackFilled, unseenCards, unseenOf,
 } from '../../src/ai/view';
 import { build } from '../rules/helpers';
 import { failOnAiErrors } from './no-ai-errors';
@@ -212,5 +212,21 @@ describe('sampledOppHolds', () => {
     const c = blindClone(s, ME);
     determinize(c, ME, new Rng(1));
     expect(typeof sampledOppHolds(c, ME, 'firstStrike')).toBe('boolean');
+  });
+});
+
+describe('the blind-clone guards', () => {
+  it('determinize and driverOn refuse a state that blindClone did not make', () => {
+    const s = withSquares();
+    expect(() => determinize(s, ME, new Rng(1))).toThrow();
+    expect(() => driverOn(s)).toThrow();
+    expect(() => driverOn(blindClone(s, ME))).not.toThrow();
+    expect(() => driverOn(assumeOppHand(s, ME, 'firstStrike', true))).not.toThrow();
+  });
+
+  it('blindClone throws when the pool does not account for the deck, hand and filled slots', () => {
+    const s = withSquares();
+    s.units[1].square = undefined; // a filled track slot with no square counter on the board
+    expect(() => blindClone(s, ME)).toThrow(/unseen pool/);
   });
 });

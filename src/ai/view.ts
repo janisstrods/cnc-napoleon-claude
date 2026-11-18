@@ -4,8 +4,11 @@
 // What a side may see: its own hand and own square-track cards, both hand sizes, the discard pile, `lastCard`, and the
 // square counters on units (`unit.square`, public). It never sees the opponent's hand, the opponent's track cards, the deck
 // order or the game's random generator. The "unseen pool" is therefore built as the complement of what is seen.
-import { CARD_LIST, cardKind, cloneState, other, type CardKind, type GameState, type Side } from '../engine';
+import { CARD_LIST, GameDriver, cardKind, cloneState, other, type CardKind, type GameState, type Side } from '../engine';
 import type { Rng } from './rand';
+
+/** Clones made by `blindClone` / `assumeOppHand` (the only states the AI may simulate on). */
+const blind = new WeakSet<GameState>();
 
 /** Clones that `determinize` produced (the only ones on which the sampled opponent hand may be read). */
 const determinised = new WeakSet<GameState>();
@@ -89,9 +92,17 @@ function deal(c: GameState, opp: Side, order: readonly number[], slots: readonly
 export function blindClone(s: GameState, me: Side): GameState {
   const opp = other(me);
   const c = cloneState(s);
-  deal(c, opp, unseenCards(s, me), filledSlots(s, opp), handSize(s, opp));
+  const pool = unseenCards(s, me);
+  const slots = filledSlots(s, opp);
+  const n = handSize(s, opp);
+  // the pool, the opponent's hand, its filled slots and the deck must account for every unseen card
+  if (pool.length !== s.deck.length + n + slots.length) {
+    throw new Error(`blindClone: unseen pool ${pool.length} != deck ${s.deck.length} + hand ${n} + filled slots ${slots.length}`);
+  }
+  deal(c, opp, pool, slots, n);
   c.rng = 1;
   c.rngCalls = 0;
+  blind.add(c);
   return c;
 }
 
@@ -119,6 +130,7 @@ export function assumeOppHand(s: GameState, me: Side, kind: CardKind, holds: boo
  * fresh game-RNG state from `rand`.
  */
 export function determinize(s: GameState, me: Side, rand: Rng): void {
+  if (!blind.has(s)) throw new Error('determinize needs a clone made by blindClone');
   const opp = other(me);
   const pool = unseenCards(s, me);
   rand.shuffle(pool);
@@ -132,4 +144,10 @@ export function determinize(s: GameState, me: Side, rand: Rng): void {
 export function sampledOppHolds(s: GameState, me: Side, kind: CardKind): boolean {
   if (!determinised.has(s)) throw new Error('sampledOppHolds is only legal on a clone that determinize produced');
   return s.players[other(me)].hand.some((c) => cardKind(c) === kind);
+}
+
+/** A driver on a blind clone (the GameDriver constructor copies the state, so it must never see a real one). */
+export function driverOn(s: GameState): GameDriver {
+  if (!blind.has(s)) throw new Error('driverOn needs a clone made by blindClone');
+  return new GameDriver(s);
 }
