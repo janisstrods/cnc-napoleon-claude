@@ -2,6 +2,7 @@
 import { CARD_DEFS, NO_MODS, cardKind, effectiveCard } from './cards';
 import { ask, type Gen } from './decisions';
 import { fireAttack } from './fire';
+import { guerrillaSpendStep } from './guerrilla';
 import { meleeAttack } from './melee';
 import { applyMove } from './movement';
 import { battleReady, movablePieces, type Found } from './options';
@@ -11,7 +12,19 @@ import { leaveSquareStep } from './squares';
 import { elanStep, rallyStep, shortSupplyStep } from './tactics';
 import type { FlowCtx, GameState, Side } from './types';
 
-/** The card of the active side's turn: it is played and gives its orders. */
+/**
+ * A card cancelled by a Guerrilla counter (S19, S21): it orders nothing and changes no dice or draw, except that an Élan
+ * still reshuffles; it stays the turn's effective card, so it is discarded and recorded for Counter-Attack as usual.
+ */
+function cancelCard(s: GameState): void {
+  s.turn.mods = { ...NO_MODS };
+  s.turn.scout = false;
+}
+
+/**
+ * The card of the active side's turn: it is played, the guerrilla side may try to cancel it (RR §15.5), and it gives its
+ * orders.
+ */
 export function* cardStep(s: GameState, ctx: FlowCtx, side: Side): Gen {
   const t = s.turn;
   const pa = yield* ask(s, ctx, { kind: 'playCard', side });
@@ -29,6 +42,10 @@ export function* cardStep(s: GameState, ctx: FlowCtx, side: Side): Gen {
   t.reshuffle = def?.draw === 'reshuffle';
   ctx.emit({ t: 'cardPlayed', side, card: cardId, kind: cardKind(cardId), effective });
   t.phase = 'orders';
+  if (yield* guerrillaSpendStep(s, ctx, side)) {
+    cancelCard(s);
+    return;
+  }
   if (!effective || !def) return;
   const kind = def.select.kind;
   if (kind === 'dice') {
