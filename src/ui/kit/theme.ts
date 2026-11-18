@@ -18,7 +18,7 @@ export const GROUP_COLORS: Record<CardGroup, { main: string; light: string; dark
 /** Design tokens. The same values are exposed as CSS custom properties in theme.css (`--kit-*`). */
 export const theme = {
   font: {
-    title: "'Cinzel', 'Trajan Pro', 'Times New Roman', serif",
+    title: "'IM Fell English SC', 'Times New Roman', serif",
     body: "'EB Garamond', Garamond, 'Times New Roman', serif",
   },
   color: {
@@ -28,17 +28,17 @@ export const theme = {
     leather: '#3a2216',
     leatherDark: '#22130b',
     leatherLight: '#5a3622',
-    parchment: '#f0e3c2',
+    parchment: '#efe3c4',
     parchmentLight: '#f8efd7',
     parchmentDark: '#d9c393',
-    ink: '#2b1d12',
+    ink: '#261d17',
     inkSoft: '#5a4630',
     bronze: '#b0823a',
     bronzeLight: '#e2bd72',
     bronzeDark: '#6e4b1c',
     gold: '#e8c45a',
-    crimson: '#8e1b1b',
-    royal: '#22457f',
+    crimson: '#a3262a',
+    royal: '#1f3f8a',
     purple: '#55235f',
     olive: '#6b6a2a',
     felt: '#1d3127',

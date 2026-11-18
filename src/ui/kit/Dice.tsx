@@ -143,7 +143,7 @@ export function DiceTray(p: {
   const subtitle = p.rolling ? (p.subtitle ?? 'Rolling…') : (p.subtitle ?? summarise(p.faces, p.scoring));
   const hits = p.scoring ? p.scoring.filter(Boolean).length : 0;
   return (
-    <div className={`kit-tray ${p.className ?? ''}`} style={p.style}>
+    <div className={`kit-tray ${p.className ?? ''}`} style={p.style} role="group" aria-label={subtitle ?? p.title ?? 'Battle dice'}>
       {p.title || subtitle ? (
         <header className="kit-tray__head">
           {p.title ? <div className="kit-tray__title">{p.title}</div> : null}

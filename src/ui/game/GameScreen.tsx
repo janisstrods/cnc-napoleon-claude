@@ -4,14 +4,14 @@ import {
   type Answer, type GameState, type HexId, type Side,
 } from '../../engine';
 import { UnitIcon } from '../../art';
-import { BannerTrack, Button, CardBack, CardView, DiceTray, DieView, Modal, Panel } from '../kit';
+import { BannerTrack, Button, CardBack, CardView, DiceTray, Modal, Panel } from '../kit';
 import { BattleResult } from './BattleResult';
 import { Board } from './Board';
 import type { GameController } from './controller';
 import { HoverTip, LogPanel } from './panels';
-import { gamePrompt } from './prompts';
+import { PromptBar, gamePrompt } from './prompts';
 import { bannerCounts, objectiveSummary, objectiveTipLines } from './objectiveText';
-import { boardMarks, leaderRetreatChoices, retreatChoices, selectionDeps, toggleGun, type UiSel } from './uiModel';
+import { boardMarks, escapeSelection, leaderRetreatChoices, retreatChoices, selectionDeps, toggleGun, wantsPromptFocus, type UiSel } from './uiModel';
 import { assignClick, assignClickRefusal, assignOptions, currentAssign, nextDie, type ElanOrRally } from './assign';
 import { leaderLines, unitSummary } from './unitText';
 import { SquareTrack } from './SquareTrack';
@@ -59,16 +59,18 @@ export function GameScreen({ controller, onExit, onRematch }: {
       if (t instanceof HTMLSelectElement || t instanceof HTMLInputElement) return;
       if (document.querySelector('.kit-modal')) return; // dialogs own the keyboard
       if (e.key === 'Enter') {
-        if (e.repeat || t instanceof HTMLButtonElement) return;
+        if (t instanceof HTMLButtonElement) {
+          // a held Enter must not press the focused prompt button of each new decision in turn
+          if ((e.repeat || performance.now() - shownAt.current < 400) && t.closest('.prompt-buttons')) e.preventDefault();
+          return;
+        }
+        if (e.repeat) return;
         if (performance.now() - shownAt.current < 400) return; // swallow double-taps into a fresh decision
         const btn = document.querySelector<HTMLButtonElement>('.prompt-buttons .kit-btn--primary:not(:disabled)');
         if (btn) { e.preventDefault(); btn.click(); }
       } else if (e.key === 'Escape') {
         // Escape also disarms the Élan / Rally die
-        setUi((u) => ({
-          ...u, selPiece: null, selCard: null,
-          assign: (d?.kind === 'elan' || d?.kind === 'rally') && d.side === human ? { ...currentAssign(s, d, u.assign), die: null } : u.assign,
-        }));
+        setUi((u) => escapeSelection(s, d, human, u));
       } else if (/^[1-9]$/.test(e.key) && d?.kind === 'playCard' && d.side === human) {
         const c = s.players[human].hand[Number(e.key) - 1];
         if (c !== undefined) setUi((u) => ({ ...u, selCard: c }));
@@ -93,6 +95,17 @@ export function GameScreen({ controller, onExit, onRematch }: {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [d]);
+
+  // a new decision of the human's takes the keyboard focus on its primary button, unless the pointer is on the board
+  const overBoard = useRef(false);
+  useEffect(() => {
+    if (!wantsPromptFocus(d, human, overBoard.current) || document.querySelector('.kit-modal')) return;
+    const a = document.activeElement;
+    if (a instanceof HTMLSelectElement || a instanceof HTMLInputElement) return;
+    // the primary button, else the list of a chooser (never the general's button: an Enter must not hand the decision over)
+    const target = document.querySelector<HTMLElement>('.prompt-buttons .kit-btn--primary:not(:disabled)') ?? document.querySelector<HTMLElement>('.prompt-pick select');
+    target?.focus({ preventScroll: true });
+  }, [d, human]);
 
   const answer = (a: Answer) => controller.answer(a);
   // the board's marks follow the selection, not the hovered hex: a hover redraws only the path preview (and the tooltip)
@@ -299,6 +312,8 @@ export function GameScreen({ controller, onExit, onRematch }: {
         <section
           className="board-wrap"
           onClick={() => !view.pending && !view.over && controller.hurry()}
+          onMouseEnter={() => { overBoard.current = true; }}
+          onMouseLeave={() => { overBoard.current = false; }}
         >
           <Board
             state={s}
@@ -377,7 +392,7 @@ export function GameScreen({ controller, onExit, onRematch }: {
       </div>
 
       <footer className="bottom-strip">
-        <div className="hand-cards">
+        <div className="hand-cards" style={{ '--n': me.hand.length } as React.CSSProperties}>
           {me.hand.map((c) => {
             const playable = d?.kind === 'playCard' && d.side === human;
             const k = cardKind(c);
@@ -400,23 +415,7 @@ export function GameScreen({ controller, onExit, onRematch }: {
             <CardView kind={cardKind(ui.hoverCard)} size="lg" />
           </div>
         )}
-        {prompt && (
-            <div className={`prompt-bar ${prompt.tone ? `tone-${prompt.tone}` : ''}`}>
-              {prompt.dice && (
-                <div className="prompt-dice" aria-hidden>
-                  {prompt.dice.map((f, i) => <DieView key={i} face={f} size={30} />)}
-                </div>
-              )}
-              <div className="prompt-text">
-                <div className="prompt-title">{prompt.title}</div>
-                {prompt.text && <div className="prompt-sub" title={prompt.text}>{prompt.text}</div>}
-                {prompt.hint && <div className="prompt-hint">{prompt.hint}</div>}
-                {view.error && <div className="prompt-err">{view.error}</div>}
-              </div>
-              {prompt.extra}
-              <div className="prompt-buttons">{prompt.buttons}</div>
-            </div>
-          )}
+        <PromptBar prompt={prompt} error={view.error} />
       </footer>
 
       <HoverTip active={!!hoverInfo}>

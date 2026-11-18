@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ButtonHTMLAttributes
 import { createPortal } from 'react-dom';
 import { Ornament } from './CardView';
 
-/** Cinzel button. primary = crimson & gold, secondary = parchment & bronze, ghost = outlined. */
+/** Title-font button. primary = crimson & gold, secondary = parchment & bronze, ghost = outlined. */
 export function Button(p: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'ghost' }) {
   const { variant = 'primary', className, type, children, ...rest } = p;
   return (
@@ -41,13 +41,40 @@ export function Panel(p: {
   );
 }
 
-/** A centred parchment dialog over a dimmed table. Escape / backdrop click call onClose. */
+const FOCUSABLE = 'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])';
+
+/** Where Tab (or Shift+Tab) from item `index` of `count` goes inside a dialog: it wraps round at either end. */
+export function focusWrap(index: number, count: number, shift: boolean): number {
+  if (count <= 0) return -1;
+  if (index < 0) return shift ? count - 1 : 0;
+  return shift ? (index + count - 1) % count : (index + 1) % count;
+}
+
+/** A centred parchment dialog over a dimmed table. Escape / backdrop click call onClose; focus moves in, stays in, and returns. */
 export function Modal(p: { open: boolean; title?: string; children: ReactNode; onClose?: () => void; width?: number | string }) {
   const { open, onClose } = p;
+  const box = useRef<HTMLDivElement>(null);
+  // focus goes to the dialog's primary button (else its first control) and comes back to where it was when the dialog closes
   useEffect(() => {
-    if (!open || !onClose) return;
+    if (!open) return;
+    const before = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const el = box.current;
+    const first = el?.querySelector<HTMLElement>('.kit-btn--primary:not(:disabled)') ?? el?.querySelector<HTMLElement>(FOCUSABLE);
+    first?.focus({ preventScroll: true });
+    return () => { if (before && document.contains(before)) before.focus({ preventScroll: true }); };
+  }, [open]);
+  useEffect(() => {
+    if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') onClose?.();
+      if (e.key === 'Tab' && box.current) {
+        const items = [...box.current.querySelectorAll<HTMLElement>(FOCUSABLE)];
+        const i = items.indexOf(document.activeElement as HTMLElement);
+        if (items.length && (i < 0 || (e.shiftKey ? i === 0 : i === items.length - 1))) {
+          e.preventDefault();
+          items[focusWrap(i, items.length, e.shiftKey)].focus();
+        }
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -60,7 +87,7 @@ export function Modal(p: { open: boolean; title?: string; children: ReactNode; o
         if (e.target === e.currentTarget) onClose?.();
       }}
     >
-      <div className="kit-modal__box" role="dialog" aria-modal="true" aria-label={p.title} style={p.width === undefined ? undefined : { width: `min(${typeof p.width === 'number' ? `${p.width}px` : p.width}, 100%)` }}>
+      <div ref={box} className="kit-modal__box" role="dialog" aria-modal="true" aria-label={p.title} style={p.width === undefined ? undefined : { width: `min(${typeof p.width === 'number' ? `${p.width}px` : p.width}, 100%)` }}>
         <div className="kit-modal__inner kit-parchment">
           {onClose ? (
             <button type="button" className="kit-modal__close" onClick={onClose} aria-label="Close">

@@ -204,7 +204,7 @@ export function Frame({
   const frameD = `M0,0H${fmt(W)}V${fmt(H)}H0Z${outline}`;
   const left = (m + x1) / 2;
   const right = (x2 + W - m) / 2;
-  const capStyle = { fontFamily: 'Cinzel, serif', fontSize: 11, letterSpacing: 4, fontWeight: 700 } as const;
+  const capStyle = { fontFamily: "'IM Fell English SC', serif", fontSize: 11, letterSpacing: 4, fontWeight: 700 } as const;
   const caption = (txt: string, x: number, y: number, rot: boolean) => (
     <text
       x={fmt(x)}
@@ -237,7 +237,7 @@ export function Frame({
           textAnchor="middle"
           dominantBaseline="central"
           fill={P.ink}
-          style={{ fontFamily: 'Cinzel, serif', fontSize: fs, fontWeight: 700, letterSpacing: 2.5 }}
+          style={{ fontFamily: "'IM Fell English SC', serif", fontSize: fs, fontWeight: 700, letterSpacing: 2.5 }}
         >
           {label.toUpperCase()}
         </text>
