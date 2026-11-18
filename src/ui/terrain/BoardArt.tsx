@@ -1,4 +1,4 @@
-// The painted battlefield: frame, grassland, terrain features, hex grid and section dividers.
+// The painted battlefield: map margin, grassland, terrain features, hex grid and section dividers.
 import { memo, useId, useMemo } from 'react';
 import type { TerrainType } from '../../engine/types';
 import { BOARD_H, BOARD_W, hexCenter } from '../geometry';
@@ -76,7 +76,7 @@ function BoardArtImpl({
         {art.grid}
         <SectionDividers x1={xa} x2={xb} />
       </g>
-      <Frame id={id} outline={art.outline} x1={xa} x2={xb} topLabel={topLabel} bottomLabel={bottomLabel} />
+      <Frame outline={art.outline} x1={xa} x2={xb} topLabel={topLabel} bottomLabel={bottomLabel} />
     </g>
   );
 }

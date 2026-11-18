@@ -14,4 +14,5 @@ export type { DieState } from './Dice';
 export { BannerTrack, BannerIcon } from './BannerTrack';
 export { Button, Panel, Modal, Tooltip, Tabletop } from './controls';
 export { Icon, iconPath } from './Icon';
+export { CompassRose } from './CompassRose';
 export type { IconName, NapGlyph } from './Icon';

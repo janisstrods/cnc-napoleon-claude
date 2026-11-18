@@ -65,9 +65,9 @@ export function BannerIcon(p: { nation?: Nation; held?: boolean; size?: number; 
         </>
       ) : (
         <>
-          <path d={cloth} fill="rgba(226,189,114,.06)" stroke="rgba(226,189,114,.55)" strokeWidth="1.1" strokeDasharray="2.6 2" strokeLinejoin="round" />
-          <rect x="4" y="7.4" width="32" height="3.2" rx="1.6" fill="rgba(226,189,114,.35)" />
-          <circle cx="20" cy="26" r="5.5" fill="none" stroke="rgba(226,189,114,.25)" strokeWidth="1" />
+          {/* an empty place: the banner's outline in faint ink, as a dotted line on the map */}
+          <path d={cloth} fill="rgba(59,49,39,.04)" stroke="rgba(59,49,39,.45)" strokeWidth="1" strokeDasharray="2.6 2" strokeLinejoin="round" />
+          <rect x="4" y="7.4" width="32" height="3.2" rx="1.6" fill="rgba(59,49,39,.28)" />
         </>
       )}
     </svg>
