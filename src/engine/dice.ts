@@ -3,7 +3,8 @@ import type { Arm } from './codes';
 import { distance } from './hex';
 import { cardDice } from './cards';
 import { TERRAIN_STATS, terrainAt, terrainReduction } from './terrain';
-import type { DieFace, GameState, HexId, Leader, Unit } from './types';
+import { rollDice } from './rng';
+import type { DieFace, FlowCtx, GameEvent, GameState, HexId, Leader, RollPurpose, Unit } from './types';
 import { statsOf, type UnitStats } from './units';
 
 export type StrikeRole = 'attack' | 'bonus' | 'back' | 'firstStrike' | 'squareFirst' | 'escape';
@@ -95,4 +96,32 @@ export function scoreRoll(faces: readonly DieFace[], kind: 'fire' | 'melee' | 'r
 /** Does any die show a sabre (kills a lone leader)? */
 export function sabreKills(faces: readonly DieFace[]): boolean {
   return faces.includes('sabre');
+}
+
+/**
+ * Does the melee unit `by` re-roll the flags of its roll at `target` (S12)? A lancer does in an attack, a bonus melee and
+ * its own First Strike; never in a battle back, a square's first strike or an escape roll, and never against a unit whose
+ * row is immune (a cuirassier). A lone leader is no unit, so nothing shields him.
+ */
+export function flagRerollApplies(s: GameState, by: Unit, target: Unit | Leader, role: StrikeRole): boolean {
+  if (!statsOf(s, by).rerollsFlags) return false;
+  if (role !== 'attack' && role !== 'bonus' && role !== 'firstStrike') return false;
+  return !(isUnit(target) && statsOf(s, target).immuneToFlagReroll);
+}
+
+/**
+ * Re-roll every flag die of `faces` once (S12), emit the re-roll as a second `roll` event with `reroll: true` and score it
+ * like the first. Returns the re-rolled faces and their score (add them to the first roll's); null when no die shows a flag.
+ */
+export function rerollFlags(
+  s: GameState, ctx: FlowCtx, purpose: RollPurpose, faces: readonly DieFace[], kind: 'fire' | 'melee' | 'retireReform', by: UnitStats, target: Arm,
+  who: { by: string | null; against: string | null },
+): (Scored & { faces: DieFace[] }) | null {
+  const flags = faces.filter((f) => f === 'flag').length;
+  if (!flags) return null;
+  const again = rollDice(s, flags);
+  const sc = scoreRoll(again, kind, by, target);
+  // `reroll` joins the roll event with the engine contract (Task 2); the cast keeps this file free of types.ts until it merges
+  ctx.emit({ t: 'roll', purpose, faces: again, scoring: sc.scoring, by: who.by, against: who.against, reroll: true } as GameEvent);
+  return { ...sc, faces: again };
 }
