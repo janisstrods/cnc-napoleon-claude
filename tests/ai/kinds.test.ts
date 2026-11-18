@@ -36,7 +36,7 @@ const win = (atk: 'BR/LN' | 'BR/HC', extra: Pos = {}, pieces = ['u1']): GameDriv
 };
 
 /** Each decision reached the way a game reaches it. */
-/** The expansion kinds are hand-built (their flows need expansion scenarios); safe answers only until Plan 7C Task 19. */
+/** The expansion kinds are hand-built (their flows need expansion scenarios); their policies are pinned in exp1-cards.test.ts (Plan 7C Task 19). */
 type Expansion = 'guerrilla' | 'moveFirst';
 const reach: Record<Exclude<Decision['kind'], Expansion>, () => GameDriver> = {
   playCard: () => new GameDriver(build({ units: [bot('BR/LN', [6, 6]), top('FR/LN', [3, 6])] })),

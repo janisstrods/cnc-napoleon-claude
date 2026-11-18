@@ -242,6 +242,6 @@ describe('rules text review round 1', () => {
     const menus = readFileSync('src/ui/screens/Menus.tsx', 'utf8');
     expect(mk).toMatch(/personalityFor\(army\.commander, army\.army, army\.nation\)/);
     expect(menus).toMatch(/personalityFor\(enemy\.commander, enemy\.army, enemy\.nation\)/);
-    expect(personalityFor('', 'Spanish', 'SP').id).toBeTruthy();
+    expect(personalityFor('', 'Spanish', 'SP').id).toBe('del_parque'); // an unnamed Spanish commander takes the Spanish default
   });
 });

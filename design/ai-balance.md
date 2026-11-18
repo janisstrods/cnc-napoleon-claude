@@ -21,9 +21,10 @@ units together, so the spend rate below is higher than in AI-vs-AI play.
     of very uneven cards.
   - **To look at:** whether 0.3 overprices a counter against card value, or whether the rule should compare it with the
     keep-one gain times a factor.
-- **The spend rate is about 55%.** 846 of 1,440 spend questions in the Task 19 fuzz and 495 of 927 in the run above answered
-  yes. Every card ordering a melee at good odds draws a counter.
-  - **To look at:** in AI-vs-AI games, whether counters go early on middling cards, leaving none for the opponent's strong
+- **The spend rate is about 55% in random-play fuzz (measured; not the AI-vs-AI rate).** 846 of 1,440 spend questions in the Task 19 fuzz and 495 of 927 in the run above answered
+  yes. Every card ordering a melee at good odds draws a counter. This rate came from random opponents crowding units together; in
+  AI-vs-AI play it is 21-27 % (Plan 7C Task 21 section below), so the hypothesis below, that counters go early, is untested there.
+  - **Hypothesis, to look at:** in AI-vs-AI games, whether counters go early on middling cards, leaving none for the opponent's strong
     Tactic cards. A reserve term (keep the last counter for a card above some value) is the obvious lever; `counterValue`'s
     ×1.5 for the last counter is its only form now.
 - **The 116 opening pick often moves second.**
@@ -430,3 +431,95 @@ here):
   `kMax`, `k0` or a time-based top-up of the leaders, measured at the quiet scales (marshal 0.35, colonel 0.9) within the 3 s cap.
   Controller ruling (fix round 2): ruling 8 stands as met on the point estimate; this lever is carried to a later release (it needs
   another 120-game measurement, and the golden replays of Plan 8 Task 1 are recorded on this AI).
+
+## Expansion #1: acceptance runs and the 116 diagnosis (Plan 7C Task 21, 2026-11-18)
+
+Nothing was tuned here. The numbers are for the controller's calibration decisions.
+
+### Balance table, battles 101-118
+
+`scripts/ai-balance.ts`, colonel against colonel, `--deterministic --scale 0.9` (the quiet-machine colonel scale), `--games 2`
+(four games a battle: two seeds, each played with the colonel A on each side), three shards, JSON in
+`cnc-napoleonics-research/ai-balance/p7c21-{0,1,2}.json`, summarised by `scripts/ai-balance-report.ts`. F is a French win, S a
+win for the Spanish, Anglo-Spanish or Allied side; each cell is winner, turns and banners (French-Spanish). Games are listed in
+seed order, then A on bottom before A on top.
+
+| Battle | Game 1 | Game 2 | Game 3 | Game 4 | French wins | Turns (avg, max) |
+|---|---|---|---|---|---|---|
+| 101 Bailén | F 31t 7-3 | F 23t 7-2 | F 17t 7-4 | F 15t 7-0 | 4-0 | 22, 31 |
+| 102 Zornoza | F 15t 6-3 | F 39t 6-4 | F 25t 6-4 | F 33t 6-5 | 4-0 | 28, 39 |
+| 103 Gamonal | S 30t 5-6 | F 19t 6-0 | F 41t 6-4 | F 15t 6-1 | 3-1 | 26, 41 |
+| 104 Espinosa | S 36t 3-7 | F 31t 7-4 | S 32t 6-7 | F 33t 7-6 | 2-2 | 33, 36 |
+| 105 Somosierra | S 36t 6-7 | F 27t 7-4 | F 33t 7-6 | F 33t 7-3 | 3-1 | 32, 36 |
+| 106 Medellín | F 18t 6-3 | F 28t 6-4 | S 41t 4-6 | S 19t 3-6 | 2-2 | 27, 41 |
+| 107 Alcañiz | F 19t 6-1 | F 23t 6-2 | S 30t 0-6 | S 26t 5-6 | 2-2 | 25, 30 |
+| 108 María | F 30t 6-2 | F 20t 6-1 | F 14t 6-0 | F 30t 6-1 | 4-0 | 24, 30 |
+| 109 Talavera | S 34t 4-6 | S 28t 0-6 | S 32t 5-6 | S 32t 5-6 | 0-4 | 32, 34 |
+| 110 Tamames | S 34t 7-8 | F 27t 8-3 | F 27t 8-4 | S 24t 1-8 | 2-2 | 28, 34 |
+| 111 Ocaña (cavalry) | F 9t 7-1 | F 11t 7-1 | F 21t 7-2 | F 9t 7-0 | 4-0 | 13, 21 |
+| 112 Ocaña | F 21t 6-4 | F 27t 6-5 | F 7t 6-1 | F 11t 6-1 | 4-0 | 17, 27 |
+| 113 Alba de Tormes | F 9t 6-1 | F 7t 6-0 | F 13t 6-0 | F 19t 6-3 | 4-0 | 12, 19 |
+| 114 Barrosa | S 16t 3-7 | S 18t 2-7 | F 25t 7-5 | S 16t 1-7 | 1-3 | 19, 25 |
+| 115 Albuera | S 48t 5-8 | F 39t 8-3 | F 27t 8-5 | F 29t 8-4 | 3-1 | 36, 48 |
+| 116 Vitoria | F 33t 9-5 | S 25t 8-9 | F 17t 9-5 | F 17t 9-4 | 3-1 | 23, 33 |
+| 117 San Marcial | S 26t 0-8 | S 30t 3-8 | S 30t 2-8 | S 28t 1-8 | 0-4 | 29, 30 |
+| 118 Ordal Cross | S 32t 1-6 | F 15t 6-5 | S 30t 2-6 | S 28t 2-6 | 1-3 | 26, 32 |
+
+72 games, 0 rejects, 0 fallbacks, no game near the 150-turn cap (longest 48). The colonel A won 32 of 72 (44 %, Wilson
+[34 %, 56 %]), B 40: the first-listed side does not matter, the battles do. With four games a battle the Wilson interval of a 4-0
+is [51 %, 100 %], so these are flags, not findings. A side that won 4 of 4, for the controller's follow-up list:
+- **French 4-0:** 101 Bailén, 102 Zornoza, 108 María, 111 Ocaña (cavalry), 112 Ocaña, 113 Alba de Tormes.
+- **Spanish side 4-0:** 109 Talavera, 117 San Marcial.
+
+Counters over the 72 games: Guerrilla spend questions 366, spent 99 (27 %); Scout questions 60, always taken (60 of 60);
+squares offered 215, formed 156; exits 0.
+
+### 116 Vitoria: why the French win
+
+Plan 5 Task 11 saw the French win 12 of 12. Task 21's colonel run above has them win 3 of 4. The diagnosis plays 116 with the
+same colonel on both sides (scale 0.5, deterministic, 24 seeds a row, `bottom` is the French) and varies the opening pick or
+the whole player. Scratch script, not committed (`p7c21-diag116.ts`).
+
+| Run | Who moves first | French wins |
+|---|---|---|
+| Natural picks (`moveFirstPick`) | Allies 14 of 24, French 10 of 24 | 17 of 24 (71 %); 10 of 14 when the Allies move first, 7 of 10 when the French do |
+| Allies forced to move first (Allies pick their lowest value, French their highest) | Allies, always | 15 of 24 (63 %) |
+| French forced to move first (the reverse) | French, 23 of 24 (one tie went to the Allies) | 19 of 23 French first (83 %) |
+| Every answer random and legal (no AI at all) | Allies 14 of 24, French 10 of 24 | 16 of 24 (67 %); 8 of 14 Allies first, 8 of 10 French first |
+
+- **The pick logic is not the cause (the supported conclusion).** Natural picks leave the first move almost even (14 against 10),
+  the average pick values are the same for both sides (top 3.7, bottom 3.5), the French win 71 % of natural games, 67 % of random
+  ones and 63 % with the Allies forced to move first: about the same in every condition.
+- **The French lead in every condition**: 67 of 96 games pooled (70 %).
+- **Random play: 16 of 24 French (67 %, Wilson [47 %, 82 %]).** Two more of the 24 random games hit the 150-turn cap with no
+  winner (they are not in the 16; the average of 104 turns includes them). Random play cannot by itself separate a battle
+  asymmetry from AI behaviour, so "the battle favours the French" is a hypothesis that this row hints at, not a finding. Untested
+  ideas for why: the Allied line is spread out and crosses the Zadorra at two bridges; hill hexes in the French half (rows 4-8) give
+  defensive ground; 9 banners is 9 of 22 Allied units against 9 of 20 French units.
+- **"Moving first" cannot be priced from these runs.** The forced rows (63 % against 83 %) are confounded: the side made to move
+  second also picks its highest-valued card (Forward, Force March, Cold Steel), so the opening card's strength changes together
+  with the first move. The natural-pick row shows no first-move effect (French 10 of 14 with the Allies first, 7 of 10 with the
+  French first). No figure is claimed.
+- **Why 12 of 12 in Task 11:** those 12 games were three runs of the same two seeds with both sides, and the final code replayed
+  the baseline's games exactly (Spanish sanity table above), so the 12-0 is in effect a 4-0 (about 24 % at a 70 % rate), not a
+  1-in-70 event. Today's 3 of 4 at scale 0.9 is consistent with a French rate of 65-70 %.
+- **Recommendation to the controller (no AI code was changed).** Do not treat `moveFirstPick` as the cause of 116's skew. If the
+  skew is to be moved, look at the scenario side first. `moveFirstPick` still ignores the value of moving first (Task 19
+  section above), which is a separate question. None of the runs had a reject or a fallback.
+
+### Follow-ups for the controller (not tuned here)
+
+- **Guerrilla spend is low in AI-vs-AI play: 99 of 366 (27 %)** (Plan 5 Task 11 saw 21 %). The 55 % of Task 19's fuzz was random
+  play. Per battle: 101 4 of 9, 103 6 of 26, 105 11 of 43, 106 7 of 25, 107 5 of 28, 109 10 of 38, 110 6 of 26, 117 8 of 42, 118
+  10 of 35. Whether it is too low is a design question: the guerrilla side that holds 1-2 counters keeps them for strong
+  cards; whether that is a problem is open: over the 72 games the French won 46 (64 %, Wilson [52 %, 74 %]), and only 109 and 117 went to the Spanish side 4-0.
+- **Scout is always yes: 60 of 60.** Unchanged since Task 19; `counterValue` 0.3 against a keep-one gain near 0.06.
+- **102 Zornoza: exits 0 in four games.** The AI never walks a unit off the baseline in 102 (the French won 4-0, 6-3 banners);
+  `EDGE_PROGRESS` is the open Plan 5 carry. Together with 101 and 108 at 4-0, the Spanish side of these three is the weak one.
+- **French 4-0 battles (101, 102, 108, 111, 112, 113) and Spanish 4-0 (109, 117):** need 24 or more games before any change; at
+  four games they are inside the noise, but 111-113 are the short cavalry games (7-19 turns), where the French cavalry decide
+  fast. 111 and 113 are the two battles the cavalry cost carry names.
+- **Plan 5 Task 11 carries still open:** hold-chance for `majority` (114 went 1-3 French, 117 0-4: the Spanish side wins both),
+  the 117 approach pull and the progress share for Swiss and gun eliminations.
+- **Log wording:** an exit shows two lines, "leaves the battlefield" then "removed from the field (exit)" (seen in the browser
+  walkthrough, 102).

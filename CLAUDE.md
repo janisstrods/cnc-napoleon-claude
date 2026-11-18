@@ -4,9 +4,10 @@ Browser game: TypeScript + Vite + React, pure rules engine in `src/engine`, AI i
 
 ## Status
 
-- **The engine is the Napoleonics base game (RR §1–§14), complete (Plan 2B).** The computer's general is the real AI (`src/ai`, Plan 5), and the UI covers every decision: each of the 20 decision kinds has its own prompt (Plan 4), and `tests/ui/full-games.slow.test.ts` plays battles 000 and 001–015 to the end through the controller. This project was started from the Commands & Colors: Ancients edition (v1.6.2); its identity has changed (`ccn-` storage keys, `window.__ccn`, title, version 1.0.0 "Talavera").
+- **Battles 001–015 and 101–118 are playable (Plan 7C implemented; its final review is pending).** The engine is the Napoleonics base game (RR §1–§14, Plan 2B) plus Expansion #1, the Spanish Army (RR §15–§16, Plan 7C). The computer's general is the real AI (`src/ai`, Plan 5), and the UI covers every decision: each of the 20 decision kinds has its own prompt (Plan 4; the `guerrilla` and `moveFirst` prompts are Plan 7C Task 15), and `tests/ui/full-games.slow.test.ts` plays battles 000 and 001–015 to the end through the controller (`full-games-exp1.slow.test.ts` plays 101 and 106 as the Spanish side and 116 as the French; `tests/ai/battles-exp1.slow.test.ts` soaks all of 101–118 AI against AI, with determinism and replay checks). This project was started from the Commands & Colors: Ancients edition (v1.6.2); its identity has changed (`ccn-` storage keys, `window.__ccn`, title, version 1.0.0 "Talavera").
 - `src/ai` is the Plan 5 planner: card plans played out on determinised clones under one node budget per decision, three levels `captain`/`colonel`/`marshal`, calibrated in `design/ai-balance.md`.
-- Spanish battles 101–118 (Expansion #1, Plan 7C) are playable from the battle picker ("The Spanish Army" tab, Plan 7C), with histories; Plan 7C's own notes carry the details.
+- Spanish battles 101–118 (Expansion #1, Plan 7C) are playable from the battle picker ("The Spanish Army" tab), with histories. The AI has policies for Guerrilla counters and the 116 opening card (`cardsense`); their calibration and the open follow-ups (116's one-sided results, the Guerrilla spend rate, the Scout question) are in the Spanish section of `design/ai-balance.md`.
+- Test run at the end of Plan 7C Task 21: `npm test` ran 2213 tests (+1 skipped) in 135 files in about 54 s (the Spanish soak file `tests/ai/battles-exp1.slow.test.ts` alone took about 75 s while three balance runs shared the machine).
 - Ancients content (battles, texts, histories, golden fixtures, art and terrain hash pins, scenario-bound tests) was removed in Plan 2A.
 - Battles 001–015 are generated from `design/data` (Plan 3B) and playable; `000` stays the hidden drill (the picker and random battle skip `hidden` battles).
 - `design/ancients/` holds the Ancients design docs for reference.
@@ -56,29 +57,29 @@ load; see each file header for flags):
 ## Where things live
 
 - `src/engine/codes.ts`: the Napoleonics vocabulary (nations, arms, unit codes, `UnitKey` = `Nation/UnitCode`, `isUnitKey`); imports nothing.
-- `scripts/scenarios/convert.ts` (the converter; it refuses unsupported features until Plan 7), `scripts/scenarios/meta-base.ts` (the meta table), `tests/scenarios/{generated,base,battles-soak,battle-rules,texts}.test.ts` and `manifest.ts`.
+- `scripts/scenarios/convert.ts` (the converter; it carries `river` per hex, `moveFirst`, and the Expansion #1 objectives and side rules through to the JSON), `scripts/scenarios/meta-base.ts` (the meta table of 001–015), `scripts/scenarios/meta-exp1.ts` (the meta table of 101–118: armies, commanders, objectives and side rules), `tests/scenarios/{generated,base,battles-soak,battle-rules,texts}.test.ts` and `manifest.ts`.
 - `src/scenarios/catalogue.ts`: `CATALOGUE` of every battle (base 001–015, Expansion #1 101–118) with name, date and box, transcribed or not; histories are checked against it.
 - One table per kind of thing: `UNIT_STATS` (`src/engine/units.ts`), `TERRAIN_STATS` and `WORKS` (`terrain.ts`), `CARD_DEFS`
   (`cards.ts`) and `EXPANSIONS` (`expansions.ts`). A new unit type or terrain is a row there, and the compiler then asks for its
   art (see the art notes below). A new expansion is an `EXPANSIONS` row plus its battle files; briefing texts of every battle are one table in `src/scenarios/texts.ts`.
-- Art: the Napoleonic miniatures are in `src/art/nap/`. Data is in `keys.ts` (`ART_KEYS`), `nations.ts` and `specs/`; the drawing code never tests nations or codes. A new unit key needs an `ART_KEYS` entry, a spec, and a decision in `tests/art/nap/wiring.test.ts` (art, or `PLACEHOLDER_OK` with a reason). The public tokens (`src/art/token.tsx`, `leader.tsx`, `icon.tsx`) delegate to it for art keys and art nations; the placeholder art remains for keys without art (SP). The hash pin is `tests/art/nap/looks.test.ts`: after a deliberate art change, re-pin with the hash it prints and say so in the commit. An attached leader sits at `NAP_LEADER_ATTACH_OFFSET` (the left end of the badge).
+- Art: the Napoleonic miniatures are in `src/art/nap/`. Data is in `keys.ts` (`ART_KEYS`), `nations.ts` and `specs/`; the drawing code never tests nations or codes. A new unit key needs an `ART_KEYS` entry, a spec, and a decision in `tests/art/nap/wiring.test.ts` (art, or `PLACEHOLDER_OK` with a reason). The public tokens (`src/art/token.tsx`, `leader.tsx`, `icon.tsx`) delegate to it for art keys and art nations; every unit row and every nation now has art (SP is an art nation, Plan 7C Task 13), so the placeholder drawing in `token.tsx` and `leader.tsx` is reached only by a key or nation that is not in the tables. The hash pin is `tests/art/nap/looks.test.ts`: after a deliberate art change, re-pin with the hash it prints and say so in the commit. An attached leader sits at `NAP_LEADER_ATTACH_OFFSET` (the left end of the badge).
 - Battle rules are data: the scenario JSON → `ScenarioSetup` (`src/engine/setup.ts`) → `GameState.scenario` (readonly,
   shared by `cloneState`). Play state lives in `GameState.special` (copied). A rule that falls on one side names it in the
   data; it never goes by army name.
 - Engine modules, bottom layer first (each imports only earlier ones; type-only imports exempt): `codes, types, hex, rng,
   expansions, units, terrain, query, cards, setup, scenarioRules, banners, objectives, dice, sight, retreat, movement,
   orders, tacticRules, options, decisions, combinedArms, casualties, leaders, resolve, squares, reactions, afterMelee,
-  fire, melee, tactics, phases, flow`; then `legal`, `driver`, `text`, `index`. `statsOf(state, unit)` is the unit's row
+  fire, melee, tactics, guerrilla, phases, moveFirst, flow`; then `legal`, `driver`, `text`, `index`. `statsOf(state, unit)` is the unit's row
   with the scenario's `unitOverrides` applied. Rules that act at a point in a battle are hook modules called from
   `melee`/`resolve`/`phases`: `reactions` (Retire and Reform, First Strike), `squares`, `leaders`, `combinedArms`,
-  `afterMelee` (take ground, breakthrough, bonus melee) and `tactics` (Élan, Rally, Short Supply). `decisions.ts` holds `ask`
-  and `answerError`, the one answer check the AI and UI also use. The flow is generators yielding one of 18 `Decision`
+  `afterMelee` (take ground, breakthrough, bonus melee), `tactics` (Élan, Rally, Short Supply), `guerrilla` (the counters, the spend question and the Scout draw) and `moveFirst` (116's secret opening card). `decisions.ts` holds `ask`
+  and `answerError`, the one answer check the AI and UI also use. The flow is generators yielding one of 20 `Decision`
   kinds (`playCard, orders, leaveSquare, move, battle, combinedArms, defend, ignoreFlags, retreat, leaderRetreat, advance,
-  breakthroughExtra, bonusMelee, elan, rally, scoutKeep, shortSupplyTarget, shortSupplyHex`); `GameDriver` runs them
+  breakthroughExtra, bonusMelee, elan, rally, scoutKeep, shortSupplyTarget, shortSupplyHex`, and `guerrilla, moveFirst` from Expansion #1); `GameDriver` runs them
   (replay, undo, events). The engine never branches on a nation or army name (`tests/engine/no-nation-names.test.ts`).
-- Scenario format (`ScenarioSetup`, `src/engine/setup.ts`): `terrain` entries (a `river` hex may carry a `crossing`; `fieldworks`
+- Scenario format (`ScenarioSetup`, `src/engine/setup.ts`): `terrain` entries (a `river` hex may carry a `crossing` and a `river` rule of its own that overrides the battle's `rivers`; `fieldworks`
   has `on` for the base terrain and `sides` for the works hexsides), `rivers` (one rule per battle), `square` on a unit at setup,
-  `objectives` of kinds `tempHex` / `tempGroup` / `exit` / `killWeight`, `sideRules`, and `unitOverrides` (rows changed for one key).
+  `objectives` of kinds `tempHex` / `tempGroup` / `exit` / `killWeight` and, from Expansion #1, `tempAny` / `majority` / `exitEdge` / `suddenDeath`, `sideRules` (`flagIgnoreOn`, `impetuousCavalry`, and from Expansion #1 `guerrilla` / `breakOnLosses` / `handShrink` / `squareCap` / `cavalryChargeFolly`), `moveFirst: 'reveal'` (116: the first player comes from revealed cards) and `unitOverrides` (rows changed for one key).
 - The AI calls the engine's rules, passing its `Occ` board index as a `PieceIndex` (`src/engine/query.ts`) rather than
   copying them. Deliberate approximations say so in a comment (`// approximates RR §x (engine: <generator>)`).
 - `src/ai` modules, lowest first (a few type-level and function-scoped cycles aside), one line each:
@@ -132,7 +133,7 @@ load; see each file header for flags):
   blocks, artillery by range, leaders), §3 dice and hit scoring, §4 terrain, §5 turn and Command, §6 orders and
   leaders, §7 movement, §8 fire and line of sight, §9 melee (squares, Retire and Reform, Combined Arms, breakthrough),
   §10 retreats and flags, §11 leaders, §12 the 70 Command cards, §13 victory and objective types, §14 the special rules
-  of battles 001–015, §15 onward reserved for Expansion #1.
+  of battles 001–015, §15 the Expansion #1 rules (Guerrilla counters, Move First, the Spanish and Swiss rows, retreats of two and three hexes, the new objective kinds) and §16 its battle special rules (one subsection per battle, 101–118). `design/exp1-rulings.md` (rows S1…S46) holds the Expansion #1 decisions; a new rules question gets an S row there first.
 - `design/rulings.md`: the binding decisions table (R1…); the RR's `[Interp R<n>]` marks and engine tests cite it. A new
   rules question gets a row there first.
 - `design/survey.md`: the scenario survey of battles 001–015 (sides, hands, units, terrain, objectives, special rules).
@@ -141,7 +142,7 @@ load; see each file header for flags):
 - `design/ancients/`: the Ancients design docs, kept as reference only (not rules for this game).
 - `design/superpowers/` holds the design specs and implementation plans.
 - Every `tests/rules` file starts with a header line `// Rules: RR §a, §b.c (design/rules-reference.md)` naming the RR sections it
-  tests, and `tests/engine/rr-coverage.test.ts` checks that every section is cited by some header (a bare `§n` covers only §1 and §14).
+  tests, and `tests/engine/rr-coverage.test.ts` checks that every section is cited by some header (a bare `§n` covers only §1, §14 and §16).
 - Battle objectives are data (`objectives` in the scenario JSON), handled by `objectives.ts` and `banners.ts`; victory counts `bannerTotal`
   (permanent + held). The board never changes in play (`cloneState` shares `terrain` and `works`).
 

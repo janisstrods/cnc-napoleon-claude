@@ -5,7 +5,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   GameDriver, OFF_BOARD, bannerTotal, createGame, forceDice, guerrillaHeld, guerrillaPool, guerrillaSide, leaderMoves, moveFirstOptions, moveFirstValue,
-  neighbours, stopsOnEntry, terrainAt, unitMoves, worksMask, directionTo, areAdjacent, HEX_DIRS, hexId, type GameState, type Side,
+  neighbours, stopsOnEntry, terrainAt, unitMoves, worksMask, directionTo, areAdjacent, HEX_DIRS, hexId, type GameState, type HexId, type Side,
 } from '../../src/engine';
 import { updateHeld } from '../../src/engine/objectives';
 import { damage } from '../../src/engine/casualties';
@@ -19,11 +19,14 @@ afterEach(() => forceDice([]));
 
 const real = (id: string, seed = 1): GameState => createGame(scenarioById(id).setup, seed);
 const unit = (s: GameState, id: string) => s.units.find((x) => x.id === id)!;
-const put = (s: GameState, id: string, r: number, c: number): void => {
-  const at = hexId(r, c);
-  if (s.units.some((x) => x.hex === at && x.id !== id)) throw new Error(`hex ${r},${c} is occupied`);
+/** Move unit `id` to a hex given as an id or as a row and column. */
+function put(s: GameState, id: string, hex: HexId): void;
+function put(s: GameState, id: string, r: number, c: number): void;
+function put(s: GameState, id: string, r: number, c?: number): void {
+  const at = c === undefined ? r : hexId(r, c);
+  if (s.units.some((x) => x.hex === at && x.id !== id)) throw new Error(`hex ${at} is occupied`);
   unit(s, id).hex = at;
-};
+}
 const MISS = n('artillery', 80);
 const HIT = n('infantry', 12);
 
@@ -67,9 +70,9 @@ describe('101: the Swiss break (S30)', () => {
     unit(s, 'u17').blocks = 1;
     unit(s, 'u18').blocks = 1;
     const a = beside(s, unit(s, 'u17').hex, [unit(s, 'u18').hex]);
-    put(s, 'u3', Math.floor(a / 13), a % 13);
+    put(s, 'u3', a);
     const b = beside(s, unit(s, 'u18').hex, [a]);
-    put(s, 'u10', Math.floor(b / 13), b % 13);
+    put(s, 'u10', b);
     const d = new GameDriver(s);
     bottomPasses(d);
     expect(d.pending).toMatchObject({ kind: 'playCard', side: 'top' });
@@ -203,7 +206,7 @@ describe('105: the 4-sided redoubt and the sudden death (S23, S32)', () => {
       const works = H(5, 3);
       const from = neighbours(works).find((x) => HEX_DIRS[directionTo(works, x)] === dir)!;
       expect(s.units.some((x) => x.hex === from)).toBe(false);
-      put(s, 'u25', Math.floor(from / 13), from % 13);
+      put(s, 'u25', from);
       const d = new GameDriver(s);
       const card = giveCard(d.state, 'bottom', 'forward');
       must(d, { kind: 'playCard', card });
@@ -232,7 +235,7 @@ describe('105: the 4-sided redoubt and the sudden death (S23, S32)', () => {
     expect(s.winner).toBeNull();
     unit(s, 'u17').blocks = 1;
     const from = neighbours(H(5, 3)).find((x) => HEX_DIRS[directionTo(H(5, 3), x)] === 'NE')!;
-    put(s, 'u25', Math.floor(from / 13), from % 13);
+    put(s, 'u25', from);
     const d = new GameDriver(s);
     const card = giveCard(d.state, 'bottom', 'forward');
     must(d, { kind: 'playCard', card });
@@ -265,7 +268,7 @@ describe('106: Medellín (S29, S33, S34)', () => {
     cav.forEach((c, i) => {
       const spot = beside(st, unit(st, targets[i]).hex, used);
       used.push(spot);
-      put(st, c, Math.floor(spot / 13), spot % 13);
+      put(st, c, spot);
     });
     const handBefore = st.players.top.hand.length;
     expect(handBefore).toBe(6);
@@ -298,7 +301,7 @@ describe('106: Medellín (S29, S33, S34)', () => {
     expect(st.players.top.hand.length).toBeGreaterThanOrEqual(3);
     const c13 = cav[0];
     const spot = beside(st, unit(st, 'u13').hex, used);
-    put(st, c13, Math.floor(spot / 13), spot % 13);
+    put(st, c13, spot);
     const card2 = giveCard(st, 'bottom', 'cavalryCharge');
     must(d, { kind: 'playCard', card: card2 });
     if (d.pending?.kind === 'guerrilla') must(d, { kind: 'yesno', yes: false });
@@ -422,9 +425,10 @@ describe("115: Albuera (S24, S37, S42, S16)", () => {
     const card = giveCard(d.state, 'bottom', 'forward');
     must(d, { kind: 'playCard', card });
     expect(bannerTotal(d.state, 'bottom')).toBe(1);
-    // the ford tiles of the ground do not stop: a unit crossing (5,3) is offered hexes beyond it
-    for (const [r, c] of [[5, 0], [5, 1], [5, 3], [6, 4]]) expect(stopsOnEntry(d.state, H(r, c - 1 < 0 ? 0 : c), H(r, c)), `${r},${c}`).toBe(false);
-    for (const [r, c] of [[5, 2], [5, 5], [5, 6]]) expect(stopsOnEntry(d.state, H(5, 4), H(r, c)), `${r},${c}`).toBe(true);
+    // entering a ford tile does not end a move, entering any other river hex does (`stopsOnEntry`, from a real neighbour; the
+    // rules of what a unit is then offered beyond the tile are tested in the movement tests)
+    for (const [r, c] of [[5, 0], [5, 1], [5, 3], [6, 4]]) expect(stopsOnEntry(d.state, H(r, c + 1), H(r, c)), `${r},${c}`).toBe(false);
+    for (const [r, c] of [[5, 2], [5, 5], [5, 6]]) expect(stopsOnEntry(d.state, H(5, c - 1), H(r, c)), `${r},${c}`).toBe(true);
   });
 
   it('115: a Guerrilla counter against the French Cavalry Charge: a sabre leaves the Folly on, any other face cancels the card', () => {
@@ -520,11 +524,11 @@ describe('117: San Marcial (S36)', () => {
     s.units = s.units.filter((x) => !spanish.includes(x));
     const spots = centre.slice(0, 4);
     spots.forEach(([r, c], i) => { french[i].hex = H(r, c); });
+    updateHeld(s, { emit: () => undefined }); // the teleport is not a game event: refresh the held records as a move would
     const d = new GameDriver(s);
     const card = giveCard(d.state, 'bottom', 'probeC');
     must(d, { kind: 'playCard', card });
     expect(bannerTotal(d.state, 'bottom')).toBe(1);
-    updateHeld(d.state, { emit: () => undefined }); // the Spanish record is refreshed at the next change on the hills
     expect(bannerTotal(d.state, 'top')).toBe(2);
   });
 });
