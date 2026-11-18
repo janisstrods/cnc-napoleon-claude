@@ -3,5 +3,3 @@ dist
 *.tsbuildinfo
 .DS_Store
 
-# Build output for GitHub Pages. Ignored until the first release (Plan 8 removes this line and commits docs/).
-docs/
