@@ -50,6 +50,7 @@ load and a JSON file reproduces from its command line. Only the time row (run 5)
 - Seeds: `1000 × battle + 17 × game`. Each game number is a pair: side A plays bottom, then top, on the same game seed (the AIs'
   own seeds add the side). With the same AI on both sides (run 4) the swapped game would replay the first move for move, so it is
   played on the seed + 7 (`jobSeed`'s `mirror`, added by this task; before it the 180 balance games were 90 games, each twice).
+  `ai-match` applies the same rule (`mirrored` in `scripts/lib.ts`); a random side B is never a mirror, so run 1 is unchanged.
 - Commanders play their own temperament (`personalityFor`).
 - Shards: each run is split with `--shard i/n` over at most 6 processes on 8 cores shared with other work (load 10–18 throughout).
 
@@ -211,6 +212,20 @@ the British at 002, 006 and 014.
 
 Before the reshape (`p5-11-r3-base-0..5.json`, same seeds): marshal 65, colonel 55 (54 %, [45 %, 63 %]).
 
+**Controller ruling (ruling 8, fix round 1 of Task 11):** the narrowed `LEVELS[2]` shape (topCards 3, orderCands 3, moveVariants 3,
+k0 6, kMax 48, extraVariants 4; budgetMs, maxSims and battle settings unchanged) is ratified: it meets the ruling's measurable target
+(71 of 120, 59 %) within the time caps; the ruling's wording about widening was a means, not the target.
+
+**The strength scales re-measured on the final code (review m-3).** The scales above were measured before the reshape, on a
+loaded machine. `scripts/ai-probe.ts` re-run on fb93f31 (001, 004, 007, 015; 10 turns; load 2.8–4.5, `p5-11-probe-final-a/b.json`):
+a node now costs about 0.7 ms (1.3–1.8 ms before, under load). The reshaped marshal uses 1,160 nodes a card decision at scale 1
+(0.8 s of CPU on average; 1 of 20 decisions over 2 s), and the matching scale rises to 0.34; the colonel's clock now buys nearly its
+whole search (2 of 20 over 0.8 s; matching scale 0.87, a lower bound since so few decisions are capped). The cavalry battles (012,
+113), where nodes cost 3–8× more, are not in this probe. Run 3 again at those quiet-machine scales (marshal 0.35, colonel 0.9;
+same seeds; `p5-11-r3-quiet-0..5.json`): **marshal 67, colonel 53 of 120 (56 %, 95 % Wilson [47 %, 64 %])**, 0 rejects, 0
+fallbacks, longest 55 turns. The colonel gains more from a quiet machine than the marshal (its search completes), so the margin
+narrows from 59 % to 56 %, still at the target.
+
 ### Run 4: balance, level 1 against level 1
 
 `p5-11-r4-final-0..2.json` (180 games, 12 a battle, scale 0.5). Published rates as in the reference table:
@@ -361,6 +376,16 @@ leaders 23–64 times within the same nodes, and twice stopped early (560 and 65
 | R-1: `GameRow.sims` comment | Fixed: `sims` is simulated turns at a card decision; `AiMemory.last.nodes` and `GameRow.nodes` now record the budget nodes. |
 | P-2: counters reflect rejected answers | Rejects are 0 in every run, so no counter includes one. |
 | M-6 square duration / vulnerability; LC ≈ LN | Not changed: squares are formed in 70 % of offers, inside the floor; no target points at the cavalry value. |
+| Task 5 M-3 fire-or-reach | Not changed. The threat model counts each attacker once, over its options (fire where it stands at `BASE.fire` 0.9, a move then a melee at `BASE.reach` 0.7, shared by ev²); no target or counter points at the split. Next step only if a review of play shows units moving off a firing hex for a weaker charge, or the reverse. |
+| Task 5 M-5 held-objective threat weight | Not changed. A held objective counts at the chance its holders stay (`1 − pVac` per holder); round 1's related lever on objectives (the hold-chance discount) made balance worse, so this is left with carry 115 as one next step: a threat model at the objective hex itself. |
+| `meanHandValue` (≈ 0.19) against `CARD_VALUE` (0.25) | Not changed. Own squares are priced at the hand's mean keep value, the opponent's at `CARD_VALUE`, so our squares look about a quarter cheaper than the enemy's; squares are formed in 70 % of offers (floor 20 %) and the colonel loses no paired balance game for it that the runs show. Next step: normalise the two if the square rate drifts. |
+| Task 8 m-4 Élan/Rally undervalued at the budget floor | Not changed. Only a decision at the floor (cards × k0 nodes) is affected: there an Élan plan's samples move by the zero-cost step. At the shipped clocks the colonel and marshal decide well above their floors (ai-probe: 450–3,600 nodes a card decision at scale 1, caps of 420 and 1,250 at the strength-row scales, against floors of about 20 and 30); the captain sits near its floor, where weaker play is intended. |
+| Rally banner-risk constants (4 dice at 1/3, 6-hex reach cut-off) | Not changed: no counter measures Rally choices. Next step together with "Rally about 2×", from a review of Rally decisions in play. |
+| Task 4b M-4 First Strike can leave the hand too short for a later square this turn | Not changed. Unpriced in `firstStrikeCost`; First Strike is played in 87 % of offers and squares formed in 70 %, both inside their floors. Next step: add `handFloorPenalty(s, me, 1)` to the First Strike cost. |
+| Task 10 P-b `ai-review` shows hands | Done before this task: `ai-review` prints the hand of the side to play at each card decision (`scripts/ai-review.ts`, the turn header), so both hands over a game. |
+| Task 10 P-1 seed spacing | Seeds are `1000 × battle + 17 × (game + seedOffset)`, + 7 for a mirrored pair's swapped game. They stay distinct while game + seedOffset ≤ 58 (from 59 on they reach the next battle's block); within a battle + 7 never meets another game's seed (7 is not a multiple of 17). Recorded in `jobSeed`'s comment and tested (every seed of 59 mirrored games on 5 battles distinct, and none equal to an unmirrored run's). |
+| 7C optional progress share for earlier Swiss/gun eliminations | Spanish rules (`breakOnLosses`): left to Plan 7C Task 21. |
+| 7C T20 "need-2 test tighten" | Done: the 114 need-2 test now asserts the exact value, the British term plus (best + second best) / 2 of the free hexes' one-hex scores (a mutation scoring only the best hex fails it). |
 
 ### Spanish sanity set (101, 105, 114, 116, 117)
 
