@@ -219,3 +219,21 @@ describe('takeGround: a bonus target a gun could join (Plan 5 Task 7 carry 4)', 
     expect(w.bonus).toBe(true);
   });
 });
+
+describe('the flag results cached per board (Task 11 review m-1)', () => {
+  it('depend on the striker hex: a works side lets the victim ignore a flag, and the cache keeps the two apart', () => {
+    // a French line behind a 2-sided redoubt at (4,6) (works on SW and SE): attacked from (5,6) across the works and from (3,6), open
+    const terrain: Pos['terrain'] = [{ at: [4, 6], t: 'fieldworks', on: 'plain', sides: ['SW', 'SE'] }];
+    const s = build({ first: 'bottom', terrain, units: [top('FR/LN', [4, 6]), bot('BR/LN', [5, 6]), bot('BR/LN', [3, 6])] });
+    const v = unit(s, 'u1');
+    // the engine's own flag result (uncached) differs between the two strikers for one flag
+    expect(flagOutcome(s, v, unit(s, 'u2'), 1)).not.toEqual(flagOutcome(s, v, unit(s, 'u3'), 1));
+    for (const order of [['u2', 'u3'], ['u3', 'u2']]) {
+      const shared = ctxOf(s); // one board: the second estimate may meet the first's cached flag results
+      const got = order.map((id) => meleeEstimate(s, unit(s, id), H(4, 6), shared).ev);
+      const fresh = order.map((id) => meleeEstimate(s, unit(s, id), H(4, 6), ctxOf(s)).ev);
+      expect(got).toEqual(fresh);
+      expect(got[0]).not.toBeCloseTo(got[1], 6);
+    }
+  });
+});

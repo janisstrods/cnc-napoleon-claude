@@ -47,8 +47,16 @@ export function shardJobs(scenarios: string[], games: number): Job[] {
 /**
  * A job's game seed, the same for both sides of a pair (`--seedOffset` shifts the games to fresh seeds); the AIs' own seeds add the
  * side. `mirror`: both sides play the same AI (same level and budget), so the pair's second game would replay the first move for
- * move; it gets a seed of its own (+7 when A is the top army, as in the Ancients runs).
+ * move; it gets a seed of its own (+7 when A is the top army, as in the Ancients runs). Seeds stay distinct while
+ * game + seedOffset ≤ 58: from 59 on, 17 × (game + seedOffset) (+ 7) reaches the next battle's 1000 block (P-1); +7 is never a
+ * multiple of 17, so a mirrored seed never meets another game's seed of the same battle.
  */
+/**
+ * Do both sides of a pair play the same AI (same level and budget scale)? Then the pair's second game would replay the first, and
+ * `jobSeed` must be given `mirror`. A random side is never a mirror.
+ */
+export const mirrored = (a: Difficulty, b: Difficulty | 'random', scaleA: number, scaleB: number): boolean => a === b && scaleA === scaleB;
+
 export const jobSeed = (job: Job, seedOffset: number, mirror = false) =>
   1000 * Number(job.sc) + 17 * (job.g + seedOffset) + (mirror && job.aSide === 'top' ? 7 : 0);
 

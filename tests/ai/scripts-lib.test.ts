@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { OFF_BOARD, bannerTotal, createGame, type DefendChoice, type GameEvent, type Side } from '../../src/engine';
 import { SCENARIOS, scenarioById } from '../../src/scenarios';
 import {
-  type GameRow, balanceReport, countDecision, countEvents, countTurnStart, jobSeed, levelArg, parseLevel, scenarioList, shardJobs, snapshotUnits, wilson, zeroCounters,
+  type GameRow, balanceReport, countDecision, countEvents, countTurnStart, jobSeed, levelArg, mirrored, parseLevel, scenarioList, shardJobs, snapshotUnits, wilson, zeroCounters,
 } from '../../scripts/lib';
 import { H, build, toBattle } from '../rules/helpers';
 
@@ -255,8 +255,24 @@ describe('jobs and seeds', () => {
     const top = jobSeed({ sc: '001', aSide: 'top', g: 2 }, 0, true);
     expect(bottom).toBe(jobSeed({ sc: '001', aSide: 'bottom', g: 2 }, 0));
     expect(top).toBe(bottom + 7);
-    // no collision with the other games of the battle (17 apart)
-    for (let g = 0; g < 12; g++) expect(jobSeed({ sc: '001', aSide: 'bottom', g }, 0, true)).not.toBe(top);
+    // every seed of a mirrored set is distinct: 2 sides × games × battles (the Spanish ids included), up to game + offset 58 (P-1)
+    process.argv = ['node', 'x'];
+    const ids = ['001', '002', '015', '101', '118'];
+    const jobs = shardJobs(ids, 59);
+    const seeds = jobs.map((j) => jobSeed(j, 0, true));
+    expect(new Set(seeds).size).toBe(2 * 59 * ids.length);
+    // and none meets a seed of an unmirrored run on the same battles (a mirrored top game is 7 off its pair's bottom seed)
+    const plain = new Set(jobs.map((j) => jobSeed(j, 0)));
+    for (const j of jobs) if (j.aSide === 'top') expect(plain.has(jobSeed(j, 0, true))).toBe(false);
+    // past game + offset 58 a mirrored seed reaches the next battle's block
+    expect(jobSeed({ sc: '001', aSide: 'top', g: 59 }, 0, true)).toBeGreaterThanOrEqual(2000);
+  });
+
+  it('mirrored(): the same level and scale on both sides, never a random side (the ai-balance and ai-match call sites)', () => {
+    expect(mirrored('colonel', 'colonel', 0.5, 0.5)).toBe(true);
+    expect(mirrored('colonel', 'colonel', 0.35, 0.5)).toBe(false);
+    expect(mirrored('marshal', 'colonel', 0.25, 0.25)).toBe(false);
+    expect(mirrored('captain', 'random', 1, 1)).toBe(false);
   });
 
   it('every shard count keeps a pair together and covers each job once', () => {

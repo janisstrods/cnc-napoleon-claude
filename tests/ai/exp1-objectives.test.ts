@@ -306,6 +306,22 @@ describe('review round 1: the pieces of the new pricing, one by one', () => {
     const b = evalTerms(need1, 'bottom', W).objectives;
     expect(a).toBeGreaterThan(0);
     expect(a).toBeLessThan(0.9 * b);
+    // exactly (best + second best) / 2 of the free hexes' scores, the British majority's own term aside (Task 11: the 7C T20 carry).
+    // A hex's score is what a one-hex objective there scores (same banners, so the same worth): `approachOf` sees the same board.
+    const [topMaj, botMaj] = need2.scenario.objectives;
+    if (botMaj.kind !== 'majority') throw new Error('114: no majority');
+    const only = (objectives: typeof need2.scenario.objectives, objState: typeof need2.special.objState): number => {
+      const x = cloneState(need2);
+      x.scenario = { ...x.scenario, objectives };
+      x.special.objState = objState;
+      return evalTerms(x, 'bottom', W).objectives;
+    };
+    const british = only([topMaj], [need2.special.objState[0]]);
+    const free = botMaj.hexes.filter((h) => need2.units.every((u) => u.hex !== h || u.side !== 'bottom'));
+    const scores = free.map((h) => only([{ kind: 'tempHex', side: 'bottom', hex: h, timing: 'turnStart', banners: botMaj.banners, text: '' }], [{ held: false, count: 0 }]));
+    scores.sort((x, y) => y - x);
+    expect(scores[1]).toBeGreaterThan(0);
+    expect(a).toBeCloseTo(british + (scores[0] + scores[1]) / 2, 9);
   });
 
   it('114: ordering pulls a French unit towards a ridge it is behind on', () => {

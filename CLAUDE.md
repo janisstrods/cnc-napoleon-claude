@@ -101,7 +101,8 @@ load; see each file header for flags):
   - `policies`: fast answers to every decision kind.
   - `planner`: turn plans, battle rollouts and `LEVELS`.
   - `index`: `chooseAnswer`, the entry point.
-  - `worker`, `client`: the Web Worker and its in-thread fallback.
+  - `worker`: the Web Worker entry.
+  - `client`: the main-thread wrapper, with the in-thread fallback.
 - `design/ai-balance.md`: the AI calibration log (reference win rates, strength and balance runs, behaviour counters, timings).
 - The player's record (Triumphs: medals per battle, side and opponent level) is `src/ui/record.ts`, in localStorage
   `ccn-record-v1`; the controller records a battle once when it ends. Medal art and the dialog: `src/ui/screens/Medal.tsx`,

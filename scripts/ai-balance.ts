@@ -7,8 +7,9 @@
 //   marshal or 0, 1, 2. --deterministic passes
 //   `deterministic: true` to both sides: no clock is read, the node budget alone limits the work, and the results do not depend on
 //   machine load. The JSON holds one row per game (`GameRow`, scripts/lib.ts); only its `timing` field depends on the machine.
-//   Both games of a pair share the game seed; the AIs' own seeds add the side. `sims`: AiMemory.last.sims summed over the AI decisions
-//   (simulated turns at a card decision, not nodes); `nodes`: AiMemory.last.nodes summed (the budget nodes charged).
+//   Both games of a pair share the game seed, except a mirrored pair (see above); the AIs' own seeds add the side.
+//   `sims`: AiMemory.last.sims summed over the AI decisions (simulated turns at a card decision, not nodes); `nodes`:
+//   AiMemory.last.nodes summed (the budget nodes charged).
 //   Counters come from engine events and the decisions and answers, never from AI internals; nodes, decision times and fallbacks
 //   are the harness's own figures. `--persTop/--persBottom` force a temperament (default: the commander's own, personalityFor).
 //   Summarise the files with ai-balance-report.ts.
@@ -17,7 +18,7 @@ import { GameDriver, bannerTotal, createGame, other, type Side } from '../src/en
 import { scenarioById } from '../src/scenarios';
 import { personalityById, personalityFor, type AiOptions, type Difficulty } from '../src/ai';
 import {
-  addCounters, arg, countDecision, countEvents, countTurnStart, flag, jobSeed, lcg, levelArg, playAiGame, scenarioList, shardJobs, snapshotUnits,
+  addCounters, arg, countDecision, countEvents, countTurnStart, flag, jobSeed, lcg, levelArg, mirrored, playAiGame, scenarioList, shardJobs, snapshotUnits,
   visibleScenarioIds, wilson, zeroCounters, type GameRow,
 } from './lib';
 
@@ -42,7 +43,7 @@ const results: GameRow[] = [];
 for (const job of shardJobs(scen, games)) {
   const info = scenarioById(job.sc);
   // A against itself (same level and budget): the swapped game would be a copy, so it gets its own seed (jobSeed's `mirror`)
-  const seed = jobSeed(job, seedOffset, A === B && scaleA === scaleB);
+  const seed = jobSeed(job, seedOffset, mirrored(A, B, scaleA, scaleB));
   const d = new GameDriver(createGame(info.setup, seed));
   const bSide = other(job.aSide);
   const mk = (side: Side, diff: Difficulty, budgetScale: number): AiOptions => ({
