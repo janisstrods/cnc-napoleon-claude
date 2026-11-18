@@ -313,8 +313,39 @@ describe('leader retreat buttons', () => {
 describe('bonus melee dice for guns only', () => {
   it('a target no melee die reaches says "0 dice + guns"', () => {
     const s = build({ units: [{ side: 'bottom', key: 'BR/FA', at: [4, 6] }, { side: 'top', key: 'FR/LN', at: [3, 6] }] });
+    s.turn.ordered.u1 = { ...(s.turn.ordered.u1 as object), id: 'u1', moved: 1 } as never;
+    expect(meleeDice(s, s.units[0], s.units[1], { role: 'bonus', moved: 1, declared: true })).toBe(0);
     const d = { kind: 'bonusMelee', side: 'bottom', unit: 'u1', targets: [H(3, 6)] } as Extract<Decision, { kind: 'bonusMelee' }>;
-    const n = meleeDice(s, s.units[0], s.units[1], { role: 'bonus', moved: 0, declared: true });
-    expect(bonusBadges(s, d).get(H(3, 6))).toBe(n === 0 ? '0 dice + guns' : `${n} ${n === 1 ? 'die' : 'dice'}`);
+    expect(bonusBadges(s, d).get(H(3, 6))).toBe('0 dice + guns');
+  });
+});
+
+describe('the leader retreat sentence', () => {
+  const s = build({ units: [{ side: 'top', key: 'FR/LN', at: [6, 6] }, { side: 'bottom', key: 'BR/LN', at: [6, 5] }], leaders: [{ side: 'bottom', at: [5, 6] }] });
+  const l = leaderId(s, 0);
+  const o = (path: HexId[], x: Partial<LeaderRetreatOption> = {}): LeaderRetreatOption =>
+    ({ path, end: path[path.length - 1], offBoard: false, escapes: [], attach: null, eliminated: false, ...x });
+  const say = (options: LeaderRetreatOption[]) => gamePrompt(ctx({ kind: 'leaderRetreat', side: 'bottom', leader: l, options }, 'bottom', s))!.text;
+
+  it('names the amber hex only when a hex needs an escape, and leaving only when that has escapes', () => {
+    const safeOff = o([H(8, 0)], { offBoard: true });
+    const riskyOff = o([H(8, 0)], { offBoard: true, escapes: ['u1'] });
+    const riskyHex = o([H(7, 6), H(8, 6)], { escapes: ['u1'] });
+    const safeHex = o([H(6, 4)]);
+    const hexOnly = say([safeHex, riskyHex, safeOff]);
+    expect(hexOnly).toContain('amber hex');
+    expect(hexOnly).not.toContain('leaving the battlefield');
+    const offOnly = say([safeHex, riskyOff]);
+    expect(offOnly).toContain('leaving the battlefield');
+    expect(offOnly).not.toContain('amber');
+    const both = say([safeHex, riskyHex, riskyOff]);
+    expect(both).toContain('amber hex');
+    expect(both).toContain('leaving the battlefield');
+    expect(say([safeHex, safeOff])).not.toMatch(/amber|leaving/);
+  });
+
+  it('with no way out it says so, without the click hint', () => {
+    const t = say([o([], { eliminated: true, end: s.leaders[0].hex })]);
+    expect(t).toBe('Ldr0 has no way out.');
   });
 });

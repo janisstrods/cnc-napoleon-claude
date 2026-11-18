@@ -315,10 +315,15 @@ function leaderRetreatPrompt(c: PromptCtx, d: D<'leaderRetreat'>): Prompt {
     </Button>
   ));
   buttons.push(autoButton(c));
-  const risky = all.some((o) => o.kind !== 'dead' && o.escapes > 0);
+  const name = l?.name || 'Your leader';
+  const hexRisk = all.some((o) => o.kind === 'hex' && o.escapes > 0);
+  const offRisk = all.some((o) => o.kind === 'off' && o.escapes > 0);
+  const noWay = all.every((o) => o.kind === 'dead');
+  const risk = [hexRisk ? 'taking an amber hex' : '', offRisk ? 'leaving the battlefield' : ''].filter(Boolean).join(' or ');
+  const riskText = risk ? ` Beware: ${risk} means passing enemy units: each may strike at him as he slips by.` : '';
   return {
     title: spec.title,
-    text: `${l?.name || 'Your leader'} must retreat. Click a hex (joining a friendly unit is safest).${risky ? ' An amber hex, or leaving the battlefield, means passing enemy units: each may strike at him as he slips by.' : ''}`,
+    text: noWay ? `${name} has no way out.` : `${name} must retreat. Click a hex (joining a friendly unit is safest).${riskText}`,
     buttons,
   };
 }
