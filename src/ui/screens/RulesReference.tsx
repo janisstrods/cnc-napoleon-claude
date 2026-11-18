@@ -154,6 +154,9 @@ function terrainText(t: TerrainType): string {
   if (out.length) parts.push(`Out of it: ${out.join('; ')}.`);
   if (st.noMeleeInto) parts.push('No melee into it.');
   if (!st.squareAllowed && !st.impassable) parts.push('No square.');
+  if (st.cancelsCavalryCharge) parts.push('Cavalry lose the dice of a Cavalry Charge card battling into or out of it.');
+  if (t === 'bridge') parts.push('Carries units across a river with no movement or battle effect.');
+  if (t === 'brook') parts.push('Only some battles use it; its special rules say how.');
   parts.push(st.hill ? 'Blocks line of sight in between, except across the top of one connected hill (see below).' : st.blocksSight ? 'Blocks line of sight.' : 'Does not block line of sight.');
   return parts.join(' ');
 }
@@ -165,7 +168,7 @@ export function terrainRows(): TerrainRow[] {
   const hillRel = (r: Reductions) => reductions(r).join('; ') || 'no change';
   return [
     ...TERRAIN_TYPES.filter((t) => t !== 'plain' && t !== 'void').map((t): TerrainRow => ({
-      key: `terrain:${t}`, name: TERRAIN_STATS[t].name, icon: <TerrainIcon t={t} size={28} />, text: terrainText(t),
+      key: `terrain:${t}`, name: t === 'fordNoStop' ? `${TERRAIN_STATS[t].name} (no stop)` : TERRAIN_STATS[t].name, icon: <TerrainIcon t={t} size={28} />, text: terrainText(t),
     })),
     {
       key: 'works', name: 'Field works', icon: <TerrainIcon t="plain" works size={28} />,

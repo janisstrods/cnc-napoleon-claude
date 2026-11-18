@@ -1,5 +1,6 @@
 // The Napoleonic rules reference (Plan 4 Task 8): units by nation, the 70 cards, terrain row keys, the dice table, plain
 // "Our reading:" notes (R1), expansion tabs from the unit table, British spelling.
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -103,5 +104,29 @@ describe('the rules reference content', () => {
   it('Command is fixed when the card is played; Short Supply keeps a unit on its own baseline', () => {
     expect(text(body('basics'))).toMatch(/Our reading: .*Command.*(played|card is played)/);
     expect(text(body('cards'))).toMatch(/Our reading: .*already .*own baseline/);
+  });
+
+  it('review round 1: layout, prose and readings', () => {
+    const css = readFileSync('src/ui/screens/screens.css', 'utf8');
+    expect(/\.rules-battle \{[^}]*flex: 0 0 auto/.test(css) || /\.rules-battle \{[^}]*flex-shrink: 0/.test(css)).toBe(true);
+    expect(/\.rules-body \{[^}]*min-height: 0/.test(css)).toBe(true);
+    const all = ALL_TABS.map((t) => text(body(t))).join(' ');
+    expect(all).not.toMatch(/cost more than attacking downhill/);
+    expect(all).not.toMatch(/ignores flags by its type/);
+    expect(all).not.toMatch(/\btoward\b/);
+    expect(all).not.toMatch(/third blocked hex/);
+    expect(text(body('basics'))).toContain('Let the general decide');
+    for (const [tab, h] of [['combat', 'Melee'], ['squares', 'Taking ground'], ['terrain', 'Field Works']] as const)
+      expect(RULES_TEXT[tab].find((b) => b.heading === h)?.reading, h).toBeTruthy();
+    const french = RULES_TEXT.units.find((b) => b.heading === 'French')!;
+    expect(french.paragraphs.join(' ')).not.toMatch(/Rifles/);
+    const names = terrainRows().map((r) => r.name);
+    expect(new Set(names).size).toBe(names.length);
+    const rows = [...body('terrain').matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map((m) => text(m[1]));
+    for (const n of ['Town', 'Windmill', 'Fortress']) expect(rows.find((r) => r.trim().startsWith(n)), n).toMatch(/Cavalry Charge/);
+    expect(rows.find((r) => r.trim().startsWith('Bridge')), 'Bridge').toMatch(/river/i);
+    expect(rows.find((r) => r.trim().startsWith('Brook')), 'Brook').toMatch(/battle/i);
+    const cards = text(body('cards'));
+    for (const w of ['Grande Manoeuvre', 'Guard heavy cavalry', 'every leader', 'own turn']) expect(cards).toContain(w);
   });
 });

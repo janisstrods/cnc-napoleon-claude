@@ -2,7 +2,7 @@
 // each block is named in the comment above it). A `reading` is a play-affecting interpretation, shown as a plain
 // "Our reading:" note without its ruling mark (the marks live in the RR and design/rulings.md). Numbers that a table
 // holds (unit rows, terrain, cards) are not written here: the tabs read them from the tables.
-import { EXPANSIONS, UNIT_KEYS, UNIT_STATS, type Expansion } from '../../engine';
+import { EXPANSIONS, SQUARE_MIN_HAND, SQUARE_TRACK, UNIT_KEYS, UNIT_STATS, type Expansion } from '../../engine';
 
 export type RulesTab = 'basics' | 'units' | 'combat' | 'squares' | 'terrain' | 'cards' | Expansion;
 
@@ -30,13 +30,13 @@ export function rulesTabs(): [RulesTab, string][] {
 
 /** The conditions that forbid a square (RR §9.5, a to g). */
 export const SQUARE_CONDITIONS: readonly string[] = [
-  'Its owner holds two or fewer Command cards (cards on the square track do not count).',
+  `Its owner holds ${SQUARE_MIN_HAND - 1} or fewer Command cards (cards on the square track do not count).`,
   'It stands in a town or on a windmill.',
   'It stands on Field Works and the cavalry attacks across a works hexside (through an open hexside it may form).',
   'The cavalry is battling back.',
   'The infantry is attacking the cavalry and the cavalry plays First Strike.',
   'Its owner plays First Strike against that melee.',
-  'All four places of its owner’s square track are full.',
+  `All ${SQUARE_TRACK} places of its owner’s square track are full.`,
 ];
 
 /** What each die face does (RR §3.1): fire, melee against a unit, against a lone leader, in Retire and Reform. */
@@ -48,13 +48,21 @@ export const DICE_ROWS: Record<'infantry' | 'cavalry' | 'artillery' | 'flag' | '
   sabre: ['A miss.', 'A hit on any unit, unless the attacker is Militia or Rifles.', 'Kills him, even from Militia or Rifles.', 'A miss.'],
 };
 
+/** The retreat distance most units give per flag, from the table: the commonest `retreat.first`. */
+const RETREAT_COMMON = ((): string => {
+  const n = new Map<number, number>();
+  for (const k of UNIT_KEYS) n.set(UNIT_STATS[k].retreat.first, (n.get(UNIT_STATS[k].retreat.first) ?? 0) + 1);
+  const best = [...n.entries()].sort((a, b) => b[1] - a[1])[0][0];
+  return best === 1 ? 'one' : String(best);
+})();
+
 export const RULES_TEXT: Record<RulesTab, RulesBlock[]> = {
   basics: [
     // RR §1
     {
       heading: 'The board',
       paragraphs: [
-        'The battlefield is nine rows of hexes. One army starts at the top and defends the top row as its baseline; the other starts at the bottom. A unit that retreats always falls back toward its own baseline.',
+        'The battlefield is nine rows of hexes. One army starts at the top and defends the top row as its baseline; the other starts at the bottom. A unit that retreats always falls back towards its own baseline.',
         'The field is split into a left, a centre and a right section, judged from each player’s own side: your left is your opponent’s right. A hex on a dotted line belongs to both neighbouring sections.',
       ],
     },
@@ -81,8 +89,14 @@ export const RULES_TEXT: Record<RulesTab, RulesBlock[]> = {
       heading: 'Victory',
       paragraphs: [
         'Each battle sets a target of Victory Banners for both sides. You gain one banner for every enemy unit you wipe out and one for every enemy leader killed. A leader who leaves by his own baseline gives nothing away.',
-        'Many battles add objectives. A hex objective gives its banner if one of your units stands on it when your own turn starts, and the banner is lost the moment that unit leaves or dies. A group objective needs every hex of the group held and is lost as soon as one is empty. An exit objective gives one banner for each unit that walks off the board at the named hex. One battle weights the kills of certain enemy units.',
+        'Many battles add objectives. A hex objective gives its banner only to the side it is marked for, if one of that side’s units stands on it when that side’s own turn starts, and the banner is lost the moment that unit leaves or dies. A group objective needs every hex of the group held and is lost as soon as one is empty. An exit objective gives one banner for each unit that walks off the board at the named hex. One battle weights the kills of certain enemy units.',
         'A banner total is permanent banners plus the objective banners held right now. Holding a hex for many turns still gives only one banner.',
+      ],
+    },
+    {
+      heading: 'Controls',
+      paragraphs: [
+        'Click to select. Hover a unit for its stats, any hex for what its terrain does, and a card to preview it. “Let the general decide” answers any decision for you.',
       ],
     },
   ],
@@ -100,7 +114,7 @@ export const RULES_TEXT: Record<RulesTab, RulesBlock[]> = {
       heading: 'French',
       paragraphs: [
         'Moving fire rounds up: halve the blocks, round up, then add the unit’s own bonus die.',
-        'French line infantry roll one extra die in melee, but only when the target is an infantry unit. Cuirassiers ignore one hit from every infantry volley, though not from guns or melee. Militia and Rifles never score with sabres against units, yet a sabre still kills a lone leader.',
+        'French line infantry roll one extra die in melee, but only when the target is an infantry unit. Cuirassiers ignore one hit from every infantry volley, though not from guns or melee. Militia never score with sabres against units, yet a sabre still kills a lone leader.',
       ],
     },
     // RR §2.3, §14 (Waterloo)
@@ -108,9 +122,9 @@ export const RULES_TEXT: Record<RulesTab, RulesBlock[]> = {
       heading: 'British',
       paragraphs: [
         'Moving fire rounds up as well. British line infantry fire with a bonus die only when they stand still; after moving they fire as plain halved dice.',
-        'Rifles shoot to range three but their sabres do not hit units. In the battle of Waterloo the British cavalry are impetuous: after a successful melee they must follow up into the vacated hex, and then one hex further if a legal one lies toward the French.',
+        `Rifles shoot to range ${(UNIT_STATS['BR/RI'].fire as { range: number }).range} but, like Militia, their sabres do not hit units. In the battle of Waterloo the British cavalry are impetuous: after a successful melee they must follow up into the vacated hex, and then one hex further if a legal one lies towards the French.`,
       ],
-      reading: 'That further hex is skipped if the vacated hex stops movement (a forest, a town, a ford, a quarry or a works hexside), and the bonus melee that may follow stays optional.',
+      reading: 'That further hex is skipped if the vacated hex stops movement (a forest, a town, a ford, a quarry or a works hexside); the bonus melee that may follow stays optional, and after one the unit only moves into the vacated hex.',
     },
     // RR §2.4, §2.5
     {
@@ -126,7 +140,7 @@ export const RULES_TEXT: Record<RulesTab, RulesBlock[]> = {
       heading: 'Allied',
       paragraphs: [
         `The Allied contingents (Nassau, Hanover, the Dutch-Belgians and Brunswick) share the Portuguese values and round moving fire down. They fight for the British side: they are friends of the British and Portuguese, and their leaders may join any unit of that side.`,
-        `The one difference is that Allied line infantry give ${UNIT_STATS['AL/LN'].retreat.first} hexes of ground for every flag they accept, where most other units give one.`,
+        `The one difference is that Allied line infantry give ${UNIT_STATS['AL/LN'].retreat.first} hexes of ground for every flag they accept, where most other units give ${RETREAT_COMMON}.`,
       ],
     },
   ],
@@ -163,6 +177,7 @@ export const RULES_TEXT: Record<RulesTab, RulesBlock[]> = {
         'A unit may attack an adjacent enemy unit, or a lone leader. The attacker declares the target, and any guns that join (see Squares & Combined Arms), before any dice are rolled. The defender may then make one reaction: Retire and Reform, form square, or play First Strike.',
         'Dice are rolled, hits come off, the leader check is made and the retreats are resolved. If the defender was wiped out or driven from its hex, the attacker may take ground or break through. Otherwise a defender still in place battles back.',
       ],
+      reading: 'A defender makes at most one reaction to a melee, and the attacker is asked about Retire and Reform or a square before First Strike.',
     },
     // RR §9.3
     {
@@ -176,9 +191,9 @@ export const RULES_TEXT: Record<RulesTab, RulesBlock[]> = {
     {
       heading: 'Flags and retreats',
       paragraphs: [
-        'Each flag moves the target back its retreat distance toward its own baseline, one hex per step to a hex on the side nearer home, whatever direction the blow came from. A step may not enter a hex with another unit or enemy leader, impassable ground, or the board edge. Other terrain is ignored.',
+        'Each flag moves the target back its retreat distance towards its own baseline, one hex per step to a hex on the side nearer home, whatever direction the blow came from. A step may not enter a hex with another unit or enemy leader, impassable ground, or the board edge. Other terrain is ignored.',
         'Every hex a unit cannot retreat costs it a block. If a path of the full length exists the owner must take it; a unit in square never moves, so each hex costs a block.',
-        'Flags may be ignored one at a time: one for an attached leader, one for support (two or more friendly units, squares or lone leaders next to it), one for a unit that ignores flags by its type, and one for infantry or guns attacked across Field Works. A unit retreating without a leader may end on a lone friendly leader, who joins it.',
+        'Flags may be ignored one at a time: one for an attached leader, one for support (two or more friendly units, squares or lone leaders next to it), one for as many flags as its type allows (shown on its card), and one for infantry or guns attacked across Field Works. A unit retreating without a leader may end on a lone friendly leader, who joins it.',
       ],
     },
     // RR §11
@@ -186,7 +201,7 @@ export const RULES_TEXT: Record<RulesTab, RulesBlock[]> = {
       heading: 'Leaders under fire',
       paragraphs: [
         'When a unit with a leader loses blocks, the opponent rolls two dice and the leader dies on two sabres. If the unit is wiped out, one die is rolled and one sabre kills him; otherwise he retreats one to three hexes, and may stop on a friendly unit that has no leader.',
-        'A lone leader attacked in melee dies to any sabre and otherwise retreats. If his retreat meets enemy units, each one rolls a normal escape: a sabre kills him, and a third blocked hex ends him.',
+        'A lone leader attacked in melee dies to any sabre and otherwise retreats. If his retreat meets enemy units, each one rolls a normal escape: a sabre kills him, and a third hex held by an enemy unit ends him.',
       ],
     },
   ],
@@ -229,7 +244,7 @@ export const RULES_TEXT: Record<RulesTab, RulesBlock[]> = {
     {
       heading: 'Retire and Reform',
       paragraphs: [
-        'Cavalry attacked by infantry (a Combined Arms attack led by infantry included) may declare Retire and Reform before any dice are rolled. The attacker rolls everything, but only cavalry symbols hit. If the cavalry survives it falls back exactly two hexes, each toward its own baseline, and does not battle back; the infantry may take ground.',
+        'Cavalry attacked by infantry (a Combined Arms attack led by infantry included) may declare Retire and Reform before any dice are rolled. The attacker rolls everything, but only cavalry symbols hit. If the cavalry survives it falls back exactly two hexes, each towards its own baseline, and does not battle back; the infantry may take ground.',
         'It is not allowed against fire, guns or cavalry, and not if no legal path of two hexes exists. A cavalry unit with no leader may instead step one hex onto a lone friendly leader.',
       ],
       reading: 'Terrain that only stops movement does not block that path; impassable ground, other units and the board edge do.',
@@ -249,6 +264,7 @@ export const RULES_TEXT: Record<RulesTab, RulesBlock[]> = {
         'When an attacking infantry unit wipes out its target or drives it from its hex, it may move into the empty hex. This is optional, and the unit stops there if the hex stops movement.',
         'It is never allowed after fire, to a square, to guns, to a unit battling back, to a unit that used First Strike, or to a unit that has already entered a hex that stops movement this turn.',
       ],
+      reading: 'A hex that stops movement includes one holding a lone friendly leader, who joins the unit and ends its move; a unit that began the turn on such a hex without moving may still take ground.',
     },
     // RR §9.8
     {
@@ -272,7 +288,7 @@ export const RULES_TEXT: Record<RulesTab, RulesBlock[]> = {
     {
       heading: 'Hills and sight',
       paragraphs: [
-        'A hill costs dice according to the pair of hexes: attacking uphill and hill to hill cost more than attacking downhill, and the relation is counted once per battle. A hill hex blocks sight in between, except across the top of one connected hill, where its units still block.',
+        'A hill costs dice according to the pair of hexes, as the Hill relations row shows, and the relation is counted once per battle. A hill hex blocks sight in between, except across the top of one connected hill, where its units still block.',
         'Forests, towns, windmills and rugged hills block sight; so does any unit or leader on a hex in between. Rivers, fords, bridges, works and quarries do not.',
       ],
     },
@@ -280,9 +296,10 @@ export const RULES_TEXT: Record<RulesTab, RulesBlock[]> = {
     {
       heading: 'Field Works',
       paragraphs: [
-        'Works protect only the hexsides drawn on their tile. A battle is across a works hexside when the attacker stands in the narrow wedge beyond it, which for melee means on the hex next to that side. Only then do works cost dice, let infantry and guns ignore a flag, and forbid a square. Crossing a works hexside in either direction ends a move.',
-        'On a hill, a battle across a works hexside uses the works values and leaves out the hill relation; through an open hexside the hill relation applies and the works do nothing.',
+        'Works protect only the hexsides drawn on their tile. Only a battle across a works hexside gets the works: they cost dice, let infantry and guns ignore a flag, and forbid a square. Crossing a works hexside in either direction ends a move.',
+        'Through an open hexside the works do nothing; on a hill, the hill relation applies there.',
       ],
+      reading: 'A battle is across a works hexside when the attacker stands in the narrow wedge beyond it, which for melee means on the hex next to that side; and on a hill, a battle across a works hexside, in or out, uses the works values and leaves out the hill relation.',
     },
   ],
 
@@ -306,6 +323,7 @@ export const RULES_TEXT: Record<RulesTab, RulesBlock[]> = {
       heading: 'Notes on the cards',
       paragraphs: [
         'Counter-Attack copies the card the opponent played at the start of his last turn, swapping left and right; a First Strike he played in reply does not count. Élan and a copied Élan reshuffle the deck before the draw. Scout draws two cards at the end of the turn, keeps one and discards the other face up.',
+        'Cavalry Charge gives Guard heavy cavalry two extra dice instead of one. Leadership orders every leader you have. La Grande Manoeuvre may instead order a single unit, even a square, under its normal rules. First Strike can also be played as your own turn card, though it then orders nothing.',
         'Short Supply orders no unit: a unit it moves may not battle that turn, but an enemy unit moved by it still battles back later.',
       ],
       reading: 'A unit already standing on its own baseline in that section stays on the baseline: its own hex counts among the hexes it may choose, and the row in front is used only if the baseline has no free hex.',
