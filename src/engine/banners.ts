@@ -6,7 +6,7 @@ import type { FlowCtx, GameState, Side } from './types';
 export function bannerTotal(s: GameState, side: Side): number {
   let n = s.players[side].banners;
   s.scenario.objectives.forEach((o, i) => {
-    // a majority banner held from setup counts at once (S36); Plan 7C Task 5 gives the new kinds their full rules
+    // held banners of the Expansion #1 kinds count only for their own side's record (S35, S36)
     const temp = o.kind === 'tempHex' || o.kind === 'tempGroup' || o.kind === 'tempAny' || o.kind === 'majority';
     if (o.side === side && temp && s.special.objState[i]?.held) n += o.banners;
   });
