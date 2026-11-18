@@ -1,5 +1,5 @@
 // The player's battle record (Triumphs): every finished battle, counted per battle, side commanded and opponent level,
-// and the medals it earns (bronze, silver, gold for beating the Recruit, Tribune, Consul from a side). Kept in the
+// and the medals it earns (bronze, silver, gold for beating the Captain, Colonel, Marshal from a side). Kept in the
 // browser's storage and in exported files; pure apart from loading and saving.
 import type { Side } from '../engine';
 import type { Difficulty } from './game/controller';
@@ -21,8 +21,8 @@ export type BattleResults = Partial<Record<Side, Partial<Record<Difficulty, Tall
 export type BattleRecord = Record<string, BattleResults>;
 
 /** Opponent levels, easiest first. */
-export const LEVELS: readonly Difficulty[] = ['recruit', 'tribune', 'consul'];
-export const MEDAL_FOR: Record<Difficulty, Medal> = { recruit: 'bronze', tribune: 'silver', consul: 'gold' };
+export const LEVELS: readonly Difficulty[] = ['captain', 'colonel', 'marshal'];
+export const MEDAL_FOR: Record<Difficulty, Medal> = { captain: 'bronze', colonel: 'silver', marshal: 'gold' };
 const SIDES: readonly Side[] = ['bottom', 'top'];
 const OUTCOMES: readonly Outcome[] = ['won', 'lost', 'draw'];
 const NO_RESULTS: Tally = { won: 0, lost: 0, draw: 0 };

@@ -20,7 +20,7 @@ async function declarationToFirstLine(strike: boolean): Promise<number> {
   expect(d.pending?.kind).toBe('battle');
   d.drainEvents(); // the events up to here belong to the setup, not to the declared melee
   const human = other(scenarioById('000').setup.first);
-  const c = new GameController({ ...newSessionConfig('000', human, 'recruit'), seed: 9 }, new SeededOpponent());
+  const c = new GameController({ ...newSessionConfig('000', human, 'captain'), seed: 9 }, new SeededOpponent());
   await runToHuman(c);
   // the controller plays the crafted battle from its battle decision, the human on the bottom side
   const priv = c as unknown as { driver: GameDriver; config: { humanSide: string }; set(p: object): void };

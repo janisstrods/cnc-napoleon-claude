@@ -30,7 +30,7 @@ class FakeGeneral implements Opponent {
   }
 }
 
-const cfg = (): SessionConfig => ({ ...newSessionConfig('000', 'bottom', 'recruit'), seed: 5 });
+const cfg = (): SessionConfig => ({ ...newSessionConfig('000', 'bottom', 'captain'), seed: 5 });
 
 describe('the general in the worker', () => {
   useFakeClock();

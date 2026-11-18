@@ -30,7 +30,7 @@ describe('clean slate', () => {
   it('a saved game of a battle that no longer exists is dropped', () => {
     const store = stubStorage();
     const key = storageKey('autosave-v1');
-    const save = (id: string) => JSON.stringify({ version: 1, engine: ENGINE_VERSION, config: { scenarioId: id, seed: 1 }, answers: [] });
+    const save = (id: string) => JSON.stringify({ version: 1, engine: ENGINE_VERSION, config: { scenarioId: id, difficulty: 'colonel', seed: 1 }, answers: [] });
     store.set(key, save('000'));
     expect(loadSaved()?.config.scenarioId).toBe('000'); // control: a save of an existing battle is kept
     store.set(key, save('999'));
