@@ -101,12 +101,15 @@ const byId = (a: { id: string }, b: { id: string }): number => a.id.localeCompar
 
 /**
  * The turn, the side to act, every unit's id, hex, blocks and square counter (sorted) and every leader's id and hex (sorted). It
- * leaves out the hands: playing the card changes ours, and a hand is not position.
+ * leaves out the hands: playing the card changes ours, and a hand is not position. It adds the pieces ordered this turn (and whether
+ * each has moved), so a plan is not followed after other orders were given.
  */
 export function planFingerprint(s: GameState): string {
+  // what is ordered and which pieces have moved: the position at the orders decision and at the first move decision differ by it
+  const ordered = Object.keys(s.turn.ordered).sort((a, b) => a.localeCompare(b, 'en', { numeric: true })).map((id) => `${id}${s.turn.ordered[id].moveDone ? 1 : 0}`).join(',');
   const units = [...s.units].sort(byId).map((u) => `${u.id}@${u.hex}/${u.blocks}/${u.square ?? 0}`).join(',');
   const leaders = [...s.leaders].sort(byId).map((l) => `${l.id}@${l.hex}`).join(',');
-  return `${s.turn.number}|${s.active}|${units}|${leaders}`;
+  return `${s.turn.number}|${s.active}|${units}|${leaders}|${ordered}`;
 }
 
 /** The part of a fingerprint that names the turn and the side. */
@@ -217,8 +220,9 @@ function decide(s: GameState, d: Decision, opts: AiOptions, mem: AiMemory, rand:
         fingerprint: `${turnPart(planFingerprint(s))}${LIVE}`, card: plan.card, orders: plan.orders, moves: plan.moves, next: 0, ahead: [],
         ...(plan.style ? { style: plan.style } : {}),
       };
+      // (forcedDiceLeft() is 0 whenever `plan.moves` is non-empty: a quick plan has no moves; the guard keeps `Stepper` off forced dice)
       if (plan.moves.length && forcedDiceLeft() === 0) {
-        ctx.budget.charge(1); // the replay is one more line played through
+        // the replay is small fixed setup (one clone, a few answers), not a node: the plan's own building was charged by `planTurn`
         const fps = replayFingerprints(s, me, plan, policyCtx(), rand);
         if (fps) {
           stored.fingerprint = fps[0];
@@ -286,7 +290,9 @@ function decide(s: GameState, d: Decision, opts: AiOptions, mem: AiMemory, rand:
     case 'retreat': {
       const a = policy();
       const o = a.kind === 'choose' ? d.options[a.index] : undefined;
-      const say = o && o.losses > 0 ? speak(s, me, P, mem, rand, 'unitLost', { unit: unitName(s, d.unit) }) : undefined;
+      const lost = unitById(s, d.unit);
+      // the unit is eliminated by the retreat when its losses take every block
+      const say = o && lost && o.losses >= lost.blocks ? speak(s, me, P, mem, rand, 'unitLost', { unit: unitName(s, d.unit) }) : undefined;
       return { answer: a, say };
     }
     case 'leaderRetreat': {

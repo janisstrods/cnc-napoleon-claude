@@ -19,7 +19,7 @@ export interface SayCtx {
 const TALK_SHARE = 0.5;
 
 /**
- * Four plain lines for every voice and moment, and one more that names the card or the unit. No line contains a card title other
+ * Four plain lines for every voice and moment, and (but under leaderLost) one more that names the card or the unit. No line contains a card title other
  * than through `{card}` (kept clear of Forward, Bombard, Rally, Leadership and Élan in particular).
  */
 const LINES: Record<Voice, Record<Moment, readonly string[]>> = {
@@ -37,7 +37,7 @@ const LINES: Record<Voice, Record<Moment, readonly string[]>> = {
       'Give ground today, take it back tomorrow.', 'The {unit} will be avenged, I promise it.',
     ],
     squareFormed: [
-      'Form square! Let the horsemen break themselves upon it!', 'Stand firm, lads, and show them the points!', 'Bayonets out! They shall not pass.',
+      'Form square! Let the horsemen break themselves upon it!', 'Stand firm, lads, and show them the points!', 'Bayonets out! They will find no way through.',
       'A hedge of steel, and let them try it!', 'Square, the {unit}! Quickly now!',
     ],
     charge: [
@@ -46,7 +46,7 @@ const LINES: Record<Voice, Record<Moment, readonly string[]>> = {
     ],
     leaderLost: [
       'The general is down! Fight on for him!', 'They have struck at our head. Strike back!', 'No man leaves the field while the colours stand!',
-      'Avenge him, and let that be an end of talk!', 'The {unit} have lost their general. Avenge him.',
+      'Avenge him, and let that be an end of talk!',
     ],
     winning: [
       'The day is ours if we keep our nerve!', 'They are wavering. Keep up the pressure!', 'Victory is near, gentlemen; I can smell it.',
@@ -80,7 +80,7 @@ const LINES: Record<Voice, Record<Moment, readonly string[]>> = {
     ],
     leaderLost: [
       'The general is lost. The next in rank takes over.', 'A grievous blow. Reorder the command at once.',
-      'Notify the staff and keep the line steady.', 'The plan must now be amended; hold meanwhile.', 'The {unit} look to the next officer for orders.',
+      'Notify the staff and keep the line steady.', 'The plan must now be amended; hold meanwhile.',
     ],
     winning: [
       'The balance favours us. Let us not spoil it.', 'We lead on the count. Keep the discipline.', 'Steady progress. Let the work finish itself.',
@@ -93,7 +93,7 @@ const LINES: Record<Voice, Record<Moment, readonly string[]>> = {
   },
   reckless: {
     cardPlayed: [
-      'Enough thinking! Send them in!', 'The cards are with us. Hurry, hurry!', 'Fortune, take me or leave me!', 'Let the whole line feel it!',
+      'Enough thinking! Send them in!', 'Fortune is smiling. Hurry, hurry!', 'Fortune, take me or leave me!', 'Let the whole line feel it!',
       '{card}! Surely nothing can stop us now.',
     ],
     bigHit: [
@@ -114,7 +114,7 @@ const LINES: Record<Voice, Record<Moment, readonly string[]>> = {
     ],
     leaderLost: [
       'They have shot the general! Revenge, revenge!', 'No! Then we fight for all of us!', 'He will be avenged a hundredfold!',
-      'Take the field in his name, and be quick about it!', 'The {unit} will fight twice as hard, mark me.',
+      'Take the field in his name, and be quick about it!',
     ],
     winning: [
       'We have them! One more push and it is done!', 'They are finished! Finish them!', 'The victory is within reach! Seize it!',
@@ -127,7 +127,7 @@ const LINES: Record<Voice, Record<Moment, readonly string[]>> = {
   },
   cunning: {
     cardPlayed: [
-      'They will not see the point of this until too late.', 'A small move now, a large one later.', 'Let them guess; guessing tires a man.',
+      'They will not see the point of this until too late.', 'Patience now, and a heavier hand later.', 'Let them guess; guessing tires a man.',
       'Patience has a sharp edge, as you shall see.', '{card}. Watch the left, gentlemen, and then the right.',
     ],
     bigHit: [
@@ -148,14 +148,14 @@ const LINES: Record<Voice, Record<Moment, readonly string[]>> = {
     ],
     leaderLost: [
       'A grave loss. They will hope we shall falter.', 'Let the enemy think it has done something. It has not.',
-      'Put another officer up and show no alarm.', 'We will mourn when the matter is settled.', 'The {unit} must not see me worried.',
+      'Put another officer up and show no alarm.', 'We will mourn when the matter is settled.',
     ],
     winning: [
-      'They think they hold something. They do not.', 'All goes to plan, and then a little further.', 'We lead, and they do not yet know why.',
+      'They think the ground is theirs. It is not.', 'All goes to plan, and then a little further.', 'We lead, and they do not yet know why.',
       'Let them believe it is close. It is not.',
     ],
     losing: [
-      'Let them have their little lead. It will cost them.', 'The score is not the battle, remember.', 'Behind, yes, but they have forgotten the reserves.',
+      'Let them have their little lead. It will cost them.', 'The score is not the battle, remember.', 'Behind, yes, but the day is long and we are not spent.',
       'A weakness shown is a weakness to exploit later.',
     ],
   },
@@ -182,7 +182,7 @@ const LINES: Record<Voice, Record<Moment, readonly string[]>> = {
     ],
     leaderLost: [
       'The general has fallen. We hold.', 'A bad day for it. Carry on regardless.', 'Command passes. The duty does not.',
-      'Say a prayer later; the line comes first.', 'The {unit} will hold, as their general would have wished.',
+      'Say a prayer later; the line comes first.',
     ],
     winning: [
       'We are ahead. That is all.', 'The tally is in our favour. Keep at it.', 'No cheering yet. The day is not over.', 'Good. Now hold what we have.',

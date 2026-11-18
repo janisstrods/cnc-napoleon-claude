@@ -140,4 +140,35 @@ describe('the AI never reads hidden information', () => {
       compared++;
     }
   });
+
+  it('a followed plan is blind too: after a re-deal, both copies follow the plan through the turn with identical answers, lines, plans and generators', () => {
+    let followed = 0;
+    const starts: [string, number][] = [['000', 1], ['000', 2], ['000', 3], ['000', 4], ['004', 5], ['012', 6]];
+    for (const [id, seed] of starts) {
+      const base = createGame(scenarioById(id).setup, seed);
+      const me = base.active;
+      // the dice the engine rolls must be the same on both copies, so only the hidden cards are re-dealt
+      const variant = redeal(base, me, seed + 10);
+      variant.rng = base.rng;
+      variant.rngCalls = base.rngCalls;
+      const dA = new GameDriver(base);
+      const dB = new GameDriver(variant);
+      const memA = newMemory();
+      const memB = newMemory();
+      const o = aiOptions(id, me, { seed, levels: { top: 1, bottom: 1 }, budgetScale: 0.05 });
+      for (let i = 0; i < 80 && dA.pending && dA.pending.side === me; i++) {
+        const dec = dA.pending;
+        expect(dB.pending, `${id} step ${i}`).toEqual(dec);
+        const a = chooseAnswer(dA.state, dec, o, memA);
+        const b = chooseAnswer(dB.state, dec, o, memB);
+        expect(b, `${id} step ${i} (${dec.kind})`).toEqual(a);
+        expect(memB.plan, `${id} plan at step ${i}`).toEqual(memA.plan);
+        expect(memB.rngState).toBe(memA.rngState);
+        if (memA.plan && dec.kind !== 'playCard' && memA.plan.next > 0) followed++;
+        must(dA, a.answer);
+        must(dB, b.answer);
+      }
+    }
+    expect(followed, 'stored moves were followed on the copies').toBeGreaterThan(0);
+  });
 });

@@ -9,7 +9,7 @@ import { DIFFICULTIES, PERSONALITIES, chooseAnswer, isLegal, newMemory, planFing
 import * as moves from '../../src/ai/moves';
 import * as planner from '../../src/ai/planner';
 import * as sim from '../../src/ai/sim';
-import { H, build, must, toBattle, type Pos } from '../rules/helpers';
+import { H, build, leaderId, must, toBattle, type Pos } from '../rules/helpers';
 import { detOpts } from './helpers';
 import { failOnAiErrors } from './no-ai-errors';
 
@@ -130,6 +130,128 @@ describe('the stored plan', () => {
       void first;
     });
   }
+
+  /** Three units far from a thin enemy and cards that order several: a plan with orders for three pieces and several stored moves. */
+  function multiKit(): GameDriver {
+    const s = build({ units: [
+      bot('BR/LN', [8, 4]), bot('BR/LN', [8, 6]), bot('BR/LC', [8, 8]), bot('BR/FA', [7, 6]),
+      top('FR/LN', [1, 4]), top('FR/LN', [1, 7]), top('FR/HC', [0, 9]),
+    ] });
+    holding(s, 'bottom', ['coordinatedAdvance', 'coordinatedAdvance', 'reconInForce', 'reconInForce', 'forward']);
+    noFS(s);
+    return new GameDriver(s);
+  }
+
+  it('every stored move is answered in turn: the plan survives to the end and its expectations shrink by one each time', () => {
+    const d = multiKit();
+    const mem = planned(d, opts());
+    const plan = mem.plan!;
+    expect(plan.moves.length, 'a plan with several moves').toBeGreaterThanOrEqual(2);
+    expect(plan.orders!.pieces.length, 'orders for several pieces').toBeGreaterThanOrEqual(2);
+    const stored = [...plan.moves];
+    let ahead = plan.ahead.length;
+    expect(ahead).toBeGreaterThanOrEqual(stored.length);
+    // the orders decision, then each move
+    must(d, chooseAnswer(d.state, d.pending!, opts(), mem).answer);
+    expect(mem.plan, 'after the orders').not.toBeNull();
+    expect(mem.plan!.ahead.length).toBe(--ahead);
+    for (let i = 0; i < stored.length && d.pending?.kind === 'move'; i++) {
+      const a = chooseAnswer(d.state, d.pending, opts(), mem).answer;
+      expect(a, `move ${i}`).toEqual(stored[i]);
+      expect(mem.plan, `after move ${i}`).not.toBeNull();
+      expect(mem.plan!.next).toBe(i + 1);
+      ahead = Math.max(0, ahead - 1);
+      expect(mem.plan!.ahead.length, `expectations left after move ${i}`).toBe(ahead);
+      must(d, a);
+    }
+    expect(mem.fallbacks).toBe(0);
+  });
+
+  it('a plan is not followed after other orders: the fingerprint tells different orders apart', () => {
+    const d = multiKit();
+    const mem = planned(d, opts());
+    const given = mem.plan!.orders!.pieces;
+    expect(given.length).toBeGreaterThanOrEqual(2);
+    // another general (or the player's undo) gives fewer orders on the same position
+    // (keeping the piece of the first stored move, so that move stays legal: only the fingerprint can tell)
+    const first = mem.plan!.moves[0];
+    const other = { kind: 'orders' as const, pieces: [first.kind === 'move' ? first.piece : given[0]] };
+    expect(isLegal(d.state, d.pending!, other)).toBe(true);
+    const atOrders = planFingerprint(d.state);
+    must(d, other);
+    expect(isLegal(d.state, d.pending!, first)).toBe(true);
+    const afterOther = planFingerprint(d.state);
+    expect(afterOther).not.toBe(atOrders);
+    const ref = multiKit();
+    planned(ref, opts());
+    must(ref, { kind: 'orders', pieces: given });
+    expect(planFingerprint(ref.state)).not.toBe(afterOther);
+    expect(d.pending?.kind).toBe('move');
+    const policy = chooseAnswer(cloneState(d.state), d.pending!, opts(), newMemory()).answer;
+    const a = chooseAnswer(d.state, d.pending!, opts(), mem).answer;
+    expect(mem.plan).toBeNull();
+    expect(a).toEqual(policy);
+  });
+
+  it('an answer the engine would refuse is never taken from the plan: the plan is dropped and the policy answers, no fallback', () => {
+    // orders
+    const d = multiKit();
+    const mem = planned(d, opts());
+    mem.plan!.orders = { pieces: ['u99'], label: 'tampered' };
+    const policyOrders = chooseAnswer(cloneState(d.state), d.pending!, opts(), newMemory()).answer;
+    const oa = chooseAnswer(d.state, d.pending!, opts(), mem).answer;
+    expect(mem.plan).toBeNull();
+    expect(mem.fallbacks).toBe(0);
+    expect(oa).toEqual(policyOrders);
+    expect(isLegal(d.state, d.pending!, oa)).toBe(true);
+    // moves
+    const e = multiKit();
+    const m2 = planned(e, opts());
+    must(e, chooseAnswer(e.state, e.pending!, opts(), m2).answer);
+    expect(e.pending?.kind).toBe('move');
+    m2.plan!.moves[0] = { kind: 'move', piece: m2.plan!.orders!.pieces[0], to: H(0, 0) };
+    expect(isLegal(e.state, e.pending!, m2.plan!.moves[0])).toBe(false);
+    const policyMove = chooseAnswer(cloneState(e.state), e.pending!, opts(), newMemory()).answer;
+    const ma = chooseAnswer(e.state, e.pending!, opts(), m2).answer;
+    expect(m2.plan).toBeNull();
+    expect(m2.fallbacks).toBe(0);
+    expect(ma).toEqual(policyMove);
+  });
+
+  it('a live plan (no stored moves) is dropped when the turn or the card in play differs', () => {
+    const elanKit = (): GameDriver => {
+      const s = build({ units: [bot('BR/LN', [5, 6]), bot('BR/LN', [5, 5]), top('FR/LN', [4, 6], { blocks: 1 }), top('FR/LN', [4, 5], { blocks: 1 }), top('FR/LN', [1, 1])] });
+      holding(s, 'bottom', ['elan', 'scoutL', 'scoutR', 'probeL', 'probeR']);
+      noFS(s);
+      return new GameDriver(s);
+    };
+    const mk = (): { d: GameDriver; mem: AiMemory } => {
+      const d = elanKit();
+      const mem = planned(d);
+      expect(mem.plan!.moves).toEqual([]);
+      expect(mem.plan!.fingerprint.endsWith('*')).toBe(true);
+      while (d.pending && d.pending.kind !== 'move') must(d, chooseAnswer(d.state, d.pending, opts(), mem).answer);
+      expect(d.pending?.kind).toBe('move');
+      expect(mem.plan).not.toBeNull();
+      return { d, mem };
+    };
+    // the same turn and card: still followed
+    const a = mk();
+    chooseAnswer(a.d.state, a.d.pending!, opts(), a.mem);
+    expect(a.mem.plan).not.toBeNull();
+    // a later turn
+    const b = mk();
+    const later = cloneState(b.d.state);
+    later.turn.number += 2;
+    chooseAnswer(later, b.d.pending!, opts(), b.mem);
+    expect(b.mem.plan).toBeNull();
+    // the same turn but another card in play
+    const c = mk();
+    const swapped = cloneState(c.d.state);
+    swapped.turn.card = (swapped.turn.card! + 1) % 70;
+    chooseAnswer(swapped, c.d.pending!, opts(), c.mem);
+    expect(c.mem.plan).toBeNull();
+  });
 
   it('the plan is dropped too when the turn changes under it (a stale plan never answers the next turn)', () => {
     const d = rideKit();
@@ -305,10 +427,15 @@ describe('dispatch', () => {
   it('a clock is read, and the time recorded, only when not deterministic', () => {
     const d = rideKit();
     const mem = newMemory();
+    const clock = vi.spyOn(performance, 'now');
     chooseAnswer(d.state, d.pending!, opts({ deterministic: false }), mem);
-    expect(mem.last!.ms).toBeGreaterThanOrEqual(0);
+    expect(clock).toHaveBeenCalled();
+    expect(mem.last!.ms).toBeGreaterThan(0);
     expect(mem.last!.kind).toBe('playCard');
     expect(mem.plan).not.toBeNull();
+    clock.mockClear();
+    chooseAnswer(rideKit().state, { kind: 'playCard', side: 'bottom' }, opts({ deterministic: true }), newMemory());
+    expect(clock).not.toHaveBeenCalled();
   });
 
   it('the answer is the memory\'s seeded draw: same seed and position, same answer and same say', () => {
@@ -328,6 +455,24 @@ describe('the commander speaks', () => {
     expect(r.say!.length).toBeLessThanOrEqual(80);
     const q = chooseAnswer(d.state, { kind: 'playCard', side: 'bottom' }, opts({ personality: quiet }), newMemory());
     expect(q.say).toBeUndefined();
+  });
+
+  it('unitLost fires only when a retreat eliminates the unit; leaderLost only when the leader is lost', () => {
+    const s = build({ units: [bot('BR/LN', [5, 6], { blocks: 1 }), bot('BR/LN', [6, 6]), top('FR/LN', [1, 1])], leaders: [{ side: 'bottom', at: [6, 6] }] });
+    const retreat = (unit: string, losses: number): Decision => ({
+      kind: 'retreat', side: 'bottom', unit, options: [{ path: [H(6, 5)], end: H(6, 5), losses, attach: null }], reason: 'retreat',
+    });
+    const say = (dec: Decision): string | undefined => chooseAnswer(s, dec, opts({ personality: chatty }), newMemory()).say;
+    expect(say(retreat('u1', 1)), 'a one-block unit pays its last block').toBeDefined();
+    expect(say(retreat('u1', 0)), 'a free retreat').toBeUndefined();
+    expect(say(retreat('u2', 1)), 'a block lost, the unit survives').toBeUndefined();
+    const lid = leaderId(s, 0);
+    const lr = (eliminated: boolean): Decision => ({
+      kind: 'leaderRetreat', side: 'bottom', leader: lid, options: [{ path: [], end: H(6, 5), offBoard: false, escapes: [], attach: null, eliminated }],
+    });
+    expect(say(lr(true)), 'the leader is lost').toBeDefined();
+    expect(say(lr(false))).toBeUndefined();
+    expect(chooseAnswer(s, lr(true), opts({ personality: quiet }), newMemory()).say).toBeUndefined();
   });
 
   it('speaks at most once a turn', () => {
