@@ -1,4 +1,4 @@
-// UI kit for Commands & Colors: Napoleonics - theme, command cards, dice, banner track, panels.
+// UI kit for Commands & Colours: Napoleonics - theme, command cards, dice, banner track, panels.
 import './theme.css';
 import './cards.css';
 import './dice.css';
@@ -14,4 +14,4 @@ export type { DieState } from './Dice';
 export { BannerTrack, BannerIcon } from './BannerTrack';
 export { Button, Panel, Modal, Tooltip, Tabletop } from './controls';
 export { Icon, iconPath } from './Icon';
-export type { IconName } from './Icon';
+export type { IconName, NapGlyph } from './Icon';

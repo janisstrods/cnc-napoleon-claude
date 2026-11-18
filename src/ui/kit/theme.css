@@ -1,4 +1,4 @@
-/* Commands & Colors: Ancients UI kit - design tokens (mirrors theme.ts). */
+/* Commands & Colours: Napoleonics UI kit - design tokens (mirrors theme.ts). */
 :root {
   --kit-font-title: 'Cinzel', 'Trajan Pro', 'Times New Roman', serif;
   --kit-font-body: 'EB Garamond', Garamond, 'Times New Roman', serif;
@@ -30,10 +30,6 @@
   --kit-die-medium: #2453a6;
   --kit-die-heavy: #b3261e;
   --kit-die-ivory: #f6efdc;
-
-  --kit-rome: #9b1f1c;
-  --kit-carthage: #6a1e5c;
-  --kit-syracuse: #1f417e;
 
   --kit-group-section: #6f6526;
   --kit-group-troop: #8c1d1b;

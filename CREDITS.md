@@ -2,8 +2,8 @@
 
 ## Battle histories
 
-The History slides of each battle (`src/history/battles/`) are original summaries written from the ancient historians
-and modern scholarship; each lists its sources. The battle maps are schematic reconstructions drawn for this edition.
+The History slides of each battle (`src/history/battles/`) are original summaries written from the standard histories
+of the period (among them Oman's *History of the Peninsular War* and Napier's *History of the War in the Peninsula*); each lists its sources. The battle maps are schematic reconstructions drawn for this edition.
 
 ## Icons — game-icons.net
 
@@ -16,24 +16,19 @@ The original SVGs are kept in `src/ui/kit/icons/`. Their glyph paths are extract
 | Icon | Author | Used for | Licence | Link |
 | --- | --- | --- | --- | --- |
 | Crossed swords | Lorc | Swords die face, card back | CC BY 3.0 | https://game-icons.net/1x1/lorc/crossed-swords.html |
-| Spartan helmet | Delapouite | Leader (helmet) die face, "leaders may detach" card badge | CC BY 3.0 | https://game-icons.net/1x1/delapouite/spartan-helmet.html |
-| Sling | Delapouite | Order Light Troops | CC BY 3.0 | https://game-icons.net/1x1/delapouite/sling.html |
-| Spartan | Lorc | Order Medium Troops | CC BY 3.0 | https://game-icons.net/1x1/lorc/spartan.html |
-| Roman shield | Delapouite | Order Heavy Troops | CC BY 3.0 | https://game-icons.net/1x1/delapouite/roman-shield.html |
-| Horse head | Lorc | Order Mounted | CC BY 3.0 | https://game-icons.net/1x1/lorc/horse-head.html |
-| Caesar | Delapouite | Inspired Left / Center / Right Leadership | CC BY 3.0 | https://game-icons.net/1x1/delapouite/caesar.html |
-| Laurel crown | Lorc | Leadership Any Section | CC BY 3.0 | https://game-icons.net/1x1/lorc/laurel-crown.html |
-| Shield echoes | Lorc | Clash of Shields | CC BY 3.0 | https://game-icons.net/1x1/lorc/shield-echoes.html |
+| Horse head | Lorc | Flank Attack | CC BY 3.0 | https://game-icons.net/1x1/lorc/horse-head.html |
+| Laurel crown | Lorc | Grand Manoeuvre | CC BY 3.0 | https://game-icons.net/1x1/lorc/laurel-crown.html |
+| Shield echoes | Lorc | Fire and Hold | CC BY 3.0 | https://game-icons.net/1x1/lorc/shield-echoes.html |
 | Shield reflect | Lorc | Counter Attack | CC BY 3.0 | https://game-icons.net/1x1/lorc/shield-reflect.html |
-| Striking arrows | Lorc | Darken the Sky | CC BY 3.0 | https://game-icons.net/1x1/lorc/striking-arrows.html |
-| Run | Lorc | Double Time | CC BY 3.0 | https://game-icons.net/1x1/lorc/run.html |
+| Striking arrows | Lorc | Bombard | CC BY 3.0 | https://game-icons.net/1x1/lorc/striking-arrows.html |
+| Run | Lorc | Forward, Force March | CC BY 3.0 | https://game-icons.net/1x1/lorc/run.html |
 | Sword wound | Lorc | First Strike | CC BY 3.0 | https://game-icons.net/1x1/lorc/sword-wound.html |
-| Swords power | Delapouite | I Am Spartacus | CC BY 3.0 | https://game-icons.net/1x1/delapouite/swords-power.html |
-| Spears | Lorc | Line Command | CC BY 3.0 | https://game-icons.net/1x1/lorc/spears.html |
-| Cavalry | Delapouite | Mounted Charge | CC BY 3.0 | https://game-icons.net/1x1/delapouite/cavalry.html |
-| Bowman | Lorc | Move-Fire-Move | CC BY 3.0 | https://game-icons.net/1x1/lorc/bowman.html |
-| Trumpet flag | Delapouite | Rally | CC BY 3.0 | https://game-icons.net/1x1/delapouite/trumpet-flag.html |
-| Laurels | Lorc | Card back wreath | CC BY 3.0 | https://game-icons.net/1x1/lorc/laurels.html |
+| Spears | Lorc | Bayonet Charge | CC BY 3.0 | https://game-icons.net/1x1/lorc/spears.html |
+| Cavalry | Delapouite | Cavalry Charge | CC BY 3.0 | https://game-icons.net/1x1/delapouite/cavalry.html |
+| Trumpet flag | Delapouite | Élan, Rally | CC BY 3.0 | https://game-icons.net/1x1/delapouite/trumpet-flag.html |
+| Laurels | Lorc | Card back wreath, menu and medal wreath | CC BY 3.0 | https://game-icons.net/1x1/lorc/laurels.html |
+
+The bicorne, spyglass and haversack card glyphs (`src/ui/kit/icons/napGlyphs.ts`) are drawn for this project.
 
 Authors: Lorc (https://lorcblog.blogspot.com) and Delapouite (https://delapouite.com).
 
@@ -58,14 +53,10 @@ No third-party assets are used for them.
 
 ## Scenarios
 
-The 15 base-game battles follow the scenario setups documented by the community at
-[commandsandcolors.net](https://www.commandsandcolors.net). The 24 battles of Expansion #1, *Greece & Eastern Kingdoms*
-(101–124), were transcribed hex by hex from the official scenario maps published at commandsandcolors.net, and for
-122–124 from GMT's Bonus Pack #2; the 23 battles of Expansion #2, *Rome & the Barbarians* (201–223), and the 19 of
-Expansion #3, *The Roman Civil Wars* (301–319), were transcribed the same way and checked by independent overlay
-verification. The setups are data; the rules are paraphrased (`design/rules-reference.md`), the
-battle summaries are original, and all army and terrain art is original.
+The 15 base-game battles (001–015, `design/data`) were transcribed hex by hex from the battle maps published at
+[commandsandcolors.net](https://www.commandsandcolors.net); Expansion #1, *The Spanish Army*, is to come. The setups are
+data; the rules are paraphrased (`design/rules-reference.md`), the battle summaries are original, and all army and
+terrain art is original.
 
-*Commands & Colors: Ancients* is a board game by Richard Borg, published by GMT Games; Expansions #1, *Greece & Eastern
-Kingdoms*, #2, *Rome & the Barbarians*, and #3, *The Roman Civil Wars*, are also GMT Games products. This is an unofficial fan implementation. The card texts are paraphrased
-summaries.
+*Commands & Colors: Napoleonics* is a board game by Richard Borg, published by GMT Games; Expansion #1, *The Spanish
+Army*, is also a GMT Games product. This is an unofficial fan implementation. The card texts are paraphrased summaries.

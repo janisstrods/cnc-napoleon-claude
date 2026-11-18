@@ -21,6 +21,20 @@ import './screens.css';
 const MENU_ARMY_L: RowKey[] = ['FR/GR', 'FR/LN', 'FR/CU'];
 const MENU_ARMY_R: RowKey[] = ['BR/RI', 'BR/LN', 'BR/HC'];
 
+/** The credits dialog's text. GMT's spelling of the game's name appears only in the disclaimer. */
+export function CreditsText() {
+  return (
+    <div className="credits">
+      <p>An unofficial, fan-made digital edition of <i>Commands &amp; Colours: Napoleonics</i>, based on <i>Commands &amp; Colors: Napoleonics</i>, designed by Richard Borg and published by GMT Games. Commands &amp; Colors is a trademark of GMT Games LLC. This edition uses original artwork and paraphrased rules text; it is not affiliated with or endorsed by GMT Games.</p>
+      <p>Scenario setups follow the battles of the base game and its Spanish Army expansion, transcribed hex by hex from the community's published battle maps. Rules are paraphrased and battle summaries original.</p>
+      <p><b>Battle histories:</b> original summaries written from the standard histories of the Peninsular War and the Waterloo campaign, each with its sources. The maps are schematic reconstructions; numbers and details of the period are often uncertain.</p>
+      <p><b>Fonts:</b> Cinzel (Natanael Gama) and EB Garamond (Georg Duffner, Octavio Pardo) — SIL Open Font License 1.1.</p>
+      <p><b>Icons:</b> game-icons.net by Lorc and Delapouite — CC BY 3.0 (see CREDITS.md for the full list).</p>
+      <p><b>Miniatures, terrain, cards and dice:</b> original SVG artwork made for this edition.</p>
+    </div>
+  );
+}
+
 export function MainMenu(p: {
   saved: SavedGame | null;
   notice?: string | null;
@@ -87,14 +101,7 @@ export function MainMenu(p: {
         }}
       />
       <Modal open={credits} title="Credits" onClose={() => setCredits(false)} width={640}>
-        <div className="credits">
-          <p>An unofficial, fan-made digital edition of <i>Commands &amp; Colours: Napoleonics</i>, based on the <i>Commands &amp; Colors</i> system designed by Richard Borg and published by GMT Games. Commands &amp; Colors is a trademark of GMT Games LLC. This edition uses original artwork and paraphrased rules text; it is not affiliated with or endorsed by GMT Games.</p>
-          <p>Scenario setups follow the battles of the base game and its Spanish Army expansion, transcribed hex by hex from the community's published battle maps. Rules are paraphrased and battle summaries original.</p>
-          <p><b>Battle histories:</b> original summaries written from the standard histories of the Peninsular War and the Waterloo campaign, each with its sources. The maps are schematic reconstructions; numbers and details of the period are often uncertain.</p>
-          <p><b>Fonts:</b> Cinzel (Natanael Gama) and EB Garamond (Georg Duffner, Octavio Pardo) — SIL Open Font License 1.1.</p>
-          <p><b>Icons:</b> game-icons.net by Lorc and Delapouite — CC BY 3.0 (see CREDITS.md for the full list).</p>
-          <p><b>Miniatures, terrain, cards and dice:</b> original SVG artwork made for this edition.</p>
-        </div>
+        <CreditsText />
       </Modal>
     </div>
   );

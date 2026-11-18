@@ -13,7 +13,7 @@ import { afterEach, beforeEach, vi } from 'vitest';
 import { randomAnswer, type Decision, type GameEvent, type GameState, type QueuedEvent } from '../../src/engine';
 import type { GameController } from '../../src/ui/game/controller';
 import type { Opponent } from '../../src/ui/game/opponent';
-import { rng } from '../../src/ui/terrain/noise';
+import { mulberry32 } from '../support/rng';
 
 /** Fake timers for each test of the describe it is called in (the controller's sleeps, toasts and flash timers). */
 export function useFakeClock() {
@@ -29,7 +29,7 @@ export function useFakeClock() {
 export class SeededOpponent implements Opponent {
   private readonly next: () => number;
   constructor(seed = 7) {
-    this.next = rng(seed);
+    this.next = mulberry32(seed);
   }
   async decide(state: GameState, decision: Decision) {
     return { answer: randomAnswer(state, decision, this.next) };

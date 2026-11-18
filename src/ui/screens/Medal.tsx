@@ -57,7 +57,7 @@ export function Medal(p: { standing: Standing; size?: number; faint?: boolean; c
 /** The sides in the order of the briefing's "Command the" buttons. */
 export const SIDE_ORDER: readonly Side[] = ['bottom', 'top'];
 
-/** What a battle's two medals mean, side by side: "Syracusan: gold (beat the Consul) · Carthaginian: not fought yet". */
+/** What a battle's two medals mean, side by side: "British: gold (beat the Marshal) · French: not fought yet". */
 export function pairText(rec: BattleRecord, sc: ScenarioInfo): string {
   return SIDE_ORDER.map((sd) => `${sc.setup[sd].army}: ${standingText(sideStanding(rec, sc.id, sd))}`).join(' · ');
 }

@@ -1,5 +1,5 @@
 // Scalar fields on a regular grid + marching squares, used to derive soft, organic and merged
-// outlines (lakes, hill ridges, forest floors, marsh, rough ground) from the hex terrain.
+// outlines (ponds, ridges and hills, woods, marsh, broken ground) from the hex terrain.
 import { fmt, type Pt, type Rect } from './hexmath';
 
 export interface Grid {
