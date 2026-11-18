@@ -12,7 +12,7 @@ describe('Napoleonics vocabulary', () => {
     expect(isUnitKey('PT/LN')).toBe(true); expect(isUnitKey('PT/XX')).toBe(false); expect(isUnitKey('LN')).toBe(false);
   });
   it('UNIT_KEYS has a row key for each nation’s units', () => {
-    expect(isRowKey('AL/LN')).toBe(true); expect(isRowKey('SP/LN')).toBe(false);
+    expect(isRowKey('AL/LN')).toBe(true); expect(isRowKey('SP/LN')).toBe(true); expect(isRowKey('PT/GR')).toBe(false);
   });
   it('catalogues 15 base and 18 Spanish battles with unique ids', () => {
     expect(CATALOGUE.filter((b) => b.box === 'base').map((b) => b.id)).toEqual(

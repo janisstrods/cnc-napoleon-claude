@@ -4,7 +4,7 @@ import {
   type Answer, type CardKind, type Decision, type DieFace, type GameEvent, type GameState, type HexId, type Leader, type QueuedEvent,
   type RollPurpose, type Side, type UndoStep, type Unit,
 } from '../../engine';
-import { chooseAnswer, newMemory, personalityById, type AiMemory, type AiOptions } from '../../ai';
+import { DIFFICULTIES, chooseAnswer, newMemory, personalityById, type AiMemory, type AiOptions, type Difficulty } from '../../ai';
 import { SCENARIOS, scenarioById } from '../../scenarios';
 import type { Opponent } from './opponent';
 import { eventLog, rollSummary, rollTitle } from './logText';
@@ -12,7 +12,7 @@ import { sfx } from '../sound';
 import { storage, storageKey } from '../storage';
 import { outcomeFor, recordFinished, type Medal } from '../record';
 
-export type Difficulty = 'recruit' | 'tribune' | 'consul';
+export type { Difficulty };
 
 export interface SessionConfig {
   scenarioId: string;
@@ -122,6 +122,7 @@ export function loadSaved(): SavedGame | null {
   try {
     const s = JSON.parse(raw) as SavedGame;
     const ok = !!s && s.version === 1 && s.engine === ENGINE_VERSION && typeof s.config?.scenarioId === 'string' &&
+      (DIFFICULTIES as readonly string[]).includes(s.config.difficulty) &&
       Array.isArray(s.answers) && SCENARIOS.some((x) => x.id === s.config.scenarioId);
     if (!ok) {
       clearSaved();
@@ -756,12 +757,12 @@ export function aiPacing(d: Decision): { indicator: boolean; minMs: number } {
 }
 
 /**
- * Dev shortcut `#/play/<scenario>/<top|bottom>/<recruit|tribune|consul>[/<seed>][?cards=k1,k2]`: the session it starts
+ * Dev shortcut `#/play/<scenario>/<top|bottom>/<captain|colonel|marshal>[/<seed>][?cards=k1,k2]`: the session it starts
  * (any scenario id: 000 for now), or null when the hash is not such a
  * route or names no known battle.
  */
 export function devRouteConfig(hash: string): SessionConfig | null {
-  const m = hash.match(/^#\/play\/(\d{3})\/(top|bottom)\/(recruit|tribune|consul)(?:\/(\d+))?/);
+  const m = hash.match(/^#\/play\/(\d{3})\/(top|bottom)\/(captain|colonel|marshal)(?:\/(\d+))?/);
   if (!m || !SCENARIOS.some((x) => x.id === m[1])) return null;
   const cfg = newSessionConfig(m[1], m[2] as Side, m[3] as Difficulty);
   if (m[4]) cfg.seed = Number(m[4]);

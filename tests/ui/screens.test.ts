@@ -95,7 +95,7 @@ describe('a saved battle is restored', () => {
 
   it('the session config and the answers come back, and the restored game replays them', async () => {
     const m = stubStorage();
-    const cfg: SessionConfig = { ...newSessionConfig('000', 'bottom', 'recruit'), seed: 777 };
+    const cfg: SessionConfig = { ...newSessionConfig('000', 'bottom', 'captain'), seed: 777 };
     const c = new GameController(cfg, new SeededOpponent());
     try {
       await runToHuman(c); // wait for the human's first decision, then answer it (which saves)
@@ -121,7 +121,7 @@ describe('controller notices', () => {
 
   /** A controller waiting for the human's first decision, animations skipped, with its event animation exposed. */
   async function settled(id: string, human: Side) {
-    const c = new GameController({ ...newSessionConfig(id, human, 'recruit'), seed: 9 }, new SeededOpponent());
+    const c = new GameController({ ...newSessionConfig(id, human, 'captain'), seed: 9 }, new SeededOpponent());
     await runToHuman(c);
     return { c, animate: eventPlayer(c) };
   }
@@ -166,7 +166,7 @@ describe('controller toasts', () => {
   type Toaster = { toast(text: string, kind: 'turn' | 'notice', ms: number): void };
   /** A controller on 000 waiting for the human, animations skipped. */
   async function onDrill() {
-    const c = new GameController({ ...newSessionConfig('000', 'bottom', 'recruit'), seed: 9 }, new SeededOpponent());
+    const c = new GameController({ ...newSessionConfig('000', 'bottom', 'captain'), seed: 9 }, new SeededOpponent());
     await runToHuman(c);
     c.hurry();
     return { c, toast: (c as unknown as Toaster).toast.bind(c) };
@@ -230,14 +230,14 @@ describe('controller toasts', () => {
 describe('dev route', () => {
   it('starts every battle (000, and the stand-in 990)', () => {
     for (const s of SCENARIOS) {
-      const cfg = devRouteConfig(`#/play/${s.id}/top/consul/42`)!;
-      expect(cfg, s.id).toMatchObject({ scenarioId: s.id, humanSide: 'top', difficulty: 'consul', seed: 42 });
+      const cfg = devRouteConfig(`#/play/${s.id}/top/marshal/42`)!;
+      expect(cfg, s.id).toMatchObject({ scenarioId: s.id, humanSide: 'top', difficulty: 'marshal', seed: 42 });
       const c = new GameController(cfg, new RandomOpponent());
       c.dispose();
       expect(c.driver.initial.scenarioId).toBe(s.id);
     }
-    expect(devRouteConfig('#/play/000/bottom/recruit?cards=probeC')).toMatchObject({ scenarioId: '000', devCards: ['probeC'] });
-    expect(devRouteConfig('#/play/999/bottom/recruit')).toBeNull();
+    expect(devRouteConfig('#/play/000/bottom/captain?cards=probeC')).toMatchObject({ scenarioId: '000', devCards: ['probeC'] });
+    expect(devRouteConfig('#/play/999/bottom/captain')).toBeNull();
     expect(devRouteConfig('#/gallery/art')).toBeNull();
   });
 });

@@ -15,6 +15,9 @@ import {
 // `flagIgnores` is exported by the engine's resolve module but not by its index barrel (reported to the controller).
 import { flagIgnores } from '../engine/resolve';
 import { occOf, type Occ } from './board';
+// meanHandValue reads only the viewer's own hand. cardsense imports evaluate, which imports this module: a cycle that is safe
+// because every use of an import below is inside a function, called after all three modules have loaded.
+import { meanHandValue } from './cardsense';
 import { dieOdds, pAnySabre, rollDist, type DieOdds } from './odds';
 import { bestGuns, firstStrikeCost, reactionsFor, squareCost } from './reactions';
 import { assumeOppHand, oppHoldsP } from './view';
@@ -34,6 +37,12 @@ interface EstBase {
   occ: Occ;
   W: Weights;
   viewer: Side;
+  /**
+   * The value of a card of the viewer's own hand, in banners (`meanHandValue`, Rally's expected gain included), worked out once
+   * per root decision by `makeEstCtx`. It prices the viewer's own squares only (`squareCost`, `squareHoldCost`): the opponent's
+   * hand is never read, so its squares are priced at the mean card (`CARD_VALUE`).
+   */
+  cardValue: number;
   /** Hexes the attacker moved this turn (the engine's `DiceCtx.moved`). */
   moved: number;
   role: StrikeRole;
@@ -51,7 +60,7 @@ export type EstCtx = EstBase & ({ determinised: true; oppHands?: undefined } | {
 /** The estimate context of one root decision for `me`: the occupancy table and the assumed opponent hands, built once. */
 export function makeEstCtx(s: GameState, me: Side, W: Weights): EstCtx {
   return {
-    occ: occOf(s), W, viewer: me, moved: 0, role: 'attack', determinised: false,
+    occ: occOf(s), W, viewer: me, cardValue: meanHandValue(s, me, W), moved: 0, role: 'attack', determinised: false,
     oppHands: { holdsFS: assumeOppHand(s, me, 'firstStrike', true), noFS: assumeOppHand(s, me, 'firstStrike', false), pFS: oppHoldsP(s, me, 'firstStrike') },
   };
 }
@@ -208,9 +217,13 @@ interface Strike {
  * One roll of `dice` dice at `victim` by `source`: the value to `scorer` of the blocks lost (the unit's value falls with its
  * blocks), the elimination's banner, the flag result (blocks lost to a blocked retreat, `DISPLACE` per hex retreated) and the
  * attached leader's casualty check, and his retreat when he is left alone. `ignore` hits are dropped first (the
- * Cuirassier). `bounce`: none of the flags may be ignored (a square's roll at cavalry).
+ * Cuirassier). `bounce`: none of the flags may be ignored (a square's roll at cavalry). `memo`: the flag results of this victim
+ * against this source, which strikes that share the pair may share (`flagOutcome` keys it by flag count and the leader's state).
  */
-function strike(s: GameState, ec: EstCtx, victim: Unit, source: Unit, dice: number, o: DieOdds, ignore: number, scorer: Side, bounce = false): Strike {
+function strike(
+  s: GameState, ec: EstCtx, victim: Unit, source: Unit, dice: number, o: DieOdds, ignore: number, scorer: Side, bounce = false,
+  memo: Map<number, FlagResult> = new Map(),
+): Strike {
   const out: Strike = { value: 0, expHits: 0, pElim: 0, pRetreat: 0, stay: new Map() };
   const dist = rollDist(dice, o);
   const width = dice + 1;
@@ -235,8 +248,10 @@ function strike(s: GameState, ec: EstCtx, victim: Unit, source: Unit, dice: numb
     alone ??= aloneValue(s, leader, scorer, 1 + killN);
     return pK * (LEADER_VALUE + bannerAt(s, scorer, 1 + killN)) + (1 - pK) * alone;
   };
-  const worth = (k: number): number => unitValue(s, { key: victim.key, blocks: k });
-  const memo = new Map<number, FlagResult>();
+  // the victim's worth at every block count it can have, worked out once per strike (the roll's loops read it per outcome)
+  const worths: number[] = [];
+  for (let k = 0; k <= blocks; k++) worths.push(unitValue(s, { key: victim.key, blocks: k }));
+  const worth = (k: number): number => worths[k];
   const stayAt = (r: number, p: number): void => void out.stay.set(r, (out.stay.get(r) ?? 0) + p);
   for (let h = 0; h <= dice; h++) {
     for (let f = 0; h + f <= dice; f++) {
@@ -308,6 +323,19 @@ export interface Advance {
 
 const NO_ADVANCE: Advance = { allowed: false, bonus: false, value: 0 };
 
+/** A cavalry unit's bonus-melee prospect from a vacated hex: whether a target exists, and the best target's value. */
+interface Prospect {
+  bonus: boolean;
+  best: number;
+}
+
+/**
+ * Prospects already worked out, per board (`ec.occ` is rebuilt for every position, so a cached prospect never outlives the
+ * position it was computed on) and per (attacker, its blocks, vacated hex, hexes moved, guns already spent). One cavalry
+ * melee is estimated against several reactions and from several attackers' positions; the prospect is the same each time.
+ */
+const prospects = new WeakMap<Occ, { W: Weights; known: Map<string, Prospect> }>();
+
 /**
  * The attacker's move into the vacated `hex` after its melee (`ec.role`: 'attack' or 'bonus'), and a cavalry unit's bonus
  * melee from there: no gun, no unit in square, nothing after entering a stop hex this turn, and the hex must be passable for
@@ -317,8 +345,9 @@ const NO_ADVANCE: Advance = { allowed: false, bonus: false, value: 0 };
  */
 // approximates RR §9.7, §9.8 (engine: afterMelee and meleeAttack's afterAndBonus)
 // Known gap: impetuous cavalry (R82, RR §14.15, the `impetuousCavalry` side rule) must advance and must take the extra hex
-// toward the enemy baseline, so for those units the "optional, never negative" floor is wrong; modelling the forced move's
-// exposure is carried to Task 5 (evaluation) and Task 6b (moves).
+// toward the enemy baseline, so for those units the "optional, never negative" floor is wrong. The forced move's exposure is
+// priced by its callers, as a cost on the attack (`impetuousCost`, evaluate.ts): in the threats (Task 5) and in move scoring
+// (Task 6b, moves.ts).
 export function takeGround(s: GameState, attacker: Unit, hex: HexId, ec: EstCtx): Advance {
   const st = statsOf(s, attacker);
   const op = s.turn.ordered[attacker.id];
@@ -327,18 +356,28 @@ export function takeGround(s: GameState, attacker: Unit, hex: HexId, ec: EstCtx)
   let value = BREAKTHROUGH;
   let bonus = false;
   if (!op?.bonusMeleeDone && !noBattleAfterEntering(s, hex, st)) {
-    const moved: Unit = { ...attacker, hex };
-    const bec: EstCtx = { ...ec, role: 'bonus' };
-    let best = -Infinity;
-    for (const h of neighbours(hex)) {
-      const foe = ec.occ.unit[h] ?? ec.occ.leader[h];
-      if (!foe || foe.side === attacker.side) continue;
-      if (meleeDice(s, moved, foe, { role: 'bonus', moved: ec.moved, declared: true }) < 1) continue;
-      bonus = true;
-      const o = ec.occ.unit[h] ? meleeEstimate(s, moved, h, bec) : loneLeaderEstimate(s, moved, h, bec);
-      best = Math.max(best, o.ev);
+    let entry = prospects.get(ec.occ);
+    if (!entry || entry.W !== ec.W) prospects.set(ec.occ, (entry = { W: ec.W, known: new Map() }));
+    const known = entry.known;
+    // the rest of the context shapes the estimates too: whose view, its card value and the assumed First Strike odds
+    const key = `${attacker.id}|${attacker.blocks}|${attacker.hex}|${hex}|${ec.moved}|${ec.spentGuns?.join(',') ?? ''}|${ec.viewer}|${ec.cardValue}|${ec.oppHands?.pFS ?? 'd'}`;
+    let p = known.get(key);
+    if (!p) {
+      const moved: Unit = { ...attacker, hex };
+      const bec: EstCtx = { ...ec, role: 'bonus' };
+      p = { bonus: false, best: -Infinity };
+      for (const h of neighbours(hex)) {
+        const foe = ec.occ.unit[h] ?? ec.occ.leader[h];
+        if (!foe || foe.side === attacker.side) continue;
+        if (meleeDice(s, moved, foe, { role: 'bonus', moved: ec.moved, declared: true }) < 1) continue;
+        p.bonus = true;
+        const o = ec.occ.unit[h] ? meleeEstimate(s, moved, h, bec) : loneLeaderEstimate(s, moved, h, bec);
+        p.best = Math.max(p.best, o.ev);
+      }
+      known.set(key, p);
     }
-    if (bonus && best > ec.W.bonusThreshold) value += best;
+    bonus = p.bonus;
+    if (bonus && p.best > ec.W.bonusThreshold) value += p.best;
   }
   return { allowed: true, bonus, value };
 }
@@ -428,11 +467,13 @@ function combat(s: GameState, ec: EstCtx, attacker: Unit, defender: Unit, m: Mel
     pElim += q * g.pElim;
     pRetreat += q * g.pRetreat;
     if (first) continue; // the square or the First Strike unit already fought: no battle back (R29, R63)
+    // every battle back of this melee hits the same attacker from the same defender: one flag memo serves them all
+    const backMemo = new Map<number, FlagResult>();
     for (const [remaining, p] of g.stay) {
       // the engine rolls the battle back at the defender's blocks after the hits (and a failed retreat's losses)
       const back = meleeDice(s, { ...defender, blocks: remaining }, a, { role: 'back', moved: 0 });
       if (back <= 0) continue;
-      const b = strike(s, ec, a, defender, back, backOdds, 0, defender.side);
+      const b = strike(s, ec, a, defender, back, backOdds, 0, defender.side, false, backMemo);
       backLoss += q * p * b.value;
       backHits += q * p * b.expHits;
     }
@@ -472,7 +513,9 @@ export function branchesOf(s: GameState, attacker: Unit, defender: Unit, m: Mele
       const sq: Unit = { ...defender, square: 1 };
       const fought = combat(s, rc, attacker, sq, m, 'square', advance);
       // a square destroyed in this melee returns its card at once (removeUnit releases it): the cost is paid only if it survives
-      o = { ...fought, ev: fought.ev + squareCost(s, defender, rc.occ) * (1 - fought.pElim) };
+      // only the viewer's own hand is known: its cardValue prices its own square, the mean card the opponent's
+      const card = defender.side === rc.viewer ? rc.cardValue : undefined;
+      o = { ...fought, ev: fought.ev + squareCost(s, defender, rc.occ, card) * (1 - fought.pElim) };
     } else if (c === 'firstStrike') {
       // the engine never offers it against a square that fights first (defendOptions), so the two never stack
       const struck = combat(s, rc, attacker, defender, m, 'firstStrike', advance);

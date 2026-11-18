@@ -247,7 +247,7 @@ describe('retreats', () => {
 describe('undo at the Scout keep', () => {
   useFakeClock();
   it('the controller offers no undo at scoutKeep, and still does at the orders', async () => {
-    const c = new GameController({ ...newSessionConfig('000', 'bottom', 'recruit'), seed: 3 }, new SeededOpponent());
+    const c = new GameController({ ...newSessionConfig('000', 'bottom', 'captain'), seed: 3 }, new SeededOpponent());
     try {
       await runToHuman(c);
       const s = c.driver.state;

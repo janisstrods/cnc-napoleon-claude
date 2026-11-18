@@ -147,9 +147,9 @@ function TabMedals({ won, of }: { won: number; of: number }) {
 }
 
 const DIFFS: { id: Difficulty; name: string; text: string }[] = [
-  { id: 'recruit', name: 'Recruit', text: 'A forgiving opponent that makes mistakes.' },
-  { id: 'tribune', name: 'Tribune', text: 'A capable general. Recommended.' },
-  { id: 'consul', name: 'Consul', text: 'Thinks deeper and punishes errors.' },
+  { id: 'captain', name: 'Captain', text: 'A forgiving opponent that makes mistakes.' },
+  { id: 'colonel', name: 'Colonel', text: 'A capable general. Recommended.' },
+  { id: 'marshal', name: 'Marshal', text: 'Thinks deeper and punishes errors.' },
 ];
 
 /** Your record from one side of a battle, for its "Command the" button. */
@@ -227,7 +227,10 @@ function ScenarioSelectBody(p: ScenarioSelectProps & { fallback: ScenarioInfo })
     tabRefs.current[t]?.focus();
   };
   const [side, setSide] = useState<Side>('bottom');
-  const [diff, setDiff] = useState<Difficulty>(() => (storage.get(storageKey('difficulty')) as Difficulty) || 'tribune');
+  const [diff, setDiff] = useState<Difficulty>(() => {
+    const v = storage.get(storageKey('difficulty'));
+    return DIFFS.find((d) => d.id === v)?.id ?? 'colonel';
+  });
   // Random battle: a battle from any box and a side; the list then scrolls to it (only after a random pick, or when the
   // picker opens on a battle from the Triumphs record)
   const listRef = useRef<HTMLDivElement>(null);

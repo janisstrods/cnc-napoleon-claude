@@ -29,7 +29,7 @@ class Recorder implements Opponent {
 /** A battle where the computer moves first: 001 with the human on the side that moves second. */
 function config(): SessionConfig {
   const human: Side = other(scenarioById('000').setup.first);
-  return { ...newSessionConfig('000', human, 'recruit'), seed: 9 };
+  return { ...newSessionConfig('000', human, 'captain'), seed: 9 };
 }
 
 /** Minimum think time of a decision at normal speed (the controller's `minThink`). */

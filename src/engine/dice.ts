@@ -18,7 +18,7 @@ export function baseFireDice(st: UnitStats, blocks: number, distance: number, mo
   if (f.kind === 'musket') {
     if (moved === 0) return blocks + f.standing;
     const half = f.round === 'up' ? Math.ceil(blocks / 2) : Math.floor(blocks / 2);
-    return half + f.moving;  // 0 stays 0 for a row with no moving die; a light row keeps its die even at 0 halves (PT/LT, 1 block → 1)
+    return Math.max(0, half + f.moving);  // 0 stays 0 for a row with no moving die; a light row keeps its die even at 0 halves (PT/LT, 1 block → 1); a −1 row never goes below 0 (S1, S7)
   }
   const row = moved === 0 ? f.standing : moved === 1 ? f.moved : null;
   if (!row) return 0;
@@ -48,7 +48,7 @@ export function baseMeleeDice(s: GameState, u: Unit, target: Unit | Leader, move
   const m = st.melee;
   if (m.kind === 'artillery') return baseFireDice(st, u.blocks, 1, moved);
   const vs = isUnit(target) && statsOf(s, target).arm === 'infantry' ? m.vsInfantry : 0;
-  return u.blocks + m.plus + vs + (moved > 0 ? m.movedPlus : 0);
+  return Math.max(0, u.blocks + m.plus + vs + (moved > 0 ? m.movedPlus : 0));
 }
 
 /** Melee dice of `u` against `target` (cards, caps and terrain applied, floor 0; RR §3.2). */
@@ -56,7 +56,7 @@ export function meleeDice(s: GameState, u: Unit, target: Unit | Leader, ctx: Dic
   const st = statsOf(s, u);
   let n = baseMeleeDice(s, u, target, ctx.moved);
   if (n <= 0 && ctx.declared && st.melee.kind === 'artillery' && st.fire.kind === 'artillery' && st.fire.moved && ctx.moved > 0) n = baseMeleeDice(s, u, target, 0);  // R12
-  if (n <= 0) return 0;
+  if (n <= 0 && st.melee.kind === 'artillery') return 0;  // a blocks-rule unit may start from 0 base dice: cards add to it (S7)
   if (ctx.role === 'attack' || (ctx.role === 'bonus' && s.turn.mods.bonusMelee)) {
     if (cardApplies(s, u)) {
       const lost = s.turn.mods.lostInTown

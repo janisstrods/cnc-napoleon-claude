@@ -8,7 +8,7 @@ import { legResult, rematchConfig, type LegResult, type SessionConfig } from '..
 const finished: SessionConfig = {
   scenarioId: '000',
   humanSide: 'top',
-  difficulty: 'consul',
+  difficulty: 'marshal',
   seed: 12345,
   personality: 'bold',
   devCards: ['probeC'],
@@ -20,7 +20,7 @@ describe('rematchConfig', () => {
   it('same sides: keeps battle, side, difficulty and personality, with a fresh seed', () => {
     const cfg = rematchConfig(finished, false);
     expect(cfg).toMatchObject({
-      scenarioId: '000', humanSide: 'top', difficulty: 'consul', personality: 'bold',
+      scenarioId: '000', humanSide: 'top', difficulty: 'marshal', personality: 'bold',
     });
     expect(cfg.seed).not.toBe(finished.seed);
     expect(cfg.devCards).toBeUndefined();
@@ -28,14 +28,14 @@ describe('rematchConfig', () => {
 
   it('switched sides: the human takes the other army and the AI uses its new general\'s default personality', () => {
     const cfg = rematchConfig(finished, true);
-    expect(cfg).toMatchObject({ scenarioId: '000', humanSide: 'bottom', difficulty: 'consul' });
+    expect(cfg).toMatchObject({ scenarioId: '000', humanSide: 'bottom', difficulty: 'marshal' });
     expect(cfg.personality).toBeUndefined();
     expect(cfg.devCards).toBeUndefined();
     expect(rematchConfig({ ...finished, humanSide: 'bottom' }, true).humanSide).toBe('top');
   });
 
   it('leaves out what the finished session did not have', () => {
-    const plain: SessionConfig = { scenarioId: '000', humanSide: 'bottom', difficulty: 'recruit', seed: 7 };
+    const plain: SessionConfig = { scenarioId: '000', humanSide: 'bottom', difficulty: 'captain', seed: 7 };
     const cfg = rematchConfig(plain, false);
     expect('personality' in cfg).toBe(false);
     expect('firstLeg' in cfg).toBe(false);

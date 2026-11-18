@@ -1,5 +1,5 @@
-// Medals of the player's battle record (src/ui/record.ts): a bronze, silver or gold disc with a laurel for a side won
-// against the Recruit, Tribune or Consul, a plain ring for a side fought but not won, a dotted ring for one not fought.
+// Medals of the player's battle record (src/ui/record.ts): a bronze, silver or gold disc hung from a ribbon, a star over a laurel, for a side won
+// against the Captain, Colonel or Marshal, a plain ring for a side fought but not won, a dotted ring for one not fought.
 import { useId } from 'react';
 import type { Side } from '../../engine';
 import type { ScenarioInfo } from '../../scenarios';
@@ -13,8 +13,11 @@ const METAL: Record<MedalKind, { stops: [string, string, string]; rim: string }>
   bronze: { stops: ['#f7cfa6', '#c47c3f', '#7c4219'], rim: '#5a2e10' },
 };
 
+/** A five-pointed star, centred on the disc (20 24). */
+const STAR = 'M20.00 17.60 L21.59 21.82 L26.09 22.02 L22.57 24.83 L23.76 29.18 L20.00 26.70 L16.24 29.18 L17.43 24.83 L13.91 22.02 L18.41 21.82 Z';
+
 /** The opponent level each medal is won against. */
-export const MEDAL_LEVEL: Record<MedalKind, string> = { gold: 'Consul', silver: 'Tribune', bronze: 'Recruit' };
+export const MEDAL_LEVEL: Record<MedalKind, string> = { gold: 'Marshal', silver: 'Colonel', bronze: 'Captain' };
 
 const STANDING_TEXT: Record<Standing, string> = {
   gold: `gold (beat the ${MEDAL_LEVEL.gold})`,
@@ -45,9 +48,14 @@ export function Medal(p: { standing: Standing; size?: number; faint?: boolean; c
               {METAL[s].stops.map((c, i) => <stop key={i} offset={i / 2} stopColor={c} />)}
             </linearGradient>
           </defs>
-          <circle cx="20" cy="20" r="18" fill={`url(#${uid}m)`} stroke={METAL[s].rim} strokeWidth="1.6" />
-          <circle cx="20" cy="20" r="14.6" fill="none" stroke={METAL[s].stops[0]} strokeWidth="1" opacity=".75" />
-          <path d={iconPath('laurels')} transform="translate(8.6 8.6) scale(0.04453)" fill={METAL[s].rim} opacity=".82" />
+          <g className="medal-ribbon">
+            <path d="M12 1 H28 V12 H12 Z" />
+            <path d="M18.4 1 H21.6 V12 H18.4 Z" fill="#f1e2b6" stroke="none" />
+          </g>
+          <circle cx="20" cy="24" r="15.2" fill={`url(#${uid}m)`} stroke={METAL[s].rim} strokeWidth="1.4" />
+          <circle cx="20" cy="24" r="12.2" fill="none" stroke={METAL[s].stops[0]} strokeWidth="1" opacity=".75" />
+          <path d={iconPath('laurels')} transform="translate(9.76 13.76) scale(0.04)" fill={METAL[s].rim} opacity=".82" />
+          <path className="medal-star" d={STAR} fill={METAL[s].stops[0]} stroke={METAL[s].rim} strokeWidth=".8" strokeLinejoin="round" />
         </>
       )}
     </svg>

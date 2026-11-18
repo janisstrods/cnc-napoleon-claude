@@ -114,7 +114,7 @@ describe('the general decides for the human', () => {
 
   it('autoAnswer alone plays the drill battle to a finish for the human', async () => {
     const { vi } = await import('vitest');
-    const c = new GameController({ ...newSessionConfig('000', 'bottom', 'recruit'), seed: 5 }, new SeededOpponent());
+    const c = new GameController({ ...newSessionConfig('000', 'bottom', 'captain'), seed: 5 }, new SeededOpponent());
     try {
       for (let i = 0; i < 60000 && !c.view.over; i++) {
         if (c.view.fatal) throw new Error(`the game loop failed: ${c.view.error}`);

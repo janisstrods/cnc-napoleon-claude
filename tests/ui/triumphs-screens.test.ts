@@ -23,10 +23,10 @@ vi.mock('../../src/scenarios', async (importOriginal) => {
 const drill = scenarioById('000');
 const [bottomArmy, topArmy] = [drill.setup.bottom.army, drill.setup.top.army];
 
-/** Drill won against the Consul from the bottom side and lost against the Recruit from the top. */
+/** Drill won against the Marshal from the bottom side and lost against the Captain from the top. */
 function seedRecord(): BattleRecord {
   stubStorage();
-  const rec = addResult(addResult({}, '000', 'bottom', 'consul', 'won'), '000', 'top', 'recruit', 'lost');
+  const rec = addResult(addResult({}, '000', 'bottom', 'marshal', 'won'), '000', 'top', 'captain', 'lost');
   saveRecord(rec);
   return rec;
 }
@@ -44,7 +44,7 @@ describe('Triumphs in the battle picker', () => {
     seedRecord();
     const row = element(picker(), 'button', /class="scen-item active"/);
     expect(row).toContain('Drill');
-    expect(row).toContain(`aria-label="${bottomArmy}: gold (beat the Consul) · ${topArmy}: not won yet"`);
+    expect(row).toContain(`aria-label="${bottomArmy}: gold (beat the Marshal) · ${topArmy}: not won yet"`);
     expect(row.indexOf('medal is-gold')).toBeLessThan(row.indexOf('medal is-fought'));
     // (the second row, with no medals, is gone: only one battle is shown)
   });
@@ -108,10 +108,11 @@ describe('Triumphs on the main menu', () => {
     const html = renderToStaticMarkup(createElement(TriumphsDialog, {
       open: true, record: rec, onClose: () => {}, onRecord: () => {}, onPick: () => {},
     }));
-    expect(html.split('class="tri-cell"').length - 1).toBe(SCENARIOS.length);
-    expect(html.split('class="medal-pair"').length - 1).toBe(SCENARIOS.length);
+    // the dialog lists the catalogue: this file's module shows only the drill, which is in no box, so every entry is unavailable
+    expect(html.split('class="tri-cell is-missing"').length - 1).toBe(33);
+    expect(html.split('class="tri-cell"').length - 1).toBe(0);
+    expect(html.split('Not yet available').length - 1).toBe(33);
     for (const box of ['The Peninsula', 'The Spanish Army']) expect(html).toMatch(new RegExp(`<h3>[^<]*${box}`));
-    expect(html).toContain('title="Drill: ');
     expect(html).toContain('>Save record<');
     expect(html).toContain('>Load record<');
     expect(html).toContain('type="file"');
@@ -128,7 +129,7 @@ describe('a new medal at the end of a battle', () => {
     const html = result('silver');
     expect(html).toContain('class="victory-medal"');
     expect(html).toContain('medal is-silver');
-    expect(html.replace(/<[^>]+>/g, '')).toContain(`New medal: silver, for beating the Tribune as ${topArmy}`);
+    expect(html.replace(/<[^>]+>/g, '')).toContain(`New medal: silver, for beating the Colonel as ${topArmy}`);
   });
 
   it('is not mentioned when the battle earned none', () => {

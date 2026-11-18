@@ -6,7 +6,7 @@ import {
 import { scenarioById } from '../../src/scenarios';
 import { MAX_CANDIDATES, orderCandidates, pieceBenefits, quickCardScore } from '../../src/ai/ordering';
 import { NEUTRAL_W } from '../../src/ai/values';
-import { build, type Pos } from '../rules/helpers';
+import { H, build, type Pos } from '../rules/helpers';
 import { failOnAiErrors } from './no-ai-errors';
 
 failOnAiErrors();
@@ -120,7 +120,7 @@ describe('orderCandidates', () => {
   it('candidate count is capped at 8 even with 6 leaders (Leadership) or 10 adjacent units (Cold Steel)', () => {
     const units: Units = [];
     const leaders: NonNullable<Pos['leaders']> = [];
-    for (let c = 1; c <= 7; c++) {
+    for (let c = 1; c <= 10; c++) {
       units.push(bot('BR/LN', [5, c]), top('FR/LN', [4, c]));
       if (c <= 6) leaders.push({ side: 'bottom', at: [5, c] });
     }
@@ -130,7 +130,7 @@ describe('orderCandidates', () => {
     expect(lead.length).toBeGreaterThan(2);
     expect(lead.length).toBeLessThanOrEqual(8);
     const adj = s.units.filter((u) => u.side === 'bottom' && enemyUnitAdjacent(s, u.hex, 'bottom'));
-    expect(adj.length).toBeGreaterThanOrEqual(7);
+    expect(adj.length).toBeGreaterThanOrEqual(10);
     const cold = orderCandidates(s, 'bottom', 'coldSteel', W, 99);
     expect(cold.length).toBeLessThanOrEqual(8);
     expect(cold[0].pieces).toHaveLength(adj.length);
@@ -147,6 +147,30 @@ describe('orderCandidates', () => {
       expect(new Set(keys).size).toBe(keys.length);
       expect(c[0].benefit, kind).toBeGreaterThanOrEqual(0);
     }
+  });
+});
+
+describe('sections', () => {
+  it('a unit on a dotted-line hex is offered to either section\'s card, and to no other', () => {
+    // a hex of the bottom side's row 6 that lies on a section line: two sections
+    let dotted = -1;
+    for (let c = 0; c < 12 && dotted < 0; c++) if (sectionsOf(H(6, c), 'bottom').length === 2) dotted = H(6, c);
+    expect(dotted).toBeGreaterThanOrEqual(0);
+    const secs = sectionsOf(dotted, 'bottom');
+    const cardOf = (sec: string): CardKind => (sec === 'left' ? 'attackL' : sec === 'center' ? 'attackC' : 'attackR');
+    const [r, c] = [Math.floor(dotted / 13), dotted % 13];
+    const s = atCard(build({ units: [bot('BR/LN', [r, c]), top('FR/LN', [3, c])], first: 'bottom' }));
+    const other = (['left', 'center', 'right'] as const).find((x) => !secs.includes(x))!;
+    for (const sec of secs) {
+      const cands = orderCandidates(s, 'bottom', cardOf(sec), W, 99);
+      expect(cands.some((x) => x.pieces.includes('u1')), `${sec} card`).toBe(true);
+      checkAll(s, cardOf(sec), `dotted ${sec}`);
+    }
+    // the section it is not in cannot order it, and the engine agrees
+    const cands = orderCandidates(s, 'bottom', cardOf(other), W, 99);
+    expect(cands.every((x) => !x.pieces.includes('u1'))).toBe(true);
+    expect(eligiblePieces({ ...s, turn: { ...s.turn, command: 5 } }, 'bottom', cardOf(other))).not.toContain('u1');
+    for (const sec of secs) expect(eligiblePieces({ ...s, turn: { ...s.turn, command: 5 } }, 'bottom', cardOf(sec))).toContain('u1');
   });
 });
 
@@ -172,7 +196,7 @@ describe('trimming and detaching', () => {
     expect(pieceBenefits(s, 'bottom', 'attackC', W).get(l)!).toBeGreaterThan(0.05);
     const cands = orderCandidates(s, 'bottom', 'attackC', W, 99);
     expect(cands.some((c) => c.pieces.includes(l))).toBe(true);
-    for (const c of cands) expect(validateOrders(s0 && { ...s, turn: { ...s.turn, command: 5 } }, 'bottom', 'attackC', c.pieces)).toBeNull();
+    for (const c of cands) expect(validateOrders({ ...s, turn: { ...s.turn, command: 5 } }, 'bottom', 'attackC', c.pieces)).toBeNull();
   });
 
   it('Cold Steel scores above 0 with units next to the enemy, and Rally without a benefit pass', () => {
