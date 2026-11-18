@@ -496,7 +496,7 @@ the whole player. Scratch script, not committed (`p7c21-diag116.ts`).
   two games in three (turns 104 on average, so these are long games decided by dice and geometry). The Allies have 22 units to
   the French 20 and a hand of 5 against 4, both nominally in their favour, so the cause is not a headcount. Untested
   hypotheses: the Allied line is spread out and has to cross the Zadorra at two bridges, so the French reach it first with local
-  superiority; French hills (rows 4-8 are hills) give them defensive ground; both need 9 banners, which is 9 of 22 Allied units
+  superiority; several hill hexes in the French half (rows 4-8) give them defensive ground; both need 9 banners, which is 9 of 22 Allied units
   against 9 of 20 French units.
 - **Why 12 of 12 in Task 11:** a true rate near 65-70 % gives 12 straight wins about once in 100 runs (0.7^12 is 1.4 %); that
   run was probably the unlucky tail plus the lower scale (0.5), not a different cause. Today's 3 of 4 at scale 0.9 is
