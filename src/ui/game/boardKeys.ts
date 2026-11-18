@@ -5,7 +5,7 @@ import {
 } from '../../engine';
 import type { Highlight } from './Board';
 import { terrainTip } from './terrainTips';
-import { boardMarks, wantsPromptFocus, type UiSel } from './uiModel';
+import { boardMarks, handChoices, wantsPromptFocus, type UiSel } from './uiModel';
 
 export type CursorKey = 'ArrowLeft' | 'ArrowRight' | 'ArrowUp' | 'ArrowDown' | 'Home' | 'End';
 
@@ -172,7 +172,10 @@ export function freshSelection(s: GameState, d: Decision | null, human: Side): U
   let selPiece: string | null = null;
   if (d?.kind === 'move' && d.side === human) { const movers = movablePieces(s); if (movers.length === 1) selPiece = movers[0]; }
   if (d?.kind === 'battle' && d.side === human) { const ready = battleReady(s); if (ready.length === 1) selPiece = ready[0]; }
-  return { selCard: null, hoverCard: null, orderSel: [], selPiece, hoverHex: null, hoverAction: null, assign: null, gunSel: [] };
+  // a hand chooser with one legal card (the bound opening card) has it selected, so the primary button is there to take
+  let selCard: number | null = null;
+  if ((d?.kind === 'playCard' || d?.kind === 'moveFirst') && d.side === human) { const c = handChoices(s, d, human); if (c.length === 1) selCard = c[0]; }
+  return { selCard, hoverCard: null, orderSel: [], selPiece, hoverHex: null, hoverAction: null, assign: null, gunSel: [] };
 }
 
 /**

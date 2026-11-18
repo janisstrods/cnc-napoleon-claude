@@ -731,6 +731,9 @@ export class GameController {
       case 'reshuffle':
       case 'log':
       case 'victory':
+      // Expansion #1: the counter panel and the reveal of the opening cards follow these events
+      case 'guerrilla':
+      case 'moveFirst':
         log();
         this.set({ display: after });
         break;

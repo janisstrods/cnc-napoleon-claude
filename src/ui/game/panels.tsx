@@ -1,8 +1,9 @@
 // Panels of the game screen around the board: the hover tooltip's frame and the battle log.
 import { memo, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
-import type { Side } from '../../engine';
-import { Panel } from '../kit';
+import { CARD_DEFS, cardKind, guerrillaHeld, guerrillaPool, guerrillaSide, handShrinkRule, type Decision, type GameState, type Side } from '../../engine';
+import { CardView, Icon, Panel } from '../kit';
 import type { LogLine } from './controller';
+import { handChoices, type UiSel } from './uiModel';
 
 /**
  * Floating unit tooltip that follows the mouse without re-rendering the game screen. It is kept inside the window by its
@@ -57,3 +58,73 @@ export const LogPanel = memo(function LogPanel({ log, human }: { log: LogLine[];
     </Panel>
   );
 });
+
+/** Guerrilla counters are drawn at least this large: the glyph loses its detail below it. */
+const COUNTER_PX = 26;
+
+/** The guerrilla side's counters: six places, the held ones solid and those in the pool faint, and the counts in words. */
+export function GuerrillaCounters({ s, side }: { s: GameState; side: Side }) {
+  if (guerrillaSide(s) !== side) return null;
+  const held = guerrillaHeld(s);
+  const pool = guerrillaPool(s);
+  const text = `${held} held · ${pool} in the pool`;
+  return (
+    <div className="guerrilla-counters" role="group" aria-label={`Guerrilla counters: ${text}`} title="Guerrilla counters: spent against the enemy's card, taken with a Scout">
+      {Array.from({ length: held + pool }).map((_, i) => (
+        <span key={i} className={`gc ${i < held ? 'is-held' : 'is-pool'}`}>
+          <Icon name="guerrilla" size={COUNTER_PX} />
+        </span>
+      ))}
+      <span className="gc-text">{text}</span>
+    </div>
+  );
+}
+
+/** "Hand size 5 (falls with each banner lost, to 3)" for a side whose hand shrinks; nothing for any other. */
+export function HandSizeLine({ s, side }: { s: GameState; side: Side }) {
+  const r = handShrinkRule(s, side);
+  if (!r) return null;
+  return <div className="army-cmd army-hand hand-size-line">{`Hand size ${s.special.handSize[side]} (falls with each banner lost, to ${r.floor})`}</div>;
+}
+
+/**
+ * The card a side committed to at the Move First reveal, face up beside its hand while the side has not finished a turn (it
+ * must play it first). Nothing before the reveal, whoever's it is, and nothing for the side that moves first.
+ */
+export function CommittedCard({ s, side }: { s: GameState; side: Side }) {
+  const mf = s.special.moveFirst;
+  const card = mf?.done ? mf.committed[side] : null;
+  if (card === null || card === undefined || side === s.first || s.special.turnsDone[side] > 0) return null;
+  return (
+    <div className="committed-card" data-side={side} title={`Opening card: ${CARD_DEFS[cardKind(card)].title}`}>
+      <span className="committed-label">Opening card</span>
+      <CardView kind={cardKind(card)} size="sm" />
+    </div>
+  );
+}
+
+/** The human's hand: a card is clickable only when `handChoices` allows it. */
+export function HandStrip({ s, d, human, ui, setUi }: { s: GameState; d: Decision | null; human: Side; ui: UiSel; setUi: React.Dispatch<React.SetStateAction<UiSel>> }) {
+  const me = s.players[human];
+  const choices = handChoices(s, d, human);
+  const committed = s.special.moveFirst?.done && s.special.turnsDone[human] === 0 ? s.special.moveFirst.committed[human] : null;
+  return (
+    <div className="hand-cards" style={{ '--n': me.hand.length } as React.CSSProperties}>
+      {me.hand.map((c) => {
+        const playable = choices.includes(c);
+        return (
+          <div key={c} className={`hand-slot ${ui.selCard === c ? 'is-selected' : ''} ${playable ? 'is-playable' : ''} ${c === committed ? 'is-committed' : ''}`}>
+            <CardView
+              kind={cardKind(c)}
+              size="sm"
+              selected={ui.selCard === c}
+              disabled={!playable}
+              onClick={() => playable && setUi({ ...ui, selCard: ui.selCard === c ? null : c })}
+              onHover={(hv) => setUi((u) => ({ ...u, hoverCard: hv ? c : u.hoverCard === c ? null : u.hoverCard }))}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}

@@ -468,3 +468,18 @@ body {
 .gun-toggle.kit-btn { padding: 4px 10px; font-size: 12.5px; white-space: nowrap; }
 .prompt-pick select:focus-visible, .speed select:focus-visible { outline: 2px solid var(--kit-royal); outline-offset: 2px; }
 .hand-slot:focus-within, .kit-card:focus-visible { outline: 2px solid var(--kit-royal); outline-offset: 2px; }
+
+/* ---------- Expansion #1: Guerrilla counters, hand size, the committed opening card (Plan 7C Task 15) */
+.guerrilla-counters { display: flex; align-items: center; flex-wrap: wrap; gap: 3px; margin-top: 6px; }
+.guerrilla-counters .gc { line-height: 0; color: var(--kit-ink); }
+.guerrilla-counters .gc.is-pool { opacity: .22; }
+.guerrilla-counters .gc-text { flex: 1 0 100%; font-size: 12.5px; color: var(--kit-ink-soft); }
+.prompt-note { margin-top: 3px; font-size: 12.5px; font-style: italic; color: var(--kit-ink-soft); }
+.committed-card { display: flex; flex-direction: column; align-items: center; gap: 2px; flex: none; }
+.committed-label { font-family: var(--kit-font-title); font-size: 11px; letter-spacing: .06em; color: var(--kit-ink-soft); white-space: nowrap; }
+.bottom-strip > .committed-card { align-self: flex-end; margin-bottom: 4px; }
+.hand-slot.is-committed .kit-card { box-shadow: 0 0 0 2px var(--kit-royal); }
+.army-row .committed-card .kit-card { font-size: 2.93px; pointer-events: none; }
+.army-row .committed-card { margin-right: 6px; }
+.army-row .committed-card { flex: none; width: 48px; }
+.army-row .committed-label { order: 2; white-space: normal; text-align: center; font-size: 10px; line-height: 1.05; }

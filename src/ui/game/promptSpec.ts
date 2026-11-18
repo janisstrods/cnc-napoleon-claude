@@ -3,13 +3,17 @@
 // the last button is always "Let the general decide". The bespoke choosers of the game screen (card, orders, move, battle,
 // retreat, leader retreat, flags) add their board interaction on top of the title and that button.
 import {
-  CARD_DEFS, UNIT_STATS, cardKind, hexLabel, pieceHex, statsOf, stopsOnEntry, unitAt, unitById,
+  CARD_DEFS, UNIT_STATS, cardKind, hexLabel, other, pieceHex, statsOf, stopsOnEntry, unitAt, unitById,
   type Answer, type Decision, type DefendChoice, type GameState, type HexId,
 } from '../../engine';
 import { suggestAssign } from './assign';
 
 /** A button of a prompt; `hint` (optional) says what the choice does: the button's `title` and a line under the text. */
-export interface PromptAction { key: string; label: string; answer: Answer | 'auto'; hint?: string }
+export interface PromptAction {
+  key: string; label: string; answer: Answer | 'auto'; hint?: string;
+  /** A choice that gives something up: the keyboard focus never lands on it, so an Enter cannot take it by habit. */
+  skip?: boolean;
+}
 export interface PromptSpec { title: string; text: string; actions: PromptAction[]; hexes: HexId[] }
 
 export const DECISION_TITLES: Readonly<Record<Decision['kind'], string>> = {
@@ -42,6 +46,7 @@ export const DECISION_TITLES: Readonly<Record<Decision['kind'], string>> = {
 export function decisionTitle(d: Decision, s?: GameState): string {
   if (d.kind === 'advance') return d.how === 'breakthrough' && !(s && afterBonus(s, d.unit)) ? 'Break through?' : 'Take ground?';
   if (d.kind === 'retreat' && d.reason === 'retireReform') return 'Retire and Reform';
+  if (d.kind === 'guerrilla' && d.mode === 'scout') return `${DECISION_TITLES.guerrilla}: Scout`;
   if (d.kind === 'defend' && d.bonus) return `${DECISION_TITLES.defend} (bonus melee)`;
   return DECISION_TITLES[d.kind];
 }
@@ -103,6 +108,11 @@ function unitHexLabel(s: GameState, id: string): string {
 
 const hexesOf = (s: GameState, ids: readonly string[]): HexId[] =>
   ids.map((id) => pieceHex(s, id)).filter((h): h is HexId => h !== undefined && h >= 0);
+
+/** The army word as a plural noun in a sentence: "the French win", "the Allies win". */
+function armyPlural(army: string): string {
+  return army === 'Allied' ? 'Allies' : army;
+}
 
 /** The prompt of decision `d` in state `s`. */
 export function promptSpec(s: GameState, d: Decision): PromptSpec {
@@ -192,6 +202,26 @@ export function promptSpec(s: GameState, d: Decision): PromptSpec {
       text = `Place ${unitLabel(s, d.unit)} on a hex of its own baseline (the row in front when the baseline is full).`;
       hexes = [...d.options];
       d.options.forEach((h) => actions.push({ key: `h${h}`, label: hexLabel(h), answer: { kind: 'hex', hex: h } }));
+      break;
+    case 'guerrilla':
+      if (d.mode === 'spend') {
+        const card = d.card ? CARD_DEFS[d.card].title : 'a card';
+        text = `${s.players[other(d.side)].army} played ${card}. Spend a counter (${d.held} held) and roll one die to cancel it. It fails only on a sabre: 1 chance in 6.`;
+        actions.push(
+          { key: 'yes', label: 'Spend a counter', answer: { kind: 'yesno', yes: true }, hint: 'The counter goes to the pool. Any face but a sabre cancels the card.' },
+          { key: 'no', label: 'Keep it', answer: { kind: 'yesno', yes: false }, hint: 'The card stands and you keep the counter.', skip: true },
+        );
+      } else {
+        text = `Your Scout draws two cards and keeps one. Take a counter from the pool instead of drawing the second (${d.pool} left in the pool, ${d.held} held)?`;
+        actions.push(
+          { key: 'yes', label: 'Take a counter (draw 1 card)', answer: { kind: 'yesno', yes: true }, hint: 'A counter for later; one card fewer now.' },
+          { key: 'no', label: 'Draw 2, keep 1', answer: { kind: 'yesno', yes: false }, hint: 'The Scout as usual.', skip: true },
+        );
+      }
+      break;
+    case 'moveFirst':
+      text = `The card ordering fewer units moves first; the ${armyPlural(s.players[s.first].army)} win a tie.`;
+      for (const c of d.options) actions.push({ key: `c${c}`, label: CARD_DEFS[cardKind(c)].title, answer: { kind: 'playCard', card: c } });
       break;
   }
   actions.push(AUTO_ACTION);
