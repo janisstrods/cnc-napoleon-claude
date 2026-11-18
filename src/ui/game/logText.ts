@@ -54,7 +54,7 @@ export function rollTitle(p: RollPurpose, by: string | null, against: string | n
 export function rollSummary(p: RollPurpose, faces: DieFace[], scoring: boolean[]): string {
   if (p === 'elan' || p === 'rally') {
     const n = (f: DieFace) => faces.filter((x) => x === f).length;
-    const parts = (['infantry', 'cavalry', 'artillery', 'flag', 'sabre'] as DieFace[]).filter(n).map((f) => `${n(f)} ${f}`);
+    const parts = (['infantry', 'cavalry', 'artillery', 'flag', 'sabre'] as DieFace[]).filter(n).map((f) => (f === 'flag' || f === 'sabre' ? plural(n(f), f) : `${n(f)} ${f}`));
     return parts.join(', ') || 'No dice';
   }
   if (p === 'escape') return faces.includes('sabre') ? 'The leader is hit!' : 'The leader is safe';
@@ -113,7 +113,12 @@ export function eventLog(e: GameEvent, before: GameState, after: GameState, huma
     }
     case 'roll': {
       const by = e.by ?? e.against;
-      return line(`→ ${rollSummary(e.purpose, e.faces, e.scoring)}.`, 'combat', by ? sideOf(by) : undefined);
+      const summary = rollSummary(e.purpose, e.faces, e.scoring);
+      // a roll that no combat line announced says what it is for; the short arrow follows an attack's own line
+      const alone = e.purpose === 'elan' || e.purpose === 'rally' || e.purpose === 'leaderCheck' || e.purpose === 'escape';
+      const tail = (e.purpose === 'escape' ? summary.charAt(0).toLowerCase() + summary.slice(1) : summary).replace(/[.!]$/, '');
+      const text = alone ? `${rollTitle(e.purpose, e.by, e.against, before)}: ${tail}.` : `→ ${summary}.`;
+      return line(text, 'combat', by ? sideOf(by) : undefined);
     }
     case 'damage':
       return line(`${who(e.id)} loses ${plural(e.amount, 'block')} (${e.reason}).`, 'result', sideOf(e.id));
