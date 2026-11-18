@@ -1,7 +1,7 @@
 // Pure helpers that turn (state, pending decision, local UI selection) into board highlights and badges. The prompts'
 // content is in promptSpec.ts, the unit descriptions in unitText.ts, the objective tooltips in objectiveText.ts.
 import {
-  ALL_HEXES, CARD_DEFS, OFF_BOARD, hexLabel, meleeDice, UNIT_STATS, statsOf, leaderAt, battleReady, battleTargets, effectiveCard, eligiblePieces, inSection,
+  ALL_HEXES, CARD_DEFS, OFF_BOARD, combinedArmsCandidates, gunDice as engineGunDice, hexLabel, meleeDice, UNIT_STATS, statsOf, leaderAt, battleReady, battleTargets, effectiveCard, eligiblePieces, inSection,
   leaderUnit, movablePieces, pieceById, pieceHex, pieceMoves, retireReformOptions, unitAt, unitById,
   type Decision, type GameState, type HexId, type SectionName, type Side, type Unit,
 } from '../../engine';
@@ -19,11 +19,13 @@ export interface UiSel {
   hoverAction: string | null;
   /** Élan / Rally: the armed die and the piece (or null) given to each die; null until the player touches it. */
   assign: { die: number | null; ids: (string | null)[] } | null;
+  /** Combined Arms: the guns clicked to join the melee (only ids among the decision's options count). */
+  gunSel: string[];
 }
 
 /** Every field of a selection but the hovered hex (the compiler checks that none is missing). */
 const SEL_FIELDS: Record<Exclude<keyof UiSel, 'hoverHex'>, true> = {
-  selCard: true, hoverCard: true, orderSel: true, selPiece: true, hoverAction: true, assign: true,
+  selCard: true, hoverCard: true, orderSel: true, selPiece: true, hoverAction: true, assign: true, gunSel: true,
 };
 const SEL_KEYS = Object.keys(SEL_FIELDS) as (keyof typeof SEL_FIELDS)[];
 
@@ -33,6 +35,27 @@ const SEL_KEYS = Object.keys(SEL_FIELDS) as (keyof typeof SEL_FIELDS)[];
  */
 export function selectionDeps(ui: UiSel): unknown[] {
   return SEL_KEYS.map((k) => ui[k]);
+}
+
+/** `sel` with gun `id` added or removed; an id that is no option of the decision changes nothing. */
+export function toggleGun(sel: readonly string[], id: string, options: readonly string[]): string[] {
+  if (!options.includes(id)) return [...sel];
+  return sel.includes(id) ? sel.filter((x) => x !== id) : [...sel, id];
+}
+
+/** The chosen guns that are options of the decision, in the decision's order: what the attack button answers. */
+export function chosenGuns(sel: readonly string[], options: readonly string[]): string[] {
+  return options.filter((id) => sel.includes(id));
+}
+
+/**
+ * The dice gun `gunId` rolls in a Combined Arms attack on `targetHex`: melee dice when adjacent, else fire dice (the
+ * engine's own count, R41). `role` is 'bonus' during a bonus melee (the attacker's `bonusMeleeDone` is set by then).
+ */
+export function gunDice(s: GameState, gunId: string, targetHex: HexId, role: 'attack' | 'bonus' = 'attack'): number {
+  const g = unitById(s, gunId);
+  const t = unitAt(s, targetHex);
+  return g && t && g.hex >= 0 ? engineGunDice(s, g, t, role) : 0;
 }
 
 /** The board's marks for the selection, whatever hex is hovered; `pathAt` gives the path to preview with a hex hovered. */
@@ -221,7 +244,10 @@ export function boardMarks(s: GameState, d: Decision | null, ui: Omit<UiSel, 'ho
         markPiece(ui.selPiece, 'selected');
         for (const t of battleTargets(s, ui.selPiece)) {
           highlights.set(t.hex, t.kind === 'melee' ? 'targetClose' : 'targetRanged');
-          badges.set(t.hex, dice(t.dice));
+          const foe = unitAt(s, t.hex);
+          const att = unitById(s, ui.selPiece);
+          const guns = t.kind === 'melee' && att && foe && combinedArmsCandidates(s, att, foe).length > 0;
+          badges.set(t.hex, guns ? `${dice(t.dice)} + guns` : dice(t.dice));
         }
       }
       break;
@@ -304,13 +330,27 @@ export function boardMarks(s: GameState, d: Decision | null, ui: Omit<UiSel, 'ho
       }
       break;
     }
+    case 'combinedArms': {
+      // the melee unit and its target; each candidate gun carries its dice, the chosen ones are marked selected
+      const from = pieceHex(s, d.unit) ?? -1;
+      if (from >= 0) highlights.set(from, 'focus');
+      highlights.set(d.target, 'targetClose');
+      const chosen = chosenGuns(ui.gunSel, d.options);
+      const role = s.turn.ordered[d.unit]?.bonusMeleeDone ? 'bonus' : 'attack';
+      for (const id of d.options) {
+        const h = pieceHex(s, id) ?? -1;
+        if (h < 0) continue;
+        highlights.set(h, chosen.includes(id) ? 'selected' : 'option');
+        badges.set(h, dice(gunDice(s, id, d.target, role)));
+      }
+      break;
+    }
     default: {
       // every other decision: the unit it is about, and the hexes its prompt names (what a click on the board answers)
       if ('unit' in d) {
         const h = pieceHex(s, d.unit) ?? -1;
         if (h >= 0) highlights.set(h, 'focus');
       }
-      if (d.kind === 'combinedArms') highlights.set(d.target, 'targetClose');
       for (const h of promptSpec(s, d).hexes) highlights.set(h, 'option');
       break;
     }

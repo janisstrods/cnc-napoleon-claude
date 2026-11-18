@@ -11,7 +11,7 @@ import type { GameController } from './controller';
 import { HoverTip, LogPanel } from './panels';
 import { gamePrompt } from './prompts';
 import { bannerCounts, objectiveSummary, objectiveTipLines } from './objectiveText';
-import { boardMarks, leaderRetreatChoices, retreatChoices, selectionDeps, type UiSel } from './uiModel';
+import { boardMarks, leaderRetreatChoices, retreatChoices, selectionDeps, toggleGun, type UiSel } from './uiModel';
 import { assignClick, assignClickRefusal, assignOptions, currentAssign, nextDie, type ElanOrRally } from './assign';
 import { leaderLines, unitSummary } from './unitText';
 import { SquareTrack } from './SquareTrack';
@@ -24,7 +24,7 @@ import { isMuted, setMuted } from '../sound';
 import { opponentPersonality } from './makeOpponent';
 import './game.css';
 
-const EMPTY_SEL: UiSel = { selCard: null, hoverCard: null, orderSel: [], selPiece: null, hoverHex: null, hoverAction: null, assign: null };
+const EMPTY_SEL: UiSel = { selCard: null, hoverCard: null, orderSel: [], selPiece: null, hoverHex: null, hoverAction: null, assign: null, gunSel: [] };
 
 const DIFF_LABEL = { recruit: 'Recruit', tribune: 'Tribune', consul: 'Consul' } as const;
 
@@ -191,8 +191,8 @@ export function GameScreen({ controller, onExit, onRematch }: {
         return;
       }
       case 'combinedArms':
-        // a click on one of the listed guns chooses it alone; "No artillery" is a button
-        if (u && d.options.includes(u.id)) answer({ kind: 'select', ids: [u.id] });
+        // a click on a listed gun adds it to the melee or takes it out; the prompt's button attacks
+        if (u && d.options.includes(u.id)) setUi({ ...ui, gunSel: toggleGun(ui.gunSel, u.id, d.options) });
         return;
       default:
         return;

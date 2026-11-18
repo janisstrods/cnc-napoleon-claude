@@ -14,7 +14,7 @@ import { hexCenterId } from '../../src/ui/geometry';
 import { aiPacing, type GameController, type ViewState } from '../../src/ui/game/controller';
 import { build } from '../rules/helpers';
 
-const SEL: UiSel = { selCard: null, hoverCard: null, orderSel: [], selPiece: null, hoverHex: null, hoverAction: null, assign: null };
+const SEL: UiSel = { selCard: null, hoverCard: null, orderSel: [], selPiece: null, hoverHex: null, hoverAction: null, assign: null, gunSel: [] };
 const CARD = 57; // a card id; its kind is not a section card of a slot number
 
 describe('the square tracks', () => {
