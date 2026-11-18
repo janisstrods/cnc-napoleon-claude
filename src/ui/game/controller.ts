@@ -590,6 +590,8 @@ export class GameController {
     const human = this.config.humanSide;
     // the log line of every event is worded in logText; each case below logs it where its animation wants it
     const line = eventLog(e, before, after, human, this.gone ?? undefined);
+    // the name of an exiting unit serves the banner line that follows its removal, and no other
+    if (e.t === 'banner' || e.t === 'held') this.gone = null;
     const log = () => {
       if (line) this.addLog(line);
     };

@@ -11,7 +11,9 @@ body {
   inset: 0;
   display: grid;
   grid-template-columns: 1fr 318px;
-  grid-template-rows: 46px minmax(0, 1fr) minmax(84px, auto);
+  /* the bottom strip has one fixed height (the whole hand card and a steady prompt bar), so the board never moves */
+  --strip-h: 164px;
+  grid-template-rows: 46px minmax(0, 1fr) var(--strip-h);
   /* the page is map paper */
   background: var(--kit-paper-bg);
   background-color: var(--kit-parchment);
@@ -93,7 +95,15 @@ body {
 .army-panel { flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; }
 /* the army panel gives way first: its body scrolls as a last resort, so the log keeps its height */
 .army-panel > .kit-panel__inner { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 8px 12px; }
-.army-panel .kit-panel__body { flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
+/* scroll shadows: a soft edge shows on the side that has more to scroll to, since macOS hides the scrollbar */
+.army-panel .kit-panel__body {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin;
+  background:
+    linear-gradient(var(--kit-leather) 30%, rgba(243, 236, 216, 0)) top / 100% 18px no-repeat local,
+    linear-gradient(rgba(243, 236, 216, 0), var(--kit-leather) 70%) bottom / 100% 18px no-repeat local,
+    linear-gradient(rgba(59, 49, 39, .28), rgba(59, 49, 39, 0)) top / 100% 7px no-repeat scroll,
+    linear-gradient(rgba(59, 49, 39, 0), rgba(59, 49, 39, .28)) bottom / 100% 7px no-repeat scroll;
+}
 .army-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; margin-bottom: 4px; }
 .army-row > div:first-child { flex: 1; min-width: 0; }
 .army-panel .kit-banners { display: flex; flex-direction: column; width: 100%; box-sizing: border-box; padding: 5px 10px 6px; gap: 3px; }
@@ -140,27 +150,30 @@ body {
   display: flex;
   align-items: flex-end;
   gap: 14px;
+  height: var(--strip-h);
+  box-sizing: border-box;
   padding: 0 12px 6px;
   position: relative;
   z-index: 4;
   min-width: 0;
 }
-.hand-cards { display: flex; gap: 8px; align-items: flex-end; flex: none; height: 78px; align-self: flex-end; }
+/* the whole card shows (a small card is 149 px tall); a selected card steps up, a hovered or focused one comes to the front */
+.hand-cards { display: flex; gap: 8px; align-items: flex-end; flex: none; align-self: flex-end; }
 .hand-slot { position: relative; }
 .hand-slot .kit-card--sm .kit-card__title { font-size: 1.36em; line-height: 1.05; }
 .hand-slot .kit-card.is-disabled { filter: saturate(.5) brightness(.95); opacity: 1; }
 @media (max-width: 1600px) {
   .hand-cards { gap: 0; }
   .hand-slot + .hand-slot { margin-left: -16px; }
-  .hand-slot:hover, .hand-slot.is-selected { z-index: 6; }
+  .hand-slot:hover, .hand-slot:focus-within, .hand-slot.is-selected { z-index: 6; }
 }
-.hand-slot { transform: translateY(74px); transition: transform .18s ease; align-self: flex-end; margin-bottom: 0; }
-.hand-slot.is-playable { transform: translateY(66px); }
-.hand-slot:hover, .hand-slot.is-selected { transform: translateY(0); z-index: 5; }
+.hand-slot { transition: transform .18s ease; align-self: flex-end; margin-bottom: 0; }
+.hand-slot:hover, .hand-slot:focus-within { z-index: 5; }
+.hand-slot.is-selected { transform: translateY(-8px); z-index: 5; }
 .card-preview {
   position: absolute;
   left: 12px;
-  bottom: 170px;
+  bottom: calc(var(--strip-h) + 6px);
   z-index: 6;
   pointer-events: none;
   animation: fadein .15s ease-out;
@@ -216,7 +229,10 @@ body {
 .prompt-bar {
   flex: 1;
   min-width: 340px;
-  min-height: 66px;
+  /* a steady height: a long prompt wraps inside the bar and scrolls there, it never grows the strip */
+  height: 96px;
+  overflow-y: auto;
+  scrollbar-width: thin;
   box-sizing: border-box;
   align-self: flex-end;
   display: flex;
@@ -497,4 +513,14 @@ body {
   .game-actions { gap: 5px; }
   .game-actions .kit-btn { padding: 4px 8px; }
   .speed { gap: 4px; }
+}
+
+/* ---------- short screens (1024×768, 1280×800): the human's own rows stay in view without scrolling the army panel */
+@media (max-height: 820px) {
+  .army-panel > .kit-panel__inner { padding: 6px 12px; }
+  .army-panel .kit-banners { padding: 3px 8px 4px; gap: 1px; }
+  .army-panel .kit-banners__slot, .army-panel .kit-banners__slot svg { height: 26px; }
+  .army-panel .divider { margin: 3px 0; }
+  .log-panel { min-height: 118px; }
+  .dice-slot { max-height: 132px; overflow: hidden; }
 }
