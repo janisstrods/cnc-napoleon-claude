@@ -11,7 +11,9 @@ body {
   inset: 0;
   display: grid;
   grid-template-columns: 1fr 318px;
-  grid-template-rows: 46px minmax(0, 1fr) minmax(84px, auto);
+  /* the bottom strip has one fixed height (a peeking hand and a steady prompt bar), so the board never moves */
+  --strip-h: 110px;
+  grid-template-rows: 46px minmax(0, 1fr) var(--strip-h);
   /* the page is map paper */
   background: var(--kit-paper-bg);
   background-color: var(--kit-parchment);
@@ -93,7 +95,15 @@ body {
 .army-panel { flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; }
 /* the army panel gives way first: its body scrolls as a last resort, so the log keeps its height */
 .army-panel > .kit-panel__inner { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 8px 12px; }
-.army-panel .kit-panel__body { flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
+/* scroll shadows: a soft edge shows on the side that has more to scroll to, since macOS hides the scrollbar */
+.army-panel .kit-panel__body {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin;
+  background:
+    linear-gradient(var(--kit-leather) 30%, rgba(243, 236, 216, 0)) top / 100% 18px no-repeat local,
+    linear-gradient(rgba(243, 236, 216, 0), var(--kit-leather) 70%) bottom / 100% 18px no-repeat local,
+    linear-gradient(rgba(59, 49, 39, .28), rgba(59, 49, 39, 0)) top / 100% 7px no-repeat scroll,
+    linear-gradient(rgba(59, 49, 39, 0), rgba(59, 49, 39, .28)) bottom / 100% 7px no-repeat scroll;
+}
 .army-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; margin-bottom: 4px; }
 .army-row > div:first-child { flex: 1; min-width: 0; }
 .army-panel .kit-banners { display: flex; flex-direction: column; width: 100%; box-sizing: border-box; padding: 5px 10px 6px; gap: 3px; }
@@ -140,6 +150,8 @@ body {
   display: flex;
   align-items: flex-end;
   gap: 14px;
+  height: var(--strip-h);
+  box-sizing: border-box;
   padding: 0 12px 6px;
   position: relative;
   z-index: 4;
@@ -152,15 +164,17 @@ body {
 @media (max-width: 1600px) {
   .hand-cards { gap: 0; }
   .hand-slot + .hand-slot { margin-left: -16px; }
-  .hand-slot:hover, .hand-slot.is-selected { z-index: 6; }
+  .hand-slot:hover, .hand-slot:focus-within, .hand-slot.is-selected { z-index: 6; }
+  /* the fan folds to what the strip leaves beside the prompt bar (side column, strip padding and gap, the bar's 340 px), so a long hand never pushes the bar into the log */
+  .hand-slot + .hand-slot { margin-left: min(-16px, calc((100vw - 696px - var(--n, 5) * 104px) / (var(--n, 5) - 1))); }
 }
 .hand-slot { transform: translateY(74px); transition: transform .18s ease; align-self: flex-end; margin-bottom: 0; }
 .hand-slot.is-playable { transform: translateY(66px); }
-.hand-slot:hover, .hand-slot.is-selected { transform: translateY(0); z-index: 5; }
+.hand-slot:hover, .hand-slot:focus-within, .hand-slot.is-selected { transform: translateY(0); z-index: 5; }
 .card-preview {
   position: absolute;
   left: 12px;
-  bottom: 170px;
+  bottom: calc(var(--strip-h) + 6px);
   z-index: 6;
   pointer-events: none;
   animation: fadein .15s ease-out;
@@ -214,29 +228,50 @@ body {
 
 /* ---------- prompt */
 .prompt-bar {
-  flex: 1;
+  flex: 1 1 0;
   min-width: 340px;
-  min-height: 66px;
+  /* a steady height at least (the strip's, less its padding); a bar whose buttons wrap grows upward over the board, never the board or the strip */
+  min-height: calc(var(--strip-h) - 6px);
   box-sizing: border-box;
   align-self: flex-end;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 12px;
-  padding: 6px 12px;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px;
   background: var(--kit-leather);
   border: 1.5px solid var(--kit-rule);
   border-radius: 2px;
   box-shadow: inset 0 0 0 3px var(--kit-leather), inset 0 0 0 4px rgba(59, 49, 39, .42), var(--kit-shadow-soft);
   z-index: 4;
 }
+.prompt-body {
+  /* the text keeps two lines at least; it scrolls beyond what the steady bar leaves it, the buttons below never do */
+  flex: 0 1 auto;
+  min-height: 52px;
+  max-height: max(52px, calc(var(--strip-h) - 68px));
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  align-items: center;
+  gap: 6px 12px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  /* scroll shadows: a soft edge on the side with more to scroll to (macOS hides the scrollbar) */
+  background:
+    linear-gradient(var(--kit-leather) 30%, rgba(243, 236, 216, 0)) top / 100% 14px no-repeat local,
+    linear-gradient(rgba(243, 236, 216, 0), var(--kit-leather) 70%) bottom / 100% 14px no-repeat local,
+    linear-gradient(rgba(59, 49, 39, .28), rgba(59, 49, 39, 0)) top / 100% 6px no-repeat scroll,
+    linear-gradient(rgba(59, 49, 39, 0), rgba(59, 49, 39, .28)) bottom / 100% 6px no-repeat scroll;
+}
+/* the Scout's two whole cards: the bar rises over the board's bottom edge instead of hiding them or moving the board */
+.prompt-bar--rise .prompt-body { max-height: none; overflow-y: visible; background: none; }
 .prompt-bar.tone-danger { border-color: var(--kit-crimson); box-shadow: inset 0 0 0 3px var(--kit-leather), inset 0 0 0 4px rgba(163, 38, 42, .6), 0 0 0 2px rgba(163, 38, 42, .18), var(--kit-shadow-soft); }
 .prompt-bar.tone-warn .prompt-sub { color: var(--kit-crimson); }
-.prompt-main { flex: 1 1 220px; min-width: 180px; }
+.prompt-main { flex: 1 1 200px; min-width: 150px; }
 .prompt-title { font-family: var(--kit-font-title); font-size: 15px; color: var(--kit-ink); letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .prompt-sub { font-size: 13.5px; color: var(--kit-ink); line-height: 1.2; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
 .prompt-err { font-size: 13px; color: var(--kit-crimson); margin-top: 2px; }
-.prompt-buttons { display: flex; gap: 6px; flex: 0 1 auto; flex-wrap: wrap; justify-content: flex-end; }
+.prompt-buttons { display: flex; gap: 6px; flex: none; flex-wrap: wrap; justify-content: flex-end; }
 .prompt-buttons .kit-btn { padding: 6px 12px; font-size: 13px; white-space: nowrap; }
 
 /* ---------- board overlays */
@@ -497,4 +532,30 @@ body {
   .game-actions { gap: 5px; }
   .game-actions .kit-btn { padding: 4px 8px; }
   .speed { gap: 4px; }
+}
+
+/* ---------- small screens (1024×768, 1280×800): the whole hand card shows, and the human's own rows stay in view */
+@media (max-height: 820px), (max-width: 1280px) {
+  /* a small card is 149 px tall; the selected card steps up 8 px; a hovered or focused one comes to the front */
+  .game-root { --strip-h: 164px; }
+  .hand-cards { height: auto; }
+  .hand-slot, .hand-slot.is-playable { transform: none; }
+  .hand-slot:hover, .hand-slot:focus-within { transform: none; z-index: 5; }
+  .hand-slot.is-selected { transform: translateY(-8px); z-index: 5; }
+}
+@media (max-height: 820px) {
+  .army-panel > .kit-panel__inner { padding: 6px 12px; }
+  .army-panel .kit-banners { padding: 3px 8px 4px; gap: 1px; }
+  .army-panel .kit-banners__slot, .army-panel .kit-banners__slot svg { height: 24px; }
+  .army-panel .divider { margin: 3px 0; }
+  .army-panel .army-row { margin-bottom: 2px; }
+  .army-panel .deck-row { margin-top: 0; }
+  /* the dice tray tightens, never clips: a roll's rows wrap and the slot grows with them, and the log keeps its 170 px */
+  .dice-slot { min-height: 100px; }
+  .dice-slot .kit-tray { min-width: 0; padding: 6px 10px 8px; }
+  .dice-slot .kit-tray__head { padding: 0 8px 4px; }
+  .dice-slot .kit-tray__title { font-size: 14px; }
+  .dice-slot .kit-tray__sub { margin-top: 0; font-size: 13px; }
+  .dice-slot .kit-tray__felt { padding: 8px 10px 10px; }
+  .dice-slot .kit-tray__dice { gap: 8px; min-height: 32px; }
 }

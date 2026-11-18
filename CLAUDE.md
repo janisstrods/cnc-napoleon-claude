@@ -4,8 +4,8 @@ Browser game: TypeScript + Vite + React, pure rules engine in `src/engine`, AI i
 
 ## Status
 
-- **The engine is the Napoleonics base game (RR §1–§14), complete (Plan 2B).** The computer's general is the real AI (`src/ai`, Plan 5), and the UI covers every decision: each of the 20 decision kinds has its own prompt (Plan 4), and `tests/ui/full-games.slow.test.ts` plays battles 000 and 001–015 to the end through the controller. This project was started from the Commands & Colors: Ancients edition (v1.6.2); its identity has changed (`ccn-` storage keys, `window.__ccn`, title, version 0.1.0).
-- Spanish battles 101–118 (Expansion #1, Plan 7C) are playable from the battle picker (Expansion #1 tab, Plan 7C), with histories; Plan 7C's own notes carry the details.
+- **The engine is the Napoleonics base game (RR §1–§14), complete (Plan 2B).** The computer's general is the real AI (`src/ai`, Plan 5), and the UI covers every decision: each of the 20 decision kinds has its own prompt (Plan 4), and `tests/ui/full-games.slow.test.ts` plays battles 000 and 001–015 to the end through the controller. This project was started from the Commands & Colors: Ancients edition (v1.6.2); its identity has changed (`ccn-` storage keys, `window.__ccn`, title, version 1.0.0 "Talavera").
+- Spanish battles 101–118 (Expansion #1, Plan 7C) are playable from the battle picker ("The Spanish Army" tab, Plan 7C), with histories; Plan 7C's own notes carry the details.
 - Ancients content (battles, texts, histories, golden fixtures, art and terrain hash pins, scenario-bound tests) was removed in Plan 2A.
 - Battles 001–015 are generated from `design/data` (Plan 3B) and playable; `000` stays the hidden drill (the picker and random battle skip `hidden` battles).
 - `design/ancients/` holds the Ancients design docs for reference.

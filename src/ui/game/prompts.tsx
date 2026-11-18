@@ -32,6 +32,8 @@ export interface Prompt {
   note?: string;
   /** Shown beside the board (the Élan / Rally dice). */
   panel?: JSX.Element;
+  /** The bar rises above the strip for this prompt (the Scout's two whole cards, the Combined Arms gun toggles and dice line need more than the steady bar's height). */
+  rise?: boolean;
 }
 
 /** What the prompts read from the game screen and act on. */
@@ -215,22 +217,25 @@ export function focusPromptTarget(root: { querySelector(selector: string): { foc
  */
 export function PromptBar({ prompt, error }: { prompt: Prompt | null; error: string | null }) {
   return (
-    <div className={prompt ? `prompt-bar ${prompt.tone ? `tone-${prompt.tone}` : ''}` : 'prompt-bar prompt-bar--idle'} tabIndex={-1}>
-      <div className="prompt-main">
-        <div className="prompt-text" role="status" aria-live="polite">
-          {prompt && <div className="prompt-title">{prompt.title}</div>}
-          {prompt?.text && <div className="prompt-sub" title={prompt.text}>{prompt.text}</div>}
-          {prompt?.note && <div className="prompt-note">{prompt.note}</div>}
-          {error && <div className="prompt-err">{error}</div>}
+    <div className={prompt ? `prompt-bar ${prompt.tone ? `tone-${prompt.tone}` : ''} ${prompt.rise ? 'prompt-bar--rise' : ''}` : 'prompt-bar prompt-bar--idle'} tabIndex={-1}>
+      {/* the text may scroll inside the steady bar; the buttons sit below it, outside the scroll, so none is ever hidden */}
+      <div className="prompt-body">
+        <div className="prompt-main">
+          <div className="prompt-text" role="status" aria-live="polite">
+            {prompt && <div className="prompt-title">{prompt.title}</div>}
+            {prompt?.text && <div className="prompt-sub" title={prompt.text}>{prompt.text}</div>}
+            {prompt?.note && <div className="prompt-note">{prompt.note}</div>}
+            {error && <div className="prompt-err">{error}</div>}
+          </div>
+          {prompt?.hint && <div className={`prompt-hint ${prompt.compactHint ? 'prompt-hint--compact' : ''}`}>{prompt.hint}</div>}
         </div>
-        {prompt?.hint && <div className={`prompt-hint ${prompt.compactHint ? 'prompt-hint--compact' : ''}`}>{prompt.hint}</div>}
+        {prompt?.dice && (
+          <div className="prompt-dice" aria-hidden>
+            {prompt.dice.map((f, i) => <DieView key={i} face={f} size={30} />)}
+          </div>
+        )}
+        {prompt?.extra}
       </div>
-      {prompt?.dice && (
-        <div className="prompt-dice" aria-hidden>
-          {prompt.dice.map((f, i) => <DieView key={i} face={f} size={30} />)}
-        </div>
-      )}
-      {prompt?.extra}
       {prompt && <div className="prompt-buttons">{prompt.buttons}</div>}
     </div>
   );
@@ -277,7 +282,7 @@ function combinedArmsPrompt(c: PromptCtx, d: D<'combinedArms'>): Prompt {
     );
   });
   return {
-    title: spec.title, text: spec.text, buttons,
+    title: spec.title, text: spec.text, buttons, rise: true,
     hint: combinedArmsTotalText(combinedArmsDice(c.s, d, ids, role)), compactHint: true,
     extra: <div className="gun-toggles" role="group" aria-label="Guns joining the attack">{toggles}</div>,
   };
@@ -290,6 +295,7 @@ function scoutPrompt(c: PromptCtx, d: D<'scoutKeep'>): Prompt {
     title: spec.title,
     text: spec.text,
     buttons: [autoButton(c)],
+    rise: true,
     extra: (
       <div className="scout-cards">
         {d.cards.map((card, i) => (
