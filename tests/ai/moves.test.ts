@@ -217,11 +217,13 @@ describe('review round 1', () => {
 
   it('c: contextFor checks its weights: two weight sets on one state, in either order, each match a fresh copy', () => {
     const s = build({
-      units: [bot('BR/LN', [6, 6]), bot('BR/HC', [7, 3]), bot('BR/FA', [7, 8]), top('FR/LN', [3, 6]), top('FR/HC', [2, 3])],
+      // an own unit in square: its standing cost is priced by the card value, which the weights' retention scales
+      units: [bot('BR/LN', [6, 6], { square: 1 }), bot('BR/HC', [7, 3]), bot('BR/FA', [7, 8]), top('FR/LN', [3, 6]), top('FR/HC', [2, 3])],
       first: 'bottom',
     });
-    const W2 = weightsFor({ aggression: 0.9, caution: 0.1, cunning: 0.2, dash: 0.9 });
-    expect(W2.riskSelf).not.toBe(NEUTRAL_W.riskSelf);
+    const W2 = { ...weightsFor({ aggression: 0.9, caution: 0.1, cunning: 0.2, dash: 0.9 }), retention: NEUTRAL_W.retention * 4 };
+    expect(W2.retention).not.toBe(NEUTRAL_W.retention);
+    expect(makeEstCtx(s, 'bottom', W2).cardValue).not.toBe(makeEstCtx(s, 'bottom', NEUTRAL_W).cardValue);
     const fresh = (W: typeof NEUTRAL_W): number => evaluate(cloneState(s), 'bottom', W);
     const a1 = evaluate(s, 'bottom', NEUTRAL_W);
     const b1 = evaluate(s, 'bottom', W2);

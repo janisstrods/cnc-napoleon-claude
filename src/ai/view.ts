@@ -155,6 +155,14 @@ export function asNextTurn(s: GameState): GameState {
   return { ...s, turn: { ...s.turn, ordered: {}, mods: NO_MODS } };
 }
 
+/**
+ * `s` with unit `id` out of square (its counter dropped), for the engine's own move and battle queries about what it could do
+ * outside it. A read-only view, as `asNextTurn` is; never mutate or drive it.
+ */
+export function withoutSquare(s: GameState, id: string): GameState {
+  return { ...s, units: s.units.map((u) => (u.id === id ? { ...u, square: undefined } : u)) };
+}
+
 /** Does the sampled opponent hand of a determinised clone hold a `kind`? Throws on any other state. */
 export function sampledOppHolds(s: GameState, me: Side, kind: CardKind): boolean {
   if (!determinised.has(s)) throw new Error('sampledOppHolds is only legal on a clone that determinize produced');

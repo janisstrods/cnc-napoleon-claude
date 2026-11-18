@@ -102,7 +102,7 @@ function argmax(options: readonly DefendChoice[], score: (c: DefendChoice) => nu
  * - otherwise the worst for the attacker over the options asked on the position with the assumed hands `ec.oppHands`
  *   (`withAssumedHands`), holding a First Strike (weight `pFS`) or not. Those hands are assumed once at the root decision
  *   and reused for every estimate of the turn being planned, also on positions after the AI's own moves. This is a
- *   sanctioned approximation (ruling 4): the opponent's hand shrinks during our turn when a square forms (its card goes
+ *   modelling approximation (Task 4a, M-7), not an engine-rule copy: the opponent's hand shrinks during our turn when a square forms (its card goes
  *   to the track, which can take away a later square) or a First Strike is played (it leaves the hand until the draw
  *   phase), and the assumed hands do not follow either; `pFS` is not lowered after a First Strike is seen played.
  */

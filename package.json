@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit -p . && vite build",
     "preview": "vite preview",
-    "test:perf": "CCN_PERF=1 vitest run tests/ai/evaluate-speed.slow.test.ts",
+    "test:perf": "node -e \"const r=require('child_process').spawnSync('npx',['vitest','run','tests/ai/evaluate-speed.slow.test.ts'],{stdio:'inherit',shell:true,env:{...process.env,CCN_PERF:'1'}});process.exit(r.status===null?1:r.status)\"",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p . && tsc --noEmit -p tsconfig.scripts.json"
   },

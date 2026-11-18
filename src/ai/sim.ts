@@ -135,6 +135,7 @@ class Session {
 export function drive(
   s: GameState, flow: (ctx: FlowCtx) => Gen, policy: Policy, rand: Rng, maxSteps: number, stop?: (d: Decision) => boolean,
 ): Run {
+  if (!isDeterminised(s)) throw new Error('drive needs a state that determinize produced (a blind clone with its hidden cards sampled)');
   noForcedDice();
   return new Session(flow).run(s, policy, rand, maxSteps, stop);
 }
@@ -170,7 +171,10 @@ export class Stepper {
   readonly state: GameState;
   private readonly session: Session;
 
-  /** `from` says where the turn stands in `root`: its start (the card step), its movement or its battle. */
+  /**
+   * `root` is the position (a turn at its card step, or already in its movement or battle); the turn is carried on from the phase
+   * it is in. A Stepper charges no node: the planner (Task 8) charges its `Budget` for the sims it plays.
+   */
   constructor(root: GameState, me: Side, rand: Rng) {
     noForcedDice();
     const c = blindClone(root, me);

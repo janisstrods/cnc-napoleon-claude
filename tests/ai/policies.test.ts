@@ -1,10 +1,14 @@
 // The per-kind policies (src/ai/policies.ts): one test per row of the Task 7 table, each through the decision the engine asks.
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   CARD_DEFS, CARD_LIST, GameDriver, answerError, cardKind, distance, forceDice, leaderById, leaderRetreatOptions, retreatDistance, retreatOptions,
   shortSupplyHexes, shortSupplyTargets, statsOf, unitById, type CardKind, type Decision, type DieFace, type GameState, type Side,
 } from '../../src/engine';
 import { makeBudget } from '../../src/ai/budget';
+import * as evaluateModule from '../../src/ai/evaluate';
+import * as movesModule from '../../src/ai/moves';
+import * as ordering from '../../src/ai/ordering';
+import * as view from '../../src/ai/view';
 import { evaluate } from '../../src/ai/evaluate';
 import {
   assignElan, assignRally, estCtxFor, greedyBattle, pickAdvance, pickBonusMelee, pickBreakthroughHex, pickCard, pickDefence, pickGuns, pickIgnore,
@@ -189,18 +193,35 @@ describe('defend', () => {
     expect(pickDefence(d.state, pending(d, 'defend'), W)).toEqual({ kind: 'defend', choice: 'retireReform' });
   });
 
-  it('is cheap: a node per offered reaction, no random draw and no search (carry 5)', () => {
+  it('is cheap: one estimate context, no evaluation, no search, no clone, no random draw (carry 5)', () => {
     const d = defence([top('FR/HC', [3, 6]), bot('BR/LN', [4, 6], { blocks: 2 })], { bottomCards: 4 });
     const dec = pending(d, 'defend');
-    const budget = makeBudget(1000, null, null);
-    const rand = new Rng(77);
-    const state = rand.state;
-    pickDefence(d.state, dec, W, budget);
-    expect(budget.nodes).toBe(dec.options.length);
-    expect(budget.nodes).toBeLessThanOrEqual(4);
-    policyFor(ctxOf('bottom', { rand, budget }))(d.state, dec);
-    expect(rand.state).toBe(state);
-    expect(budget.nodes).toBeLessThanOrEqual(8);
+    const spies = {
+      assume: vi.spyOn(view, 'assumeOppHand'),
+      blind: vi.spyOn(view, 'blindClone'),
+      evaluate: vi.spyOn(evaluateModule, 'evaluate'),
+      orders: vi.spyOn(ordering, 'orderCandidates'),
+      benefits: vi.spyOn(ordering, 'pieceBenefits'),
+      moves: vi.spyOn(movesModule, 'scoreTarget'),
+    };
+    try {
+      const rand = new Rng(77);
+      const state = rand.state;
+      const budget = makeBudget(1000, null, null);
+      const a = policyFor(ctxOf('bottom', { rand, budget }))(d.state, dec);
+      expect(a).toEqual({ kind: 'defend', choice: 'formSquare' });
+      // the defender's own context: the First Strike and no-First-Strike hands, nothing else is built
+      expect(spies.assume.mock.calls.length).toBeLessThanOrEqual(2);
+      expect(spies.blind.mock.calls.length).toBe(0);
+      expect(spies.evaluate.mock.calls.length).toBe(0);
+      expect(spies.orders.mock.calls.length).toBe(0);
+      expect(spies.benefits.mock.calls.length).toBe(0);
+      expect(spies.moves.mock.calls.length).toBe(0);
+      expect(rand.state).toBe(state);
+      expect(budget.nodes).toBeLessThanOrEqual(dec.options.length);
+    } finally {
+      for (const spy of Object.values(spies)) spy.mockRestore();
+    }
   });
 });
 
@@ -244,7 +265,13 @@ describe('retreat', () => {
     const best = Math.min(...options.map((o) => o.losses));
     expect(chosen.losses).toBe(best);
     const away = (o: (typeof options)[number]): number => Math.min(...s.units.filter((x) => x.side === 'top').map((x) => distance(x.hex, o.end)));
-    expect(away(chosen)).toBeGreaterThanOrEqual(Math.min(...options.filter((o) => o.losses === best).map(away)));
+    expect(away(chosen)).toBe(Math.max(...options.filter((o) => o.losses === best).map(away)));
+    // a hand-built pair, either way round: the end hex out of the heavy cavalry's reach wins
+    const near = { path: [H(7, 4)], end: H(7, 4), losses: 0, attach: null };
+    const far = { path: [H(7, 9)], end: H(7, 9), losses: 0, attach: null };
+    expect(distance(H(5, 2), near.end)).toBeLessThan(distance(H(5, 2), far.end));
+    expect(pickRetreat(s, { kind: 'retreat', side: 'bottom', unit: 'u1', options: [near, far], reason: 'retreat' }, W)).toEqual({ kind: 'choose', index: 1 });
+    expect(pickRetreat(s, { kind: 'retreat', side: 'bottom', unit: 'u1', options: [far, near], reason: 'retreat' }, W)).toEqual({ kind: 'choose', index: 0 });
     const tie = [
       { path: [H(7, 6)], end: H(7, 6), losses: 0, attach: null },
       { path: [H(7, 6)], end: H(7, 6), losses: 0, attach: 'L1' },
@@ -262,6 +289,25 @@ describe('leaderRetreat', () => {
     const a = pickLeaderRetreat(s, { kind: 'leaderRetreat', side: 'bottom', leader: l.id, options }, W);
     const chosen = options[(a as { index: number }).index];
     if (options.some((o) => !o.eliminated)) expect(chosen.eliminated).toBe(false);
+  });
+
+  it('avoids the eliminating option even when it ends farthest, then prefers fewer escapes, then an attach', () => {
+    const s = build({ leaders: [{ side: 'bottom', at: [5, 6] }], units: [bot('BR/LN', [7, 6]), top('FR/LN', [3, 6])] });
+    const id = s.leaders[0].id;
+    const opt = (end: number, o: Partial<{ eliminated: boolean; escapes: string[]; attach: string | null; offBoard: boolean }> = {}) =>
+      ({ path: [end], end, offBoard: false, escapes: [], attach: null, eliminated: false, ...o });
+    const dead = opt(H(8, 6), { eliminated: true });
+    const risky = opt(H(7, 5), { escapes: ['u2'] });
+    const plain = opt(H(7, 7));
+    const joined = opt(H(7, 7), { attach: 'u1' });
+    const pick = (options: ReturnType<typeof opt>[]): number =>
+      (pickLeaderRetreat(s, { kind: 'leaderRetreat', side: 'bottom', leader: id, options }, W) as { index: number }).index;
+    expect(pick([dead, risky])).toBe(1);   // the eliminating option is worse than a risky escape
+    expect(pick([risky, dead])).toBe(0);
+    expect(pick([risky, plain])).toBe(1);  // fewer escape rolls
+    expect(pick([plain, joined])).toBe(1); // an attach, all else equal
+    expect(pick([joined, plain])).toBe(0);
+    expect(pick([dead, risky, joined, plain])).toBe(2);
   });
 
   it('takes the only option when it is the only one', () => {
@@ -304,11 +350,13 @@ describe('breakthroughExtra and bonusMelee', () => {
 
   it('chooses the hex with the best bonus-melee prospect around the final hex', () => {
     // a worn gun beyond the vacated hex: only the extra hex (3,5)/(3,6) beside it offers a bonus melee
-    const probe = through({ units: [top('FR/FA', [2, 5], { blocks: 1 })] });
+    // (two full lines stand beside the gun, so the position alone favours falling back to a hex behind: only the prospect, counted
+    // by takeGround, pulls the unit forward to the hex beside the gun)
+    const probe = through({ units: [top('FR/FA', [2, 6], { blocks: 1 }), top('FR/LN', [2, 5]), top('FR/LN', [2, 7])] });
     const dec = pending(probe, 'breakthroughExtra');
-    const next = dec.options.filter((h) => distance(h, H(2, 5)) === 1);
+    const next = dec.options.filter((h) => distance(h, H(2, 6)) === 1);
     expect(next.length).toBeGreaterThan(0);
-    expect(dec.options.some((h) => distance(h, H(2, 5)) > 1)).toBe(true);
+    expect(dec.options.some((h) => distance(h, H(2, 6)) > 1)).toBe(true);
     const a = pickBreakthroughHex(probe.state, dec, W);
     expect(answerError(probe.state, dec, a)).toBeNull();
     expect(next).toContain((a as { hex: number }).hex);
@@ -361,18 +409,31 @@ describe('elan and rally', () => {
     expect(answerError(c, dec, assignElan(c, dec, W))).toBeNull();
   });
 
-  it('rally gives the infantry symbol to the block that gains most (cardsense rallyAssign)', () => {
-    forceDice(['infantry', 'sabre', 'sabre', 'sabre', 'sabre']);
-    const d = play(build({ units: [bot('BR/LN', [6, 6], { blocks: 3 }), bot('BR/LN', [6, 4], { blocks: 2 }), top('FR/LN', [3, 6])] }), 'rally');
-    forceDice([]);
-    const dec = pending(d, 'rally');
-    const a = assignRally(d.state, dec);
-    expect(answerError(d.state, dec, a)).toBeNull();
-    // cardsense's rallyAssign: the block with the largest unitValue gain (the value curve rises with blocks, so the 3-block unit gains most)
-    const gain = (id: string): number => rowValue(statsOf(d.state, unitById(d.state, id)!), unitById(d.state, id)!.blocks + 1) - unitValue(d.state, unitById(d.state, id)!);
-    const first = (a as { ids: (string | null)[] }).ids[0]!;
-    expect(gain(first)).toBeGreaterThanOrEqual(gain(first === 'u1' ? 'u2' : 'u1'));
-    expect(a).toEqual({ kind: 'assign', ids: rallyAssign(d.state, 'bottom', dec.faces) });
+  describe('rally goes where the block gains most', () => {
+    const rally = (units: Units): { d: GameDriver; ids: (string | null)[] } => {
+      forceDice(['infantry', 'sabre', 'sabre', 'sabre', 'sabre']);
+      const d = play(build({ units }), 'rally');
+      forceDice([]);
+      const dec = pending(d, 'rally');
+      const a = assignRally(d.state, dec);
+      expect(answerError(d.state, dec, a)).toBeNull();
+      expect(a).toEqual({ kind: 'assign', ids: rallyAssign(d.state, 'bottom', dec.faces) });
+      return { d, ids: (a as { ids: (string | null)[] }).ids };
+    };
+    it('a threatened 2-block line gets the symbol before a threatened 3-block one', () => {
+      const { ids } = rally([bot('BR/LN', [6, 6], { blocks: 3 }), bot('BR/LN', [6, 4], { blocks: 2 }), top('FR/LN', [4, 5])]);
+      expect(ids[0]).toBe('u2');
+    });
+    it('a threatened 1-block unit gets it before a threatened 3-block one', () => {
+      const { ids } = rally([bot('BR/LN', [6, 6], { blocks: 3 }), bot('BR/LN', [6, 4], { blocks: 1 }), top('FR/LN', [4, 5])]);
+      expect(ids[0]).toBe('u2');
+    });
+    it('with no enemy in reach only the fighting value counts: the stronger unit gains most (documented)', () => {
+      const { d, ids } = rally([bot('BR/LN', [6, 6], { blocks: 3 }), bot('BR/LN', [6, 4], { blocks: 2 }), top('FR/LN', [0, 6])]);
+      const gain = (id: string): number => rowValue(statsOf(d.state, unitById(d.state, id)!), unitById(d.state, id)!.blocks + 1) - unitValue(d.state, unitById(d.state, id)!);
+      expect(gain('u1')).toBeGreaterThan(gain('u2'));
+      expect(ids[0]).toBe('u1');
+    });
   });
 });
 
@@ -389,14 +450,17 @@ describe('scoutKeep', () => {
 });
 
 describe('shortSupply', () => {
-  it('lifts the enemy standing on our objective', () => {
+  it('lifts the enemy standing on our objective, though another enemy would fall back farther', () => {
+    // the objective is held by u3 two hexes from its baseline; u4 stands four hexes off, so the distance alone would pick u4
     const s = build({
-      units: [bot('BR/LN', [7, 6]), bot('BR/LN', [7, 3]), top('FR/LN', [4, 6]), top('FR/LN', [1, 6])],
-      objectives: [{ kind: 'tempHex', side: 'bottom', hex: [4, 6], banners: 1 }],
+      units: [bot('BR/LN', [8, 6]), bot('BR/LN', [8, 3]), top('FR/LN', [2, 6]), top('FR/LN', [4, 9])],
+      objectives: [{ kind: 'tempHex', side: 'bottom', hex: [2, 6], banners: 1 }],
     });
     const options = shortSupplyTargets(s, 'bottom');
-    const a = pickShortSupplyTarget(s, { kind: 'shortSupplyTarget', side: 'bottom', options }, W);
-    expect(options[(a as { index: number }).index]).toBe('u3');
+    const pick = (st: GameState): string => options[(pickShortSupplyTarget(st, { kind: 'shortSupplyTarget', side: 'bottom', options }, W) as { index: number }).index];
+    expect(pick(s)).toBe('u3');
+    const none = build({ units: [bot('BR/LN', [8, 6]), bot('BR/LN', [8, 3]), top('FR/LN', [2, 6]), top('FR/LN', [4, 9])] });
+    expect(pick(none)).toBe('u4'); // the same position without the objective: only the distance decides
   });
 
   it('places the unit on the offered hex with the best evaluation', () => {

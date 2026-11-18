@@ -17,9 +17,9 @@ import { evaluate, impetuousCost, objectiveHexes, reachOf, rootContextOf } from 
 import { greedyMoveStep, type MoveCtx, type MoveStyle } from './moves';
 import { MAX_CANDIDATES, orderCandidates, pieceBenefits, quickCardScore } from './ordering';
 import type { Rng } from './rand';
-import { safeAnswer } from './sim';
+import { safeAnswer, type Policy } from './sim';
 import { unitValue, type Weights } from './values';
-import { blindClone, isDeterminised, myHand } from './view';
+import { blindClone, isDeterminised, myHand, withoutSquare } from './view';
 
 export interface PolicyCtx {
   me: Side;
@@ -36,7 +36,7 @@ export interface PolicyCtx {
   style?: MoveStyle;
 }
 
-export type Policy = (s: GameState, d: Decision) => Answer;
+export type { Policy };
 type D<K extends Decision['kind']> = Extract<Decision, { kind: K }>;
 
 /** Nodes a policy's move decision may spend when the caller gives no budget. */
@@ -148,8 +148,8 @@ export function stayInSquare(s: GameState, d: D<'leaveSquare'>, _W?: Weights, ec
     const dist = distance(e.hex, u.hex);
     if (dist <= 1 || reachOf(s, occ, e, u.hex) >= dist) return { kind: 'yesno', yes: false };
   }
-  // a read-only view of the position with the unit out of square, for the engine's own queries
-  const out: GameState = { ...s, units: s.units.map((x) => (x.id === u.id ? { ...x, square: undefined } : x)) };
+  // the position with the unit out of square, for the engine's own queries
+  const out = withoutSquare(s, u.id);
   if (unitMoves(out, u.id).length > 0) return { kind: 'yesno', yes: true };
   const now = new Map(battleTargets(s, u.id).map((t) => [t.hex * 2 + (t.kind === 'fire' ? 0 : 1), t.dice]));
   const gains = battleTargets(out, u.id).some((t) => (now.get(t.hex * 2 + (t.kind === 'fire' ? 0 : 1)) ?? 0) < t.dice);
@@ -347,7 +347,7 @@ export function assignElan(s: GameState, d: D<'elan'>, W: Weights, ec: EstCtx = 
   return { kind: 'assign', ids: safe };
 }
 
-/** `rally`: cardsense's `rallyAssign` (greedy through the engine's `validateRally`): the blocks that gain the most value, worn units first. */
+/** `rally`: cardsense's `rallyAssign` (greedy through the engine's `validateRally`): each block goes where fighting value plus, for a unit an enemy can reach, the banner risk removed gains most (a threatened worn unit first). */
 export function assignRally(s: GameState, d: D<'rally'>): Answer {
   return { kind: 'assign', ids: rallyAssign(s, d.side, d.faces as readonly DieFace[]) };
 }
@@ -411,7 +411,9 @@ function assertNever(d: never): never {
 
 /** The fast policy of `c`: it answers the decisions of either side (`c.W` for `c.me`, `c.oppW` for the other). */
 export function policyFor(c: PolicyCtx): Policy {
-  const movers = new Map<Side, MoveCtx>();
+  // one move context per (state, side): its `decided` pieces belong to the move phase of the state it was filled on, so two
+  // simulations of one turn (the same key `turn|active|card`) never share it
+  const movers = new WeakMap<GameState, Map<Side, MoveCtx>>();
   return (s, d) => {
     const W = d.side === c.me ? c.W : c.oppW;
     if (c.mistakeRate > 0 && REACTIVE.has(d.kind) && c.rand.chance(c.mistakeRate)) return randomAnswer(s, d, () => c.rand.next());
@@ -420,9 +422,11 @@ export function policyFor(c: PolicyCtx): Policy {
       case 'orders': return pickOrders(s, d, W);
       case 'leaveSquare': return stayInSquare(s, d, W);
       case 'move': {
-        let mc = movers.get(d.side);
+        let bySide = movers.get(s);
+        if (!bySide) movers.set(s, (bySide = new Map()));
+        let mc = bySide.get(d.side);
         const budget = c.budget ?? makeBudget(MOVE_NODES, null, null);
-        if (!mc || mc.W !== W) movers.set(d.side, (mc = { me: d.side, W, occ: occOf(s), style: c.style ?? 'base', rand: c.rand, budget }));
+        if (!mc || mc.W !== W) bySide.set(d.side, (mc = { me: d.side, W, occ: occOf(s), style: c.style ?? 'base', rand: c.rand, budget }));
         mc.budget = budget;
         return greedyMoveStep(s, mc);
       }

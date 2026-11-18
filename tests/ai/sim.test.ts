@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cloneState, createGame, forceDice, type Answer, type Decision, type GameState } from '../../src/engine';
+import { cloneState, createGame, forceDice, turnFlow, type Answer, type Decision, type FlowCtx, type Gen, type GameState } from '../../src/engine';
 import { scenarioById } from '../../src/scenarios';
 import { makeBudget } from '../../src/ai/budget';
 import { policyFor, type Policy as _P } from '../../src/ai/policies';
@@ -100,6 +100,52 @@ describe('runTurn', () => {
   });
 });
 
+describe('drive', () => {
+  it('refuses a state determinize did not produce, like runTurn', () => {
+    const r = root();
+    const live = cloneState(r);
+    expect(() => drive(live, (ctx) => turnFlow(live, ctx), policyOf(r, 1), new Rng(1), 10)).toThrow(/determinize/);
+  });
+
+  it('aborts after more than 30 refusals in a row, when the policy and safeAnswer are both refused', () => {
+    const r = root();
+    const c = sampled(r, 4);
+    // an engine that refuses every answer: it reports each one and asks the same decision again
+    function* stubborn(ctx: FlowCtx): Gen {
+      for (;;) {
+        yield { kind: 'playCard', side: c.active };
+        ctx.invalid?.('no');
+      }
+    }
+    let answered = 0;
+    const run = drive(c, (ctx) => stubborn(ctx), (s, d) => { answered++; return policyOf(s, 1)(s, d); }, new Rng(1), 1000);
+    expect(run.done).toBe(false);
+    expect(run.at).toBeNull();
+    expect(answered).toBe(1); // later answers come from safeAnswer
+    expect(run.steps).toBe(31);
+  });
+});
+
+describe('policyFor across simulations', () => {
+  it('one policy answers the same turn alike on identical clones: it carries nothing from one sim into the next', () => {
+    const r = root();
+    const moves = (policy: ReturnType<typeof policyOf>): number => {
+      const c = sampled(r, 9);
+      let n = 0;
+      runTurn(c, (s, d) => {
+        const a = policy(s, d);
+        if (d.kind === 'move' && a.kind === 'move') n++;
+        return a;
+      }, new Rng(9), budget());
+      return n;
+    };
+    const fresh = moves(policyOf(r, 3));
+    expect(fresh).toBeGreaterThan(0);
+    const shared = policyOf(r, 3);
+    expect([moves(shared), moves(shared), moves(shared)]).toEqual([fresh, fresh, fresh]);
+  });
+});
+
 describe('Stepper', () => {
   it('pauses a turn on a private determinised clone and takes answers one at a time', () => {
     const r = root();
@@ -129,8 +175,6 @@ describe('safeAnswer', () => {
   });
 });
 
-import { turnFlow } from '../../src/engine';
-import type { FlowCtx } from '../../src/engine';
 function import_turn(s: GameState, ctx: FlowCtx) {
   return turnFlow(s, ctx);
 }
