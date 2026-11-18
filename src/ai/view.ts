@@ -146,6 +146,17 @@ export function sampledOppHolds(s: GameState, me: Side, kind: CardKind): boolean
   return s.players[other(me)].hand.some((c) => cardKind(c) === kind);
 }
 
+/**
+ * The position of `s` seen with the hidden cards of the blind clone `assumed` (from `assumeOppHand`, a `blindClone` or a
+ * `determinize`d one): players (hands and square tracks), deck and game RNG all come from `assumed`, so no real hidden field
+ * is reachable through it. A read-only view for engine option queries that read a hand (`defendOptions`); never mutate or
+ * drive it.
+ */
+export function withAssumedHands(s: GameState, assumed: GameState): GameState {
+  if (!blind.has(assumed)) throw new Error('withAssumedHands needs a clone made by blindClone or assumeOppHand');
+  return { ...s, players: assumed.players, deck: assumed.deck, rng: assumed.rng, rngCalls: assumed.rngCalls };
+}
+
 /** A driver on a blind clone (the GameDriver constructor copies the state, so it must never see a real one). */
 export function driverOn(s: GameState): GameDriver {
   if (!blind.has(s)) throw new Error('driverOn needs a clone made by blindClone');

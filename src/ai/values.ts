@@ -5,6 +5,8 @@ import type { Personality } from './personality';
 export const WIN_SCORE = 100;
 /** Value of a leader on the board (in banners); Task 5 prices attachment and traits on top of it. */
 export const LEADER_VALUE = 0.4;
+/** The mean keep value of a hand card, in banners (Task 6a's `meanHandValue` replaces it). */
+export const CARD_VALUE = 0.25;
 /** Cap on the value of the winning banner used in risk estimates (they are approximate). */
 const WINNING_BANNER = 6;
 

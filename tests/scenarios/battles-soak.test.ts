@@ -4,7 +4,7 @@ import { PERSONALITIES, chooseAnswer, newMemory } from '../../src/ai';
 import type { AiMemory } from '../../src/ai';
 import { scenarioById } from '../../src/scenarios';
 import { mulberry32 } from '../support/rng';
-import { must } from '../rules/helpers';
+import { must, violations } from '../rules/helpers';
 
 const CAP = 6000;
 const ids = Array.from({ length: 15 }, (_, i) => String(i + 1).padStart(3, '0'));
@@ -27,6 +27,8 @@ function invariants(d: GameDriver): void {
     lseen.add(l.hex);
     for (const u of s.units) if (u.hex === l.hex && u.side !== l.side) bad(`leader ${l.id} stands on enemy unit ${u.id}`);
   }
+  const v = violations(s, d.pending?.kind === 'playCard');
+  if (v.length) bad(v.join('; '));
 }
 
 function finished(d: GameDriver, steps: number): void {

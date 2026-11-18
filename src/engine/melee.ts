@@ -61,8 +61,11 @@ export function* meleeAttack(s: GameState, ctx: FlowCtx, attackerId: string, tar
   }
   if (m.reaction === 'formSquare') formSquare(s, ctx, defender);
   if ((yield* squareFightsFirst(s, ctx, m)) === 'stop') return false;
-  const squareFought = squareFirstApplies(s, m);  // the square already struck first: no battle back (R29)
-  if (m.reaction === 'firstStrike' && (yield* firstStrikeRoll(s, ctx, m)) === 'stop') return false;
+  let fought = squareFirstApplies(s, m);  // the square already struck first: no battle back (R29)
+  if (m.reaction === 'firstStrike') {
+    if ((yield* firstStrikeRoll(s, ctx, m)) === 'stop') return false;
+    fought = true;  // the First Strike unit does not battle back either (R63); never re-check canBattleAfterMove after the declaration
+  }
 
   // the attacker's roll: the melee unit's dice and every joining gun's, together (R41)
   const purpose = role === 'bonus' ? 'bonus' : 'melee';
@@ -75,7 +78,7 @@ export function* meleeAttack(s: GameState, ctx: FlowCtx, attackerId: string, tar
     return true;
   }
   // battle back: the defender survives in place and the attacker is still there
-  if (!squareFought && defender.blocks >= 1 && unitById(s, attackerId)) {
+  if (!fought && defender.blocks >= 1 && unitById(s, attackerId)) {
     const back = meleeDice(s, defender, attacker, { role: 'back', moved: 0 });
     ctx.emit({ t: 'combat', purpose: 'battleBack', attacker: defender.id, target: attackerId, dice: back });
     const bf = rollDice(s, back);
