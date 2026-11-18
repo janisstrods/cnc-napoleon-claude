@@ -291,6 +291,26 @@ describe('the stored plan', () => {
     expect(planFingerprint(r)).toBe(fp);
   });
 
+  it('the fingerprint tells a piece that has finished its move from one that has not, though it stands on the same hex', () => {
+    const d = rideKit();
+    const mem = planned(d);
+    must(d, chooseAnswer(d.state, d.pending!, opts(), mem).answer);
+    expect(d.pending?.kind).toBe('move');
+    const s = d.state;
+    const id = Object.keys(s.turn.ordered)[0];
+    expect(id).toBeDefined();
+    expect(s.turn.ordered[id].moveDone).toBe(false);
+    const fp = planFingerprint(s);
+    const done = cloneState(s);
+    done.turn.ordered[id].moveDone = true; // its move ended where it stood: nothing else about the position changes
+    expect(done.units.map((u) => u.hex)).toEqual(s.units.map((u) => u.hex));
+    expect(planFingerprint(done)).not.toBe(fp);
+    // a stored plan made for the first position is then not followed in the second
+    mem.plan!.fingerprint = fp;
+    expect(chooseAnswer(done, d.pending!, opts(), mem).answer).toEqual(chooseAnswer(cloneState(done), d.pending!, opts(), newMemory()).answer);
+    expect(mem.plan).toBeNull();
+  });
+
   it('fresh memory at a move decision answers legally (worker fallback mid-turn)', () => {
     const d = rideKit();
     const mem = planned(d);
