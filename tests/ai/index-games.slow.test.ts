@@ -24,7 +24,7 @@ describe('whole games', () => {
   }
 });
 
-describe('the Expansion kinds stay legal (Plan 7C Task 19's policies answer them)', () => {
+describe('the Expansion kinds stay legal (Plan 7C Task 19 gave them policies)', () => {
   for (const [id, kind] of [['103', 'guerrilla'], ['116', 'moveFirst']] as const) {
     it(`${id}: ${kind} decisions occur and every answer is legal, no fallback`, () => {
       const kinds = new Map<Decision['kind'], number>();
