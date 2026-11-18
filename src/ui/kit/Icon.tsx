@@ -1,14 +1,19 @@
 import { useId, type CSSProperties } from 'react';
 import { ICON_PATHS, type IconName } from './icons/paths';
+import { NAP_GLYPHS, type NapGlyph } from './icons/napGlyphs';
 
-export type { IconName };
+export type { IconName, NapGlyph };
+
+function glyphPath(name: IconName | NapGlyph): string {
+  return name in NAP_GLYPHS ? NAP_GLYPHS[name as NapGlyph] : ICON_PATHS[name as IconName];
+}
 
 /**
- * A game-icons.net glyph (CC BY 3.0) drawn in `currentColor` unless `color` is given.
+ * A game-icons.net glyph (CC BY 3.0) or one of our own glyphs drawn in `currentColor` unless `color` is given.
  * `gradient` paints it with a vertical metallic gradient instead (top -> bottom colours).
  */
 export function Icon(p: {
-  name: IconName;
+  name: IconName | NapGlyph;
   size?: number | string;
   color?: string;
   gradient?: string[];
@@ -40,12 +45,12 @@ export function Icon(p: {
           </linearGradient>
         </defs>
       ) : null}
-      <path d={ICON_PATHS[p.name]} fill={fill} />
+      <path d={glyphPath(p.name)} fill={fill} />
     </svg>
   );
 }
 
 /** Raw path data, for embedding inside another <svg>. */
-export function iconPath(name: IconName): string {
-  return ICON_PATHS[name];
+export function iconPath(name: IconName | NapGlyph): string {
+  return glyphPath(name);
 }

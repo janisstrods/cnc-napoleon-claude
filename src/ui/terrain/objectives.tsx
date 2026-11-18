@@ -79,7 +79,7 @@ function outward(h: HexId, flipped: boolean): Pt {
 
 /**
  * Exit marker of edge hex `h`: its outer hexsides drawn in the side's colour and an arrow pointing off the board. `leaders`:
- * leaders score too (317, `leadersScore`): a gold medallion on the arrow's shaft.
+ * leaders score too (`leadersScore`): a gold medallion on the arrow's shaft.
  */
 function ExitArrow({ h, flipped, c, leaders = false }: { h: HexId; flipped: boolean; c: SideColors; leaders?: boolean }) {
   const r = rowOf(h);
