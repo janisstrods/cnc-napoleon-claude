@@ -1,7 +1,9 @@
 // Towns, windmills and fortresses (RR §4.1): one painter for the three rows. A town is a cluster of plastered, tile-roofed
 // houses on trodden streets, filling the hex but for a margin; a windmill has fewer houses and a tower mill with sails; a
-// fortress is a town inside a low stone wall with a tower at each corner. Seen from the board's lower edge and lit from the
-// upper left, like the hills.
+// fortress is a town inside a low stone wall with a tower at each corner. A Walled Farm (Expansion #1, a Town by the rules)
+// has its own painter: one farmhouse and a barn in a walled yard with a gate, so it never reads as a town. Seen from the
+// board's lower edge and lit from the upper left, like the hills.
+import { blobPath } from './field';
 import { corner, fmt, polyPath, type HexInfo, type PaintCtx, type Pt } from './hexmath';
 import { rng } from './noise';
 import { P } from './palette';
@@ -125,9 +127,82 @@ function townHex(h: HexInfo, ctx: PaintCtx): JSX.Element {
   );
 }
 
-/** Every town, windmill and fortress hex of `ctx`. */
+/** Every town, windmill and fortress hex of `ctx`, then every Walled Farm (`paintWalledFarm`) in its own layer. */
 export function paintTowns(ctx: PaintCtx): JSX.Element | null {
   const hs = ctx.hexes.filter(isTown);
+  const farms = paintWalledFarm(ctx);
+  if (!hs.length) return farms;
+  const towns = <g className="towns">{hs.map((h) => townHex(h, ctx))}</g>;
+  return farms ? <>{towns}{farms}</> : towns;
+}
+
+/** A thatched or tiled roof for a farm building (`thatch`: the barn's straw roof instead of tiles). */
+const FARM_ROOF = { tile: { lit: P.roof, shade: P.roofShade, light: P.roofLight }, thatch: { lit: '#a88a4a', shade: '#7a6236', light: '#c9ad6a' } };
+
+function FarmBuilding({ hs, thatch = false }: { hs: House; thatch?: boolean }) {
+  const r = FARM_ROOF[thatch ? 'thatch' : 'tile'];
+  return (
+    <g className="farm-building">
+      <path d={hs.sh} fill="rgba(30,24,14,0.28)" />
+      <path d={hs.front} fill={P.plaster} stroke={P.wallDark} strokeWidth={0.6} />
+      <path d={hs.side} fill={P.plasterShade} />
+      {hs.door && <path d={hs.door} stroke="#5a4428" strokeWidth={1.8} />}
+      <path d={hs.roofShade} fill={r.shade} stroke={P.wallDark} strokeWidth={0.6} strokeLinejoin="round" />
+      <path d={hs.roofLit} fill={r.lit} stroke={P.wallDark} strokeWidth={0.6} strokeLinejoin="round" />
+      <path d={hs.roofLit} fill="none" stroke={r.light} strokeWidth={0.6} opacity={0.8} transform="translate(-0.3 -0.4)" />
+    </g>
+  );
+}
+
+/**
+ * A walled farm: a low rubble wall round a yard of trodden earth (a gate in the front wall), a long farmhouse against the
+ * back wall, a thatched barn to one side and a single tree in the yard. Three shapes and a wall: nothing like the town's
+ * crowd of roofs.
+ */
+function farmHex(h: HexInfo, ctx: PaintCtx): JSX.Element {
+  const R = rng(5077 + h.id * 11 + (ctx.flipped ? 1 : 0));
+  const j = () => (R() - 0.5) * 3;
+  const at = (x: number, y: number): Pt => ({ x: h.x + x, y: h.y + y });
+  // the enclosure, a slightly skewed quadrilateral; corners clockwise from the back left
+  const ring = [at(-29 + j(), -23 + j()), at(28 + j(), -25 + j()), at(30 + j(), 23 + j()), at(-28 + j(), 25 + j())];
+  // the gate: a gap in the front wall (from ring[2] to ring[3]), left of centre
+  const lerp = (a: Pt, b: Pt, t: number): Pt => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+  const g0 = lerp(ring[2], ring[3], 0.5);
+  const g1 = lerp(ring[2], ring[3], 0.72);
+  const wall = polyPath([g0, ring[2], ring[1], ring[0], ring[3], g1], false);
+  const yard = polyPath(ring);
+  const houseHs = house(at(-4, -9), 36, 12, 9, R);
+  const barnHs = house(at(16, 11), 18, 12, 8, R);
+  const tree = at(-17, 10);
+  const T = rng(911 + h.id);
+  const wallStroke = (stroke: string, w: number, extra: Record<string, unknown> = {}) => (
+    <path d={wall} fill="none" stroke={stroke} strokeWidth={w} strokeLinejoin="round" strokeLinecap="butt" {...extra} />
+  );
+  return (
+    <g key={h.id}>
+      <path d={yard} fill={P.street} stroke={P.street} strokeWidth={3} strokeLinejoin="round" opacity={0.6} />
+      <g className="farm-wall">
+        {wallStroke('rgba(30,24,14,0.32)', 5.5, { transform: 'translate(1.1 1.8)' })}
+        {wallStroke(P.wallDark, 4.6)}
+        {wallStroke(P.wallFace, 3.2)}
+        {wallStroke(P.wallTop, 1.1, { transform: 'translate(-0.4 -0.6)', opacity: 0.9 })}
+        {[g0, g1].map((p, k) => (
+          <rect key={k} x={fmt(p.x - 2.4)} y={fmt(p.y - 3.4)} width={4.8} height={4.8} fill={P.wallFace} stroke={P.wallDark} strokeWidth={0.9} />
+        ))}
+      </g>
+      <FarmBuilding hs={houseHs} />
+      <FarmBuilding hs={barnHs} thatch />
+      <ellipse cx={fmt(tree.x + 2.5)} cy={fmt(tree.y + 3)} rx={7} ry={4.6} fill={P.treeShadow} />
+      <path d={blobPath(tree.x, tree.y, 6.6, 6.2, T, 8, 0.14)} fill={P.leafDark} />
+      <path d={blobPath(tree.x - 1.2, tree.y - 1.4, 4.6, 4.2, T, 7, 0.16)} fill={P.leafMid} />
+      <path d={blobPath(tree.x - 2.3, tree.y - 2.6, 2.2, 2, T, 6, 0.2)} fill={P.leafLight} opacity={0.9} />
+    </g>
+  );
+}
+
+/** Every Walled Farm hex of `ctx`. */
+export function paintWalledFarm(ctx: PaintCtx): JSX.Element | null {
+  const hs = ctx.hexes.filter((h) => h.t === 'walledFarm');
   if (!hs.length) return null;
-  return <g className="towns">{hs.map((h) => townHex(h, ctx))}</g>;
+  return <g className="walled-farm">{hs.map((h) => farmHex(h, ctx))}</g>;
 }
