@@ -109,7 +109,12 @@ export function leaderRetreatOptions(s: GameState, l: Leader): LeaderRetreatOpti
     || Number(a.offBoard) - Number(b.offBoard) || cmpPath(a.path, b.path));
 }
 
-/** Retire and Reform paths. Stub: none (→ T8). */
-export function retireReformOptions(_s: GameState, _u: Unit): RetreatOption[] {
-  return [];
+/**
+ * Retire and Reform paths (RR §9.4, R34): exactly 2 steps toward the unit's own side, over the same hexes a retreat may use
+ * (a hex that only stops movement does not block, [Interp R34]). A leaderless unit may instead end 1 hex on a lone friendly
+ * leader (attach); with a leader it may pass but not end there. A retreat that would fall short (a loss per hex) is no
+ * retirement: none.
+ */
+export function retireReformOptions(s: GameState, u: Unit): RetreatOption[] {
+  return retreatOptions(s, u, 2).filter((o) => o.losses === 0);
 }
