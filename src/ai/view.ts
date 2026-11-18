@@ -4,7 +4,7 @@
 // What a side may see: its own hand and own square-track cards, both hand sizes, the discard pile, `lastCard`, and the
 // square counters on units (`unit.square`, public). It never sees the opponent's hand, the opponent's track cards, the deck
 // order or the game's random generator. The "unseen pool" is therefore built as the complement of what is seen.
-import { CARD_LIST, GameDriver, cardKind, cloneState, other, type CardKind, type GameState, type Side } from '../engine';
+import { CARD_LIST, GameDriver, NO_MODS, cardKind, cloneState, other, type CardKind, type GameState, type Side } from '../engine';
 import type { Rng } from './rand';
 
 /** Clones made by `blindClone` / `assumeOppHand` (the only states the AI may simulate on). */
@@ -138,6 +138,21 @@ export function determinize(s: GameState, me: Side, rand: Rng): void {
   s.rng = rand.u32();
   s.rngCalls = 0;
   determinised.add(s);
+}
+
+/** Is `s` a clone that `determinize` produced (the only state on which a determinised estimate context is legal)? */
+export function isDeterminised(s: GameState): boolean {
+  return determinised.has(s);
+}
+
+/**
+ * `s` seen as the next turn will find it: this turn's ordered pieces and card modifiers dropped (they bias dice, moved-fire
+ * rows and battle permissions), the card in play kept so the unseen pool is unchanged. `s` itself when nothing is recorded.
+ * A read-only view for the evaluation; never mutate or drive it.
+ */
+export function asNextTurn(s: GameState): GameState {
+  if (s.turn.phase === 'card' && Object.keys(s.turn.ordered).length === 0) return s;
+  return { ...s, turn: { ...s.turn, ordered: {}, mods: NO_MODS } };
 }
 
 /** Does the sampled opponent hand of a determinised clone hold a `kind`? Throws on any other state. */

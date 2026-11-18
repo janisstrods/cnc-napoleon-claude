@@ -222,14 +222,18 @@ function strike(s: GameState, ec: EstCtx, victim: Unit, source: Unit, dice: numb
   // the leader's kill while his unit survives is the next banner
   const leaderLoss = LEADER_VALUE + banner;
   // a winning elimination ends the game before the casualty check (applyOutcome returns on the winner)
-  const elimWins = bannerTotal(s, scorer) + killBanners(s, victim) >= s.bannersToWin;
+  const killN = killBanners(s, victim);
+  const elimWins = bannerTotal(s, scorer) + killN >= s.bannersToWin;
   let alone: number | undefined;
-  /** The leader's part of his unit's elimination: the check (`checkNow`: 1 die) and, if he survives it, his retreat alone. */
+  /**
+   * The leader's part of his unit's elimination: the check (`checkNow`: 1 die) and, if he survives it, his retreat alone;
+   * his death is the banner after the elimination's `killN`.
+   */
   const elimLeader = (checkNow: boolean): number => {
     if (!leader || elimWins) return 0;
     const pK = checkNow ? leaderCheckP(true) : 0;
-    alone ??= aloneValue(s, leader, scorer, 2);
-    return pK * (LEADER_VALUE + bannerAt(s, scorer, 2)) + (1 - pK) * alone;
+    alone ??= aloneValue(s, leader, scorer, 1 + killN);
+    return pK * (LEADER_VALUE + bannerAt(s, scorer, 1 + killN)) + (1 - pK) * alone;
   };
   const worth = (k: number): number => unitValue(s, { key: victim.key, blocks: k });
   const memo = new Map<number, FlagResult>();

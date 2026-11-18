@@ -458,6 +458,79 @@ describe('evaluate: approximations cross-checked against the engine', () => {
   });
 });
 
+describe('evaluate: review round 1', () => {
+  it('I-1: a defender holding a hex the enemy needs beats stepping back by ≥ 0.3 when an enemy can enter it next turn', () => {
+    const P: Pos = { objectives: [{ kind: 'tempHex', side: 'top', hex: [4, 6], banners: 1 }], units: [top('FR/LT', [2, 6]), bot('BR/LN', [4, 6])] };
+    const hold = build(P);
+    const back = moved(hold, 'u2', H(5, 6));
+    expect(evaluate(hold, 'bottom', W) - evaluate(back, 'bottom', W)).toBeGreaterThanOrEqual(0.3);
+    // the needing side sees the same: the free hex it can enter next turn is worth a share of its banner
+    expect(evalTerms(back, 'top', W).objectives - evalTerms(hold, 'top', W).objectives).toBeGreaterThanOrEqual(0.3);
+  });
+
+  it('I-1: 015, the Allied total evaluation drops when a farm holder steps off', () => {
+    const s = createGame(scenarioById('015').setup, 1);
+    const occ = occOf(s);
+    let checked = 0;
+    for (const o of s.scenario.objectives) {
+      if (o.kind !== 'tempHex') continue;
+      const holder = occ.unit[o.hex];
+      if (!holder || holder.side !== 'top') continue;
+      for (const off of neighbours(o.hex)) {
+        if (occ.unit[off] || occ.leader[off] || s.terrain[off] === 'river') continue;
+        expect(evaluate(moved(s, holder.id, off), 'top', W), `hex ${o.hex} -> ${off}`).toBeLessThan(evaluate(s, 'top', W));
+        checked++;
+      }
+    }
+    expect(checked).toBeGreaterThan(0);
+  });
+
+  it('I-2: this turn\'s orders do not leak into the evaluation (a gun that moved this turn still has its targets)', () => {
+    const s = build({ first: 'bottom', units: [bot('BR/FA', [5, 6]), top('FR/LN', [2, 6])] });
+    const plain = evalTerms(s, 'bottom', W);
+    const mid = cloneState(s);
+    mid.turn.phase = 'battle';
+    mid.turn.mods = CARD_DEFS.bombard.mods;
+    mid.turn.ordered = { u1: { ...newOrderedPiece(mid, 'u1', true), moved: 1, moveDone: true } };
+    const t = evalTerms(mid, 'bottom', W);
+    expect(plain.guns).toBeGreaterThan(0);
+    expect(t.guns).toBe(plain.guns);
+    expect(t.riskTheirs).toBeGreaterThan(0);
+    // the turn's end ('done', the side that played still active, its orders still recorded) equals the normalised state
+    const done = cloneState(mid);
+    done.turn.phase = 'done';
+    const norm = cloneState(done);
+    norm.turn.ordered = {};
+    norm.turn.mods = NO_MODS;
+    expect(evaluate(done, 'bottom', W)).toBe(evaluate(norm, 'bottom', W));
+    expect(evaluate(done, 'top', W)).toBe(evaluate(norm, 'top', W));
+  });
+
+  it('I-3: parking a second cavalry unit near an enemy square does not raise the squares term', () => {
+    const P: Pos = { units: [top('FR/LN', [3, 6], { square: 1 }), bot('BR/LC', [6, 6]), bot('BR/HC', [8, 1])] };
+    const before = build(P);
+    const after = moved(before, 'u3', H(5, 8));
+    expect(distance(H(5, 8), H(3, 6))).toBeLessThanOrEqual(3);
+    expect(evalTerms(before, 'bottom', W).squares).toBeGreaterThan(0);
+    expect(evalTerms(after, 'bottom', W).squares).toBeLessThanOrEqual(evalTerms(before, 'bottom', W).squares);
+  });
+
+  it('M-4: a context marked determinised is refused on a state that determinize did not produce', () => {
+    const s = build({ units: [top('FR/LN', [2, 6]), bot('BR/LN', [6, 6])] });
+    const fake = { ...makeEstCtx(s, 'bottom', W), determinised: true as const, oppHands: undefined };
+    expect(() => evaluate(s, 'bottom', W, fake)).toThrow(/determinis/);
+  });
+
+  it('M-1: a sound unit on the exit hex gains by stepping off (the pull never outweighs the banner)', () => {
+    const P: Pos = { banners: 6, objectives: [{ kind: 'exit', side: 'top', hex: [0, 4], banners: 1 }], units: [top('FR/LN', [0, 4]), bot('BR/LN', [8, 11])] };
+    const on = build(P);
+    const off = cloneState(on);
+    off.units.splice(0, 1);
+    off.players.top.banners += 1;
+    expect(evaluate(off, 'top', W)).toBeGreaterThan(evaluate(on, 'top', W) + 0.1);
+  });
+});
+
 describe('evaluate: timing', () => {
   it('logs the mean evaluation time over 200 calls on a 30-unit position', () => {
     const s = midgame('008', 160, 3);
