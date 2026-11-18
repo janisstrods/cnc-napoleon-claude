@@ -5,6 +5,7 @@ import {
 } from '../../engine';
 import { UnitIcon } from '../../art';
 import { BannerTrack, Button, CardBack, CardView, DiceTray, Modal, Panel } from '../kit';
+import { nationInk } from '../kit/theme';
 import { BattleResult } from './BattleResult';
 import { Board } from './Board';
 import type { GameController } from './controller';
@@ -236,14 +237,15 @@ export function GameScreen({ controller, onExit, onRematch }: {
   const persona = useMemo(() => opponentPersonality(controller.config), [controller]);
 
   return (
-    <div className="game-root">
+    // each side in its nation's colour (chips, army names, log marks); yours also says "(you)"
+    <div className="game-root" style={{ '--side-me': nationInk(me.nation), '--side-them': nationInk(them.nation) } as React.CSSProperties}>
       <header className="game-top">
         <div className="game-title">
           <span className="gt-name">{controller.scenario.name}</span>
           <span className="gt-year">{controller.scenario.year}</span>
         </div>
         <div className="game-turn">
-          Turn {s.turn.number} · <span className={`side-chip side-${s.active === human ? 'me' : 'them'}`}>{s.players[s.active].army}</span>
+          Turn {s.turn.number} · <span className={`side-chip side-${s.active === human ? 'me' : 'them'}`}>{s.players[s.active].army}{s.active === human && <span className="you"> (you)</span>}</span>
           {view.aiThinking && <span className="thinking-dots">thinking</span>}
         </div>
         <div className="game-actions">
