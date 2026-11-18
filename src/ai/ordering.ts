@@ -149,7 +149,9 @@ export function pieceBenefits(s: GameState, me: Side, kind: CardKind | null, W: 
   const exits = s.scenario.objectives.some((o) => o.kind === 'exit' && o.side === me);
   /**
    * May stepping off the board pay for `u`: an exit objective, or a baseline exit once its free exits are used or while the unit
-   * is at risk (battered with the enemy close: stepping off is removal, the enemy scores nothing).
+   * is at risk (battered with the enemy close: stepping off is removal, the enemy scores nothing). This "at risk" is a cheap proxy
+   * for ranking candidates; the evaluation (evaluate.ts, `exitEdge` in `objectiveTerm`) judges it by the threat model's expected
+   * loss where the unit stands, and the move scoring decides by the evaluation.
    */
   const exitPays = (u: Unit): boolean =>
     exits || edges.some((e) => e.open || (u.blocks * 2 <= u.maxBlocks && nearest(u.hex) <= 2));

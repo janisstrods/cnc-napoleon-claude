@@ -8,13 +8,13 @@ import {
 import { scenarioById } from '../../src/scenarios';
 import { occOf } from '../../src/ai/board';
 import { evalTerms, objectiveHexes } from '../../src/ai/evaluate';
-import { bannerValue } from '../../src/ai/estimate';
+import { bannerValue, eliminationWins, fireEstimate, loneLeaderEstimate, makeEstCtx } from '../../src/ai/estimate';
 import { makeBudget } from '../../src/ai/budget';
 import { greedyMoveStep, type MoveCtx } from '../../src/ai/moves';
 import { pieceBenefits } from '../../src/ai/ordering';
 import { Rng } from '../../src/ai/rand';
 import { CARD_VALUE, NEUTRAL_W, bannerStep, bannerScore, unitValue } from '../../src/ai/values';
-import { giveCard, must, noFirstStrike } from '../rules/helpers';
+import { build, giveCard, must, noFirstStrike } from '../rules/helpers';
 import { failOnAiErrors } from './no-ai-errors';
 
 failOnAiErrors();
@@ -273,5 +273,142 @@ describe('ordering: what an order gains under the new objectives', () => {
       return x;
     };
     expect(pieceBenefits(make(true), 'bottom', 'attackR', W).get('u33') ?? 0).toBeGreaterThan(pieceBenefits(make(false), 'bottom', 'attackR', W).get('u33') ?? 0);
+  });
+});
+
+describe('review round 1: the pieces of the new pricing, one by one', () => {
+  const ridgeOf = (s: GameState): readonly HexId[] => {
+    const o = s.scenario.objectives[0];
+    if (o.kind !== 'majority') throw new Error('114: no majority');
+    return o.hexes;
+  };
+
+  it('114: an enemy unit already on the ridge is no entry: a 2 v 1 ridge out of reach is all but kept', () => {
+    // the British hold (2,3) and (3,1); a lone French line on (6,3), next to the free (5,2) and (5,3), is out of their reach
+    const on = keep(real('114'), { u1: H(2, 3), u2: H(3, 1), u18: H(6, 3) });
+    expect(ridgeOf(on)).toContain(H(6, 3));
+    expect(on.special.objState[0].held).toBe(true);
+    expect(evalTerms(on, 'top', W).riskMine).toBeCloseTo(0, 12);
+    const off = keep(real('114'), { u1: H(2, 3), u2: H(3, 1), u18: H(8, 10) });
+    const step = bannerStep(1, on.bannersToWin);
+    // its steps within the ridge leave the count where it is: the held banner is all but kept
+    expect(evalTerms(on, 'top', W).banners).toBeGreaterThan(evalTerms(off, 'top', W).banners - 0.05 * step);
+    // nor do they bring the French nearer the majority: no other French unit, so no capture potential on the free hexes
+    expect(evalTerms(on, 'bottom', W).objectives).toBeLessThan(0.05 * step);
+  });
+
+  it('114: behind by two, the French need two hexes: the second-best hex counts as much as the best', () => {
+    // a French line at (7,3) touches one ridge hex, (6,3); a British unit on the ridge means the French need two hexes
+    const need2 = keep(real('114'), { u16: null, u18: H(7, 3) });
+    const need1 = keep(real('114'), { u16: H(1, 0), u18: H(7, 3) });
+    expect(need2.special.objState[0].held).toBe(true);
+    const a = evalTerms(need2, 'bottom', W).objectives;
+    const b = evalTerms(need1, 'bottom', W).objectives;
+    expect(a).toBeGreaterThan(0);
+    expect(a).toBeLessThan(0.9 * b);
+  });
+
+  it('114: ordering pulls a French unit towards a ridge it is behind on', () => {
+    const make = (objective: boolean): GameState => {
+      const x = keep(real('114'), { u16: null, u18: H(7, 3), u19: H(8, 10) });
+      if (!objective) x.scenario = { ...x.scenario, objectives: [] };
+      return x;
+    };
+    expect(sectionsOf(H(7, 3), 'bottom')).toContain('left');
+    const left = 'attackL' as CardKind;
+    expect(pieceBenefits(make(true), 'bottom', left, W).get('u18') ?? 0).toBeGreaterThan(pieceBenefits(make(false), 'bottom', left, W).get('u18') ?? 0);
+  });
+
+  it('115: a held Albuera is kept by its recorded holders only (S35), not by a unit that came later', () => {
+    // the worn holder on (4,10) has a British line next to it; a sound French unit that arrived on (4,9) since is no holder
+    const make = (holders: string[]): GameState => {
+      const x = keep(real('115'), { u27: H(4, 10), u26: H(4, 9), u1: H(3, 10), u11: null });
+      x.units.find((u) => u.id === 'u27')!.blocks = 1;
+      x.special.objState[0] = { held: true, count: 0, holders };
+      return x;
+    };
+    const one = evalTerms(make(['u27']), 'bottom', W).banners;
+    const both = evalTerms(make(['u27', 'u26']), 'bottom', W).banners;
+    expect(one).toBeLessThan(both - 1e-6);
+  });
+
+  it('115: a French unit on Albuera before the turn start counts at the chance it stays', () => {
+    const make = (british: HexId): GameState => {
+      const x = keep(real('115'), { u27: H(4, 10), u1: british, u11: null });
+      x.units.find((u) => u.id === 'u27')!.blocks = 1;
+      return x;
+    };
+    const threatened = make(H(3, 10));
+    const safe = make(H(0, 0));
+    expect(evalTerms(threatened, 'bottom', W).objectives).toBeLessThan(evalTerms(safe, 'bottom', W).objectives - 1e-6);
+  });
+
+  it('115: any one Albuera hex is enough: the group scores its best hex, not the mean of its hexes', () => {
+    const base = keep(real('115'), { u33: H(6, 10), u11: null });
+    const o = base.scenario.objectives[0];
+    if (o.kind !== 'tempAny') throw new Error('115: no tempAny');
+    const withHexes = (hexes: HexId[]): GameState => {
+      const x = cloneState(base);
+      x.scenario = { ...x.scenario, objectives: [{ ...o, hexes }] };
+      return x;
+    };
+    const asHex = cloneState(base);
+    asHex.scenario = { ...asHex.scenario, objectives: [{ kind: 'tempHex', side: 'bottom', hex: H(4, 10), timing: 'turnStart', banners: 1, text: o.text }] };
+    const far = evalTerms(withHexes([H(4, 10), H(0, 0)]), 'bottom', W).objectives;
+    expect(far).toBeGreaterThan(0);
+    expect(far).toBeCloseTo(evalTerms(asHex, 'bottom', W).objectives, 9);
+  });
+
+  it('102: a battered unit at risk is pulled towards its baseline before the free exits are used; a safe one is not', () => {
+    const make = (danger: boolean, blocks: number): GameState => {
+      const units: Record<string, HexId | null> = { u2: H(1, 6), u16: H(6, 10) };
+      if (danger) Object.assign(units, { u24: H(1, 5), u25: H(2, 6), u26: H(1, 7) });
+      const x = keep(real('102'), units);
+      x.units.find((u) => u.id === 'u2')!.blocks = blocks;
+      return x;
+    };
+    // its expected loss where it stands is what pulls it: far more than a worn unit out of danger gets from the free exit alone
+    const danger = evalTerms(make(true, 1), 'top', W).objectives;
+    const wornSafe = evalTerms(make(false, 1), 'top', W).objectives;
+    expect(danger).toBeGreaterThan(10 * wornSafe);
+    expect(danger).toBeGreaterThan(0.3);
+    expect(evalTerms(make(false, 4), 'top', W).objectives).toBe(0);
+  });
+
+  it('106: killing a lone Allied leader takes a hand card too, while the hand is above the floor', () => {
+    const s = build({
+      first: 'bottom', topCards: 6, sideRules: [{ kind: 'handShrink', side: 'top', floor: 3 }],
+      units: [{ side: 'bottom', key: 'BR/LN', at: [4, 6] }, { side: 'top', key: 'FR/LN', at: [0, 0] }],
+      leaders: [{ side: 'top', at: [3, 6] }],
+    });
+    const atk = s.units[0];
+    const lh = H(3, 6);
+    const full = loneLeaderEstimate(s, atk, lh, makeEstCtx(s, 'bottom', W)).ev;
+    s.special.handSize.top = 3;
+    const floor = loneLeaderEstimate(s, atk, lh, makeEstCtx(s, 'bottom', W)).ev;
+    expect(full - floor).toBeGreaterThan(0.01);
+    expect(full - floor).toBeLessThanOrEqual(CARD_VALUE + 1e-9);
+  });
+
+  it('105: eliminating the last gun wins at once, so its leader\'s casualty check is not priced on top', () => {
+    const make = (last: boolean, leader: boolean): GameState => {
+      const units = [{ side: 'top' as const, key: 'FR/FA' as const, at: [3, 6] as [number, number] }, { side: 'bottom' as const, key: 'BR/LN' as const, at: [5, 6] as [number, number] }];
+      if (!last) units.push({ side: 'top', key: 'FR/FA', at: [0, 0] });
+      const s = build({
+        first: 'bottom', objectives: [{ kind: 'suddenDeath', side: 'bottom', keys: ['FR/FA'] }], units,
+        leaders: leader ? [{ side: 'top', at: [3, 6] }] : [],
+      });
+      s.units[0].blocks = 1;
+      return s;
+    };
+    expect(eliminationWins(make(true, false), make(true, false).units[0])).toBe(true);
+    expect(eliminationWins(make(false, false), make(false, false).units[0])).toBe(false);
+    const fire = (s: GameState): number => fireEstimate(s, s.units[1], H(3, 6), makeEstCtx(s, 'bottom', W)).ev;
+    // the leader's casualty check adds to the shot's value, but not after a winning elimination (the game is over); with the
+    // last gun the leader is worth less to the shot than with the first (he even lowers the chance of the win a little)
+    const lastGain = fire(make(true, true)) - fire(make(true, false));
+    const firstGain = fire(make(false, true)) - fire(make(false, false));
+    expect(firstGain).toBeGreaterThan(0.1);
+    expect(lastGain).toBeLessThan(firstGain - 0.1);
   });
 });

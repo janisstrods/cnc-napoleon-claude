@@ -492,8 +492,9 @@ function atLeast(ps: readonly number[], k: number): number {
 
 /**
  * P(`side` loses its majority of `hexes` (its count `margin` above the enemy's) before its next turn start): as many of these as
- * the margin happen: one of its units on the group is driven off (`pVac`), or an enemy unit enters a free hex of the group next
- * turn (the best one-turn `enterOdds` over the free hexes; one entry counted). A tie loses it (S36).
+ * the margin happen: one of its units on the group is driven off (`pVac`), or an enemy unit from off the group enters a free hex
+ * of it next turn (the best one-turn `enterOdds` over the free hexes, the enemy's units already on the group left out: a step
+ * within the group leaves the counts as they are; one entry counted). A tie loses it (S36).
  */
 // approximates RR §15.8 majority, S36 (engine: updateHeld)
 function majorityLoss(occ: Occ, side: Side, hexes: readonly HexId[], margin: number, pVac: Map<HexId, number>, enterOf: EnterOf): number {
@@ -501,7 +502,7 @@ function majorityLoss(occ: Occ, side: Side, hexes: readonly HexId[], margin: num
   for (const h of hexes) if (occ.unit[h]?.side === side) ps.push(pVac.get(h) ?? 0);
   if (ps.length + 1 < margin) return 0;
   let enter = 0;
-  for (const h of hexes) if (!occ.unit[h] && enter < 1) enter = Math.max(enter, enterOf(other(side), h, true));
+  for (const h of hexes) if (!occ.unit[h] && enter < 1) enter = Math.max(enter, enterOf(other(side), h, true, hexes));
   ps.push(enter);
   return atLeast(ps, margin);
 }
@@ -565,11 +566,13 @@ export function objectiveHexes(s: GameState, side: Side): HexId[] {
  * The chance that `side` puts a unit on hex `h` next turn: the best order odds (a card that moves it) of its units that can
  * enter `h` by a shortest walk within their full allowance (battle or not), the unit now on `h` taken as gone; and the same
  * counting, at `TWO_TURNS`, those within two allowances (a shortest walk, a stop hex still ending it): [next turn, two turns].
+ * Units standing on `exclude` (a majority group, for entries that raise a count) are left out.
  */
-function enterOdds(s: GameState, occ: Occ, side: Side, h: HexId, odds: OrderOdds): [number, number] {
+function enterOdds(s: GameState, occ: Occ, side: Side, h: HexId, odds: OrderOdds, exclude?: readonly HexId[]): [number, number] {
   let one = 0;
   let two = 0;
   for (const u of occ.bySide[side]) {
+    if (exclude?.includes(u.hex)) continue;
     const st = statsOf(s, u);
     const a = moveAllowance(st, u);
     const d = distance(u.hex, h);
@@ -585,15 +588,19 @@ function enterOdds(s: GameState, occ: Occ, side: Side, h: HexId, odds: OrderOdds
   return [one, Math.max(one, two)];
 }
 
-/** `enterOdds` of a side for a hex, next turn only (`oneTurn`) or within two; each side and hex worked out once per evaluation. */
-type EnterOf = (side: Side, h: HexId, oneTurn?: boolean) => number;
+/**
+ * `enterOdds` of a side for a hex, next turn only (`oneTurn`) or within two, its units on `exclude` left out; each side, hex and
+ * excluded group worked out once per evaluation (a group is keyed by its first hex and size: the two records of a contested
+ * group share their hexes).
+ */
+type EnterOf = (side: Side, h: HexId, oneTurn?: boolean, exclude?: readonly HexId[]) => number;
 
 function enterOddsOf(s: GameState, occ: Occ, oddsOf: (side: Side) => OrderOdds): EnterOf {
-  const known = new Map<number, [number, number]>();
-  return (side, h, oneTurn = false) => {
-    const key = h * 2 + (side === 'top' ? 0 : 1);
+  const known = new Map<string, [number, number]>();
+  return (side, h, oneTurn = false, exclude) => {
+    const key = `${side}|${h}|${exclude ? `${exclude[0]}.${exclude.length}` : ''}`;
     let e = known.get(key);
-    if (!e) known.set(key, (e = enterOdds(s, occ, side, h, oddsOf(side))));
+    if (!e) known.set(key, (e = enterOdds(s, occ, side, h, oddsOf(side), exclude)));
     return oneTurn ? e[0] : e[1];
   };
 }
@@ -633,7 +640,8 @@ function objectiveTerm(s: GameState, occ: Occ, me: Side, threatsOn: (side: Side)
         const blocked = occ.unit[h] ? theirs.get(h) ?? 0 : 1;
         let pull = (OBJ_PULL * Math.max(0, OBJ_RANGE - d)) / OBJ_RANGE;
         if (occ.unit[h]) pull *= OBJ_BLOCKED + (1 - OBJ_BLOCKED) * blocked;
-        const potential = CAPTURE_SHARE * HOLD_DISCOUNT * blocked * enterOf(X, h);
+        // a majority counts hexes: a unit already on the group adds nothing by stepping to another hex of it
+        const potential = CAPTURE_SHARE * HOLD_DISCOUNT * blocked * enterOf(X, h, false, o.kind === 'majority' ? hexes : undefined);
         return Math.max(pull, potential);
       };
       if (o.kind === 'tempAny') {
@@ -685,6 +693,8 @@ function objectiveTerm(s: GameState, occ: Occ, me: Side, threatsOn: (side: Side)
       const used = st?.count ?? 0;
       const open = used >= o.free;
       const progress = (EDGE_PROGRESS * worth) / Math.max(1, o.free);
+      // "at risk" here is the threat model's expected loss where the unit stands (more than it is worth); ordering.ts
+      // `exitPays` uses a cheaper proxy (half strength or below with an enemy within 2), which only ranks the order candidates
       const loss = threatsOn(X).loss;
       let r = progress * Math.min(used, o.free);
       for (const u of occ.bySide[X]) {
