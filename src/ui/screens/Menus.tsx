@@ -3,7 +3,7 @@ import { UNIT_STATS, createGame, leaderUnit, nationOf, type GameState, type RowK
 import { SCENARIOS, type Expansion, type ScenarioInfo } from '../../scenarios';
 import { LEADER_ATTACH_OFFSET, LeaderToken, UnitToken } from '../../art';
 import { BoardArt, ObjectiveMarkers } from '../terrain';
-import { ALL_DIE_FACES, Button, DieSymbol, Icon, Modal, Panel } from '../kit';
+import { ALL_DIE_FACES, Button, CompassRose, DieSymbol, Modal, Panel } from '../kit';
 import { BOARD_H, BOARD_W, hexCenterId } from '../geometry';
 import type { Difficulty, SavedGame } from '../game/controller';
 import { boardArtProps, leaderTokenProps, unitTokenProps } from '../game/boardProps';
@@ -51,14 +51,13 @@ export function MainMenu(p: {
     <div className="menu-root">
       <div className="menu-hero">
         <div className="menu-emblem" aria-hidden>
-          <Icon name="laurels" size={150} gradient={['#fbe7a6', '#e0b85a', '#a87c2c']} />
-          <div className="menu-emblem-swords">
-            <Icon name="crossedSwords" size={58} gradient={['#fbe7a6', '#d8b064', '#8a6226']} />
-          </div>
+          <CompassRose size={92} />
         </div>
-        <h1 className="menu-title">Commands &amp; Colours</h1>
-        <div className="menu-sub">NAPOLEONICS</div>
-        <p className="menu-tag">Commands &amp; Colours: Napoleonics — battles of the Peninsular War and the Hundred Days</p>
+        <div className="menu-cartouche">
+          <h1 className="menu-title">Commands &amp; Colours</h1>
+          <div className="menu-sub">Napoleonics</div>
+          <p className="menu-tag">Battles of the Peninsular War and the Hundred Days</p>
+        </div>
         <div className="menu-armies" aria-hidden>
           <svg viewBox="-52 -48 524 96" width="620" height="114">
             {MENU_ARMY_L.map((t, i) => (
@@ -135,12 +134,15 @@ function SetupPreview({ state, flipped, humanSide }: { state: GameState; flipped
   );
 }
 
-/** A picker tab's medals won, when there are any: a small laurel and the count. */
+/** A picker tab's medals won (of any metal), when there are any: a plain ink medal on a red ribbon, and the count. */
 function TabMedals({ won, of }: { won: number; of: number }) {
   if (!won) return null;
   return (
     <span className="tab-medals" role="img" aria-label={`${won} of ${of} medals won`} title={`${won} of ${of} medals won`}>
-      <Icon name="laurels" size={12} />
+      <svg viewBox="0 0 12 14" width={10} height={12} aria-hidden="true" focusable="false">
+        <path d="M3.5 0.5h5l-1.2 5h-2.6z" fill="var(--kit-crimson)" />
+        <circle cx="6" cy="9.5" r="3.4" fill="none" stroke="currentColor" strokeWidth="1.2" />
+      </svg>
       {won}
     </span>
   );

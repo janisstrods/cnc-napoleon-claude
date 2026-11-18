@@ -106,6 +106,13 @@ export const RULES_TEXT: Record<RulesTab, RulesBlock[]> = {
         'Click to select. Hover a unit for its stats, any hex for what its terrain does, and a card to preview it. “Let the general decide” answers any decision for you.',
       ],
     },
+    {
+      heading: 'Keyboard',
+      paragraphs: [
+        'The board is one stop on the Tab key. On it the arrow keys move a cursor hex, Home and End go to the ends of its row, Enter or Space does what a click on that hex does, Shift+Enter what a click on its leader does, and Escape clears the selection. The cursor jumps to the first hex of a new choice, and a spoken sentence says what stands there.',
+        'While the focus is in the game, B goes to the board and P to the buttons of the prompt; F6 (Shift+F6 back) goes round the board, the prompt and your hand. Keys 1 to 9 pick a card, and Enter presses the main button.',
+      ],
+    },
   ],
 
   units: [

@@ -3,10 +3,12 @@
 import { drawCard, takeCard } from './cards';
 import { ask } from './decisions';
 import { guerrillaScoutStep } from './guerrilla';
+import { moveFirstStep } from './moveFirst';
 import { turnStartObjectives } from './objectives';
 import { battlePhase, cardStep, movePhase } from './phases';
 import { other } from './query';
 import { shuffle } from './rng';
+import { settleHand } from './scenarioRules';
 import { newTurn } from './setup';
 import type { Gen } from './decisions';
 import { SIDES, type FlowCtx, type GameState } from './types';
@@ -64,6 +66,7 @@ function* battleToEnd(s: GameState, ctx: FlowCtx): Gen {
   yield* battlePhase(s, ctx);
   if (s.winner) return;
   yield* drawPhase(s, ctx);
+  for (const o of SIDES) settleHand(s, ctx, o);   // 106: a card owed from a banner gained while none was held (S46)
   s.lastCard[s.active] = t.effective;
   s.special.turnsDone[s.active]++;
   t.phase = 'done';
@@ -106,6 +109,7 @@ export function nextTurn(s: GameState): void {
 }
 
 export function* gameFlow(s: GameState, ctx: FlowCtx): Gen {
+  yield* moveFirstStep(s, ctx);   // Move First by revealed cards, once before turn 1 (RR §15.8)
   while (!s.winner) {
     if (s.turn.phase === 'done') nextTurn(s);
     yield* turnFlow(s, ctx);

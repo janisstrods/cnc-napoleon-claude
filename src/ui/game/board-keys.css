@@ -1,0 +1,21 @@
+/* The keyboard cursor of the board (Task 10c): shown while the keyboard drives it (`.board-svg--kbd`), never after a mouse click. */
+.board-svg { outline: none; }
+.board-cursor { pointer-events: none; opacity: 0; }
+.board-svg--kbd .board-cursor { opacity: 1; }
+.board-cursor-halo { fill: none; stroke: var(--kit-ink); stroke-width: 9; stroke-linejoin: round; }
+.board-cursor-ring { fill: rgba(255, 255, 255, .10); stroke: var(--kit-gold); stroke-width: 5; stroke-linejoin: round; }
+.board-cursor-coords {
+  font-family: var(--kit-font-body);
+  font-size: 15px;
+  font-weight: 700;
+  fill: var(--kit-parchment-light);
+  stroke: var(--kit-ink);
+  stroke-width: 3.5px;
+  paint-order: stroke;
+}
+@media (forced-colors: active) {
+  .board-svg--kbd .board-cursor-ring { stroke: Highlight; }
+}
+
+/* the sentence of the cursor hex, for screen readers only (a polite live region beside the board) */
+.board-live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import {
-  UNIT_STATS, battleReady, battleTargets, cardKind, eligiblePieces, leaderAt, leaderUnit, movablePieces, other, pieceMoves, unitAt,
+  COLS, ROWS, UNIT_STATS, cardKind, hexId, leaderAt, leaderUnit, other, unitAt,
   type Answer, type GameState, type HexId, type Side,
 } from '../../engine';
 import { UnitIcon } from '../../art';
@@ -9,10 +9,11 @@ import { BattleResult } from './BattleResult';
 import { Board } from './Board';
 import type { GameController } from './controller';
 import { HoverTip, LogPanel } from './panels';
-import { PromptBar, focusPromptTarget, gamePrompt } from './prompts';
+import { PromptBar, focusNewDecision, focusPromptTarget, gamePrompt } from './prompts';
+import { boardKeyStep, freshSelection, globalKeyAction, hexLabel, jumpTarget, nextRegion } from './boardKeys';
+import { hexClick, leaderClick, type ClickResult } from './hexClick';
 import { bannerCounts, objectiveSummary, objectiveTipLines } from './objectiveText';
-import { boardMarks, escapeSelection, leaderRetreatChoices, retreatChoices, selectionDeps, toggleGun, wantsPromptFocus, type UiSel } from './uiModel';
-import { assignClick, assignClickRefusal, assignOptions, currentAssign, nextDie, type ElanOrRally } from './assign';
+import { boardMarks, escapeSelection, selectionDeps, type UiSel } from './uiModel';
 import { leaderLines, unitSummary } from './unitText';
 import { SquareTrack } from './SquareTrack';
 import { commandText, squareLines } from './squareText';
@@ -51,14 +52,42 @@ export function GameScreen({ controller, onExit, onRematch }: {
     if (import.meta.env.DEV) (window as unknown as { __ccn: GameController }).__ccn = controller;
   }, [controller]);
 
-  // keyboard shortcuts: Enter = main action, Esc = clear selection, 1-9 = pick a card
+  // the keyboard cursor of the board: where it is, and whether the keyboard (not the mouse) is driving it
+  const [cursor, setCursor] = useState<HexId>(() => hexId(Math.floor(ROWS / 2), Math.floor(COLS / 2)));
+  const [kbd, setKbd] = useState(false);
+  const kbdRef = useRef(false);
+  kbdRef.current = kbd;
+  const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
+
+  /** Moves the focus to the board, the prompt's buttons or the hand. */
+  const goTo = (region: 'board' | 'prompt' | 'hand') => {
+    if (region === 'board') {
+      document.querySelector<SVGSVGElement>('.board-svg')?.focus();
+      setKbd(true);
+    } else if (region === 'prompt') {
+      focusPromptTarget(document);
+    } else {
+      const card = document.querySelector<HTMLElement>('.hand-cards [tabindex="0"]');
+      if (card) card.focus(); else goTo(nextRegion('hand', false));
+    }
+  };
+
+  // keyboard shortcuts: Enter = main action, Esc = clear selection, 1-9 = pick a card, B / P / F6 = move between board, prompt and hand
   const shownAt = useRef(0);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target;
       if (t instanceof HTMLSelectElement || t instanceof HTMLInputElement) return;
-      if (document.querySelector('.kit-modal')) return; // dialogs own the keyboard
+      const modal = !!document.querySelector('.kit-modal');
+      if (modal) return; // dialogs own the keyboard
+      const active = document.activeElement;
+      const g = globalKeyAction(
+        { key: e.key, shift: e.shiftKey, ctrl: e.ctrlKey, meta: e.metaKey, alt: e.altKey },
+        { inGame: !active || active === document.body || !!active.closest('.game-root'), typing: t instanceof HTMLTextAreaElement || (t instanceof HTMLElement && t.isContentEditable), modal },
+      );
       if (e.key === 'Enter') {
+        // the board's own handler takes Enter while its cursor is shown; after a mouse click Enter is the main action, as elsewhere
+        if (t instanceof Element && t.closest('.board-svg') && kbdRef.current) return;
         if (t instanceof HTMLButtonElement) {
           // a held Enter must not press the focused prompt button of each new decision in turn
           if ((e.repeat || performance.now() - shownAt.current < 400) && t.closest('.prompt-buttons')) e.preventDefault();
@@ -71,6 +100,13 @@ export function GameScreen({ controller, onExit, onRematch }: {
       } else if (e.key === 'Escape') {
         // Escape also disarms the Élan / Rally die
         setUi((u) => escapeSelection(s, d, human, u));
+      } else if (g) {
+        e.preventDefault();
+        if (g === 'board' || g === 'prompt') goTo(g);
+        else {
+          const from = active?.closest('.board-svg') ? 'board' : active?.closest('.prompt-bar') ? 'prompt' : active?.closest('.hand-cards') ? 'hand' : 'other';
+          goTo(nextRegion(from, g === 'cycleBack'));
+        }
       } else if (/^[1-9]$/.test(e.key) && d?.kind === 'playCard' && d.side === human) {
         const c = s.players[human].hand[Number(e.key) - 1];
         if (c !== undefined) setUi((u) => ({ ...u, selCard: c }));
@@ -78,31 +114,27 @@ export function GameScreen({ controller, onExit, onRematch }: {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [d, human, s]);
 
   // reset local selection whenever a new decision arrives
   useEffect(() => {
     shownAt.current = performance.now();
     setRefusal(null);
-    setUi((u) => ({ ...EMPTY_SEL, hoverHex: u.hoverHex }));
-    if (d?.kind === 'move' && d.side === human) {
-      const movers = movablePieces(s);
-      if (movers.length === 1) setUi((u) => ({ ...u, selPiece: movers[0] }));
-    }
-    if (d?.kind === 'battle' && d.side === human) {
-      const ready = battleReady(s);
-      if (ready.length === 1) setUi((u) => ({ ...u, selPiece: ready[0] }));
-    }
+    setUi((u) => ({ ...freshSelection(s, d, human), hoverHex: u.hoverHex }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [d]);
 
-  // a new decision of the human's takes the keyboard focus on its primary button, unless the pointer is on the board
+  // a new decision of the human's: the cursor goes to its first marked hex and, when the focus is already in the board, stays
+  // there; otherwise the focus goes to the prompt (unless the pointer is on the board)
   const overBoard = useRef(false);
   useEffect(() => {
-    if (!wantsPromptFocus(d, human, overBoard.current) || document.querySelector('.kit-modal')) return;
-    const a = document.activeElement;
-    if (a instanceof HTMLSelectElement || a instanceof HTMLInputElement) return;
-    focusPromptTarget(document);
+    const inBoard = !!document.activeElement?.closest('.board-svg');
+    const jump = jumpTarget(s, d, human, overBoard.current, inBoard, flipped);
+    if (jump) setCursor(jump.cursor);
+    if (jump?.keepFocus) return;
+    focusNewDecision(d, human, inBoard ? false : overBoard.current, document);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [d, human]);
 
   const answer = (a: Answer) => controller.answer(a);
@@ -114,6 +146,17 @@ export function GameScreen({ controller, onExit, onRematch }: {
   );
   const pathPreview = useMemo(() => bui.pathAt(ui.hoverHex), [bui, ui.hoverHex]);
 
+  const cursorLabel = useMemo(
+    () => hexLabel(s, cursor, bui.highlights, { badges: bui.badges, decision: d, leaderMarks: bui.leaderHighlights }),
+    [s, cursor, bui, d],
+  );
+  // the tooltip of the cursor hex sits at the cursor while the keyboard drives it
+  useEffect(() => {
+    if (!kbd) { setAnchor(null); return; }
+    const r = document.getElementById(`board-cursor-${cursor}`)?.getBoundingClientRect();
+    setAnchor(r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null);
+  }, [kbd, cursor, flipped]);
+
   const orderedIds = useMemo(() => new Set(Object.keys(s.turn.ordered)), [s]);
   const doneIds = useMemo(() => {
     const out = new Set<string>();
@@ -124,137 +167,51 @@ export function GameScreen({ controller, onExit, onRematch }: {
   }, [s]);
 
   // ------------------------------------------------------------------ clicks
-  const onHexClick = (h: HexId) => {
-    if (!d || d.side !== human) return;
-    const u = unitAt(s, h);
-    const l = leaderAt(s, h);
-    switch (d.kind) {
-      case 'orders': {
-        const elig = new Set(eligiblePieces(s, human, d.card));
-        let id: string | null = null;
-        if (u && u.side === human && elig.has(u.id)) id = u.id;
-        else if (l && l.side === human && elig.has(l.id)) id = l.id;
-        if (!id) return;
-        toggleOrder(id);
-        return;
-      }
-      case 'move': {
-        if (ui.selPiece) {
-          const m = pieceMoves(s, ui.selPiece).find((x) => x.hex === h);
-          if (m) {
-            answer({ kind: 'move', piece: ui.selPiece, to: h });
-            return;
-          }
-        }
-        const movers = new Set(movablePieces(s));
-        if (u && movers.has(u.id)) setUi({ ...ui, selPiece: u.id });
-        else if (l && movers.has(l.id)) setUi({ ...ui, selPiece: l.id });
-        else setUi({ ...ui, selPiece: null });
-        return;
-      }
-      case 'battle': {
-        if (ui.selPiece) {
-          const t = battleTargets(s, ui.selPiece).find((x) => x.hex === h);
-          if (t) {
-            answer({ kind: 'attack', unit: ui.selPiece, target: h });
-            return;
-          }
-        }
-        const ready = new Set(battleReady(s));
-        if (u && ready.has(u.id)) setUi({ ...ui, selPiece: u.id });
-        else setUi({ ...ui, selPiece: null });
-        return;
-      }
-      case 'retreat': {
-        const c = retreatChoices(s, d).find((x) => x.end === h);
-        if (c) answer({ kind: 'choose', index: c.index });
-        return;
-      }
-      case 'leaderRetreat': {
-        // the safest way to the hex clicked
-        const c = leaderRetreatChoices(s, d).find((x) => x.kind === 'hex' && x.end === h);
-        if (c) answer({ kind: 'choose', index: c.index });
-        return;
-      }
-      case 'advance':
-        if (h === d.hex) answer({ kind: 'yesno', yes: true });
-        return;
-      case 'breakthroughExtra':
-        if (d.options.includes(h)) answer({ kind: 'hex', hex: h });
-        return;
-      case 'bonusMelee':
-        if (d.targets.includes(h)) answer({ kind: 'hex', hex: h });
-        return;
-      case 'shortSupplyHex':
-        if (d.options.includes(h)) answer({ kind: 'hex', hex: h });
-        return;
-      case 'shortSupplyTarget': {
-        const i = u ? d.options.indexOf(u.id) : -1;
-        if (i >= 0) answer({ kind: 'choose', index: i });
-        return;
-      }
-      case 'elan':
-      case 'rally': {
-        // the armed die takes the clicked unit, or the leader standing with it when the unit is no option of that die
-        const cur = currentAssign(s, d, ui.assign);
-        const id = [u?.id, l?.id].find((x): x is string => !!x && assignClick(s, d, cur, x) !== cur.ids) ?? u?.id ?? l?.id;
-        if (id) clickAssign(d, id);
-        return;
-      }
-      case 'combinedArms':
-        // a click on a listed gun adds it to the melee or takes it out; the prompt's button attacks
-        if (u && d.options.includes(u.id)) setUi({ ...ui, gunSel: toggleGun(ui.gunSel, u.id, d.options) });
-        return;
-      default:
-        return;
-    }
+  // what a click does is `hexClick` / `leaderClick` (hexClick.ts); the keyboard's Enter goes through the same two
+  const apply = (r: ClickResult) => {
+    if (r.ui) setUi(r.ui);
+    if (r.refusal !== undefined) setRefusal(r.refusal);
+    if (r.answer) answer(r.answer);
   };
-
+  const onHexClick = (h: HexId) => apply(hexClick(s, d, ui, h, human));
   const onLeaderClick = (id: string): boolean => {
-    if (!d || d.side !== human) return false;
-    if (d.kind === 'orders') {
-      if (!eligiblePieces(s, human, d.card).includes(id)) return false;
-      toggleOrder(id);
-      return true;
-    }
-    if (d.kind === 'move') {
-      if (!movablePieces(s).includes(id)) return false;
-      setUi({ ...ui, selPiece: id });
-      return true;
-    }
-    if (d.kind === 'elan' || d.kind === 'rally') {
-      // a leader token takes the click only when the armed die may order him; else it falls through to his unit
-      const die = currentAssign(s, d, ui.assign).die;
-      if (die === null || !assignOptions(s, d, die).some((o) => o.id === id)) return false;
-      clickAssign(d, id);
-      return true;
-    }
-    return false;
+    const r = leaderClick(s, d, ui, id, human);
+    if (r.handled) apply(r);
+    return r.handled;
   };
 
-  /** A click on piece `id` for the armed Élan / Rally die: filled when legal, else the validator's reason is shown. */
-  const clickAssign = (d: ElanOrRally, id: string) => {
-    const cur = currentAssign(s, d, ui.assign);
-    const ids = assignClick(s, d, cur, id);
-    const why = ids === cur.ids ? assignClickRefusal(s, d, cur, id) : null;
-    setRefusal(why ? { text: why, assign: ui.assign } : null);
-    if (ids !== cur.ids) {
-      const placed = cur.die !== null && ids[cur.die] !== null;
-      setUi({ ...ui, assign: { die: placed && cur.die !== null ? nextDie(s, d, cur.die, ids) : cur.die, ids } });
-    }
-  };
-
-  const toggleOrder = (id: string) => {
-    if (!d || d.kind !== 'orders') return;
-    const sel = ui.orderSel.includes(id) ? ui.orderSel.filter((x) => x !== id) : [...ui.orderSel, id];
-    setUi({ ...ui, orderSel: sel });
-  };
-
-  const handlers = useRef({ onHexClick, onLeaderClick });
-  handlers.current = { onHexClick, onLeaderClick };
-  const onHexClickS = useCallback((h: HexId) => handlers.current.onHexClick(h), []);
-  const onLeaderClickS = useCallback((id: string) => handlers.current.onLeaderClick(id), []);
+  const handlers = useRef({ onHexClick, onLeaderClick, s });
+  handlers.current = { onHexClick, onLeaderClick, s };
+  // a click with the mouse puts the cursor on the hex and hides it: Enter after it is the main action, not a click on a stale hex
+  const onHexPointer = useCallback((h: HexId) => {
+    setCursor(h);
+    setKbd(false);
+    handlers.current.onHexClick(h);
+  }, []);
+  const onLeaderPointer = useCallback((id: string) => {
+    const l = handlers.current.s.leaders.find((x) => x.id === id);
+    if (l && l.hex >= 0) setCursor(l.hex);
+    setKbd(false);
+    return handlers.current.onLeaderClick(id);
+  }, []);
   const onHexHoverS = useCallback((h: HexId | null) => setUi((u) => (u.hoverHex === h ? u : { ...u, hoverHex: h })), []);
+  const onBoardKeyDown = (e: React.KeyboardEvent<SVGSVGElement>) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const step = boardKeyStep({ cursor, key: e.key, shift: e.shiftKey, repeat: e.repeat, flipped, leaderAt: (h) => leaderAt(s, h)?.id ?? null, cursorShown: kbd });
+    if (!step.handled) return;
+    e.preventDefault();
+    if (step.cursor !== undefined) setCursor(step.cursor);
+    if (step.showCursor) setKbd(true);
+    // the path preview, dice line and tooltip follow the cursor as they follow the pointer
+    if (step.hover !== undefined) setUi((u) => (u.hoverHex === step.hover ? u : { ...u, hoverHex: step.hover as HexId }));
+    if (step.leaderId !== undefined) { if (!handlers.current.onLeaderClick(step.leaderId)) handlers.current.onHexClick(cursor); }
+    else if (step.clickHex !== undefined) handlers.current.onHexClick(step.clickHex);
+  };
+  const onBoardFocus = (e: React.FocusEvent<SVGSVGElement>) => { if (e.currentTarget.matches(':focus-visible')) setKbd(true); };
+  const onBoardBlur = () => {
+    if (kbdRef.current) setUi((u) => (u.hoverHex === null ? u : { ...u, hoverHex: null })); // the keyboard's hover goes with its focus
+    setKbd(false);
+  };
 
   // ------------------------------------------------------------------ prompt
   const prompt = gamePrompt({ controller, view, s, human, ai, ui, setUi, answer, onExit, assignNote: refusal && refusal.assign === ui.assign ? refusal.text : null });
@@ -327,10 +284,18 @@ export function GameScreen({ controller, onExit, onRematch }: {
             flashes={view.flashes}
             orderedIds={orderedIds}
             doneIds={doneIds}
-            onHexClick={onHexClickS}
+            onHexClick={onHexPointer}
             onHexHover={onHexHoverS}
-            onLeaderClick={onLeaderClickS}
+            onLeaderClick={onLeaderPointer}
+            cursor={cursor}
+            cursorLabel={cursorLabel}
+            cursorShown={kbd}
+            onBoardKeyDown={onBoardKeyDown}
+            onBoardFocus={onBoardFocus}
+            onBoardBlur={onBoardBlur}
+            onBoardPointerDown={() => setKbd(false)}
           />
+          <div className="board-live" role="status" aria-live="polite">{kbd ? cursorLabel : ''}</div>
           {view.toast && (
             <div
               className={`turn-toast ${view.toast.kind === 'notice' ? 'toast-notice' : ''}`}
@@ -416,7 +381,7 @@ export function GameScreen({ controller, onExit, onRematch }: {
         <PromptBar prompt={prompt} error={view.error} />
       </footer>
 
-      <HoverTip active={!!hoverInfo}>
+      <HoverTip active={!!hoverInfo} anchor={kbd ? anchor : null}>
         {hoverInfo?.u && (
           <>
             <div className="tip-head">

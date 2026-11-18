@@ -7,24 +7,24 @@ const RULES_FILES = raw(import.meta.glob('../rules/*.test.ts', { query: '?raw', 
 const ENGINE_FILES = raw(import.meta.glob('./*.test.ts', { query: '?raw', import: 'default', eager: true }));
 const SCENARIO_FILES = raw(import.meta.glob('../scenarios/*.test.ts', { query: '?raw', import: 'default', eager: true }));
 
-/** Sections to cover: every `### n.m` heading for n = 1–13, `§1` and `§14` (cited bare) and `§14.1`–`§14.15`. */
+/** Sections to cover: every `### n.m` heading for n = 1–13 and 15–16, `§1`, `§14` and `§16` (cited bare) and `§14.1`–`§14.15`. */
 function requiredSections(): string[] {
-  const out = new Set<string>(['1', '14']);
+  const out = new Set<string>(['1', '14', '16']);
   for (const m of rr.matchAll(/^### (\d+)\.(\d+)\b/gm)) {
     const n = Number(m[1]);
-    if (n >= 1 && n <= 14) out.add(`${n}.${m[2]}`);
+    if (n >= 1 && n <= 16) out.add(`${n}.${m[2]}`);
   }
   return [...out];
 }
 
-/** The sections a header line cites. A bare `§n` covers only §1 and §14; a range `§a.b–§a.c` covers every number between. */
+/** The sections a header line cites. A bare `§n` covers only §1, §14 and §16; a range `§a.b–§a.c` covers every number between. */
 function cited(header: string): string[] {
   const out: string[] = [];
   const re = /§(\d+)(?:\.(\d+))?(?:\s*[–-]\s*§(\d+)\.(\d+))?/g;
   for (const m of header.matchAll(re)) {
     const [, n, sub, n2, sub2] = m;
     if (sub === undefined) {
-      if (n === '1' || n === '14') out.push(n);
+      if (n === '1' || n === '14' || n === '16') out.push(n);
       continue;
     }
     const last = n2 === n && sub2 !== undefined ? Number(sub2) : Number(sub);
@@ -45,10 +45,15 @@ describe('RR coverage', () => {
     expect(required).toContain('13.4');
     expect(required).toContain('14.15');
     expect(required.filter((r) => r.startsWith('14.'))).toHaveLength(15);
+    expect(required).toContain('15.8');
+    expect(required).toContain('16.18');
+    expect(required).toContain('16');
+    expect(required.filter((r) => r.startsWith('16.'))).toHaveLength(18);
   });
 
-  it('expands ranges and counts a bare § only for §1 and §14', () => {
+  it('expands ranges and counts a bare § only for §1, §14 and §16', () => {
     expect(cited('// Rules: RR §2.1–§2.3, §5.2, §1, §9 (x)').sort()).toEqual(['1', '2.1', '2.2', '2.3', '5.2']);
+    expect(cited('// Rules: RR §16, §15.7 (x)').sort()).toEqual(['15.7', '16']);
   });
 
   it('every section is cited by a header of a tests/rules, tests/engine or tests/scenarios file', () => {

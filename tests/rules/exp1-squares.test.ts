@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import type { CardKind, GameDriver, GameEvent, RowKey } from '../../src/engine';
 import { cardKind } from '../../src/engine/cards';
-import { H, build, ev, forceDice, giveCard, must, n, play, u, type Pos } from './helpers';
+import { H, build, endTurn, ev, forceDice, giveCard, must, n, play, u, type Pos } from './helpers';
 
 const bot = (key: RowKey, at: [number, number], extra: object = {}) => ({ side: 'bottom' as const, key, at, ...extra });
 const top = (key: RowKey, at: [number, number], extra: object = {}) => ({ side: 'top' as const, key, at, ...extra });
@@ -56,19 +56,35 @@ describe('106: at most two units form square (S34)', () => {
   it('either of the two may form square again after leaving it (S34)', () => {
     const s = build({
       sideRules: CAP,
-      units: [bot('BR/HC', [5, 2]), bot('BR/HC', [5, 6]), top('FR/LN', [4, 2], { square: 1 }), top('FR/LN', [4, 6], { square: 2 }), top('FR/LN', [4, 10])],
+      first: 'top',
+      units: [bot('BR/HC', [6, 2]), bot('BR/HC', [6, 6]), top('FR/LN', [4, 2], { square: 1 }), top('FR/LN', [4, 6], { square: 2 }), top('FR/LN', [4, 10])],
     });
     expect(s.special.squared.top).toEqual(['u3', 'u4']); // starting squares count
-    // u3 leaves its square (as the leave-square step does)
-    s.units.find((x) => x.id === 'u3')!.square = undefined;
-    s.players.top.squareTrack[0] = null;
-    const d = play(s, 'cavalryCharge', ['u1', 'u2']);
+    // the Allied turn: u3 is ordered and leaves its square through the real leave-square step
+    const d = play(s, 'forward', ['u3']);
+    expect(d.pending).toMatchObject({ kind: 'leaveSquare', side: 'top', unit: 'u3' });
+    must(d, { kind: 'yesno', yes: true });
+    expect(ev(d)).toContainEqual({ t: 'squareLeft', id: 'u3', slot: 1 });
+    expect(u(d, 'u3')!.square).toBeUndefined();
+    expect(d.state.players.top.squareTrack[0]).toBeNull();
+    expect(d.state.special.squared.top).toEqual(['u3', 'u4']); // the record is not cleared by leaving
+    endTurn(d);
+    expect(d.pending).toMatchObject({ kind: 'playCard', side: 'bottom' });
+    // the French charge u3: it may form square again, and the record stays the same two units
+    const card = giveCard(d.state, 'bottom', 'cavalryCharge');
+    must(d, { kind: 'playCard', card });
+    must(d, { kind: 'orders', pieces: ['u1'] });
+    must(d, { kind: 'move', piece: 'u1', to: H(5, 2) }); // the cavalry rides up beside u3
     if (d.pending?.kind === 'move') must(d, { kind: 'endMove' });
     ev(d);
     forceDice(MISS);
     must(d, { kind: 'attack', unit: 'u1', target: H(4, 2) });
     if (d.pending?.kind === 'combinedArms') must(d, { kind: 'select', ids: [] });
     expect(d.pending).toMatchObject({ kind: 'defend', options: ['stand', 'formSquare'] });
+    must(d, { kind: 'defend', choice: 'formSquare' });
+    expect(ev(d).some((e) => e.t === 'squareFormed' && e.id === 'u3')).toBe(true);
+    expect(u(d, 'u3')!.square).toBeDefined();
+    expect(d.state.special.squared.top).toEqual(['u3', 'u4']);
   });
 
   it('a unit outside the two is refused while the two stand out of square (S34)', () => {
@@ -162,7 +178,7 @@ describe("115: Stewart's Folly (S37)", () => {
   });
 
   it("on other turns, and against the folly side's own Cavalry Charge, squares and First Strike are offered as usual", () => {
-    expect(folly('bayonetCharge').pending).toMatchObject({ kind: 'defend', options: ['stand', 'formSquare', 'firstStrike'] });
+    expect(folly('attackC').pending).toMatchObject({ kind: 'defend', options: ['stand', 'formSquare', 'firstStrike'] });
     expect(folly('cavalryCharge', { rules: [] }).pending).toMatchObject({ kind: 'defend', options: ['stand', 'formSquare', 'firstStrike'] });
     // the folly side charges: its opponent (no rule) keeps its options
     const s = build({

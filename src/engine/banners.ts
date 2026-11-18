@@ -1,12 +1,14 @@
 // Banners and victory (RR §13). A side's banner total is its permanent banners plus the banners of the temporary
 // objectives it holds right now (`objState[i].held`).
+import { other } from './query';
+import { shrinkHand } from './scenarioRules';
 import type { FlowCtx, GameState, Side } from './types';
 
 /** A side's banner total: permanent banners plus the banners of its held temporary objectives. */
 export function bannerTotal(s: GameState, side: Side): number {
   let n = s.players[side].banners;
   s.scenario.objectives.forEach((o, i) => {
-    // a majority banner held from setup counts at once (S36); Plan 7C Task 5 gives the new kinds their full rules
+    // held banners of the Expansion #1 kinds count only for their own side's record (S35, S36)
     const temp = o.kind === 'tempHex' || o.kind === 'tempGroup' || o.kind === 'tempAny' || o.kind === 'majority';
     if (o.side === side && temp && s.special.objState[i]?.held) n += o.banners;
   });
@@ -29,5 +31,5 @@ export function gainBanner(s: GameState, ctx: FlowCtx, side: Side, n: number, re
   if (s.winner) return;
   s.players[side].banners += n;
   ctx.emit({ t: 'banner', side, total: bannerTotal(s, side), reason });
-  checkVictory(s, ctx, side);
+  if (!checkVictory(s, ctx, side)) shrinkHand(s, ctx, other(side), n);   // S33, S46
 }

@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ButtonHTMLAttributes
 import { createPortal } from 'react-dom';
 import { Ornament } from './CardView';
 
-/** Title-font button. primary = crimson & gold, secondary = parchment & bronze, ghost = outlined. */
+/** Title-font button. primary = a British-red plate, secondary = paper with an engraved double rule, ghost = one ruled line. */
 export function Button(p: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'ghost' }) {
   const { variant = 'primary', className, type, children, ...rest } = p;
   return (
@@ -12,7 +12,7 @@ export function Button(p: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 
   );
 }
 
-/** A framed panel: dark tooled leather (default) or parchment, with an optional engraved title. */
+/** A panel ruled with a double line: a buff card (default, still called `leather`) or parchment, with an optional title. */
 export function Panel(p: {
   title?: string;
   children: ReactNode;
@@ -24,10 +24,6 @@ export function Panel(p: {
   return (
     <section className={`kit-panel kit-panel--${variant} ${p.className ?? ''}`} style={p.style}>
       <div className={`kit-panel__inner ${variant === 'leather' ? 'kit-leather' : 'kit-parchment'}`}>
-        <span className="kit-panel__stud kit-panel__stud--tl" />
-        <span className="kit-panel__stud kit-panel__stud--tr" />
-        <span className="kit-panel__stud kit-panel__stud--bl" />
-        <span className="kit-panel__stud kit-panel__stud--br" />
         {p.title ? (
           <header className="kit-panel__head">
             <Ornament className="kit-panel__orn" />
@@ -165,7 +161,7 @@ export function Tooltip(p: {
   );
 }
 
-/** Full-bleed tabletop background (dark wood). */
+/** Full-bleed page background: a sheet of map paper (the name is kept from the old wooden table). */
 export function Tabletop(p: { children?: ReactNode; className?: string; style?: CSSProperties }) {
   return (
     <div className={`kit-table ${p.className ?? ''}`} style={p.style}>

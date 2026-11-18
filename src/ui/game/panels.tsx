@@ -8,7 +8,8 @@ import type { LogLine } from './controller';
  * Floating unit tooltip that follows the mouse without re-rendering the game screen. It is kept inside the window by its
  * measured size (a unit with a leader, his traits and an objective can be tall).
  */
-export function HoverTip({ active, children }: { active: boolean; children: React.ReactNode }) {
+/** `anchor`: a client position to show the tip at while the keyboard drives the hover (the pointer's last position otherwise). */
+export function HoverTip({ active, children, anchor }: { active: boolean; children: React.ReactNode; anchor?: { x: number; y: number } | null }) {
   const ref = useRef<HTMLDivElement>(null);
   const pos = useRef({ x: -1000, y: -1000 });
   const place = useCallback(() => {
@@ -19,6 +20,9 @@ export function HoverTip({ active, children }: { active: boolean; children: Reac
     el.style.left = `${Math.min(pos.current.x + 18, window.innerWidth - Math.max(300, w + 8))}px`;
     el.style.top = `${Math.max(4, Math.min(pos.current.y + 18, window.innerHeight - Math.max(220, h + 8)))}px`;
   }, []);
+  useEffect(() => {
+    if (anchor) { pos.current = anchor; place(); }
+  }, [anchor, place, active]);
   useEffect(() => {
     const on = (e: MouseEvent) => {
       pos.current = { x: e.clientX, y: e.clientY };

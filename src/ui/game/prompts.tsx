@@ -13,7 +13,7 @@ import { AssignPanel } from './AssignPanel';
 import { assignError, currentAssign, type ElanOrRally } from './assign';
 import type { GameController, ViewState } from './controller';
 import { AUTO_ACTION, DECISION_TITLES, decisionTitle, promptSpec, unitLabel } from './promptSpec';
-import { attackDice, combinedArmsDice, combinedArmsTotalText, effectiveGuns, expectedHits, leaderRetreatChoices, retreatChoices, toggleGun, type UiSel } from './uiModel';
+import { attackDice, combinedArmsDice, combinedArmsTotalText, effectiveGuns, expectedHits, leaderRetreatChoices, retreatChoices, toggleGun, wantsPromptFocus, type UiSel } from './uiModel';
 
 /** What the prompt bar shows. `tone`: 'warn' or 'danger' colouring; `dice`: dice drawn before the text. */
 export interface Prompt {
@@ -46,6 +46,23 @@ export interface PromptCtx {
   onExit: () => void;
   /** Why the last click on the board was refused (the Élan / Rally chooser). */
   assignNote?: string | null;
+}
+
+/** The slice of `document` that `focusNewDecision` reads: tests give it fakes. */
+export interface FocusDoc {
+  activeElement: unknown;
+  querySelector(selector: string): { focus(o?: { preventScroll: boolean }): void } | null;
+}
+
+/**
+ * A new decision of the human's takes the keyboard focus (`focusPromptTarget`), unless it is the computer's, the pointer is
+ * over the board, a dialog is open, or a select or text field has the focus. Returns what took it.
+ */
+export function focusNewDecision(d: Decision | null, human: Side, pointerOverBoard: boolean, doc: FocusDoc): PromptFocus | null {
+  if (!wantsPromptFocus(d, human, pointerOverBoard) || doc.querySelector('.kit-modal')) return null;
+  const tag = (doc.activeElement as { tagName?: string } | null)?.tagName;
+  if (tag === 'SELECT' || tag === 'INPUT') return null;
+  return focusPromptTarget(doc);
 }
 
 type D<K extends Decision['kind']> = Extract<Decision, { kind: K }>;
@@ -277,6 +294,9 @@ function scoutPrompt(c: PromptCtx, d: D<'scoutKeep'>): Prompt {
 /** The hint line while no choice is under the pointer. */
 export const HINT_IDLE = 'Point at a choice to see what it does.';
 
+/** Spec actions that give a chance up (decline a bonus melee, stay put, no guns): an Enter must not take them by habit. */
+const SKIP_ACTIONS: ReadonlySet<string> = new Set(['decline', 'none']);
+
 /** Any decision without a chooser of its own: one button per action of its spec (the first is the primary one). */
 function genericPrompt(c: PromptCtx, d: Decision): Prompt {
   const spec = promptSpec(c.s, d);
@@ -288,7 +308,7 @@ function genericPrompt(c: PromptCtx, d: Decision): Prompt {
       enter: () => c.setUi((u) => (u.hoverAction === a.key ? u : { ...u, hoverAction: a.key })),
       leave: () => c.setUi((u) => (u.hoverAction === a.key ? { ...u, hoverAction: null } : u)),
     };
-    return btn(a.label, () => c.answer(answer), { variant: i === 0 ? 'primary' : 'secondary', key: a.key, title: a.hint, hover: a.hint ? hover : undefined });
+    return btn(a.label, () => c.answer(answer), { variant: i === 0 ? 'primary' : 'secondary', key: a.key, title: a.hint, hover: a.hint ? hover : undefined, noFocus: SKIP_ACTIONS.has(a.key) });
   });
   // a prompt with hints keeps its line while none is hovered, so the bar does not change height under the pointer
   const hint = spec.actions.some((a) => a.hint) ? spec.actions.find((a) => a.key === c.ui.hoverAction)?.hint ?? HINT_IDLE : undefined;
@@ -332,7 +352,7 @@ function ordersPrompt(c: PromptCtx, d: D<'orders'>): Prompt {
   const max = limit === null ? null : Math.min(limit, all.length);
   const count = max === null ? `${n}` : `${n}/${max}`;
   const buttons = [
-    btn(n ? `Confirm ${count} order${(max ?? n) > 1 ? 's' : ''}` : 'Order nothing', () => c.answer({ kind: 'orders', pieces: ui.orderSel }), { disabled: !!err, variant: n ? 'primary' : 'secondary', key: 'confirm' }),
+    btn(n ? `Confirm ${count} order${(max ?? n) > 1 ? 's' : ''}` : 'Order nothing', () => c.answer({ kind: 'orders', pieces: ui.orderSel }), { disabled: !!err, variant: n ? 'primary' : 'secondary', key: 'confirm', noFocus: !n }),
   ];
   if (n) buttons.push(btn('Clear', () => setUi({ ...ui, orderSel: [] }), { variant: 'ghost' }));
   if (d.single) {
@@ -368,7 +388,7 @@ function movePrompt(c: PromptCtx): Prompt {
     return !!u && !!s.turn.ordered[id] && !!l && !!s.turn.ordered[l.id];
   });
   if (detach) text += ' To detach a leader, move him before his unit.';
-  const buttons = [btn('End movement', () => c.answer({ kind: 'endMove' }), { variant: 'secondary' })];
+  const buttons = [btn('End movement', () => c.answer({ kind: 'endMove' }), { variant: 'secondary', noFocus: true })];
   if (sel && pieceMoves(s, sel).some((m) => m.hex === OFF_BOARD)) {
     buttons.unshift(btn('Exit the battlefield', () => c.answer({ kind: 'move', piece: sel, to: OFF_BOARD }), { variant: 'secondary' }));
   }
@@ -394,7 +414,7 @@ function battlePrompt(c: PromptCtx): Prompt {
       }
     }
   }
-  const buttons = [btn('End battles', () => c.answer({ kind: 'endBattle' }), { variant: 'secondary' }), autoButton(c)];
+  const buttons = [btn('End battles', () => c.answer({ kind: 'endBattle' }), { variant: 'secondary', noFocus: true }), autoButton(c)];
   return { title: DECISION_TITLES.battle, text, buttons };
 }
 
