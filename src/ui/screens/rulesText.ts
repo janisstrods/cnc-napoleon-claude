@@ -404,7 +404,7 @@ export const RULES_TEXT: Record<RulesTab, RulesBlock[]> = {
     {
       heading: 'Guerrilla Action',
       paragraphs: [
-        'In most Spanish battles the Allied side holds Guerrilla counters in the open. There are six counters in all; those not held wait in the pool, and the French never hold any. Each turn the French play a card, before they order anything, the Allied side may spend a counter: it goes to the pool and the French roll one die. A sabre means the action fails and the card is played; any other face cancels it.',
+        'In most Spanish battles the Allied side holds Guerrilla counters in the open. There are six counters in all; those not held wait in the pool, and the French never hold any. Each turn, once the French have played a card and before they order anything, the Allied side may spend a counter: it goes to the pool and the French roll one die. A sabre means the action fails and the card is played; any other face cancels it.',
         'A cancelled card orders nothing. The French discard it, draw a single card, and the turn ends; a cancelled Scout gives that one card, a cancelled Élan still reshuffles, and a Counter-Attack the next turn copies it in full. Only one attempt is made each turn, and no First Strike can be played in a cancelled turn.',
       ],
       reading: 'The counters belong to the whole Allied side, not to a nation: any French card may be targeted, any Allied Scout may gain one, and the rule holds after the last Spanish unit is gone.',

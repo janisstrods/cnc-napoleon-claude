@@ -83,6 +83,7 @@ export function App() {
       </ErrorBoundary>
     );
   }
+  // the picker's failure is no reason to touch the saved game; only the main menu's boundary clears it (a bad save may be its cause)
   const resetMenus = () => {
     clearSaved();
     setSaved(null);
@@ -90,7 +91,7 @@ export function App() {
   };
   if (screen.kind === 'select') {
     return (
-      <ErrorBoundary onReset={resetMenus}>
+      <ErrorBoundary onReset={toMenu} message="Something went wrong while drawing the battle picker. Any saved game is untouched; you can return to the menu.">
       <ScenarioSelect
         initialBattle={screen.battle}
         onBack={toMenu}
@@ -105,7 +106,11 @@ export function App() {
     );
   }
   return (
-    <ErrorBoundary onReset={resetMenus}>
+    <ErrorBoundary
+      onReset={resetMenus}
+      message="Something went wrong while drawing the menu. The button below discards any saved game and starts the menu afresh."
+      buttonLabel="Discard the saved game and restart the menu"
+    >
     <MainMenu
       notice={notice}
       saved={saved}
