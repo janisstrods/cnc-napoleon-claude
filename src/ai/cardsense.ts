@@ -13,6 +13,7 @@ import {
   type CardKind, type DieFace, type GameState, type Side, type Unit,
 } from '../engine';
 import { occOf, type Occ } from './board';
+import { bannerValue } from './estimate';
 import { reachOf } from './evaluate';
 import { handSize, myHand, myTrack } from './view';
 import { CARD_VALUE, ELAN_SHARE, rowValue, unitValue, type Weights } from './values';
@@ -95,32 +96,86 @@ function facesOf(i: number, c: number, a: number, o: number): DieFace[] {
   return [...Array<DieFace>(i).fill('infantry'), ...Array<DieFace>(c).fill('cavalry'), ...Array<DieFace>(a).fill('artillery'), ...Array<DieFace>(o).fill('sabre')];
 }
 
+/** A typical attack on a unit in reach: four dice, each a hit with probability one third (a stand-in for the real mix). */
+const ELIM_DICE = 4;
+const ELIM_HIT = 1 / 3;
+
+/** P(a typical attack takes `blocks` blocks or more), the public elimination proxy of a unit with that many blocks. */
+function elimP(blocks: number): number {
+  if (blocks <= 0) return 1;
+  let p = 0;
+  for (let k = blocks; k <= ELIM_DICE; k++) {
+    let ways = 1;
+    for (let i = 0; i < k; i++) ways = (ways * (ELIM_DICE - i)) / (i + 1);
+    p += ways * ELIM_HIT ** k * (1 - ELIM_HIT) ** (ELIM_DICE - k);
+  }
+  return p;
+}
+
+/** The own units an enemy could attack next turn (adjacent now, or within its reach): only those risk elimination. */
+function threatenedUnits(s: GameState, me: Side): Set<string> {
+  const occ = occOf(s);
+  const out = new Set<string>();
+  for (const u of occ.bySide[me]) {
+    for (const e of occ.bySide[other(me)]) {
+      const d = distance(e.hex, u.hex);
+      if (d <= 1 || (d <= RALLY_FAR && reachOf(s, occ, e, u.hex) >= d)) {
+        out.add(u.id);
+        break;
+      }
+    }
+  }
+  return out;
+}
+
+/** Beyond this distance no enemy is worth the reach walk. */
+const RALLY_FAR = 6;
+
+/**
+ * What the block a unit of `blocks` blocks gains is worth: the rise in its fighting value, plus, when an enemy can reach it, the
+ * chance of its elimination that the block removes times the banner that elimination would score (the evaluation prices
+ * banner risk itself; this is the same chance, kept public, so the dice go where a unit is about to die).
+ */
+function blockKey(s: GameState, me: Side, u: Unit, blocks: number, threatened: boolean): number {
+  const st = statsOf(s, u);
+  let v = rowValue(st, blocks + 1) - rowValue(st, blocks);
+  if (threatened) v += bannerValue(s, other(me), u) * (elimP(blocks) - elimP(blocks + 1));
+  return v;
+}
+
 /**
  * The assignment a Rally roll `faces` gets from us: each arm face takes, in turn, the own wounded unit of that arm whose next
- * block is worth most (ties by id) that the engine's `validateRally` still allows (never above the starting blocks, R54);
- * `greedyAssign` is the engine's own. Deterministic.
+ * block is worth most (`blockKey`: fighting value plus, for a unit an enemy can reach, the banner risk the block removes; ties by
+ * id) that the engine's `validateRally` still allows (never above the starting blocks, R54). A unit's next block counts the
+ * blocks already given it by earlier dice. `greedyAssign` is the engine's own. Deterministic.
  */
 export function rallyAssign(s: GameState, me: Side, faces: readonly DieFace[]): (string | null)[] {
-  const wounded = unitsOf(s, me)
-    .filter((u) => u.blocks < u.maxBlocks)
-    .map((u) => ({ u, g: rowValue(statsOf(s, u), u.blocks + 1) - rowValue(statsOf(s, u), u.blocks) }))
-    .sort((x, y) => y.g - x.g || (x.u.id < y.u.id ? -1 : 1));
-  return greedyAssign(
-    faces.length,
-    (i) => wounded.filter((w) => statsOf(s, w.u).arm === faces[i]).map((w) => w.u.id),
-    (trial) => validateRally(s, me, faces, trial),
-  );
+  return assignWith(s, me, faces, threatenedUnits(s, me));
+}
+
+function assignWith(s: GameState, me: Side, faces: readonly DieFace[], threat: ReadonlySet<string>): (string | null)[] {
+  const wounded = unitsOf(s, me).filter((u) => u.blocks < u.maxBlocks);
+  const given = new Map<string, number>();
+  const plan = faces.map((face) => {
+    const open = wounded.filter((u) => statsOf(s, u).arm === face && u.blocks + (given.get(u.id) ?? 0) < u.maxBlocks);
+    const key = new Map(open.map((u) => [u.id, blockKey(s, me, u, u.blocks + (given.get(u.id) ?? 0), threat.has(u.id))]));
+    const order = open.map((u) => u.id).sort((x, y) => key.get(y)! - key.get(x)! || (x < y ? -1 : 1));
+    if (order.length) given.set(order[0], (given.get(order[0]) ?? 0) + 1);
+    return order;
+  });
+  return greedyAssign(faces.length, (i) => plan[i], (trial) => validateRally(s, me, faces, trial));
 }
 
 /**
  * The expected value, in banners, of a Rally rolled with `command` dice: the exact expectation over the face counts (a
  * multinomial over `DIE_SIDES`, at most C(command + 3, 3) cases), each case assigned by `rallyAssign` and priced by the
- * blocks it returns (`rowValue`). No random draw.
+ * blocks it returns (`blockKey`, the same price `rallyAssign` ranks by, so the card is valued as it is played). No random draw.
  */
 export function rallyGain(s: GameState, me: Side, command: number): number {
   const n = Math.max(0, Math.floor(command));
   if (!unitsOf(s, me).some((u) => u.blocks < u.maxBlocks)) return 0;
   const fact = (k: number): number => (k <= 1 ? 1 : k * fact(k - 1));
+  const threat = threatenedUnits(s, me);
   let total = 0;
   for (let i = 0; i <= n; i++) {
     for (let c = 0; c + i <= n; c++) {
@@ -129,13 +184,13 @@ export function rallyGain(s: GameState, me: Side, command: number): number {
         const p = (fact(n) / (fact(i) * fact(c) * fact(a) * fact(o))) * FACE_P[0] ** i * FACE_P[1] ** c * FACE_P[2] ** a * FACE_P[3] ** o;
         if (i + c + a === 0) continue;
         const faces = facesOf(i, c, a, o);
-        const ids = rallyAssign(s, me, faces);
+        const ids = assignWith(s, me, faces, threat);
         const gain = new Map<string, number>();
         for (const id of ids) if (id !== null) gain.set(id, (gain.get(id) ?? 0) + 1);
         let v = 0;
         for (const [id, k] of gain) {
           const u = s.units.find((x) => x.id === id)!;
-          v += rowValue(statsOf(s, u), u.blocks + k) - rowValue(statsOf(s, u), u.blocks);
+          for (let j = 0; j < k; j++) v += blockKey(s, me, u, u.blocks + j, threat.has(id));
         }
         total += p * v;
       }

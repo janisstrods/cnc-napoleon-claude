@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { OFF_BOARD, answerError, cloneState, fireDice, newOrderedPiece, distance, unitById, unitMoves, type Answer, type GameDriver, type GameState, type HexId } from '../../src/engine';
+import { OFF_BOARD, UNIT_STATS, answerError, cloneState, fireDice, newOrderedPiece, distance, unitById, unitMoves, type Answer, type GameDriver, type GameState, type HexId } from '../../src/engine';
 import type { MoveTarget } from '../../src/engine/movement';
 import { occOf } from '../../src/ai/board';
 import { evaluate } from '../../src/ai/evaluate';
@@ -7,7 +7,7 @@ import { fireEstimate, makeEstCtx, takeGround } from '../../src/ai/estimate';
 import { makeBudget } from '../../src/ai/budget';
 import { greedyMoveStep, scoreTarget, type MoveCtx } from '../../src/ai/moves';
 import { Rng } from '../../src/ai/rand';
-import { NEUTRAL_W } from '../../src/ai/values';
+import { NEUTRAL_W, weightsFor } from '../../src/ai/values';
 import { H, build, giveCard, leaderId, must, play, type Pos } from '../rules/helpers';
 import { failOnAiErrors } from './no-ai-errors';
 
@@ -215,6 +215,27 @@ describe('review round 1', () => {
     expect(makeEstCtx(s, 'bottom', NEUTRAL_W).cardValue).not.toBeNaN();
   });
 
+  it('c: contextFor checks its weights: two weight sets on one state, in either order, each match a fresh copy', () => {
+    const s = build({
+      // an own unit in square: its standing cost is priced by the card value, which the weights' retention scales
+      units: [bot('BR/LN', [6, 6], { square: 1 }), bot('BR/HC', [7, 3]), bot('BR/FA', [7, 8]), top('FR/LN', [3, 6]), top('FR/HC', [2, 3])],
+      first: 'bottom',
+    });
+    const W2 = { ...weightsFor({ aggression: 0.9, caution: 0.1, cunning: 0.2, dash: 0.9 }), retention: NEUTRAL_W.retention * 4 };
+    expect(W2.retention).not.toBe(NEUTRAL_W.retention);
+    expect(makeEstCtx(s, 'bottom', W2).cardValue).not.toBe(makeEstCtx(s, 'bottom', NEUTRAL_W).cardValue);
+    const fresh = (W: typeof NEUTRAL_W): number => evaluate(cloneState(s), 'bottom', W);
+    const a1 = evaluate(s, 'bottom', NEUTRAL_W);
+    const b1 = evaluate(s, 'bottom', W2);
+    const a2 = evaluate(s, 'bottom', NEUTRAL_W); // back to the first set on the same state object
+    const b2 = evaluate(s, 'bottom', W2);
+    expect(a1).toBe(fresh(NEUTRAL_W));
+    expect(b1).toBe(fresh(W2));
+    expect(a2).toBe(a1);
+    expect(b2).toBe(b1);
+    expect(b1).not.toBe(a1);
+  });
+
   it('2a: a move that fires counts the halved dice of moving fire (step 1 hex, fire at 1 hex moved)', () => {
     const s = atMove({ units: [bot('BR/LN', [6, 6]), top('FR/LN', [3, 6])] }).state;
     const step = unitMoves(s, 'u1').find((m) => m.battle && distance(m.hex, H(3, 6)) === 2)!;
@@ -251,9 +272,13 @@ describe('review round 1', () => {
     const mc = mcOf(s1);
     expect(greedyMoveStep(s1, mc).kind).toBe('endMove'); // the gun stands: decided
     expect(mc.decided!.has('u1')).toBe(true);
+    const spent = mc.budget.nodes;
+    expect(spent).toBeGreaterThan(0);
     const s2 = cloneState(s1);
     s2.turn.number += 1;
     greedyMoveStep(s2, mc);
+    // the pieces decided last turn were looked at again (targets scored afresh), not skipped as decided
+    expect(mc.budget.nodes).toBeGreaterThan(spent);
     // a new turn: u1 was looked at afresh (it is decided again, after a clear)
     expect(mc.decidedFor).toBe(`${s2.turn.number}|${s2.active}|${s2.turn.card}`);
     expect([...mc.decided!]).toEqual(['u1']);
@@ -273,13 +298,18 @@ describe('review round 1', () => {
   });
 
   it('7: the bonus prospect is memoised per (attacker, blocks, vacated hex, hexes moved): different keys, different prospects', () => {
-    const s = build({ units: [bot('BR/LC', [6, 6]), top('FR/LN', [5, 6], { blocks: 1 }), top('FR/LN', [4, 5]), top('FR/LN', [4, 7], { blocks: 1 })], first: 'bottom' });
+    const s = build({ units: [bot('BR/LC', [6, 6]), top('FR/LN', [5, 6], { blocks: 1 }), top('FR/LN', [4, 5]), top('FR/LN', [4, 7])], first: 'bottom' });
+    // in the base game a unit that moved rolls as many melee dice as one that did not, so `moved` could not change a prospect;
+    // here the row loses a die after moving (the Spanish rule, `movedPlus` −1), so the hexes moved really change the value
+    const row = UNIT_STATS['BR/LC'];
+    s.scenario = { ...s.scenario, unitStats: { ...s.scenario.unitStats, 'BR/LC': { ...row, melee: { kind: 'blocks', plus: 0, vsInfantry: 0, movedPlus: -1 } } } };
     const ec = makeEstCtx(s, 'bottom', NEUTRAL_W);
     const adv = (moved: number, atk = s.units[0]) => takeGround(s, atk, H(5, 6), { ...ec, moved });
     const a0 = adv(0).value;
     const a2 = adv(2).value; // same occ, another `moved`: the bonus melee's dice differ (moved hexes), not a cached copy
     expect(adv(0).value).toBe(a0);
     expect(adv(2).value).toBe(a2);
+    expect(a2).not.toBe(a0); // `moved` is part of the prospect key: the two really are different values
     const worn = { ...s.units[0], blocks: 1 };
     expect(adv(0, worn).value).not.toBe(a0);
   });
