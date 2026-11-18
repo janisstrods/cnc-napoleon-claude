@@ -23,14 +23,23 @@ export function dieOdds(kind: 'fire' | 'melee' | 'retireReform', by: UnitStats, 
   return { hit: hit / DIE_SIDES.length, flag: flag / DIE_SIDES.length, sabre: sabre / DIE_SIDES.length };
 }
 
-const cache = new Map<string, Float64Array>();
+const cache = new Map<number | string, Float64Array>();
+
+/** Die odds are whole numbers of faces out of six: `faces` is that count (0..6), or -1 for odds that are not. */
+function faces(p: number): number {
+  const f = Math.round(p * DIE_SIDES.length);
+  return Math.abs(f / DIE_SIDES.length - p) < 1e-9 ? f : -1;
+}
 
 /**
  * P(hits = h, flags = f) of `n` dice at `h * (n + 1) + f` (each die: a hit, a flag, or neither). Shared and cached: do not
  * write to the result.
  */
 export function rollDist(n: number, o: Pick<DieOdds, 'hit' | 'flag'>): Float64Array {
-  const key = `${n}:${o.hit.toFixed(9)}:${o.flag.toFixed(9)}`;
+  // keyed on the dice count and the faces that hit and flag (a number: no string built per call), else on the odds themselves
+  const fh = faces(o.hit);
+  const ff = faces(o.flag);
+  const key = fh >= 0 && ff >= 0 ? (n * 7 + fh) * 7 + ff : `${n}:${o.hit.toFixed(9)}:${o.flag.toFixed(9)}`;
   const known = cache.get(key);
   if (known) return known;
   const w = n + 1;

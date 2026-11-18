@@ -12,10 +12,10 @@ import {
   unitsOf, validateOrders, OFF_BOARD,
   type CardKind, type GameState, type HexId, type Leader, type OrderedPiece, type SectionName, type Side, type Unit,
 } from '../engine';
-import { ELAN_SHARE, commandOf, rallyGain, withCommand } from './cardsense';
+import { commandOf, rallyGain, withCommand } from './cardsense';
 import { occOf } from './board';
 import { fireEstimate, loneLeaderEstimate, makeEstCtx, meleeEstimate, bannerValue, type EstCtx, type Outcome } from './estimate';
-import { unitValue, type Weights } from './values';
+import { ELAN_SHARE, unitValue, type Weights } from './values';
 
 /** The most candidates offered for one card. */
 export const MAX_CANDIDATES = 8;
