@@ -77,7 +77,7 @@ describe('convertBattle', () => {
     expect(convertBattle(river, meta({ rivers: 'brook' }), e('002')).rivers).toBe('brook');
   });
 
-  it('refuses Expansion #1 data, naming every unsupported feature (Plan 7)', () => {
+  it('no Spanish battle has an unsupported unit type; synthetic unsupported features are named (Task 11 restores the positive conversions)', () => {
     const spanish = Object.keys(RAW).filter((id) => id.startsWith('1'));
     expect(spanish.flatMap((id) => unsupportedFeatures(RAW[id])).some((f) => f.startsWith('unit type'))).toBe(false);   // every Spanish row exists since Plan 7C Task 3
     expect(unsupportedFeatures(synth({ terrain: [{ r: 1, c: 1, t: 'walledFarm' }] }))).toContain('terrain walledFarm ×1');

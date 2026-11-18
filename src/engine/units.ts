@@ -1,4 +1,4 @@
-// Unit table (RR §2.2–§2.6): one row per UnitKey that exists in the base game. Nation-specific numbers (moving-fire
+// Unit table (RR §2.2–§2.6): one row per UnitKey that has stats: the base game (RR §2) and Expansion #1 (RR §15.1, `expansion: 'exp1'`). Nation-specific numbers (moving-fire
 // rounding, retreat, flags) are row data; the engine never branches on a nation. Imports only codes, types, expansions.
 import { ARM_OF, CODE_NAMES, codeOf, type Arm, type RowKey } from './codes';
 import type { Expansion } from './expansions';

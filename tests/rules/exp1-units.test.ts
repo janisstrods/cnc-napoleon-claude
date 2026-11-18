@@ -44,8 +44,11 @@ describe('the twelve Expansion #1 rows (§15.1)', () => {
       expect(st.immuneToFlagReroll, k).toBe(immune);
       expect(st.expansion, k).toBe('exp1');
     }
-    const fa = S('SP/FA');
-    expect(fa).toMatchObject({ blocks: 3, expansion: 'exp1', melee: { kind: 'artillery' }, fire: S('FR/FA').fire, retreat: { first: 1, then: 1 }, flagIgnore: 0, move: S('FR/FA').move });
+    expect(S('SP/FA')).toEqual({ ...S('FR/FA'), key: 'SP/FA', expansion: 'exp1' });
+    for (const k of NEW) {
+      expect(S(k).ignoresInfantryFireHits, k).toBe(k === 'SP/CU' ? 1 : 0);
+      expect(S(k).battleAfterMoveMinBlocks, k).toBe(1);
+    }
     expect(S('SP/LT').move).toEqual(LIGHT);
     expect(S('SP/CU').ignoresInfantryFireHits).toBe(1);
   });
@@ -99,9 +102,9 @@ describe('Spanish melee after moving (S1–S5)', () => {
     expect([dice('u7', 0), dice('u7', 1)]).toEqual([4, 4]);
     expect(baseMeleeDice(s, u(s, 'u1')!, foe, 2)).toBe(3);
   });
-  it('a 1-block unit never has negative base dice', () => {
-    const s = build({ units: [bot('SP/LN', [5, 6], { blocks: 1 }), top('BR/HC', [4, 6])] });
-    expect(baseMeleeDice(s, u(s, 'u1')!, u(s, 'u2')!, 1)).toBe(0);
+  it('a moved 1-block SP/LN, SP/LT and SP/ML have exactly 0 base melee dice (S7)', () => {
+    const s = build({ units: [bot('SP/LN', [5, 6], { blocks: 1 }), bot('SP/LT', [5, 7], { blocks: 1 }), bot('SP/ML', [5, 4], { blocks: 1 }), top('BR/HC', [4, 6])] });
+    for (const id of ['u1', 'u2', 'u3']) { expect(baseMeleeDice(s, u(s, id)!, u(s, 'u4')!, 1)).toBe(0); expect(baseMeleeDice(s, u(s, id)!, u(s, 'u4')!, 0)).toBe(1); }
   });
 });
 
@@ -118,7 +121,6 @@ describe('S7: a moved 1-block unit', () => {
     const s = build({ units: [bot('SP/LN', [5, 6], { blocks: 1 }), top('FR/LN', [4, 6])], leaders: [{ side: 'bottom', at: [5, 6] }] });
     const d = play(s, 'leadership', ['u1', leaderId(s, 0)]);
     expect(d.pending?.kind).toBe('move');
-    // the unit moves a hex to (5,5) (still adjacent to (4,6)? neighbour check below) — use dice directly with moved 1
     expect(meleeDice(d.state, u(d, 'u1')!, u(d, 'u2')!, { role: 'attack', moved: 1, declared: true })).toBe(1);
     expect(meleeDice(d.state, u(d, 'u1')!, u(d, 'u2')!, { role: 'attack', moved: 0 })).toBe(2);
     expect(meleeDice(d.state, u(d, 'u1')!, u(d, 'u2')!, { role: 'attack', moved: 1 })).toBe(1);
@@ -139,6 +141,15 @@ describe('S7: a moved 1-block unit', () => {
     endMoves(m);
     expect(battleTargets(m.state, 'u1')).toEqual([]);
   });
+  it('under Probe a Combined Arms gun can join: the melee is offered and combinedArms is required (S7, R41)', () => {
+    const s = build({ units: [bot('SP/LN', [6, 6], { blocks: 1 }), top('FR/LN', [4, 6]), bot('SP/FA', [6, 5])] });
+    const d = play(s, 'probeC', ['u1', 'u3']);
+    must(d, { kind: 'move', piece: 'u1', to: H(5, 6) });
+    endMoves(d);
+    expect(battleTargets(d.state, 'u1')).toEqual([{ hex: H(4, 6), kind: 'melee', dice: 0 }]);
+    must(d, { kind: 'attack', unit: 'u1', target: H(4, 6) });
+    expect(d.pending).toMatchObject({ kind: 'combinedArms', unit: 'u1', options: ['u3'], required: true });
+  });
   it('cannot fire after moving, and no card creates the shot (R15)', () => {
     const s = build({ units: [bot('SP/LN', [6, 6], { blocks: 1 }), top('FR/LN', [4, 6])], leaders: [{ side: 'bottom', at: [6, 6] }] });
     const d = play(s, 'leadership', ['u1', leaderId(s, 0)]);
@@ -151,7 +162,7 @@ describe('S7: a moved 1-block unit', () => {
 });
 
 describe('S8: standing values', () => {
-  it('battle back, First Strike and escape use standing dice', () => {
+  it('dice functions: battle back, First Strike and escape use standing dice', () => {
     const s = build({ units: [bot('FR/LN', [5, 6]), top('SP/LN', [4, 6], { blocks: 3 })], leaders: [{ side: 'top', at: [3, 6] }] });
     const sp = u(s, 'u2')!;
     expect(meleeDice(s, sp, u(s, 'u1')!, { role: 'back', moved: 0 })).toBe(3);
@@ -170,6 +181,26 @@ describe('S8: standing values', () => {
     const t = build({ units: [bot('SP/LN', [6, 6], { blocks: 4 }), top('FR/LN', [4, 6])] });
     const e = play(t, 'attackC', ['u1']);
     expect(fireDice(e.state, u(e, 'u1')!, H(4, 6), { role: 'attack', moved: e.state.turn.ordered.u1.moved })).toBe(4);
+  });
+  it('a Rally-placed and a Short-Supply-placed unit have moved 0 and full standing dice', () => {
+    const s = build({ units: [bot('SP/LN', [6, 6], { blocks: 2 }), top('FR/LN', [4, 6])] });
+    forceDice(['infantry', 'infantry', 'flag', 'flag', 'flag']);
+    const d = play(s, 'rally');
+    must(d, { kind: 'assign', ids: ['u1', 'u1', null, null, null] });
+    const op = d.state.turn.ordered.u1;
+    expect(op.moved).toBe(0);
+    expect(u(d, 'u1')!.blocks).toBe(4);
+    expect(fireDice(d.state, u(d, 'u1')!, H(4, 6), { role: 'attack', moved: op.moved })).toBe(4);
+    const t = build({ units: [bot('SP/LN', [6, 6]), top('FR/LN', [4, 6])] });
+    const e = play(t, 'shortSupply');
+    expect(e.pending).toMatchObject({ kind: 'shortSupplyTarget' });
+    must(e, { kind: 'choose', index: 0 });
+    const hex = (e.pending as { options: number[] }).options[0];
+    must(e, { kind: 'hex', hex });
+    const placed = u(e, 'u1')!;
+    expect(placed.hex).toBe(hex);
+    expect(e.state.turn.ordered.u1?.moved ?? 0).toBe(0);
+    expect(baseFireDice(S('SP/LN'), placed.blocks, 2, e.state.turn.ordered.u1?.moved ?? 0)).toBe(4);
   });
 });
 
@@ -236,18 +267,35 @@ describe('retreat distances (S9)', () => {
     const d = asked({ units: [top('SP/LN', [0, 6])] }, 1, 0);
     expect(u(d, 'u2')!.blocks).toBe(2);   // on the baseline: 2 hexes short, 2 blocks
   });
-  it('in square a Spanish unit loses 2 blocks per flag, militia 3, Swiss 1 (R33)', () => {
-    const lost = (key: RowKey, k: number, blocks?: number) => {
-      const d = fireAt({ units: [top(key, [0, 6], { square: 1, blocks })] }, flags(k), 0);
+  it('a retreat that runs out of hexes behind friendly units costs 1 block per hex short (R74)', () => {
+    const closed2 = [4, 5, 6, 7, 8].map((c) => top('FR/LN', [2, c]));   // the first rear hex is free, the second is blocked
+    const s = build({ units: [top('SP/LN', [4, 6]), ...closed2] });
+    const o = retreatOptions(s, u(s, 'u1')!, 2);
+    expect(o.length).toBeGreaterThan(0);
+    expect(o.every((x) => x.path.length === 1 && x.losses === 1)).toBe(true);
+    const shut = build({ units: [top('SP/ML', [4, 6]), top('FR/LN', [3, 5]), top('FR/LN', [3, 6])] });   // no rear hex at all
+    const m = retreatOptions(shut, u(shut, 'u1')!, 3);
+    expect(m.every((x) => x.path.length === 0 && x.losses === 3)).toBe(true);
+    const d = asked({ units: [top('SP/ML', [4, 6]), top('FR/LN', [3, 5]), top('FR/LN', [3, 6])] }, 1);
+    expect(u(d, 'u2')!.blocks).toBe(1);
+  });
+  it('in square a Spanish unit loses 2 blocks per flag, militia 3, Swiss 1, and does not move (R33)', () => {
+    // row 3 has free hexes behind it, so an unsquared unit would simply retreat; the square must lose blocks instead
+    const after = (key: RowKey, k: number) => {
+      const d = fireAt({ units: [top(key, [3, 6], { square: 1 })] }, flags(k), 3);
       if (d.pending?.kind === 'ignoreFlags') must(d, { kind: 'ignoreFlags', count: 0 });
       return u(d, 'u2');
     };
-    const ln = lost('SP/LN', 1);
-    expect(ln).toBeDefined();
+    const ln = after('SP/LN', 1);
     expect(ln!.blocks).toBe(2);
-    expect(lost('SP/LN', 2)).toBeUndefined();   // 4 blocks lost: eliminated
-    expect(lost('SP/ML', 1)!.blocks).toBe(1);
-    expect(lost('SP/SWI', 1)!.blocks).toBe(4);
+    expect(ln!.hex).toBe(H(3, 6));
+    expect(after('SP/LN', 2)).toBeUndefined();   // 4 blocks lost: eliminated
+    const ml = after('SP/ML', 1);
+    expect(ml!.blocks).toBe(1);
+    expect(ml!.hex).toBe(H(3, 6));
+    const sw = after('SP/SWI', 1);
+    expect(sw!.blocks).toBe(4);
+    expect(sw!.hex).toBe(H(3, 6));
   });
 });
 

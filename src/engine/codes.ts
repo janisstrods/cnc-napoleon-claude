@@ -32,7 +32,7 @@ export function isUnitKey(s: string): s is UnitKey {
   return rest.length === 0 && (NATIONS as readonly string[]).includes(n) && (UNIT_CODES as readonly string[]).includes(c);
 }
 
-/** The unit rows of RR §2.2–§2.4, in RR order. */
+/** The unit rows of RR §2.2–§2.4 and, last, Expansion #1's rows (§15.1), in RR order. */
 export const UNIT_KEYS = [
   'FR/LN', 'FR/LT', 'FR/GR', 'FR/YG', 'FR/OG', 'FR/ML', 'FR/LC', 'FR/HC', 'FR/CU', 'FR/GHC', 'FR/FA', 'FR/HA', 'FR/GA',
   'BR/LN', 'BR/LT', 'BR/RI', 'BR/GR', 'BR/GG', 'BR/LC', 'BR/HC', 'BR/GHC', 'BR/FA', 'BR/HA',
