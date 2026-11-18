@@ -12,9 +12,11 @@ import { dropStorage, stubStorage } from '../support/storage';
 afterEach(dropStorage);
 
 describe('clean slate', () => {
-  it('the hidden drill battle and the generated base battles remain', () => {
-    expect(SCENARIOS.map((s) => s.id)).toEqual(['000', ...Array.from({ length: 15 }, (_, i) => String(i + 1).padStart(3, '0'))]);
+  it('the hidden drill battle, the generated base battles and the hidden Spanish battles remain', () => {
+    const spanish = Array.from({ length: 18 }, (_, i) => String(101 + i));
+    expect(SCENARIOS.map((s) => s.id)).toEqual(['000', ...Array.from({ length: 15 }, (_, i) => String(i + 1).padStart(3, '0')), ...spanish]);
     expect(scenarioById('000').hidden).toBe(true);
+    for (const id of spanish) expect(scenarioById(id).hidden, id).toBe(true);   // Expansion #1 stays hidden until Task 17
   });
 
   it('the battle picker shows no hidden battle and random battle never picks the drill', () => {
