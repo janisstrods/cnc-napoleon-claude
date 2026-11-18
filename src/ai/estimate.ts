@@ -7,7 +7,7 @@
 // engine does). The value of following up into a vacated hex (take ground, breakthrough and a cavalry bonus-melee
 // prospect) is part of every melee's `ev`.
 import {
-  artilleryShares, attachedLeader, bannerTotal, combinedArmsCandidates, escapeDice, fireDice, leaderRetreatOptions, meleeDice, neighbours, noBattleAfterEntering, onBaseline,
+  artilleryShares, attachedLeader, bannerTotal, breakRule, handShrinkRule, combinedArmsCandidates, escapeDice, fireDice, leaderRetreatOptions, meleeDice, neighbours, noBattleAfterEntering, onBaseline,
   other,
   passableFor, retreatDistance, retreatOptions, squareFirstApplies, statsOf, unitById,
   type DefendChoice, type GameState, type HexId, type Leader, type MeleeCtx, type Side, type StrikeRole, type Unit,
@@ -21,7 +21,7 @@ import { meanHandValue } from './cardsense';
 import { dieOdds, pAnySabre, rollDist, type DieOdds } from './odds';
 import { bestGuns, firstStrikeCost, reactionsFor, squareCost } from './reactions';
 import { assumeOppHand, oppHoldsP } from './view';
-import { LEADER_VALUE, bannersWorth, unitValue, type Weights } from './values';
+import { CARD_VALUE, LEADER_VALUE, bannerStep, bannersWorth, unitValue, type Weights } from './values';
 
 /**
  * The opponent's hand assumed with and without a First Strike (blind clones from `assumeOppHand`) and P(it holds one): the
@@ -139,9 +139,20 @@ export function leaderCheckP(eliminated: boolean): number {
   return eliminated ? sabre : sabre * sabre;
 }
 
-/** The value to `scorer` of its k-th next banner (k = 1: the next one), priced by where its total stands. */
+/**
+ * The cards a `handShrink` rule of `loser` takes when its enemy gains `n` permanent banners as its k-th next ones onward
+ * (one a banner while the hand is above the floor), at `CARD_VALUE` each.
+ */
+// approximates RR §15.8 handShrink, S33 (engine: shrinkHand)
+function shrinkValue(s: GameState, loser: Side, n: number, k = 1): number {
+  const r = handShrinkRule(s, loser);
+  if (!r) return 0;
+  return CARD_VALUE * Math.max(0, Math.min(n, s.special.handSize[loser] - r.floor - (k - 1)));
+}
+
+/** The value to `scorer` of its k-th next banner (k = 1: the next one), priced by where its total stands, a hand card it takes included. */
 function bannerAt(s: GameState, scorer: Side, k: number): number {
-  return bannersWorth(bannerTotal(s, scorer) + k - 1, 1, s.bannersToWin);
+  return bannersWorth(bannerTotal(s, scorer) + k - 1, 1, s.bannersToWin) + shrinkValue(s, other(scorer), 1, k);
 }
 
 /**
@@ -159,12 +170,54 @@ export function killBanners(s: GameState, victim: Pick<Unit, 'key' | 'side'>): n
   return n;
 }
 
+/** Does eliminating `victim` complete a `suddenDeath` count of its enemy (the `need`-th unit of its keys): an instant win? */
+// approximates RR §15.8 suddenDeath, S32 (engine: scoreKill)
+export function suddenDeathBy(s: GameState, victim: Pick<Unit, 'key' | 'side'>): boolean {
+  const scorer = other(victim.side);
+  return s.scenario.objectives.some((o, i) => o.kind === 'suddenDeath' && o.side === scorer && o.keys.includes(victim.key) && (s.special.objState[i]?.count ?? 0) + 1 >= o.need);
+}
+
+/** Does eliminating `victim` win the battle for its enemy: its banner target reached, or a sudden-death count completed? */
+export function eliminationWins(s: GameState, victim: Pick<Unit, 'key' | 'side'>): boolean {
+  return bannerTotal(s, other(victim.side)) + killBanners(s, victim) >= s.bannersToWin || suddenDeathBy(s, victim);
+}
+
 /**
- * The value to `scorer` of the banners that eliminating `victim` scores (`killBanners`), as its k-th next banners onward:
- * the one pricing point of an elimination for the estimates, the planner and the evaluation.
+ * The worth of the units a `breakOnLosses` rule of the victim's side removes when eliminating `victim` is its `losses`-th loss
+ * of the rule's keys: every other unit of those keys still on the board (the removals score no banners, S30). The losses
+ * before it carry nothing extra here: the risk terms price them through the remaining units, whose value then rises.
  */
-export function bannerValue(s: GameState, scorer: Side, victim: Pick<Unit, 'key' | 'side'>, k = 1): number {
-  return bannersWorth(bannerTotal(s, scorer) + k - 1, killBanners(s, victim), s.bannersToWin);
+// approximates RR §15.8 breakOnLosses, S30 (engine: breakOnLosses in casualties)
+function breakValue(s: GameState, victim: Pick<Unit, 'key' | 'side'> & Partial<Pick<Unit, 'id'>>): number {
+  const r = breakRule(s, victim.side);
+  if (!r || !r.keys.includes(victim.key)) return 0;
+  const alive = s.units.filter((u) => u.side === victim.side && r.keys.includes(u.key));
+  if (r.start - alive.length + 1 !== r.losses) return 0;
+  let v = 0;
+  let skipped = false;
+  for (const u of alive) {
+    // the victim itself is priced by its blocks elsewhere (without its id, one unit of its key stands in for it)
+    if (!skipped && (victim.id === undefined ? u.key === victim.key : u.id === victim.id)) {
+      skipped = true;
+      continue;
+    }
+    v += unitValue(s, u);
+  }
+  return v;
+}
+
+/**
+ * The value to `scorer` of eliminating `victim`: the banners it scores (`killBanners`) as its k-th next banners onward, a hand
+ * card each where a `handShrink` rule takes one, the win itself when it completes a `suddenDeath` count, and the units a
+ * `breakOnLosses` rule then removes. The one pricing point of an elimination for the estimates, the planner and the evaluation.
+ */
+export function bannerValue(s: GameState, scorer: Side, victim: Pick<Unit, 'key' | 'side'> & Partial<Pick<Unit, 'id'>>, k = 1): number {
+  const T = s.bannersToWin;
+  const n = killBanners(s, victim);
+  let v = bannersWorth(bannerTotal(s, scorer) + k - 1, n, T) + shrinkValue(s, victim.side, n, k);
+  // the winning banner's step: the value the estimates give a win (a won game is priced by WIN_SCORE in the evaluation)
+  if (suddenDeathBy(s, victim)) v = Math.max(v, bannerStep(T, T));
+  return v + breakValue(s, victim);
 }
 
 /** A leader left alone on his hex: the chance he dies on the way back and whether that way leads off the map. */
@@ -236,7 +289,7 @@ function strike(
   const leaderLoss = LEADER_VALUE + banner;
   // a winning elimination ends the game before the casualty check (applyOutcome returns on the winner)
   const killN = killBanners(s, victim);
-  const elimWins = bannerTotal(s, scorer) + killN >= s.bannersToWin;
+  const elimWins = eliminationWins(s, victim);
   let alone: number | undefined;
   /**
    * The leader's part of his unit's elimination: the check (`checkNow`: 1 die) and, if he survives it, his retreat alone;

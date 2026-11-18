@@ -3,9 +3,12 @@
 // hand; the opponent's cards are known only as the unseen pool (view.ts).
 //
 // Terms (each positive = good for `me`; `evalTerms` returns them by name and `evaluate` is their sum):
-// - banners: banner steps of each side; a held temporary objective counts at the chance its holder is not driven off first;
+// - banners: banner steps of each side; a held temporary objective counts at the chance its holder is not driven off first
+//   (a held majority at the chance it is not tied); the hand a `handShrink` rule has left, at `CARD_VALUE` a card;
 // - objectives: temporary objectives not yet held (capture at the next turn start, or an approach pull, blocked by an enemy
-//   unit standing on the hex) and exits (a pull towards the exit hex); kill weights are priced in estimate.ts (`bannerValue`);
+//   unit standing on the hex; any one hex of a `tempAny` group; enough hexes to pass the enemy's count on a `majority`
+//   group) and exits (a pull towards the exit hex, or off a baseline row once its free exits are used or the unit is at
+//   risk); kill weights, sudden death, break-on-losses and hand shrink are priced in estimate.ts (`bannerValue`);
 // - material: unit values by row and blocks, leaders, and a worn unit's banner at stake;
 // - riskMine / riskTheirs: the expected net loss from the other side's next attacks, distance-based reach as Ancients'
 //   `threatsAgainst`, each attack valued by the estimates and the reaction model (estimate.ts, reactions.ts);
@@ -13,7 +16,7 @@
 // - guns, formation, leaders, advance: guns with targets, support and isolation, leaders at the front and alone, and the
 //   pull of each unit towards the enemy or a needed objective.
 import {
-  CARD_DEFS, attachedLeader, bannerTotal, canFireAt, cardKind, distance, enemyUnitAdjacent, fireDice, impetuous,
+  ALL_HEXES, CARD_DEFS, attachedLeader, bannerTotal, handShrinkRule, canFireAt, cardKind, distance, enemyUnitAdjacent, fireDice, impetuous,
   matches, meleeDice, mirrorKind, neighbours, noBattleAfterEntering, other, passableFor, rowOf, sectionsOf, statsOf,
   stopsOnEntry, supportCount,
   type CardKind, type GameState, type HexId, type Leader, type SectionName, type Side, type Unit, type UnitStats,
@@ -23,7 +26,7 @@ import { dieOdds, pAnySabre } from './odds';
 import { bannerValue, fireEstimate, loneLeaderEstimate, makeEstCtx, meleeEstimate, type EstCtx, type Outcome } from './estimate';
 import { squareHoldCost } from './reactions';
 import { asNextTurn, handSize, isDeterminised, myHand, myTrack, trackFilled, unseenCards } from './view';
-import { ELAN_SHARE, LEADER_VALUE, WIN_SCORE, bannerScore, bannersWorth, unitValue, type Weights } from './values';
+import { CARD_VALUE, ELAN_SHARE, LEADER_VALUE, WIN_SCORE, bannerScore, bannersWorth, unitValue, type Weights } from './values';
 
 /** The threats of the side that does not act next count at this share (the other side moves, or strikes, first). */
 const LATER = 0.6;
@@ -50,12 +53,23 @@ const TWO_TURNS = 0.5;
 /** One hex of a group held while others are still free counts this share of the group's capture. */
 const GROUP_PARTIAL = 0.5;
 /**
+ * A majority already on a group is worth at least this share of its banners, the most a hex the side can enter next turn scores
+ * (`CAPTURE_SHARE` × `HOLD_DISCOUNT`): an enemy able to tie it next turn leaves the side no worse off than one step away.
+ */
+const MAJORITY_FLOOR = CAPTURE_SHARE * HOLD_DISCOUNT;
+/**
  * Exit pull of a unit: this share of what stepping off gains (the exit's banners less the unit's value), at the exit hex,
  * falling to 0 at `EXIT_RANGE` hexes. Below 1, so stepping off always beats standing on the exit hex; a worn unit, worth
  * little, is pulled hardest.
  */
 const EXIT_SHARE = 0.6;
 const EXIT_RANGE = 8;
+/**
+ * A free exit off a baseline row (`exitEdge`, before its banners start): this share of a scoring exit's banners, spread over the
+ * free exits. Below a sound unit's worth, so a safe unit does not step off for it; a unit whose expected loss where it stands
+ * exceeds what it is worth does (stepping off is removal, not elimination: the enemy scores nothing).
+ */
+const EDGE_PROGRESS = 0.5;
 /** A unit at 1 block carries this share of the banner its elimination would give (one hit away). */
 const WORN_STAKE = 0.08;
 /** A lone leader with no friendly unit next to him. */
@@ -317,6 +331,8 @@ interface Threats {
   pVac: Map<HexId, number>;
   /** The same by melee only (a melee winner may take the hex the same turn; a unit driven off by fire leaves it empty). */
   pVacMelee: Map<HexId, number>;
+  /** The expected loss of the unit on a hex (its share of `total`), by hex (victims only). */
+  loss: Map<HexId, number>;
 }
 
 /** Leaders of `side` on the board without a unit of their own side on their hex. */
@@ -429,62 +445,164 @@ function threats(s: GameState, ec: EstCtx, A: Side, odds: OrderOdds, dash: numbe
   let total = 0;
   const pVac = new Map<HexId, number>();
   const pVacMelee = new Map<HexId, number>();
+  const loss = new Map<HexId, number>();
   for (let j = 0; j < nv; j++) {
-    total += cap[j] * (1 - keepRisk[j]);
+    const l = cap[j] * (1 - keepRisk[j]);
+    total += l;
     if (j < victims.length) {
       pVac.set(victims[j].hex, 1 - keepHex[j]);
       pVacMelee.set(victims[j].hex, 1 - keepMelee[j]);
+      loss.set(victims[j].hex, l);
     }
   }
-  return { total, pVac, pVacMelee };
+  return { total, pVac, pVacMelee, loss };
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Banners and objectives
 
-/** `side`'s banners: permanent ones, then each held temporary objective at the chance it is kept (`pVac` of its holders). */
-function sideBanners(s: GameState, side: Side, pVac: Map<HexId, number>): number {
+type HeldState = { held: boolean; holders?: readonly string[] };
+
+/** The hexes of a board row (an `exitEdge` objective's baseline), worked out once per row. */
+const ROW_HEXES: HexId[][] = [];
+const rowHexes = (row: number): readonly HexId[] => (ROW_HEXES[row] ??= ALL_HEXES.filter((h) => rowOf(h) === row));
+
+/** How many hexes of `hexes` hold a unit of `side` (lone leaders never count, R65). */
+function countOn(occ: Occ, side: Side, hexes: readonly HexId[]): number {
+  let n = 0;
+  for (const h of hexes) if (occ.unit[h]?.side === side) n++;
+  return n;
+}
+
+/** P(at least `k` of independent events with chances `ps` happen). */
+function atLeast(ps: readonly number[], k: number): number {
+  if (k <= 0) return 1;
+  if (k > ps.length) return 0;
+  // dp[j]: P(exactly j events so far) for j < k; `done` collects the chance of k or more
+  const dp = new Float64Array(k);
+  dp[0] = 1;
+  let done = 0;
+  for (const p of ps) {
+    done += dp[k - 1] * p;
+    for (let j = k - 1; j > 0; j--) dp[j] = dp[j] * (1 - p) + dp[j - 1] * p;
+    dp[0] *= 1 - p;
+  }
+  return done;
+}
+
+/**
+ * P(`side` loses its majority of `hexes` (its count `margin` above the enemy's) before its next turn start): as many of these as
+ * the margin happen: one of its units on the group is driven off (`pVac`), or an enemy unit from off the group enters a free hex
+ * of it next turn (the best one-turn `enterOdds` over the free hexes, the enemy's units already on the group left out: a step
+ * within the group leaves the counts as they are; one entry counted). A tie loses it (S36).
+ */
+// approximates RR §15.8 majority, S36 (engine: updateHeld)
+function majorityLoss(occ: Occ, side: Side, hexes: readonly HexId[], margin: number, pVac: Map<HexId, number>, enterOf: EnterOf): number {
+  const ps: number[] = [];
+  for (const h of hexes) if (occ.unit[h]?.side === side) ps.push(pVac.get(h) ?? 0);
+  if (ps.length + 1 < margin) return 0;
+  let enter = 0;
+  for (const h of hexes) if (!occ.unit[h] && enter < 1) enter = Math.max(enter, enterOf(other(side), h, true, hexes));
+  ps.push(enter);
+  return atLeast(ps, margin);
+}
+
+/** The hexes of a held `tempAny` group on which one of its holders stands (any unit of its side there when none is recorded). */
+function holderHexes(occ: Occ, side: Side, hexes: readonly HexId[], st: HeldState): HexId[] {
+  return hexes.filter((h) => {
+    const u = occ.unit[h];
+    return !!u && u.side === side && (!st.holders || st.holders.includes(u.id));
+  });
+}
+
+/**
+ * `side`'s banners: permanent ones, then each held temporary objective at the chance it is kept: a hex or group while none of
+ * its holders is driven off; a `tempAny` group while one of its holders stays (S35); a `majority` group while it is not tied
+ * (`majorityLoss`, S36). A `handShrink` rule's hand counts `CARD_VALUE` a card, so each banner that shrinks it costs one.
+ */
+function sideBanners(s: GameState, occ: Occ, side: Side, threatsOn: (side: Side) => Threats, enterOf: EnterOf): number {
   const T = s.bannersToWin;
+  const pVac = threatsOn(side).pVac;
   let k = s.players[side].banners;
   let v = bannerScore(k, T);
   s.scenario.objectives.forEach((o, i) => {
-    if (o.side !== side || (o.kind !== 'tempHex' && o.kind !== 'tempGroup') || !s.special.objState[i]?.held) return;
+    const st = s.special.objState[i];
+    if (o.side !== side || !st?.held) return;
     let keep = 1;
-    for (const h of o.kind === 'tempGroup' ? o.hexes : [o.hex]) keep *= 1 - (pVac.get(h) ?? 0);
+    if (o.kind === 'tempHex' || o.kind === 'tempGroup') {
+      for (const h of o.kind === 'tempGroup' ? o.hexes : [o.hex]) keep *= 1 - (pVac.get(h) ?? 0);
+    } else if (o.kind === 'tempAny') {
+      let gone = 1;
+      for (const h of holderHexes(occ, side, o.hexes, st)) gone *= pVac.get(h) ?? 0;
+      keep = 1 - gone;
+    } else if (o.kind === 'majority') {
+      const margin = countOn(occ, side, o.hexes) - countOn(occ, other(side), o.hexes);
+      keep = margin > 0 ? 1 - majorityLoss(occ, side, o.hexes, margin, pVac, enterOf) : 0;
+    } else return;
     v += keep * bannersWorth(k, o.banners, T);
     k += o.banners;
   });
+  // approximates RR §15.8 handShrink, S33 (engine: shrinkHand)
+  if (handShrinkRule(s, side)) v += CARD_VALUE * s.special.handSize[side];
   return v;
 }
 
-/** Hexes `side` still needs or holds by its own objectives (temporary objective hexes and exit hexes). */
+/**
+ * Hexes `side` still needs or holds by its own objectives: temporary objective hexes and groups (`tempAny` and `majority`
+ * groups included), exit hexes, and the hexes of an `exitEdge` row once its free exits are used.
+ */
 export function objectiveHexes(s: GameState, side: Side): HexId[] {
   const out: HexId[] = [];
-  for (const o of s.scenario.objectives) {
-    if (o.side !== side) continue;
+  s.scenario.objectives.forEach((o, i) => {
+    if (o.side !== side) return;
     if (o.kind === 'tempHex' || o.kind === 'exit') out.push(o.hex);
-    else if (o.kind === 'tempGroup') out.push(...o.hexes);
-  }
+    else if (o.kind === 'tempGroup' || o.kind === 'tempAny' || o.kind === 'majority') out.push(...o.hexes);
+    else if (o.kind === 'exitEdge' && (s.special.objState[i]?.count ?? 0) >= o.free) out.push(...rowHexes(o.row));
+  });
   return out;
 }
 
 /**
  * The chance that `side` puts a unit on hex `h` next turn: the best order odds (a card that moves it) of its units that can
- * enter `h` by a shortest walk within their full allowance (battle or not), the unit now on `h` taken as gone; or, at
- * `TWO_TURNS`, of those within two allowances (a shortest walk, a stop hex still ending it).
+ * enter `h` by a shortest walk within their full allowance (battle or not), the unit now on `h` taken as gone; and the same
+ * counting, at `TWO_TURNS`, those within two allowances (a shortest walk, a stop hex still ending it): [next turn, two turns].
+ * Units standing on `exclude` (a majority group, for entries that raise a count) are left out.
  */
-function enterOdds(s: GameState, occ: Occ, side: Side, h: HexId, odds: OrderOdds): number {
-  let best = 0;
+function enterOdds(s: GameState, occ: Occ, side: Side, h: HexId, odds: OrderOdds, exclude?: readonly HexId[]): [number, number] {
+  let one = 0;
+  let two = 0;
   for (const u of occ.bySide[side]) {
+    if (exclude?.includes(u.hex)) continue;
     const st = statsOf(s, u);
     const a = moveAllowance(st, u);
     const d = distance(u.hex, h);
     if (d < 1 || d > 2 * a) continue;
-    const share = d <= a ? 1 : TWO_TURNS;
-    if (share <= best || !approachWalk(s, occ, u, st, h, d <= a ? a : 2 * a, false).ok) continue;
-    best = Math.max(best, share * odds(u, 'move'));
+    if (d <= a) {
+      if (one >= 1 || !approachWalk(s, occ, u, st, h, a, false).ok) continue;
+      one = Math.max(one, odds(u, 'move'));
+    } else {
+      if (TWO_TURNS <= Math.max(one, two) || !approachWalk(s, occ, u, st, h, 2 * a, false).ok) continue;
+      two = Math.max(two, TWO_TURNS * odds(u, 'move'));
+    }
   }
-  return best;
+  return [one, Math.max(one, two)];
+}
+
+/**
+ * `enterOdds` of a side for a hex, next turn only (`oneTurn`) or within two, its units on `exclude` left out; each side, hex and
+ * excluded group worked out once per evaluation (a group is keyed by its first hex and size: the two records of a contested
+ * group share their hexes).
+ */
+type EnterOf = (side: Side, h: HexId, oneTurn?: boolean, exclude?: readonly HexId[]) => number;
+
+function enterOddsOf(s: GameState, occ: Occ, oddsOf: (side: Side) => OrderOdds): EnterOf {
+  const known = new Map<string, [number, number]>();
+  return (side, h, oneTurn = false, exclude) => {
+    const key = `${side}|${h}|${exclude ? `${exclude[0]}.${exclude.length}` : ''}`;
+    let e = known.get(key);
+    if (!e) known.set(key, (e = enterOdds(s, occ, side, h, oddsOf(side), exclude)));
+    return oneTurn ? e[0] : e[1];
+  };
 }
 
 /**
@@ -493,23 +611,66 @@ function enterOdds(s: GameState, occ: Occ, side: Side, h: HexId, odds: OrderOdds
  * chance it is not driven off). Each hex it does not hold scores the better of two: the turn-start capture potential when one
  * of its units can enter the hex next turn (`enterOdds`; on an enemy-held hex only once that holder is driven off), or an
  * approach pull of its nearest unit, cut while an enemy unit stands on the hex (more so the safer that unit is). So a
- * defender standing on a hex the enemy needs keeps it closed. Exits pull every unit that may step off by them (and lone
- * leaders where leaders score) by a share of what stepping off gains.
+ * defender standing on a hex the enemy needs keeps it closed. A `tempAny` group needs one hex: a unit on any of them is a
+ * capture, else the best hex's score counts. A `majority` group with a count above the enemy's is a capture kept unless it is
+ * tied first (`majorityLoss`); below or level, the best hexes it lacks, as many as passing the enemy's count takes, score as
+ * above. Exits pull every unit that may step off by them (and lone leaders where leaders score) by a share of what stepping off
+ * gains; an `exitEdge` row pulls by its row distance once its free exits are used, and before that only a unit whose expected
+ * loss where it stands is more than it is worth (each free exit used counts `EDGE_PROGRESS`).
  */
-function objectiveTerm(s: GameState, occ: Occ, me: Side, threatsOn: (side: Side) => Threats, oddsOf: (side: Side) => OrderOdds): number {
+function objectiveTerm(s: GameState, occ: Occ, me: Side, threatsOn: (side: Side) => Threats, enterOf: EnterOf): number {
   const T = s.bannersToWin;
   let v = 0;
   s.scenario.objectives.forEach((o, i) => {
     const X = o.side;
     const sign = X === me ? 1 : -1;
-    if (o.kind === 'tempHex' || o.kind === 'tempGroup') {
-      if (s.special.objState[i]?.held) return;
-      const hexes = o.kind === 'tempGroup' ? o.hexes : [o.hex];
+    const st = s.special.objState[i];
+    if (o.kind === 'tempHex' || o.kind === 'tempGroup' || o.kind === 'tempAny' || o.kind === 'majority') {
+      if (st?.held) return;
+      const hexes = o.kind === 'tempHex' ? [o.hex] : o.hexes;
       const worth = bannersWorth(bannerTotal(s, X), o.banners, T);
       const mine = threatsOn(X).pVac;
       // an enemy unit on the hex must be beaten in melee for the needing side to take the hex
       const theirs = threatsOn(other(X)).pVacMelee;
       const on = (h: HexId): boolean => occ.unit[h]?.side === X;
+      /** A hex the side does not hold: the better of the capture after entering it next turn and the approach pull. */
+      const approachOf = (h: HexId): number => {
+        let d = 99;
+        for (const u of occ.bySide[X]) if (!hexes.includes(u.hex) && passableFor(s, h, statsOf(s, u).arm)) d = Math.min(d, distance(u.hex, h));
+        const blocked = occ.unit[h] ? theirs.get(h) ?? 0 : 1;
+        let pull = (OBJ_PULL * Math.max(0, OBJ_RANGE - d)) / OBJ_RANGE;
+        if (occ.unit[h]) pull *= OBJ_BLOCKED + (1 - OBJ_BLOCKED) * blocked;
+        // a majority counts hexes: a unit already on the group adds nothing by stepping to another hex of it
+        const potential = CAPTURE_SHARE * HOLD_DISCOUNT * blocked * enterOf(X, h, false, o.kind === 'majority' ? hexes : undefined);
+        return Math.max(pull, potential);
+      };
+      if (o.kind === 'tempAny') {
+        const held = hexes.filter(on);
+        if (held.length) {
+          let gone = 1;
+          for (const h of held) gone *= mine.get(h) ?? 0;
+          v += sign * CAPTURE_SHARE * (1 - gone) * worth;
+          return;
+        }
+        let best = 0;
+        for (const h of hexes) best = Math.max(best, approachOf(h));
+        v += sign * worth * best;
+        return;
+      }
+      if (o.kind === 'majority') {
+        const m = countOn(occ, X, hexes);
+        const e = countOn(occ, other(X), hexes);
+        if (m > e) {
+          v += sign * Math.max(MAJORITY_FLOOR, CAPTURE_SHARE * (1 - majorityLoss(occ, X, hexes, m - e, mine, enterOf))) * worth;
+          return;
+        }
+        const need = e - m + 1;
+        const scores = hexes.filter((h) => !on(h)).map(approachOf).sort((a, b) => b - a);
+        let sum = 0;
+        for (let j = 0; j < Math.min(need, scores.length); j++) sum += scores[j];
+        v += (sign * worth * sum) / need;
+        return;
+      }
       if (hexes.every(on)) {
         let keep = 1;
         for (const h of hexes) keep *= 1 - (mine.get(h) ?? 0);
@@ -517,19 +678,7 @@ function objectiveTerm(s: GameState, occ: Occ, me: Side, threatsOn: (side: Side)
         return;
       }
       let sum = 0;
-      for (const h of hexes) {
-        if (on(h)) {
-          sum += GROUP_PARTIAL * CAPTURE_SHARE * (1 - (mine.get(h) ?? 0));
-          continue;
-        }
-        let d = 99;
-        for (const u of occ.bySide[X]) if (!hexes.includes(u.hex) && passableFor(s, h, statsOf(s, u).arm)) d = Math.min(d, distance(u.hex, h));
-        const blocked = occ.unit[h] ? theirs.get(h) ?? 0 : 1;
-        let pull = (OBJ_PULL * Math.max(0, OBJ_RANGE - d)) / OBJ_RANGE;
-        if (occ.unit[h]) pull *= OBJ_BLOCKED + (1 - OBJ_BLOCKED) * blocked;
-        const potential = CAPTURE_SHARE * HOLD_DISCOUNT * blocked * enterOdds(s, occ, X, h, oddsOf(X));
-        sum += Math.max(pull, potential);
-      }
+      for (const h of hexes) sum += on(h) ? GROUP_PARTIAL * CAPTURE_SHARE * (1 - (mine.get(h) ?? 0)) : approachOf(h);
       v += (sign * worth * sum) / hexes.length;
     } else if (o.kind === 'exit') {
       const worth = bannersWorth(bannerTotal(s, X), o.banners, T);
@@ -538,8 +687,24 @@ function objectiveTerm(s: GameState, occ: Occ, me: Side, threatsOn: (side: Side)
       for (const u of occ.bySide[X]) r += pull(worth - unitValue(s, u), u.hex);
       if (o.leadersScore) for (const l of loneLeaders(occ, s, X)) r += pull(worth - LEADER_VALUE, l.hex);
       v += sign * r;
+    } else if (o.kind === 'exitEdge') {
+      // approximates RR §15.8 exitEdge, S31 (engine: exitPiece): units only, the first `free` exits score nothing
+      const worth = bannersWorth(bannerTotal(s, X), o.banners, T);
+      const used = st?.count ?? 0;
+      const open = used >= o.free;
+      const progress = (EDGE_PROGRESS * worth) / Math.max(1, o.free);
+      // "at risk" here is the threat model's expected loss where the unit stands (more than it is worth); ordering.ts
+      // `exitPays` uses a cheaper proxy (half strength or below with an enemy within 2), which only ranks the order candidates
+      const loss = threatsOn(X).loss;
+      let r = progress * Math.min(used, o.free);
+      for (const u of occ.bySide[X]) {
+        const value = unitValue(s, u);
+        const gain = open ? worth - value : progress + (loss.get(u.hex) ?? 0) - value;
+        if (gain > 0) r += (EXIT_SHARE * gain * Math.max(0, EXIT_RANGE - Math.abs(rowOf(u.hex) - o.row))) / EXIT_RANGE;
+      }
+      v += sign * r;
     }
-    // killWeight: priced where eliminations are valued (estimate.ts bannerValue), in the risk terms and the worn stake
+    // killWeight, suddenDeath: priced where eliminations are valued (estimate.ts bannerValue), in the risk terms and the worn stake
   });
   return v;
 }
@@ -704,12 +869,13 @@ function terms(s0: GameState, me: Side, W: Weights, ec?: EstCtx): Record<string,
   const onMe = threats(s, root, opp, oddsOpp, 1);
   const onThem = threats(s, root, me, oddsMe, W.cavalryDash);
   const threatsOn = (side: Side): Threats => (side === me ? onMe : onThem);
+  const enterOf = enterOddsOf(s, occ, (side) => (side === me ? oddsMe : oddsOpp));
   const next = nextToAct(s);
   const mine = position(s, occ, me, W);
   const theirs = position(s, occ, opp, W);
   return {
-    banners: sideBanners(s, me, onMe.pVac) - sideBanners(s, opp, onThem.pVac),
-    objectives: objectiveTerm(s, occ, me, threatsOn, (side) => (side === me ? oddsMe : oddsOpp)),
+    banners: sideBanners(s, occ, me, threatsOn, enterOf) - sideBanners(s, occ, opp, threatsOn, enterOf),
+    objectives: objectiveTerm(s, occ, me, threatsOn, enterOf),
     material: material(s, occ, me),
     riskMine: -W.riskSelf * (next === opp ? 1 : LATER) * onMe.total,
     riskTheirs: W.riskEnemy * (next === me ? 1 : LATER) * onThem.total,
