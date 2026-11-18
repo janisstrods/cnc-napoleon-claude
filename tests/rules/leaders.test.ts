@@ -1,8 +1,8 @@
 // Rules: RR §2.7, §3.3, §3.4, §6.2, §11.1, §11.2, §11.3, §11.4, §12.2 (design/rules-reference.md)
 import { describe, expect, it } from 'vitest';
 import type { DieFace, GameDriver, GameEvent, LeaderRetreatOption, RowKey } from '../../src/engine';
-import { battleTargets, fireDice, retreatOptions, rowOf, supportCount } from '../../src/engine';
-import { H, attack, build, combatDice, endMoves, ev, forceDice, leaderId, miss, must, n, play, rolls, toBattle, u, duel, type Pos } from './helpers';
+import { GameDriver, battleTargets, fireDice, retreatOptions, rowOf, supportCount } from '../../src/engine';
+import { H, attack, build, combatDice, endMoves, ev, forceDice, giveCard, leaderId, noFirstStrike, miss, must, n, play, rolls, toBattle, u, duel, type Pos } from './helpers';
 
 const bot = (key: RowKey, at: [number, number], extra: object = {}) => ({ side: 'bottom' as const, key, at, ...extra });
 const top = (key: RowKey, at: [number, number], extra: object = {}) => ({ side: 'top' as const, key, at, ...extra });
@@ -283,23 +283,33 @@ describe('leader retreat options and outcomes (§11.2, §11.3, R25)', () => {
     forceDice([]);
   });
   it('eliminated options are offered only when nothing else exists', () => {
-    const wall = [[3, 5], [3, 6], [2, 5], [2, 6], [2, 7], [1, 4], [1, 5], [1, 6], [1, 7]].map(([r, c]) => bot('BR/LN', [r, c]));
-    const open = melee({ ...LDR, units: [top('FR/LN', [4, 6], { blocks: 1 }), ...wall.slice(0, 2)] }, four(dud));
-    expect(retreatDecision(open).some((x) => x.eliminated)).toBe(false);
+    const wall = [[3, 5], [2, 5], [2, 6], [1, 4], [1, 5], [1, 6]].map(([r, c]) => bot('BR/LN', [r, c]));
+    const open = melee({ ...LDR, units: [top('FR/LN', [4, 6], { blocks: 1 }), ...wall] }, four(dud));
+    const o = retreatDecision(open);
+    expect(o.length).toBeGreaterThan(0);
+    expect(o.some((x) => x.eliminated)).toBe(false);
     forceDice([]);
   });
   it('a lone leader on row 2 may retreat off his baseline: no banner (R25)', () => {
     const s = build({ leaders: [topLdr([2, 6])], units: [bot('BR/LN', [3, 6])] });
-    const d = toBattle(s, 'attackC', ['u1']);
+    noFirstStrike(s);
+    const card = giveCard(s, 'bottom', 'attackC');
+    const d = new GameDriver(s, { snapshots: true });
+    must(d, { kind: 'playCard', card });
+    must(d, { kind: 'orders', pieces: ['u1'] });
+    endMoves(d);
     ev(d);
     forceDice(n(dud, 30));
     attack(d, 'u1', H(2, 6));
     const o = retreatDecision(d);
+    expect(o.filter((x) => x.offBoard)).toHaveLength(1);
     const off = o.find((x) => x.offBoard)!;
-    expect(off).toBeDefined();
     must(d, { kind: 'choose', index: o.indexOf(off) });
-    const es = ev(d);
+    const q = d.drainEvents();
+    const es = q.map((x) => x.e);
     expect(es.filter((e) => e.t === 'leaderRetreat')).toMatchObject([{ offBoard: true }]);
+    const snap = q.find((x) => x.e.t === 'leaderRetreat')!;
+    expect(snap.state!.leaders[0].hex).toBe(off.end);  // moved before the event
     expect(kinds(es, 'leaderLeft')).toHaveLength(1);
     expect(d.state.leaders).toHaveLength(0);
     expect(banners(d, 'bottom')).toBe(0);
@@ -360,7 +370,7 @@ describe('T6a carry-forward: retreats and targets', () => {
     expect(battleTargets(d.state, 'u1')).toEqual([]);
     expect(d.answer({ kind: 'attack', unit: 'u1', target: H(4, 6) })).toBe(false);
   });
-  it('a retreat onto a lone friendly leader attaches him (§10.1, R75)', () => {
+  it('a retreat onto a lone friendly leader attaches him (§10.1, R74)', () => {
     const d = fireAt({ units: [top('FR/LN', [4, 6])], leaders: [topLdr([3, 5])] }, ['flag']);
     const o = (d.pending as { options: { end: number; attach: string | null }[] }).options;
     expect(d.pending?.kind).toBe('retreat');

@@ -69,6 +69,7 @@ export function* leaderLosesUnit(s: GameState, ctx: FlowCtx, l: Leader): Gen {
     return;
   }
   if (pick.offBoard) {
+    l.hex = pick.end;
     ctx.emit({ t: 'leaderRetreat', id: l.id, path: [from, ...pick.path], offBoard: true });
     leaveMap(s, ctx, l);
     return;
@@ -85,7 +86,8 @@ export function* leaderLosesUnit(s: GameState, ctx: FlowCtx, l: Leader): Gen {
 export function* loneLeaderMelee(s: GameState, ctx: FlowCtx, attacker: Unit, l: Leader, m: MeleeCtx): Gen<boolean> {
   const purpose = m.role === 'bonus' ? 'bonus' : 'melee';
   const dice = meleeDice(s, attacker, l, { role: m.role, moved: m.declaredMoved, declared: true });
-  if (dice === 0) return false;  // RR §3.2, R15: nothing to roll, he stays
+  // Defensive: battleTargets never offers a 0-die attack, so the driver cannot reach this; RR §3.2, R15: nothing to roll, he stays.
+  if (dice === 0) return false;
   ctx.emit({ t: 'combat', purpose, attacker: attacker.id, target: l.id, dice });
   const faces = rollDice(s, dice);
   emitRoll(ctx, purpose, faces, faces.map((f) => f === 'sabre'), attacker.id, l.id);
