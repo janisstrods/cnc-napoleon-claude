@@ -10,7 +10,7 @@ import { loneLeaderMelee } from './leaders';
 import { defenderReaction, firstStrikeRoll, resolveRetireReform } from './reactions';
 import { rollDice } from './rng';
 import { applyOutcome } from './resolve';
-import { formSquare, squareFightsFirst } from './squares';
+import { formSquare, squareFightsFirst, squareFirstApplies } from './squares';
 import { noBattleAfterEntering } from './terrain';
 import { statsOf } from './units';
 import type { FlowCtx, GameState, HexId, MeleeCtx } from './types';
@@ -59,6 +59,7 @@ export function* meleeAttack(s: GameState, ctx: FlowCtx, attackerId: string, tar
   }
   if (m.reaction === 'formSquare') formSquare(s, ctx, defender);
   if ((yield* squareFightsFirst(s, ctx, m)) === 'stop') return false;
+  const squareFought = squareFirstApplies(s, m);  // the square already struck first: no battle back (R29)
   if (m.reaction === 'firstStrike' && (yield* firstStrikeRoll(s, ctx, m)) === 'stop') return false;
 
   // the attacker's roll
@@ -75,7 +76,7 @@ export function* meleeAttack(s: GameState, ctx: FlowCtx, attackerId: string, tar
     return true;
   }
   // battle back: the defender survives in place and the attacker is still there
-  if (defender.blocks >= 1 && unitById(s, attackerId)) {
+  if (!squareFought && defender.blocks >= 1 && unitById(s, attackerId)) {
     const back = meleeDice(s, defender, attacker, { role: 'back', moved: 0 });
     ctx.emit({ t: 'combat', purpose: 'battleBack', attacker: defender.id, target: attackerId, dice: back });
     const bf = rollDice(s, back);

@@ -1,50 +1,45 @@
 import { useId, type CSSProperties } from 'react';
 import { DIE_FACES } from '../../engine/rng';
 import type { DieFace } from '../../engine/types';
-import { ICON_PATHS } from './icons/paths';
+import { NAP_GLYPHS } from './icons/napGlyphs';
 import { theme } from './theme';
 
 export type DieState = 'hit' | 'flag' | 'miss' | null;
 
 const FACES: readonly DieFace[] = DIE_FACES;
 
-// Placeholder glyphs (a circle, a triangle, a square, a flag, crossed sabres) until the dice are drawn for the Napoleonic art.
-const FACE_LABEL: Record<DieFace, string> = {
-  infantry: 'Infantry (circle)',
-  cavalry: 'Cavalry (triangle)',
-  artillery: 'Artillery (square)',
+/** What the face is called to the eye and the ear: `aria-label` of a die. */
+export const FACE_LABEL: Record<DieFace, string> = {
+  infantry: 'Infantry',
+  cavalry: 'Cavalry',
+  artillery: 'Artillery',
   flag: 'Flag',
-  sabre: 'Crossed sabres',
+  sabre: 'Sabre',
 };
+
+/** Accent of each arm: a tinted roundel behind the glyph and a ground bar under it. */
+const ARM_ACCENT: Record<'infantry' | 'cavalry' | 'artillery', string> = {
+  infantry: theme.dice.infantry,
+  cavalry: theme.dice.cavalry,
+  artillery: theme.dice.artillery,
+};
+const GLYPH_OF = { infantry: 'infantryman', cavalry: 'horseman', artillery: 'cannon' } as const;
 
 /** Symbol layer of a die, drawn into a 100x100 box. `uid` scopes the gradient ids. */
 function Symbol({ face, uid }: { face: DieFace; uid: string }) {
   switch (face) {
     case 'infantry':
-      return (
-        <g>
-          <circle cx="50" cy="52" r="24" fill="rgba(0,0,0,.18)" />
-          <circle cx="50" cy="50" r="24" fill={`url(#${uid}gl)`} stroke="#14501d" strokeWidth="2.2" />
-          <ellipse cx="44" cy="40" rx="11" ry="6" fill="#fff" opacity=".28" />
-        </g>
-      );
     case 'cavalry':
+    case 'artillery': {
+      const accent = ARM_ACCENT[face];
       return (
         <g>
-          <path d="M50 24 L78 72 L22 72 Z" fill="rgba(0,0,0,.18)" stroke="rgba(0,0,0,.18)" strokeWidth="6" strokeLinejoin="round" transform="translate(0 2)" />
-          <path d="M50 24 L78 72 L22 72 Z" fill={`url(#${uid}gm)`} stroke="#123a80" strokeWidth="6" strokeLinejoin="round" />
-          <path d="M50 24 L78 72 L22 72 Z" fill="none" stroke={`url(#${uid}gm)`} strokeWidth="3.4" strokeLinejoin="round" />
-          <path d="M50 34 L58 48 L42 48 Z" fill="#fff" opacity=".2" />
+          <circle cx="50" cy="50" r="47" fill={accent} opacity=".2" />
+          <path d={NAP_GLYPHS[GLYPH_OF[face]]} transform="translate(7 5) scale(.172)" fill={`url(#${uid}gi)`} />
+          <rect x="22" y="90" width="56" height="6" rx="3" fill={accent} />
         </g>
       );
-    case 'artillery':
-      return (
-        <g>
-          <rect x="27" y="29" width="46" height="46" rx="4" fill="rgba(0,0,0,.18)" />
-          <rect x="27" y="27" width="46" height="46" rx="4" fill={`url(#${uid}gh)`} stroke="#6e130e" strokeWidth="2.2" />
-          <rect x="32" y="31" width="36" height="9" rx="3" fill="#fff" opacity=".2" />
-        </g>
-      );
+    }
     case 'flag':
       return (
         <g>
@@ -55,28 +50,13 @@ function Symbol({ face, uid }: { face: DieFace; uid: string }) {
         </g>
       );
     case 'sabre':
-      return <path d={ICON_PATHS.crossedSwords} transform="translate(13 13) scale(.144)" fill={`url(#${uid}gi)`} />;
+      return <path d={NAP_GLYPHS.crossedSabres} transform="translate(8 8) scale(.168)" fill={`url(#${uid}gi)`} />;
   }
 }
 
 function SymbolDefs({ uid }: { uid: string }) {
   return (
     <defs>
-      <radialGradient id={`${uid}gl`} cx=".4" cy=".35" r=".75">
-        <stop offset="0" stopColor="#5cc067" />
-        <stop offset=".55" stopColor={theme.dice.infantry} />
-        <stop offset="1" stopColor="#1b5e24" />
-      </radialGradient>
-      <linearGradient id={`${uid}gm`} x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stopColor="#4f80d6" />
-        <stop offset=".6" stopColor={theme.dice.cavalry} />
-        <stop offset="1" stopColor="#163b80" />
-      </linearGradient>
-      <linearGradient id={`${uid}gh`} x1="0" y1="0" x2=".3" y2="1">
-        <stop offset="0" stopColor="#e05244" />
-        <stop offset=".55" stopColor={theme.dice.artillery} />
-        <stop offset="1" stopColor="#7d140f" />
-      </linearGradient>
       <linearGradient id={`${uid}gi`} x1="0" y1="0" x2=".2" y2="1">
         <stop offset="0" stopColor="#5a4128" />
         <stop offset=".5" stopColor="#2c1d10" />

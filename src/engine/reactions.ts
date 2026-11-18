@@ -8,6 +8,7 @@ import { retireReformOptions } from './retreat';
 import { rollDice } from './rng';
 import { unitById } from './query';
 import { applyOutcome } from './resolve';
+import { canFormSquare } from './squares';
 import { statsOf } from './units';
 import type { DefendChoice, FlowCtx, GameState, HexId, MeleeCtx } from './types';
 
@@ -20,6 +21,7 @@ export function defendOptions(s: GameState, m: MeleeCtx): DefendChoice[] {
   if (statsOf(s, target).arm === 'cavalry' && statsOf(s, attacker).arm === 'infantry' && retireReformOptions(s, target).length > 0) {
     options.push('retireReform');
   }
+  if (canFormSquare(s, target, attacker, m)) options.push('formSquare');
   return options;
 }
 

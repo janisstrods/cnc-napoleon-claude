@@ -96,7 +96,9 @@ describe('take ground (§9.7, R35)', () => {
   });
   it('a square ordered to attack never takes ground (§9.7)', () => {
     const s = build({ units: [{ side: 'bottom', key: 'BR/LN', at: [5, 6], square: 1 }, topLn([4, 6])] });
-    const d = toBattle(s, 'attackC', ['u1']);
+    const d = play(s, 'attackC', ['u1']);
+    must(d, { kind: 'yesno', yes: false });  // it stays in square (T9: ordered with no cavalry adjacent, it is asked)
+    endMoves(d);
     forceDice([...n('infantry', 4), ...PAD]);
     attack(d, 'u1', H(4, 6));
     expect(gone(d, 'u2')).toBe(true);
