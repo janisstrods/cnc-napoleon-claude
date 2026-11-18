@@ -5,7 +5,7 @@ import { PERSONALITIES, personalityById, personalityFor } from '../../src/ai/per
 const BASE_COMMANDERS: [string, 'BR' | 'FR', string][] = [
   ['Wellesley', 'BR', 'wellington'], ['Wellington', 'BR', 'wellington'], ['Moore', 'BR', 'moore'], ['Craufurd', 'BR', 'craufurd'],
   ['Bock', 'BR', 'bock'], ['Hill', 'BR', 'hill'], ['Delaborde', 'FR', 'reynier'], ['Junot', 'FR', 'junot'], ['Soult', 'FR', 'soult'],
-  ['King Joseph', 'FR', 'reynier'], ['Ney', 'FR', 'ney'], ['Massena', 'FR', 'massena'], ['Marmont', 'FR', 'marmont'],
+  ['King Joseph', 'FR', 'joseph'], ['Ney', 'FR', 'ney'], ['Massena', 'FR', 'massena'], ['Marmont', 'FR', 'marmont'],
   ['Foy', 'FR', 'reynier'], ['Clausel', 'FR', 'reynier'], ['Napoleon', 'FR', 'napoleon'],
 ];
 

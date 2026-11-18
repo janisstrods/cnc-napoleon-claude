@@ -30,6 +30,12 @@ const CAVALRY_SHOCK = 1.15;
 const SOFT_TARGET = 1.15;
 /** A gun's reach beyond distance 2, in dice per hex. */
 const GUN_REACH = 0.3;
+/** Dice lost per -1 of `movedPlus` (melee after moving), weighted by how often the row melees after moving. */
+export const MOVED_MELEE_DIE = 0.5;
+/** Value of re-rolling the flags of an attack (`rerollsFlags`), in dice. */
+export const REROLL_DIE = 0.25;
+/** Value of not being re-rolled against (`immuneToFlagReroll`), in dice. */
+export const REROLL_IMMUNE_DIE = 0.1;
 
 /** The share of an unwounded unit's staying power that `blocks` blocks still carry: a worn unit dies to the next hit. */
 function staying(blocks: number): number {
@@ -48,11 +54,12 @@ function rawPower(st: UnitStats, blocks: number): number {
   // Melee: one die per block plus the rule's plus (and half the plus against infantry, the likelier target), or the
   // artillery cell, which is the fire row at distance 1.
   let melee = st.melee.kind === 'artillery' ? baseFireDice(st, blocks, 1, 0) : blocks + st.melee.plus + 0.5 * st.melee.vsInfantry;
+  if (st.melee.kind === 'blocks') melee += MOVED_MELEE_DIE * st.melee.movedPlus;
   if (st.arm === 'cavalry') melee *= CAVALRY_SHOCK;
   const reach = st.move.reduce((m, o) => Math.max(m, o.battle ? o.max : o.max / 2), 0);
   const grit = FLAG_DIE * st.flagIgnore - RETREAT_DIE * (st.retreat.first - 1) - (st.sabreHits ? 0 : NO_SABRE_DIE);
   // The flag, retreat and sabre adjustments scale the whole row, so a worn unit keeps its share of a sound one.
-  const power = (Math.max(fire, melee) + SECOND_ARM * Math.min(fire, melee) + MOVE_DIE * reach) * Math.max(0.2, 1 + grit / 6);
+  const power = (Math.max(fire, melee) + SECOND_ARM * Math.min(fire, melee) + MOVE_DIE * reach + (st.rerollsFlags ? REROLL_DIE : 0) + (st.immuneToFlagReroll ? REROLL_IMMUNE_DIE : 0)) * Math.max(0.2, 1 + grit / 6);
   return power * staying(blocks) * (st.arm === 'infantry' ? 1 : SOFT_TARGET);
 }
 
