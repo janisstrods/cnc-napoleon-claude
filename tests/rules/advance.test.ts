@@ -88,7 +88,7 @@ describe('take ground (§9.7, R35)', () => {
     must(d, { kind: 'yesno', yes: true });
     expect(u(d, 'u1')!.hex).toBe(H(4, 6));
   });
-  it('take ground into a ford is allowed and stops there; a works crossing too (R35)', () => {
+  it('take ground into a ford is allowed and stops there (R35)', () => {
     const d = win('BR/LN', {}, 'attackC', n('infantry', 4), undefined, ['u1'], (s) => { s.terrain[H(4, 6)] = 'ford'; });
     expect(d.pending).toMatchObject({ kind: 'advance', how: 'takeGround', hex: H(4, 6) });
     must(d, { kind: 'yesno', yes: true });
