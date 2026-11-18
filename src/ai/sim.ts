@@ -66,6 +66,9 @@ function plainAnswer(s: GameState, d: Decision): Answer | null {
     case 'elan':
     case 'rally': return { kind: 'assign', ids: d.faces.map(() => null) };
     case 'shortSupplyHex': return { kind: 'hex', hex: d.options[0] };
+    // expansion kinds (Plan 7C Task 2): the plainest answers, until they get policies of their own (Plan 7C Task 19)
+    case 'guerrilla': return { kind: 'yesno', yes: false };
+    case 'moveFirst': return { kind: 'playCard', card: d.options[0] };
     default: return assertNever(d);
   }
 }

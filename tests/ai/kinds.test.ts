@@ -19,10 +19,10 @@ const top = (key: Units[number]['key'], at: [number, number], extra: object = {}
 const bot = (key: Units[number]['key'], at: [number, number], extra: object = {}) => ({ side: 'bottom' as const, key, at, ...extra });
 const PAD = n('artillery', 40);
 
-/** The 18 kinds of `Decision['kind']`, written out (the compiler checks the list is complete and exact). */
+/** The 20 kinds of `Decision['kind']`, written out (the compiler checks the list is complete and exact): 18 base kinds and the 2 expansion kinds. */
 const KINDS = [
   'playCard', 'orders', 'leaveSquare', 'move', 'battle', 'combinedArms', 'defend', 'ignoreFlags', 'retreat', 'leaderRetreat', 'advance',
-  'breakthroughExtra', 'bonusMelee', 'elan', 'rally', 'scoutKeep', 'shortSupplyTarget', 'shortSupplyHex',
+  'breakthroughExtra', 'bonusMelee', 'elan', 'rally', 'scoutKeep', 'shortSupplyTarget', 'shortSupplyHex', 'guerrilla', 'moveFirst',
 ] as const satisfies readonly Decision['kind'][];
 type Missing = Exclude<Decision['kind'], (typeof KINDS)[number]>;
 const complete: Missing extends never ? true : false = true;
@@ -36,7 +36,9 @@ const win = (atk: 'BR/LN' | 'BR/HC', extra: Pos = {}, pieces = ['u1']): GameDriv
 };
 
 /** Each decision reached the way a game reaches it. */
-const reach: Record<Decision['kind'], () => GameDriver> = {
+/** The expansion kinds are hand-built (their flows need expansion scenarios); safe answers only until Plan 7C Task 19. */
+type Expansion = 'guerrilla' | 'moveFirst';
+const reach: Record<Exclude<Decision['kind'], Expansion>, () => GameDriver> = {
   playCard: () => new GameDriver(build({ units: [bot('BR/LN', [6, 6]), top('FR/LN', [3, 6])] })),
   orders: () => play(build({ units: [bot('BR/LN', [6, 6]), top('FR/LN', [3, 6])] }), 'attackC'),
   leaveSquare: () => play(build({ units: [bot('BR/LN', [6, 6], { square: 1 }), top('FR/LN', [1, 6])] }), 'attackC', ['u1']),
@@ -114,14 +116,14 @@ const reach: Record<Decision['kind'], () => GameDriver> = {
 
 const ctxOf = (me: Side, seed = 5): PolicyCtx => ({ me, W: NEUTRAL_W, oppW: NEUTRAL_W, rand: new Rng(seed), mistakeRate: 0 });
 
-describe('the 18 decision kinds', () => {
-  it('are exactly the Decision union, and the test reaches each one', () => {
+describe('the 20 decision kinds', () => {
+  it('are exactly the Decision union, and the test covers each one', () => {
     expect(complete).toBe(true);
-    expect(KINDS).toHaveLength(18);
-    expect(Object.keys(reach).sort()).toEqual([...KINDS].sort());
+    expect(KINDS).toHaveLength(20);
+    expect([...Object.keys(reach), 'guerrilla', 'moveFirst'].sort()).toEqual([...KINDS].sort());
   });
 
-  for (const kind of KINDS) {
+  for (const kind of KINDS.filter((k): k is Exclude<typeof k, Expansion> => k !== 'guerrilla' && k !== 'moveFirst')) {
     describe(kind, () => {
       it('is answered legally by the policy, live and on a determinised clone, and by safeAnswer', () => {
         const d = reach[kind]();
@@ -142,6 +144,22 @@ describe('the 18 decision kinds', () => {
       });
     });
   }
+
+  it('the expansion kinds get legal safe answers from policyFor, live and determinised', () => {
+    const s = build({ units: [bot('BR/LN', [6, 6]), top('FR/LN', [3, 6])] });
+    const options = s.players.bottom.hand.slice(0, 2);
+    const decisions: Decision[] = [
+      { kind: 'guerrilla', side: 'bottom', mode: 'spend', card: null, held: 0, pool: 3 },
+      { kind: 'moveFirst', side: 'bottom', options },
+    ];
+    for (const dec of decisions) {
+      expect(answerError(s, dec, policyFor(ctxOf('bottom'))(s, dec)), dec.kind).toBeNull();
+      const c = blindClone(s, 'bottom');
+      determinize(c, 'bottom', new Rng(9));
+      expect(answerError(c, dec, policyFor(ctxOf('bottom'))(c, dec)), `${dec.kind} determinised`).toBeNull();
+      for (const attempt of [1, 2]) expect(answerError(s, dec, safeAnswer(s, dec, new Rng(3), attempt)), `${dec.kind} safeAnswer ${attempt}`).toBeNull();
+    }
+  });
 
   it('short supply offers units of both sides (the hand-built decision lists them)', () => {
     const s = build({ units: [bot('BR/LN', [6, 6]), top('FR/LN', [3, 6])] });

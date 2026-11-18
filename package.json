@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit -p . && vite build",
     "preview": "vite preview",
+    "test:perf": "CCN_PERF=1 vitest run tests/ai/evaluate-speed.slow.test.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p . && tsc --noEmit -p tsconfig.scripts.json"
   },

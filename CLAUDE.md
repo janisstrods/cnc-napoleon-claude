@@ -80,7 +80,7 @@ Slow opt-in AI matches: `npx vite-node scripts/ai-match.ts -- --a colonel --b ca
 - Test kits: `tests/rules/helpers.ts` (`build`/`setupOf` pass `ScenarioSetup` fields through; the top army is French and the
   bottom British; `duel`, `attackOn` and `miss` set up a melee, `attack` answers the decisions that follow a declaration), `tests/ai/helpers.ts`,
   `tests/scenarios/helpers.ts`, `tests/support/rng.ts`, `tests/support/storage.ts` (a localStorage stub). Scripts share `scripts/lib.ts`. Long AI tests go in
-  `*.slow.test.ts` files, which a sequencer in `vite.config.ts` starts first.
+  `*.slow.test.ts` files, which a sequencer in `vite.config.ts` starts first. Wall-clock speed budgets (`tests/ai/evaluate-speed.slow.test.ts`) assert only with `CCN_PERF=1` (`npm run test:perf`, on a quiet machine); in `npm test` they just run.
 
 ## Rules and docs
 

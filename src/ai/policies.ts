@@ -17,6 +17,7 @@ import { evaluate, impetuousCost, objectiveHexes, reachOf, rootContextOf } from 
 import { greedyMoveStep, type MoveCtx, type MoveStyle } from './moves';
 import { MAX_CANDIDATES, orderCandidates, pieceBenefits, quickCardScore } from './ordering';
 import type { Rng } from './rand';
+import { safeAnswer } from './sim';
 import { unitValue, type Weights } from './values';
 import { blindClone, isDeterminised, myHand } from './view';
 
@@ -439,6 +440,9 @@ export function policyFor(c: PolicyCtx): Policy {
       case 'scoutKeep': return pickScout(s, d, W);
       case 'shortSupplyTarget': return pickShortSupplyTarget(s, d, W);
       case 'shortSupplyHex': return pickShortSupplyHex(s, d, W);
+      // expansion kinds: safe answers until Plan 7C Task 19 gives them policies
+      case 'guerrilla':
+      case 'moveFirst': return safeAnswer(s, d, c.rand, 1);
       default: return assertNever(d);
     }
   };
