@@ -15,7 +15,7 @@ The original SVGs are kept in `src/ui/kit/icons/`. Their glyph paths are extract
 
 | Icon | Author | Used for | Licence | Link |
 | --- | --- | --- | --- | --- |
-| Crossed swords | Lorc | Swords die face, card back, Cold Steel, menu emblem | CC BY 3.0 | https://game-icons.net/1x1/lorc/crossed-swords.html |
+| Crossed swords | Lorc | card back, Cold Steel, menu emblem | CC BY 3.0 | https://game-icons.net/1x1/lorc/crossed-swords.html |
 | Laurel crown | Lorc | Grand Manoeuvre | CC BY 3.0 | https://game-icons.net/1x1/lorc/laurel-crown.html |
 | Shield echoes | Lorc | Fire and Hold | CC BY 3.0 | https://game-icons.net/1x1/lorc/shield-echoes.html |
 | Shield reflect | Lorc | Counter Attack | CC BY 3.0 | https://game-icons.net/1x1/lorc/shield-reflect.html |
@@ -43,7 +43,7 @@ Authors: Lorc (https://lorcblog.blogspot.com) and Delapouite (https://delapouite
 These parts of the UI kit are original CSS/SVG made for this project:
 
 - section mini-maps
-- dice cubes and the light, medium, heavy and flag die faces
+- dice cubes and the infantry, cavalry, artillery, flag and sabre die faces
 - banners
 - card frames
 - parchment, wood, leather and felt textures (procedural SVG turbulence)
