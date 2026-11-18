@@ -4,7 +4,7 @@
 // flags) keep their board clicks and highlights, with the spec's title.
 import { useState, type Dispatch, type SetStateAction } from 'react';
 import {
-  answerError, CARD_DEFS, OFF_BOARD, UNIT_STATS, attachedLeader, battleReady, battleTargets, cardKind, effectiveCard, eligiblePieces, isLeaderId, leaderById,
+  answerError, CARD_DEFS, OFF_BOARD, UNIT_STATS, attachedLeader, battleReady, battleTargets, moveFirstValue, cardKind, effectiveCard, eligiblePieces, isLeaderId, leaderById,
   movablePieces, orderLimit, pieceHex, pieceMoves, unitById, validateOrders,
   type Answer, type Decision, type DieFace, type GameState, type HexId, type SectionName, type Side, type UndoStep,
 } from '../../engine';
@@ -13,7 +13,7 @@ import { AssignPanel } from './AssignPanel';
 import { assignError, currentAssign, type ElanOrRally } from './assign';
 import type { GameController, ViewState } from './controller';
 import { AUTO_ACTION, DECISION_TITLES, decisionTitle, promptSpec, unitLabel } from './promptSpec';
-import { attackDice, combinedArmsDice, combinedArmsTotalText, effectiveGuns, expectedHits, leaderRetreatChoices, retreatChoices, toggleGun, wantsPromptFocus, type UiSel } from './uiModel';
+import { attackDice, combinedArmsDice, combinedArmsTotalText, effectiveGuns, expectedHits, handChoices, leaderRetreatChoices, undoBlockedNote, retreatChoices, toggleGun, wantsPromptFocus, type UiSel } from './uiModel';
 
 /** What the prompt bar shows. `tone`: 'warn' or 'danger' colouring; `dice`: dice drawn before the text. */
 export interface Prompt {
@@ -28,6 +28,8 @@ export interface Prompt {
   dice?: DieFace[];
   /** Shown in the prompt bar between the text and the buttons (the Scout's two cards). */
   extra?: JSX.Element;
+  /** A line of explanation under the text (why something is not offered). */
+  note?: string;
   /** Shown beside the board (the Élan / Rally dice). */
   panel?: JSX.Element;
 }
@@ -106,14 +108,18 @@ export function gamePrompt(c: PromptCtx): Prompt | null {
   const p = decisionPrompt(c, d);
   // no undo once a Scout's two cards are on show: it would put them back on the deck, known
   const undo = d.kind === 'scoutKeep' ? null : undoButton(c);
-  return undo ? { ...p, buttons: [...p.buttons, undo] } : p;
+  if (undo) return { ...p, buttons: [...p.buttons, undo] };
+  // the guerrilla side saw the card (and may have rolled): Undo is gone for that reason, which the player is told
+  const note = undoBlockedNote(s, d, human, view.undo);
+  return note ? { ...p, note } : p;
 }
 
 /** The prompt of the human's decision `d`, without the undo button (`gamePrompt` adds it). */
 function decisionPrompt(c: PromptCtx, d: Decision): Prompt {
   switch (d.kind) {
     case 'playCard':
-      return playCardPrompt(c);
+    case 'moveFirst':
+      return playCardPrompt(c, d);
     case 'orders':
       return ordersPrompt(c, d);
     case 'move':
@@ -212,6 +218,7 @@ export function PromptBar({ prompt, error }: { prompt: Prompt | null; error: str
         <div className="prompt-text" role="status" aria-live="polite">
           {prompt && <div className="prompt-title">{prompt.title}</div>}
           {prompt?.text && <div className="prompt-sub" title={prompt.text}>{prompt.text}</div>}
+          {prompt?.note && <div className="prompt-note">{prompt.note}</div>}
           {error && <div className="prompt-err">{error}</div>}
         </div>
         {prompt?.hint && <div className={`prompt-hint ${prompt.compactHint ? 'prompt-hint--compact' : ''}`}>{prompt.hint}</div>}
@@ -308,7 +315,7 @@ function genericPrompt(c: PromptCtx, d: Decision): Prompt {
       enter: () => c.setUi((u) => (u.hoverAction === a.key ? u : { ...u, hoverAction: a.key })),
       leave: () => c.setUi((u) => (u.hoverAction === a.key ? { ...u, hoverAction: null } : u)),
     };
-    return btn(a.label, () => c.answer(answer), { variant: i === 0 ? 'primary' : 'secondary', key: a.key, title: a.hint, hover: a.hint ? hover : undefined, noFocus: SKIP_ACTIONS.has(a.key) });
+    return btn(a.label, () => c.answer(answer), { variant: i === 0 ? 'primary' : 'secondary', key: a.key, title: a.hint, hover: a.hint ? hover : undefined, noFocus: a.skip || SKIP_ACTIONS.has(a.key) });
   });
   // a prompt with hints keeps its line while none is hovered, so the bar does not change height under the pointer
   const hint = spec.actions.some((a) => a.hint) ? spec.actions.find((a) => a.key === c.ui.hoverAction)?.hint ?? HINT_IDLE : undefined;
@@ -326,16 +333,29 @@ function undoButton(c: PromptCtx): JSX.Element | null {
   return step ? btn(UNDO_LABEL[step].label, () => c.controller.undo(), { variant: 'ghost', key: 'undo', noFocus: true, title: UNDO_LABEL[step].title }) : null;
 }
 
-function playCardPrompt(c: PromptCtx): Prompt {
+function playCardPrompt(c: PromptCtx, d: D<'playCard'> | D<'moveFirst'>): Prompt {
   const { s, human, ui } = c;
-  const sel = ui.selCard;
+  // only a card the decision allows counts (the opening card, or the options of the Move First pick)
+  const sel = ui.selCard !== null && handChoices(s, d, human).includes(ui.selCard) ? ui.selCard : null;
+  if (d.kind === 'moveFirst') {
+    const spec = promptSpec(s, d);
+    const buttons = sel !== null ? [btn(`Choose ${CARD_DEFS[cardKind(sel)].title}`, () => c.answer({ kind: 'playCard', card: sel }), { key: 'choose' })] : [];
+    buttons.push(autoButton(c));
+    return {
+      title: spec.title, buttons,
+      text: sel !== null ? `${CARD_DEFS[cardKind(sel)].title} (value ${moveFirstValue(s, human, sel)}). ${spec.text} ${CARD_DEFS[cardKind(sel)].text}` : `${spec.text} Click a lit card of your hand: the opponent's choice stays hidden until both are made.`,
+    };
+  }
   const def = sel !== null ? CARD_DEFS[cardKind(sel)] : null;
   let note = promptSpec(s, { kind: 'playCard', side: human }).text;
+  const bound = handChoices(s, d, human).length === 1 && s.players[human].hand.length > 1;
+  if (bound && sel === null) note = 'You must play the opening card you chose.';
   if (sel !== null) {
     const eff = effectiveCard(s, human, sel);
     if (cardKind(sel) === 'counterAttack') note = eff.kind ? `Copies the enemy's ${CARD_DEFS[eff.kind].title}.` : 'The enemy has played nothing to copy.';
     else if (cardKind(sel) === 'firstStrike') note = 'First Strike is a reaction card: playing it now has no effect.';
     else note = def!.text;
+    if (bound) note = `You must play the opening card you chose. ${note}`;
   }
   const buttons = sel !== null ? [btn(`Play ${def!.title}`, () => c.answer({ kind: 'playCard', card: sel }))] : [];
   buttons.push(autoButton(c));

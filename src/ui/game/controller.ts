@@ -731,6 +731,9 @@ export class GameController {
       case 'reshuffle':
       case 'log':
       case 'victory':
+      // Expansion #1: the counter panel and the reveal of the opening cards follow these events
+      case 'guerrilla':
+      case 'moveFirst':
         log();
         this.set({ display: after });
         break;
@@ -752,7 +755,8 @@ export class GameController {
  * indicator and has no pause of its own: the one pause of a declared melee is held in `animate`.
  */
 export function aiPacing(d: Decision): { indicator: boolean; minMs: number } {
-  if (d.kind === 'defend') return { indicator: false, minMs: 0 };
+  // a Move First pick is asked only of a side with an eligible card: any tell of the computer's hand would leak it
+  if (d.kind === 'defend' || d.kind === 'moveFirst') return { indicator: false, minMs: 0 };
   return { indicator: true, minMs: d.kind === 'playCard' ? 700 : d.kind === 'move' || d.kind === 'battle' ? 260 : 150 };
 }
 

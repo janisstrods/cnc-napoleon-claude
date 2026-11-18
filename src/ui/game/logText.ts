@@ -194,8 +194,8 @@ export function eventLog(e: GameEvent, before: GameState, after: GameState, huma
     }
     case 'moveFirst': {
       const pick = (side: Side) => (e.picks[side] === null ? 'no card' : `${CARD_DEFS[cardKind(e.picks[side])].title} (${e.values[side]})`);
-      const pick2 = (side: Side) => `${army(side)} ${pick(side)}`;
-      return line(`Opening cards: ${pick2('top')} against ${pick2('bottom')}; the ${army(e.first)} army moves first.`, 'card', e.first);
+      const pick2 = (side: Side) => `${army(side)}: ${pick(side)}`;
+      return line(`Opening cards: ${pick2('top')}; ${pick2('bottom')}. The ${army(e.first)} army moves first.`, 'card', e.first);
     }
   }
 }

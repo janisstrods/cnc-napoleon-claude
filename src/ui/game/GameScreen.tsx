@@ -9,12 +9,12 @@ import { nationInk } from '../kit/theme';
 import { BattleResult } from './BattleResult';
 import { Board } from './Board';
 import type { GameController } from './controller';
-import { HoverTip, LogPanel } from './panels';
+import { CommittedCard, committedShown, GuerrillaCounters, HandSizeLine, HandStrip, HoverTip, LogPanel } from './panels';
 import { PromptBar, focusNewDecision, focusPromptTarget, gamePrompt } from './prompts';
-import { boardKeyStep, freshSelection, globalKeyAction, hexLabel, jumpTarget, nextRegion } from './boardKeys';
+import { boardKeyStep, enterBelongsToHand, freshSelection, globalKeyAction, hexLabel, jumpTarget, nextRegion } from './boardKeys';
 import { hexClick, leaderClick, type ClickResult } from './hexClick';
 import { bannerCounts, objectiveSummary, objectiveTipLines } from './objectiveText';
-import { boardMarks, escapeSelection, selectionDeps, type UiSel } from './uiModel';
+import { boardMarks, escapeSelection, handChoices, selectionDeps, type UiSel } from './uiModel';
 import { leaderLines, unitSummary } from './unitText';
 import { SquareTrack } from './SquareTrack';
 import { commandText, squareLines } from './squareText';
@@ -87,6 +87,8 @@ export function GameScreen({ controller, onExit, onRematch }: {
         { inGame: !active || active === document.body || !!active.closest('.game-root'), typing: t instanceof HTMLTextAreaElement || (t instanceof HTMLElement && t.isContentEditable), modal },
       );
       if (e.key === 'Enter') {
+        // a focused hand card selects itself on Enter: no second action on the prompt's primary button
+        if (enterBelongsToHand(t instanceof Element ? t : null, e.defaultPrevented)) return;
         // the board's own handler takes Enter while its cursor is shown; after a mouse click Enter is the main action, as elsewhere
         if (t instanceof Element && t.closest('.board-svg') && kbdRef.current) return;
         if (t instanceof HTMLButtonElement) {
@@ -96,7 +98,7 @@ export function GameScreen({ controller, onExit, onRematch }: {
         }
         if (e.repeat) return;
         if (performance.now() - shownAt.current < 400) return; // swallow double-taps into a fresh decision
-        const btn = document.querySelector<HTMLButtonElement>('.prompt-buttons .kit-btn--primary:not(:disabled)');
+        const btn = document.querySelector<HTMLButtonElement>('.prompt-buttons .kit-btn--primary:not(:disabled):not([data-nofocus])');
         if (btn) { e.preventDefault(); btn.click(); }
       } else if (e.key === 'Escape') {
         // Escape also disarms the Élan / Rally die
@@ -108,9 +110,9 @@ export function GameScreen({ controller, onExit, onRematch }: {
           const from = active?.closest('.board-svg') ? 'board' : active?.closest('.prompt-bar') ? 'prompt' : active?.closest('.hand-cards') ? 'hand' : 'other';
           goTo(nextRegion(from, g === 'cycleBack'));
         }
-      } else if (/^[1-9]$/.test(e.key) && d?.kind === 'playCard' && d.side === human) {
+      } else if (/^[1-9]$/.test(e.key) && (d?.kind === 'playCard' || d?.kind === 'moveFirst') && d.side === human) {
         const c = s.players[human].hand[Number(e.key) - 1];
-        if (c !== undefined) setUi((u) => ({ ...u, selCard: c }));
+        if (c !== undefined && handChoices(s, d, human).includes(c)) setUi((u) => ({ ...u, selCard: c }));
       }
     };
     window.addEventListener('keydown', onKey);
@@ -322,11 +324,14 @@ export function GameScreen({ controller, onExit, onRematch }: {
                 <div className="army-name them">{them.army}</div>
                 <div className="army-cmd" title={`${them.commander} — ${persona.name}: ${persona.epithet} · ${DIFF_LABEL[controller.config.difficulty]}`}>{them.commander} · {persona.name} · {DIFF_LABEL[controller.config.difficulty]}</div>
                 <div className="army-cmd army-hand">{commandText(s, ai)}</div>
+                <HandSizeLine s={s} side={ai} />
               </div>
+              <CommittedCard s={s} side={ai} />
               <div className="ai-hand" title={`${them.hand.length} command cards`}>
-                {Array.from({ length: them.hand.length }).map((_, i) => <CardBack key={i} size="sm" style={{ fontSize: '1.7px', marginLeft: i ? -9 : 0 }} />)}
+                {Array.from({ length: them.hand.length - (committedShown(s, ai) ? 1 : 0) }).map((_, i) => <CardBack key={i} size="sm" style={{ fontSize: '1.7px', marginLeft: i ? -9 : 0 }} />)}
               </div>
             </div>
+            <GuerrillaCounters s={s} side={ai} />
             <BannerTrack count={themBanners.total} held={themBanners.held} target={s.bannersToWin} nation={me.nation} label="Banners won" detail={objectiveSummary(s, ai)} />
             <SquareTrack side={ai} owner={false} s={s} />
             <div className="divider" />
@@ -335,8 +340,10 @@ export function GameScreen({ controller, onExit, onRematch }: {
                 <div className="army-name me">{me.army} <span className="you">(you)</span></div>
                 <div className="army-cmd">{me.commander}</div>
                 <div className="army-cmd army-hand">{commandText(s, human)}</div>
+                <HandSizeLine s={s} side={human} />
               </div>
             </div>
+            <GuerrillaCounters s={s} side={human} />
             <BannerTrack count={meBanners.total} held={meBanners.held} target={s.bannersToWin} nation={them.nation} label="Banners won" detail={objectiveSummary(s, human)} />
             <SquareTrack side={human} owner s={s} />
             <div className="deck-row">Deck {s.deck.length} · Discards {s.discard.length}</div>
@@ -357,24 +364,7 @@ export function GameScreen({ controller, onExit, onRematch }: {
       </div>
 
       <footer className="bottom-strip">
-        <div className="hand-cards" style={{ '--n': me.hand.length } as React.CSSProperties}>
-          {me.hand.map((c) => {
-            const playable = d?.kind === 'playCard' && d.side === human;
-            const k = cardKind(c);
-            return (
-              <div key={c} className={`hand-slot ${ui.selCard === c ? 'is-selected' : ''} ${playable ? 'is-playable' : ''}`}>
-                <CardView
-                  kind={k}
-                  size="sm"
-                  selected={ui.selCard === c}
-                  disabled={!playable}
-                  onClick={() => playable && setUi({ ...ui, selCard: ui.selCard === c ? null : c })}
-                  onHover={(hv) => setUi((u) => ({ ...u, hoverCard: hv ? c : u.hoverCard === c ? null : u.hoverCard }))}
-                />
-              </div>
-            );
-          })}
-        </div>
+        <HandStrip s={s} d={d} human={human} ui={ui} setUi={setUi} />
         {ui.hoverCard !== null && me.hand.includes(ui.hoverCard) && (
           <div className="card-preview">
             <CardView kind={cardKind(ui.hoverCard)} size="lg" />

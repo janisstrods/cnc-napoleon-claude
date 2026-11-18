@@ -3,7 +3,7 @@
 import {
   ALL_HEXES, CARD_DEFS, OFF_BOARD, combinedArmsCandidates, gunDice as engineGunDice, hexLabel, meleeDice, UNIT_STATS, statsOf, leaderAt, battleReady, battleTargets, effectiveCard, eligiblePieces, inSection,
   leaderUnit, movablePieces, pieceById, pieceHex, pieceMoves, retireReformOptions, unitAt, unitById,
-  type Decision, type GameState, type HexId, type SectionName, type Side, type Unit,
+  guerrillaSide, type Decision, type GameState, type HexId, type SectionName, type Side, type Unit, type UndoStep,
 } from '../../engine';
 import type { Highlight } from './Board';
 import { promptSpec, unitLabel } from './promptSpec';
@@ -423,3 +423,25 @@ export function worksSidesText(mask: number, flipped: boolean): string {
   return `its ${list} hexside${n === 1 ? '' : 's'}`;
 }
 
+
+/**
+ * The cards of the human's hand that may be clicked now: a playCard (only the committed opening card on the first turn of
+ * a Move First battle) or a moveFirst pick (its options); none otherwise. Null: the decision is not about the hand.
+ */
+export function handChoices(s: GameState, d: Decision | null, human: Side): number[] {
+  if (!d || d.side !== human) return [];
+  const hand = s.players[human].hand;
+  if (d.kind === 'moveFirst') return hand.filter((c) => d.options.includes(c));
+  if (d.kind !== 'playCard') return [];
+  const bound = s.special.turnsDone[human] === 0 ? (s.special.moveFirst?.committed[human] ?? null) : null;
+  return bound !== null && hand.includes(bound) ? [bound] : [...hand];
+}
+
+/** Why Undo is gone after the human's card: the guerrilla side answered (its yes rolled a die; its no showed the card was seen). */
+export function undoBlockedNote(s: GameState, d: Decision | null, human: Side, undo: UndoStep | null): string | null {
+  const g = guerrillaSide(s);
+  if (g === null || g === human || undo !== null || !d || d.side !== human) return null;
+  if ((d.kind !== 'orders' && d.kind !== 'move') || s.active !== human || s.turn.card === null) return null;
+  if (Object.values(s.turn.ordered).some((o) => o.moved)) return null;
+  return `Undo is not available: the ${s.players[g].army} have answered the Guerrilla Action, ${d.kind === 'orders' ? 'so your card stands' : 'so your card and orders stand'}.`;
+}
