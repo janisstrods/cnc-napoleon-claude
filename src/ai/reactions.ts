@@ -6,13 +6,16 @@
 // asked only on states whose opponent hand is assumed (`EstCtx.oppHands`, blind clones) or sampled (a determinised clone),
 // never on the live state (Task 1 review, M-8).
 //
-// Task 4a freezes this interface. The First Strike branch (its sequence) and `bestGuns` are filled by Task 4b: until then
-// First Strike is priced as a card spent for nothing (never chosen) and no gun joins a melee.
-import { distance, other, statsOf, unitById, type Decision, type DefendChoice, type GameState, type HexId, type MeleeCtx, type Unit } from '../engine';
+// Task 4a froze this interface; Task 4b filled the First Strike branch (its sequence lives in estimate.ts, `branchesOf`) and
+// `bestGuns`, the Combined Arms guns an attacker adds.
+import {
+  battleTargets, combinedArmsCandidates, distance, meleeDice, other, statsOf, unitById,
+  type Decision, type DefendChoice, type GameState, type HexId, type MeleeCtx, type Unit,
+} from '../engine';
 // `defendOptions` lives in the engine's reactions module, which its index barrel does not re-export (as with `flagIgnores`).
 import { defendOptions } from '../engine/reactions';
 import type { Occ } from './board';
-import { branchesOf, makeEstCtx, type EstCtx, type Outcome } from './estimate';
+import { branchesOf, fireEstimate, makeEstCtx, meleeEstimate, meleeWithGuns, type EstCtx, type Outcome } from './estimate';
 import { withAssumedHands } from './view';
 import { CARD_VALUE, unitValue, type Weights } from './values';
 
@@ -51,9 +54,15 @@ export function squareCost(s: GameState, unit: Unit, occ: Occ): number {
   return turns * (CARD_VALUE / 3 + COMMAND_TURN + IMMOBILE_TURN * unitValue(s, unit));
 }
 
-/** The cost of playing First Strike: the card's keep value. */
+/**
+ * The cost of playing First Strike: the card's keep value (a mean card, `CARD_VALUE`, plus `W.firstStrikeReserve`) less the
+ * replacement its owner draws at the end of that turn (R63, R78), a card of mean value: unlike a square's card, it leaves
+ * the hand no shorter by the defender's next turn, so only the premium of holding First Strike is lost. Not priced (Task 11):
+ * until that draw the hand is one card short, which can take a later square this turn below `SQUARE_MIN_HAND`.
+ */
 export function firstStrikeCost(W: Weights): number {
-  return CARD_VALUE + W.firstStrikeReserve;
+  const keep = CARD_VALUE + W.firstStrikeReserve;
+  return keep - CARD_VALUE;
 }
 
 /** The first option with the largest `score` (the engine lists 'stand' first, so a tie stands). */
@@ -78,8 +87,10 @@ function argmax(options: readonly DefendChoice[], score: (c: DefendChoice) => nu
  *   sampled clone itself;
  * - otherwise the worst for the attacker over the options asked on the position with the assumed hands `ec.oppHands`
  *   (`withAssumedHands`), holding a First Strike (weight `pFS`) or not. Those hands are assumed once at the root decision
- *   and reused for every estimate of the turn being planned, also on positions after the AI's own moves (the opponent's
- *   hand does not change during our turn).
+ *   and reused for every estimate of the turn being planned, also on positions after the AI's own moves. That is an
+ *   approximation: the opponent's hand does change during our turn (a square formed puts a card on its track and shrinks
+ *   the hand, which can take away a later square; a First Strike played leaves the hand until the draw phase), and the
+ *   assumed hands do not follow it; `pFS` is also not lowered after a First Strike is seen played this turn.
  */
 export function reactionsFor(s: GameState, m: MeleeCtx, ec: EstCtx, defender: Unit, branch: (c: DefendChoice) => Outcome): Reaction[] {
   const one = (c: DefendChoice): Reaction[] => [{ choice: c, p: 1, o: branch(c) }];
@@ -112,7 +123,8 @@ export function reactionOutcomes(s: GameState, m: MeleeCtx, ec: EstCtx): Reactio
 
 /**
  * The value of each offered reaction to the defender of `d` (−Infinity for one not offered), from the defender's side:
- * minus the attacker's `ev` of that branch, so a square's cost and a First Strike card count against it.
+ * minus the attacker's `ev` of that branch, so a square's cost and a First Strike card count against it. The Combined Arms
+ * guns are the ones the decision says joined (`d.artillery`: declared before the reaction, R40, and public).
  */
 export function defendValue(s: GameState, d: Extract<Decision, { kind: 'defend' }>, W: Weights): Record<DefendChoice, number> {
   const out: Record<DefendChoice, number> = { stand: -Infinity, retireReform: -Infinity, formSquare: -Infinity, firstStrike: -Infinity };
@@ -121,15 +133,71 @@ export function defendValue(s: GameState, d: Extract<Decision, { kind: 'defend' 
   if (!attacker || !defender) return out;
   const role = d.bonus ? 'bonus' : 'attack';
   const moved = s.turn.ordered[d.attacker]?.moved ?? 0;
-  const m: MeleeCtx = { attacker: d.attacker, target: d.target, targetHex: defender.hex, role, artillery: [], reaction: null, declaredMoved: moved };
   // the defender's own context (its side is the viewer, so the attacker's reactions in a bonus prospect are its own units')
   const ec: EstCtx = { ...makeEstCtx(s, d.side, W), moved, role };
+  const m: MeleeCtx = { attacker: d.attacker, target: d.target, targetHex: defender.hex, role, artillery: [...d.artillery], reaction: null, declaredMoved: moved };
   const branch = branchesOf(s, attacker, defender, m, ec);
   for (const c of d.options) out[c] = -branch(c).ev;
   return out;
 }
 
-/** The Combined Arms guns `unit` should add to its melee on `target` (Task 4b; none until then). */
-export function bestGuns(_s: GameState, _unit: Unit, _target: HexId, _ec: EstCtx): string[] {
-  return [];
+/**
+ * The value to its side of gun `g`'s best battle of its own this turn (0 when it has none): what it gives up by joining a
+ * Combined Arms attack, since a joining gun has made its one battle (R4).
+ */
+function ownShot(s: GameState, g: Unit, ec: EstCtx): number {
+  const gec: EstCtx = { ...ec, moved: s.turn.ordered[g.id]?.moved ?? 0, role: 'attack' };
+  let best = 0;
+  for (const t of battleTargets(s, g.id)) {
+    const o = t.kind === 'fire' ? fireEstimate(s, g, t.hex, gec) : meleeEstimate(s, g, t.hex, gec);
+    best = Math.max(best, o.ev);
+  }
+  return best;
+}
+
+/**
+ * Greedy Combined Arms choice: add the candidate gun (the engine's `combinedArmsCandidates`) that raises the melee's value to
+ * the attacker (`evOf`, given the guns) most net of the gun's own shot, while that gain is positive. When the melee unit has no dice of its own the engine requires a gun (R15), so the best one joins even
+ * at a loss.
+ */
+function chooseGuns(s: GameState, unit: Unit, target: HexId, ec: EstCtx, evOf: (guns: string[]) => number): string[] {
+  const foe = ec.occ.unit[target];
+  if (!foe) return []; // no Combined Arms against a lone leader (R76)
+  const role = ec.role === 'bonus' ? 'bonus' : 'attack';
+  // guns already joined to this unit's first melee (`ec.spentGuns`, a bonus prospect) are spent: the engine has not yet
+  // marked them on the estimate's state
+  const options = combinedArmsCandidates(s, unit, foe, role).filter((id) => !ec.spentGuns?.includes(id));
+  if (options.length === 0) return [];
+  // approximates RR §9.6, R15 (engine: combinedArmsStep's `required`): no dice of its own, so at least one gun must join
+  const required = meleeDice(s, unit, foe, { role, moved: ec.moved, declared: true }) < 1;
+  const chosen: string[] = [];
+  let base = evOf(chosen);
+  const shot = new Map<string, number>();
+  for (;;) {
+    let pick: string | null = null;
+    let pickGain = -Infinity;
+    let pickEv = 0;
+    for (const id of options) {
+      if (chosen.includes(id)) continue;
+      const g = unitById(s, id);
+      if (!g) continue;
+      if (!shot.has(id)) shot.set(id, ownShot(s, g, ec));
+      const e = evOf([...chosen, id]);
+      const gain = e - base - shot.get(id)!;
+      if (gain > pickGain) {
+        pick = id;
+        pickGain = gain;
+        pickEv = e;
+      }
+    }
+    if (pick === null || (pickGain <= 0 && !(required && chosen.length === 0))) break;
+    chosen.push(pick);
+    base = pickEv;
+  }
+  return chosen;
+}
+
+/** The Combined Arms guns `unit` should add to its melee on `target`: each one only while it raises `ev` net of its own shot. */
+export function bestGuns(s: GameState, unit: Unit, target: HexId, ec: EstCtx): string[] {
+  return chooseGuns(s, unit, target, ec, (guns) => meleeWithGuns(s, unit, target, guns, ec).ev);
 }
