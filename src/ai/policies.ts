@@ -304,7 +304,13 @@ export function pickBreakthroughHex(s: GameState, d: D<'breakthroughExtra'>, W: 
   const ea: EstCtx = { ...ec, moved: op?.moved ?? 0, role: 'attack' };
   const base = rootCtx(s, d.side, W);
   const here = evalMoved(s, d.side, W, base, u.id, null);
-  const score = (h: HexId): number => takeGround(s, u, h, ea).value + evalMoved(s, d.side, W, base, u.id, h) - here;
+  // memoised: the best hex's score is asked again below, and each score is a full evaluation of a clone (Task 11 speed probe)
+  const seen = new Map<HexId, number>();
+  const score = (h: HexId): number => {
+    let v = seen.get(h);
+    if (v === undefined) seen.set(h, (v = takeGround(s, u, h, ea).value + evalMoved(s, d.side, W, base, u.id, h) - here));
+    return v;
+  };
   const best = argmaxBy(d.options, score);
   if (best === null) return { kind: 'hex', hex: null };
   if (d.required) return { kind: 'hex', hex: best };

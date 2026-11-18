@@ -240,6 +240,15 @@ describe('jobs and seeds', () => {
     expect(jobSeed({ sc: '001', g: 0, aSide: 'top' }, 5)).not.toBe(jobSeed({ sc: '001', g: 0, aSide: 'top' }, 0));
   });
 
+  it('a mirrored pair (the same AI on both sides) plays its swapped game on a seed of its own', () => {
+    const bottom = jobSeed({ sc: '001', aSide: 'bottom', g: 2 }, 0, true);
+    const top = jobSeed({ sc: '001', aSide: 'top', g: 2 }, 0, true);
+    expect(bottom).toBe(jobSeed({ sc: '001', aSide: 'bottom', g: 2 }, 0));
+    expect(top).toBe(bottom + 7);
+    // no collision with the other games of the battle (17 apart)
+    for (let g = 0; g < 12; g++) expect(jobSeed({ sc: '001', aSide: 'bottom', g }, 0, true)).not.toBe(top);
+  });
+
   it('every shard count keeps a pair together and covers each job once', () => {
     for (const n of [1, 2, 3, 4, 5]) {
       const all: string[] = [];

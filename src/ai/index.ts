@@ -76,8 +76,11 @@ export interface AiMemory {
   rngState: number;
   /** Answers replaced by the random fallback (each is also reported with console.error); must stay 0 in tests. */
   fallbacks: number;
-  /** Diagnostics of the last decision (shown by `ai-review`). `ms` is 0 in deterministic mode (no clock is read). */
-  last: { kind: Decision['kind']; ms: number; sims: number; plan?: string } | null;
+  /**
+   * Diagnostics of the last decision (shown by `ai-review`). `ms` is 0 in deterministic mode (no clock is read). `sims`: simulated
+   * turns (card decision) or rollout nodes (battle decision); `nodes`: the budget's nodes charged (every kind of work, ruling 2).
+   */
+  last: { kind: Decision['kind']; ms: number; sims: number; nodes: number; plan?: string } | null;
   plan: StoredPlan | null;
   /** The turn of the last line spoken (a commander speaks at most once a turn). */
   voice: { lastTurn: number };
@@ -184,6 +187,7 @@ interface Outcome {
   answer: Answer;
   say?: string;
   sims?: number;
+  nodes?: number;
   plan?: string;
 }
 
@@ -233,7 +237,7 @@ function decide(s: GameState, d: Decision, opts: AiOptions, mem: AiMemory, rand:
       const lead = bannerTotal(s, me) - bannerTotal(s, other(me));
       const remark: Moment | null = Math.abs(lead) >= LEAD_TALK && rand.chance(REMARK) ? (lead > 0 ? 'winning' : 'losing') : null;
       const say = speak(s, me, P, mem, rand, remark ?? 'cardPlayed', { card: cardKind(plan.card) });
-      return { answer: { kind: 'playCard', card: plan.card }, say, sims: plan.sims, plan: `${plan.label} = ${plan.score.toFixed(3)}` };
+      return { answer: { kind: 'playCard', card: plan.card }, say, sims: plan.sims, nodes: ctx.budget.nodes, plan: `${plan.label} = ${plan.score.toFixed(3)}` };
     }
     case 'orders': {
       const p = followed();
@@ -275,7 +279,7 @@ function decide(s: GameState, d: Decision, opts: AiOptions, mem: AiMemory, rand:
         const t = u ? battleTargets(s, a.unit).find((x) => x.hex === a.target) : undefined;
         if (u && t && t.kind === 'melee' && statsOf(s, u).arm === 'cavalry') say = speak(s, me, P, mem, rand, 'charge', { unit: unitName(s, u.id) });
       }
-      return { answer: a, say, sims: ctx.budget.nodes };
+      return { answer: a, say, sims: ctx.budget.nodes, nodes: ctx.budget.nodes };
     }
     case 'defend': {
       const a = policy();
@@ -329,7 +333,7 @@ export function chooseAnswer(state: GameState, decision: Decision, opts: AiOptio
   } finally {
     mem.rngState = rand.state; // saved even when the fallback throws, so a retry does not repeat the same draws
   }
-  mem.last = { kind: decision.kind, ms: timed ? now() - t0 : 0, sims: out.sims ?? 0, ...(out.plan ? { plan: out.plan } : {}) };
+  mem.last = { kind: decision.kind, ms: timed ? now() - t0 : 0, sims: out.sims ?? 0, nodes: out.nodes ?? 0, ...(out.plan ? { plan: out.plan } : {}) };
   return out.say !== undefined ? { answer: out.answer, say: out.say } : { answer: out.answer };
 }
 

@@ -44,8 +44,13 @@ export function shardJobs(scenarios: string[], games: number): Job[] {
   return jobs;
 }
 
-/** A job's game seed, the same for both sides of a pair (`--seedOffset` shifts the games to fresh seeds); the AIs' own seeds add the side. */
-export const jobSeed = (job: Job, seedOffset: number) => 1000 * Number(job.sc) + 17 * (job.g + seedOffset);
+/**
+ * A job's game seed, the same for both sides of a pair (`--seedOffset` shifts the games to fresh seeds); the AIs' own seeds add the
+ * side. `mirror`: both sides play the same AI (same level and budget), so the pair's second game would replay the first move for
+ * move; it gets a seed of its own (+7 when A is the top army, as in the Ancients runs).
+ */
+export const jobSeed = (job: Job, seedOffset: number, mirror = false) =>
+  1000 * Number(job.sc) + 17 * (job.g + seedOffset) + (mirror && job.aSide === 'top' ? 7 : 0);
 
 export interface PlayHooks {
   /** The last turn played (default: no limit). */
@@ -227,8 +232,10 @@ export interface GameRow {
   sc: string; aSide: Side; seed: number; winner: string; banners: [number, number]; turns: number; reason: string;
   a: Difficulty; b: Difficulty;
   rejects: number; fallbacks: number;
-  /** The `sims` of every AI decision summed (AiMemory.last.sims: nodes charged for a card decision, rollouts or nodes for a battle one). */
+  /** The `sims` of every AI decision summed (AiMemory.last.sims: simulated turns, not nodes, for a card decision; rollout nodes for a battle one). */
   sims: number;
+  /** The budget nodes charged by every AI decision, summed (AiMemory.last.nodes: plan building, move scoring, simulations, rollouts). */
+  nodes?: number;
   timing: { A: { avg: number; max: number }; B: { avg: number; max: number } };
   c: Counters;
 }
