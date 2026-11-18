@@ -645,7 +645,7 @@ export class GameController {
         break;
       }
       case 'roll': {
-        const title = rollTitle(e.purpose, e.by, e.against, after);
+        const title = rollTitle(e.purpose, e.by, e.against, after, e.reroll === true);
         const id = seq++;
         const sub = rollSummary(e.purpose, e.faces, e.scoring);
         sfx.dice(e.faces.length);

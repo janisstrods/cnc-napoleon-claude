@@ -40,12 +40,25 @@ function retreatText(st: UnitStats): string {
   return `Retreat ${r} hex${st.retreat.first === 1 && st.retreat.then === 1 ? '' : 'es'} per flag${st.flagIgnore ? ` · ignores ${st.flagIgnore} flag${st.flagIgnore === 1 ? '' : 's'}` : ''}`;
 }
 
+/** "After moving: fire half its blocks, rounded down, less 1; melee 1 die less." (only a row that is worse after moving; null otherwise). */
+function movingText(st: UnitStats): string | null {
+  const parts: string[] = [];
+  if (st.fire.kind === 'musket' && st.fire.moving < 0) parts.push(`fire half its blocks, rounded ${st.fire.round === 'up' ? 'up' : 'down'}, less ${-st.fire.moving}`);
+  if (st.melee.kind === 'blocks' && st.melee.movedPlus < 0) parts.push(`melee ${-st.melee.movedPlus} ${st.melee.movedPlus === -1 ? 'die' : 'dice'} less`);
+  return parts.length ? `After moving: ${parts.join('; ')}.` : null;
+}
+
 /** Stats lines for tooltips: blocks, move options, melee and fire rules, retreat, flags ignored, sabres. */
 export function unitSummary(u: Unit): string[] {
   const st = UNIT_STATS[u.key];
   const lines = [`Move ${moveText(st)} · ${retreatText(st)}`, meleeText(st)];
   const fire = fireText(st);
   if (fire) lines.push(fire);
+  const moving = movingText(st);
+  if (moving) lines.push(moving);
+  if (st.expansion === 'exp1' && st.retreat.first > 1) lines.push(`Retreats ${st.retreat.first} hexes per flag.`);
+  if (st.rerollsFlags) lines.push('Re-rolls flags once when it attacks (not against cuirassiers).');
+  if (st.immuneToFlagReroll) lines.push('Lancers do not re-roll flags against it.');
   if (st.tags.length) lines.push(cap(st.tags.map((t) => (t === 'horseArtillery' ? 'horse artillery' : t)).join(' · ')));
   if (st.ignoresInfantryFireHits) lines.push(`Ignores ${st.ignoresInfantryFireHits} hit${st.ignoresInfantryFireHits === 1 ? '' : 's'} from infantry fire`);
   return lines;
