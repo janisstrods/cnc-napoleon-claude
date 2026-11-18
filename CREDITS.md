@@ -35,7 +35,7 @@ Authors: Lorc (https://lorcblog.blogspot.com) and Delapouite (https://delapouite
 
 | Font | Licence | Link |
 | --- | --- | --- |
-| Cinzel (via @fontsource/cinzel) | SIL Open Font License 1.1 | https://fonts.google.com/specimen/Cinzel |
+| IM Fell English SC (via @fontsource/im-fell-english-sc) | SIL Open Font License 1.1 | https://fonts.google.com/specimen/IM+Fell+English+SC |
 | EB Garamond (via @fontsource/eb-garamond) | SIL Open Font License 1.1 | https://fonts.google.com/specimen/EB+Garamond |
 
 ## Original art

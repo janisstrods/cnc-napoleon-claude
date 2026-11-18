@@ -1,5 +1,5 @@
 // design/data/<id>.json (verified, engine-neutral map transcriptions) + a BattleMeta (rules, armies) -> src/scenarios/data/<id>.json.
-// Pure: no node imports. build.ts does the file work. The result is validated by createGame before it is returned.
+// Handles the base battles and Expansion #1 (101–118). Pure: no node imports. build.ts does the file work. The result is validated by createGame before it is returned.
 import { isRowKey } from '../../src/engine/codes';
 import { createGame, type LeaderSetup, type ObjectiveSetup, type RiverRule, type ScenarioSetup, type SideRuleSetup, type SideSetup,
   type TerrainName, type TerrainSetup, type UnitOverride, type UnitSetup } from '../../src/engine/setup';
@@ -21,6 +21,12 @@ export interface BattleMeta {
   objectives?: ObjectiveSetup[]; sideRules?: SideRuleSetup[]; unitOverrides?: UnitOverride[];
   squares?: { r: number; c: number; slot: SquareSlot }[];
   leaderNames?: Record<string, string>;
+  /** Per-hex water rule by the map's river art label (`terrain.art`), overriding `rivers` on those hexes (104's Shallow Stream, S24). */
+  riverRules?: Record<string, RiverRule>;
+  /** The first player is decided by revealed cards (116); `first` is then the tie side. */
+  moveFirst?: 'reveal';
+  /** Left out of the battle picker (Expansion #1 until its screens are ready). */
+  hidden?: boolean;
 }
 
 export const RAW_FIELDS: readonly string[] = ['id', 'grid', 'terrain', 'units', 'leaders', 'objectives', 'notes', 'riverPieces'];
@@ -37,7 +43,7 @@ const ITEM_KEYS = {
   objective: ['r', 'c', 'note'],
 } as const;
 
-/** Every feature of the raw data the converter cannot carry yet (Expansion #1, Plan 7), sorted; empty when it is all supported. */
+/** Every feature of the raw data the converter cannot carry, sorted; empty when it is all supported (true of every battle 001–015 and 101–118). */
 export function unsupportedFeatures(raw: RawBattle): string[] {
   const counts = new Map<string, number>();
   const bump = (k: string): void => void counts.set(k, (counts.get(k) ?? 0) + 1);
@@ -62,7 +68,7 @@ function metaObjectiveHexes(objs: readonly ObjectiveSetup[]): Set<string> {
   const s = new Set<string>();
   for (const o of objs) {
     if (o.kind === 'tempHex' || o.kind === 'exit') s.add(hexKey(o.hex[0], o.hex[1]));
-    else if (o.kind === 'tempGroup') for (const h of o.hexes) s.add(hexKey(h[0], h[1]));
+    else if (o.kind === 'tempGroup' || o.kind === 'tempAny' || o.kind === 'majority') for (const h of o.hexes) s.add(hexKey(h[0], h[1]));
   }
   return s;
 }
@@ -89,10 +95,14 @@ export function convertBattle(raw: RawBattle, meta: BattleMeta, entry: Catalogue
     throw new Error(`objective hexes disagree: ${parts.join('; ')} (${id})`);
   }
 
+  const rules = meta.riverRules ?? {};
+  for (const label of Object.keys(rules))
+    if (!raw.terrain.some((t) => t.t === 'river' && t.art === label)) throw new Error(`riverRules names "${label}", which no river hex of the map has (${id})`);
+
   const names = meta.leaderNames ?? {};
   const leaders: LeaderSetup[] = raw.leaders.map((l) => {
     const name = names[l.name] ?? l.name;
-    if (name.startsWith('(')) throw new Error(`leader name "${name}" at (${l.r},${l.c}) needs a leaderNames entry (${id})`);
+    if (name.startsWith('(') || name === 'unlabelled') throw new Error(`leader name "${name}" at (${l.r},${l.c}) needs a leaderNames entry (${id})`);
     return { side: l.side as Side, name, r: l.r, c: l.c };
   });
 
@@ -111,12 +121,14 @@ export function convertBattle(raw: RawBattle, meta: BattleMeta, entry: Catalogue
     if (t.on !== undefined) o.on = t.on as TerrainSetup['on'];
     if (t.sides !== undefined) o.sides = t.sides as TerrainSetup['sides'];
     if (t.crossing !== undefined) o.crossing = t.crossing as TerrainSetup['crossing'];
+    if (t.t === 'river' && t.art !== undefined && rules[t.art] !== undefined) o.river = rules[t.art];
     return o;
   });
 
   // Fixed key order of the output file.
   const out: Record<string, unknown> = { id, name: entry.name, year: entry.date.slice(-4) };
   if (entry.box !== 'base') out.expansion = entry.box;
+  if (meta.hidden) out.hidden = true;
   Object.assign(out, { top: structuredClone(meta.top), bottom: structuredClone(meta.bottom), first: meta.first, banners: meta.banners });
   if (meta.rivers !== 'none') out.rivers = meta.rivers;
   Object.assign(out, {
@@ -127,6 +139,7 @@ export function convertBattle(raw: RawBattle, meta: BattleMeta, entry: Catalogue
   if (meta.objectives?.length) out.objectives = structuredClone(meta.objectives);
   if (meta.sideRules?.length) out.sideRules = structuredClone(meta.sideRules);
   if (meta.unitOverrides?.length) out.unitOverrides = structuredClone(meta.unitOverrides);
+  if (meta.moveFirst !== undefined) out.moveFirst = meta.moveFirst;
   const json = out as unknown as ScenarioJson;
 
   const setup: ScenarioSetup = { id, name: json.name, top: json.top, bottom: json.bottom, first: json.first, banners: json.banners, terrain: json.terrain, units: json.units, leaders: json.leaders };
@@ -134,6 +147,7 @@ export function convertBattle(raw: RawBattle, meta: BattleMeta, entry: Catalogue
   if (json.objectives) setup.objectives = json.objectives;
   if (json.sideRules) setup.sideRules = json.sideRules;
   if (json.unitOverrides) setup.unitOverrides = json.unitOverrides;
+  if (json.moveFirst !== undefined) setup.moveFirst = json.moveFirst;
   createGame(setup, 1);
   return json;
 }

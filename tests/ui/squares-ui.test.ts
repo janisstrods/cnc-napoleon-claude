@@ -41,7 +41,9 @@ describe('the square tracks', () => {
     s.players.bottom.squareTrack = [CARD, null, null, null];
     const html = renderToStaticMarkup(createElement(SquareTrack, { side: 'bottom', owner: true, s }));
     const title = CARD_DEFS[cardKind(CARD)].title;
-    expect(html.split(`kit-card__title">${title}<`).length - 1).toBe(1);
+    // the thumbnail and its reading-size zoom (shown on hover or focus, hidden from assistive technology)
+    expect(html.split(`kit-card__title">${title}<`).length - 1).toBe(2);
+    expect(html).toContain('class="sq-zoom" aria-hidden="true"');
     expect(html).toContain(`title="Square 1: ${title}"`);
     expect(html).not.toContain(' kit-cardback ');
     // four numbered slots

@@ -4,6 +4,13 @@
 // holds (unit rows, terrain, cards) are not written here: the tabs read them from the tables.
 import { EXPANSIONS, SQUARE_MIN_HAND, SQUARE_TRACK, UNIT_KEYS, UNIT_STATS, type Expansion } from '../../engine';
 
+/** The Rifles' firing range, read from the table (a musket rule; narrowing, not a cast). */
+function rifleRange(): number {
+  const fire = UNIT_STATS['BR/RI'].fire;
+  if (fire.kind !== 'musket') throw new Error('the Rifles are no longer a musket row: rewrite their rules text');
+  return fire.range;
+}
+
 export type RulesTab = 'basics' | 'units' | 'combat' | 'squares' | 'terrain' | 'cards' | Expansion;
 
 export interface RulesBlock {
@@ -122,7 +129,7 @@ export const RULES_TEXT: Record<RulesTab, RulesBlock[]> = {
       heading: 'British',
       paragraphs: [
         'Moving fire rounds up as well. British line infantry fire with a bonus die only when they stand still; after moving they fire as plain halved dice.',
-        `Rifles shoot to range ${(UNIT_STATS['BR/RI'].fire as { range: number }).range} but, like Militia, their sabres do not hit units. In the battle of Waterloo the British cavalry are impetuous: after a successful melee they must follow up into the vacated hex, and then one hex further if a legal one lies towards the French.`,
+        `Rifles shoot to range ${rifleRange()} but, like Militia, their sabres do not hit units. In the battle of Waterloo the British cavalry are impetuous: after a successful melee they must follow up into the vacated hex, and then one hex further if a legal one lies towards the French.`,
       ],
       reading: 'That further hex is skipped if the vacated hex stops movement (a forest, a town, a ford, a quarry or a works hexside); the bonus melee that may follow stays optional, and after one the unit only moves into the vacated hex.',
     },
@@ -193,7 +200,7 @@ export const RULES_TEXT: Record<RulesTab, RulesBlock[]> = {
       paragraphs: [
         'Each flag moves the target back its retreat distance towards its own baseline, one hex per step to a hex on the side nearer home, whatever direction the blow came from. A step may not enter a hex with another unit or enemy leader, impassable ground, or the board edge. Other terrain is ignored.',
         'Every hex a unit cannot retreat costs it a block. If a path of the full length exists the owner must take it; a unit in square never moves, so each hex costs a block.',
-        'Flags may be ignored one at a time: one for an attached leader, one for support (two or more friendly units, squares or lone leaders next to it), one for as many flags as its type allows (shown on its card), and one for infantry or guns attacked across Field Works. A unit retreating without a leader may end on a lone friendly leader, who joins it.',
+        'Flags may be ignored one at a time: one for an attached leader, one for support (two or more friendly units, squares or lone leaders next to it), as many as its type allows (shown on its card), and one for infantry or guns attacked across Field Works. A unit retreating without a leader may end on a lone friendly leader, who joins it.',
       ],
     },
     // RR §11

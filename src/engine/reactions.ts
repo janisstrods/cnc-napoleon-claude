@@ -4,13 +4,14 @@ import { cardKind } from './cards';
 import { emitRoll } from './casualties';
 import { ask, type Gen } from './decisions';
 import { artilleryShares } from './combinedArms';
-import { meleeDice, scoreRoll, type Scored } from './dice';
+import { flagRerollApplies, meleeDice, rerollFlags, scoreRoll, type Scored } from './dice';
 import { relocate } from './movement';
 import { updateHeld } from './objectives';
 import { retireReformOptions } from './retreat';
 import { rollDice } from './rng';
 import { unitById } from './query';
 import { applyOutcome } from './resolve';
+import { follyActive, squareCapReached } from './scenarioRules';
 import { canFormSquare, squareFirstApplies } from './squares';
 import { statsOf } from './units';
 import type { DefendChoice, FlowCtx, GameState, HexId, MeleeCtx, RollPurpose } from './types';
@@ -19,6 +20,8 @@ import type { DefendChoice, FlowCtx, GameState, HexId, MeleeCtx, RollPurpose } f
  * The defender's choices (one per melee, R77): Retire and Reform for cavalry attacked by infantry (a square included) when it
  * has a path (R34); form square for infantry attacked by cavalry (R26); First Strike when its owner holds the card and the
  * melee is an attack or a bonus melee, never a battle back and never against a square that already fights first (R29, R63).
+ * Two side rules take choices away: a reached square cap refuses a unit outside the record (S34), and the folly refuses both
+ * the square and First Strike for the turn (S37).
  */
 export function defendOptions(s: GameState, m: MeleeCtx): DefendChoice[] {
   const options: DefendChoice[] = ['stand'];
@@ -28,8 +31,9 @@ export function defendOptions(s: GameState, m: MeleeCtx): DefendChoice[] {
   if (statsOf(s, target).arm === 'cavalry' && statsOf(s, attacker).arm === 'infantry' && retireReformOptions(s, target).length > 0) {
     options.push('retireReform');
   }
-  if (canFormSquare(s, target, attacker, m)) options.push('formSquare');
-  if ((m.role === 'attack' || m.role === 'bonus') && !squareFirstApplies(s, m)
+  const folly = follyActive(s, target.side);
+  if (!folly && !squareCapReached(s, target) && canFormSquare(s, target, attacker, m)) options.push('formSquare');
+  if (!folly && (m.role === 'attack' || m.role === 'bonus') && !squareFirstApplies(s, m)
     && s.players[target.side].hand.some((c) => cardKind(c) === 'firstStrike')) options.push('firstStrike');
   return options;
 }
@@ -58,6 +62,10 @@ export function attackerStrike(s: GameState, ctx: FlowCtx, m: MeleeCtx, purpose:
   const faces = rollDice(s, shares.reduce((sum, g) => sum + g.dice, own));
   const sc = scoreRoll(faces, kind, statsOf(s, attacker), kind === 'retireReform' ? 'cavalry' : statsOf(s, target).arm);
   emitRoll(ctx, purpose, faces, sc.scoring, m.attacker, m.target, shares.length ? [m.attacker, ...shares.map((g) => g.id)] : undefined);
+  if (kind === 'melee' && flagRerollApplies(s, attacker, target, m.role)) {  // S12: the melee unit's and the guns' flags, once; the new score adds to the first
+    const again = rerollFlags(s, ctx, purpose, faces, 'melee', statsOf(s, attacker), statsOf(s, target).arm, { by: m.attacker, against: m.target, from: shares.length ? [m.attacker, ...shares.map((g) => g.id)] : undefined });
+    if (again) return { hits: sc.hits + again.hits, flags: sc.flags + again.flags, scoring: sc.scoring, own };  // scoring is the first roll's: no caller reads it
+  }
   return { ...sc, own };
 }
 
@@ -110,6 +118,13 @@ export function* firstStrikeRoll(s: GameState, ctx: FlowCtx, m: MeleeCtx): Gen<'
   const faces = rollDice(s, dice);
   const sc = scoreRoll(faces, 'melee', statsOf(s, def), statsOf(s, atk).arm);
   emitRoll(ctx, 'firstStrike', faces, sc.scoring, def.id, atk.id);
+  if (flagRerollApplies(s, def, atk, 'firstStrike')) {  // S12: a defending lancer re-rolls only with First Strike
+    const again = rerollFlags(s, ctx, 'firstStrike', faces, 'melee', statsOf(s, def), statsOf(s, atk).arm, { by: def.id, against: atk.id });
+    if (again) {
+      sc.hits += again.hits;
+      sc.flags += again.flags;
+    }
+  }
   const applied = yield* applyOutcome(s, ctx, atk, { hits: sc.hits, flags: sc.flags, bounce: false }, def, 'first strike');
   if (s.winner || applied.eliminated || applied.left || !unitById(s, m.attacker) || atk.hex !== from) return 'stop';
   return 'continue';

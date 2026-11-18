@@ -81,7 +81,7 @@ function outward(h: HexId, flipped: boolean): Pt {
  * Exit marker of edge hex `h`: its outer hexsides drawn in the side's colour and an arrow pointing off the board. `leaders`:
  * leaders score too (`leadersScore`): a gold medallion on the arrow's shaft.
  */
-function ExitArrow({ h, flipped, c, leaders = false }: { h: HexId; flipped: boolean; c: SideColors; leaders?: boolean }) {
+function ExitArrow({ h, flipped, c, leaders = false, text }: { h: HexId; flipped: boolean; c: SideColors; leaders?: boolean; text: string }) {
   const r = rowOf(h);
   const col = colOf(h);
   const p = hexCenter(r, col, flipped);
@@ -105,6 +105,7 @@ function ExitArrow({ h, flipped, c, leaders = false }: { h: HexId; flipped: bool
   const d = polyPath(arrow);
   return (
     <g className="exit">
+      <title>{text}</title>
       <path d={sides} fill="none" stroke={INK} strokeWidth={6.5} strokeLinecap="round" opacity={0.6} />
       <path d={sides} fill="none" stroke={c.edge} strokeWidth={4.2} strokeLinecap="round" />
       <path d={sides} fill="none" stroke={c.edgeLight} strokeWidth={1.2} strokeLinecap="round" strokeDasharray="2 5" opacity={0.9} />
@@ -137,6 +138,7 @@ export function ObjectiveMarkers({ objectives, objState, flipped, nations }: Obj
         const d = areaOutline(o.hexes, flipped);
         areas.push(
           <g key={`g${i}`} className={held ? `temp-group held-${o.side}` : 'temp-group'} fill="none" strokeLinejoin="round">
+            <title>{o.text}</title>
             {held && <path d={d} fill={c.edge} opacity={0.12} />}
             <path d={d} stroke={INK} strokeWidth={5.4} opacity={0.5} />
             <path d={d} stroke="rgba(250,240,214,0.9)" strokeWidth={3.4} />
@@ -152,6 +154,7 @@ export function ObjectiveMarkers({ objectives, objState, flipped, nations }: Obj
         const d = polyPath(ring);
         rings.push(
           <g key={`h${i}`} className="temp-hex" fill="none" strokeLinejoin="round">
+            <title>{o.text}</title>
             <path d={d} stroke={INK} strokeWidth={5.6} opacity={0.5} />
             <path d={d} stroke={c.edge} strokeWidth={3.4} />
             <path d={d} stroke={c.edgeLight} strokeWidth={1} opacity={0.8} strokeDasharray="2 6" />
@@ -161,7 +164,7 @@ export function ObjectiveMarkers({ objectives, objState, flipped, nations }: Obj
         break;
       }
       case 'exit':
-        arrows.push(<ExitArrow key={`e${i}`} h={o.hex} flipped={flipped} c={colors(nations, o.side)} leaders={o.leadersScore} />);
+        arrows.push(<ExitArrow key={`e${i}`} h={o.hex} flipped={flipped} c={colors(nations, o.side)} leaders={o.leadersScore} text={o.text} />);
         break;
       case 'killWeight':
         break;

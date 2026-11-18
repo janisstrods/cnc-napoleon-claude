@@ -49,6 +49,43 @@ export function chosenGuns(sel: readonly string[], options: readonly string[]): 
 }
 
 /**
+ * The guns an attack button answers: the chosen ones, or, when the decision requires a gun and offers only one, that one
+ * (so there is always a button that picks it).
+ */
+export function effectiveGuns(sel: readonly string[], d: Extract<Decision, { kind: 'combinedArms' }>): string[] {
+  const ids = chosenGuns(sel, d.options);
+  return ids.length === 0 && d.required && d.options.length === 1 ? [...d.options] : ids;
+}
+
+/**
+ * What Escape does to the selection: drops the chosen piece, card and guns, and disarms the Élan / Rally die (the dice
+ * already given stay).
+ */
+export function escapeSelection(s: GameState, d: Decision | null, human: Side, u: UiSel): UiSel {
+  const assign = (d?.kind === 'elan' || d?.kind === 'rally') && d.side === human ? { ...currentAssign(s, d, u.assign), die: null } : u.assign;
+  return { ...u, selPiece: null, selCard: null, gunSel: [], assign };
+}
+
+/** True when a new decision of the human's should take the keyboard focus: not the computer's, and not while the pointer is over the board. */
+export function wantsPromptFocus(d: Decision | null, human: Side, pointerOverBoard: boolean): boolean {
+  return !!d && d.side === human && !pointerOverBoard;
+}
+
+/** The dice of a Combined Arms attack: the unit's own, those of the chosen guns, and the total the attack rolls. */
+export function combinedArmsDice(s: GameState, d: Extract<Decision, { kind: 'combinedArms' }>, chosen: readonly string[], role: 'attack' | 'bonus'): { own: number; guns: number; total: number } {
+  const u = unitById(s, d.unit);
+  const foe = unitAt(s, d.target);
+  const own = u && foe ? meleeDice(s, u, foe, { role, moved: s.turn.ordered[u.id]?.moved ?? 0, declared: true }) : 0;
+  const guns = chosen.reduce((sum, id) => sum + gunDice(s, id, d.target, role), 0);
+  return { own, guns, total: own + guns };
+}
+
+/** "5 + 3 = 8 dice": the attacker's own dice plus the guns' (the target's badge, and the prompt's line, in a Combined Arms choice). */
+export function combinedArmsTotalText(t: { own: number; guns: number; total: number }): string {
+  return `${t.own} + ${t.guns} = ${t.total} dice`;
+}
+
+/**
  * The dice gun `gunId` rolls in a Combined Arms attack on `targetHex`: melee dice when adjacent, else fire dice (the
  * engine's own count, R41). `role` is 'bonus' during a bonus melee (the attacker's `bonusMeleeDone` is set by then).
  */
@@ -166,7 +203,8 @@ export function bonusBadges(s: GameState, d: D<'bonusMelee'>): Map<HexId, string
     const foe = unitAt(s, h) ?? leaderAt(s, h);
     if (!foe) continue;
     const n = meleeDice(s, u, foe, { role: 'bonus', moved, declared: true });
-    out.set(h, n === 0 ? '0 dice + guns' : dice(n));
+    const guns = foe && 'key' in foe && combinedArmsCandidates(s, u, foe, 'bonus').length > 0;
+    out.set(h, n === 0 ? '0 dice + guns' : guns ? `${dice(n)} + guns` : dice(n));
   }
   return out;
 }
@@ -335,7 +373,7 @@ export function boardMarks(s: GameState, d: Decision | null, ui: Omit<UiSel, 'ho
       const from = pieceHex(s, d.unit) ?? -1;
       if (from >= 0) highlights.set(from, 'focus');
       highlights.set(d.target, 'targetClose');
-      const chosen = chosenGuns(ui.gunSel, d.options);
+      const chosen = effectiveGuns(ui.gunSel, d);
       const role = s.turn.ordered[d.unit]?.bonusMeleeDone ? 'bonus' : 'attack';
       for (const id of d.options) {
         const h = pieceHex(s, id) ?? -1;
@@ -343,6 +381,7 @@ export function boardMarks(s: GameState, d: Decision | null, ui: Omit<UiSel, 'ho
         highlights.set(h, chosen.includes(id) ? 'selected' : 'option');
         badges.set(h, dice(gunDice(s, id, d.target, role)));
       }
+      badges.set(d.target, combinedArmsTotalText(combinedArmsDice(s, d, chosen, role)));
       break;
     }
     default: {

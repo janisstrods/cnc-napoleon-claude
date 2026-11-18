@@ -13,11 +13,13 @@ export function SquareTrack({ side, owner, s }: { side: Side; owner: boolean; s:
         const held = card !== null && card !== undefined;
         const title = held && owner ? `Square ${i + 1}: ${CARD_DEFS[cardKind(card)].title}` : held ? `Square ${i + 1}: a card face down` : `Square ${i + 1}: free`;
         return (
-          <div key={i} className={`sq-slot ${held ? 'is-held' : ''}`} title={title}>
+          <div key={i} className={`sq-slot ${held ? 'is-held' : ''} ${owner ? 'is-owner' : ''}`} title={title} role="img" aria-label={title} tabIndex={held && owner ? 0 : undefined}>
             <span className="sq-num">{i + 1}</span>
             {held && (owner
               ? <CardView kind={cardKind(card)} size="sm" className="sq-card" />
               : <CardBack size="sm" className="sq-card" />)}
+            {/* the owner's thumbnail is too small to read: the pointer or the keyboard focus shows the card at reading size */}
+            {held && owner && <span className="sq-zoom" aria-hidden="true"><CardView kind={cardKind(card)} size="md" /></span>}
           </div>
         );
       })}

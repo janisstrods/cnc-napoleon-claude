@@ -5,13 +5,13 @@ import { LEADER_ATTACH_OFFSET, LeaderToken, UnitIcon, UnitToken, blockColors, fi
 import { NATIONS, NATION_NAMES, UNIT_KEYS, UNIT_STATS, nationOf } from '../engine';
 
 const page: React.CSSProperties = { minHeight: '100vh', background: '#4a3a28', color: '#f3e7c8', padding: 20, boxSizing: 'border-box', overflow: 'auto' };
-const h2: React.CSSProperties = { fontFamily: 'Cinzel, serif', fontSize: 20, margin: '24px 0 8px' };
+const h2: React.CSSProperties = { fontFamily: "'IM Fell English SC', serif", fontSize: 20, margin: '24px 0 8px' };
 const cell: React.CSSProperties = { display: 'flex', flexDirection: 'column', alignItems: 'center', fontSize: 12 };
 
 export default function ArtGallery() {
   return (
     <div style={page}>
-      <h1 style={{ fontFamily: 'Cinzel, serif', margin: 0 }}>Art gallery</h1>
+      <h1 style={{ fontFamily: "'IM Fell English SC', serif", margin: 0 }}>Art gallery</h1>
       <div style={{ opacity: 0.8 }}>Placeholder tokens: one per unit row ({UNIT_KEYS.length}), one leader per nation.</div>
 
       {NATIONS.map((n) => {

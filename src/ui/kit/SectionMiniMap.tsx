@@ -81,7 +81,7 @@ export function SectionMiniMap(p: {
                     y={h / 2 + 1}
                     textAnchor="middle"
                     dominantBaseline="central"
-                    fontFamily="Cinzel, serif"
+                    fontFamily="'IM Fell English SC', serif"
                     fontWeight={700}
                     fontSize={toRoman(n).length > 2 ? 19 : 23}
                     fill="#fbf1d6"

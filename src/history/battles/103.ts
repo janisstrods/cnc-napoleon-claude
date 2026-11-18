@@ -1,4 +1,4 @@
-// 103 Gamonal, 10 November 1808. Top: Belvedere's Spanish Army of Estremadura; bottom: Soult's French 2nd Corps with Lasalle's and Milhaud's cavalry.
+// 103 Gamonal, 10 November 1808. Top: Belveder's Spanish Army of Estremadura; bottom: Soult's French 2nd Corps with Lasalle's and Milhaud's cavalry.
 // North is to the right: Burgos lies to the west (top), the French come from the east (bottom). The Arlanzón guards the Spanish right (left of the map).
 // The wood and the exact lines are schematic; Bessières's cavalry on the Madrid road and the guns' exact places are not shown.
 import type { BattleHistory } from '../types';
@@ -9,13 +9,13 @@ const history: BattleHistory = {
     war: 'Peninsular War, 1807–1814',
     text: [
       "Napoleon reached Vitoria on 6 November 1808, ready to drive through the centre of the Spanish line. Burgos lay on the road to Madrid. Marshal Bessières had been slow to advance on it, and on 9 November Soult arrived to take over the 2nd Corps.",
-      "The Spanish force in front of him was the Army of Estremadura, commanded since 2 November by the young Count of Belvedere, a nobleman with no battlefield experience. Instead of using Burgos's defences, he marched out and drew up in the open before Gamonal, with the Arlanzón on his right and his left near Vellimar.",
+      "The Spanish force in front of him was the Army of Estremadura, commanded since 2 November by the young Count of Belveder, a nobleman with no battlefield experience. Instead of using Burgos's defences, he marched out and drew up in the open before Gamonal, with the Arlanzón on his right and his left near Vellimar.",
     ],
   },
   sides: {
     top: {
       name: 'Spanish Army of Estremadura',
-      commanders: ['Count of Belvedere (commanding)', 'De Alós (1st Division)', 'Henestrosa (2nd Division)'],
+      commanders: ['Count of Belveder (commanding)', 'De Alós (1st Division)', 'Henestrosa (2nd Division)'],
       strength: 'About 8,600 foot, 1,100 horse, 16 guns (Oman); Napier gives 11,150 foot and 30 guns',
       forces: 'Estremaduran line and Royal Guards battalions in two lines, three cavalry regiments and two batteries in the centre.',
     },
@@ -51,8 +51,8 @@ const history: BattleHistory = {
     ],
     phases: [
       {
-        title: 'Belvedere draws up',
-        caption: 'Belvedere forms in the open before Gamonal: six battalions in the first line with a cavalry regiment on each flank and two batteries in the centre, four more battalions behind. A wood in front hides the French advance.',
+        title: 'Belveder draws up',
+        caption: 'Belveder forms in the open before Gamonal: six battalions in the first line with a cavalry regiment on each flank and two batteries in the centre, four more battalions behind. A wood in front hides the French advance.',
         at: {
           line1: [480, 220],
           guards: [610, 212],
@@ -85,7 +85,7 @@ const history: BattleHistory = {
       },
       {
         title: 'Rout of the Spanish',
-        caption: 'The army breaks and Belvedere’s two attempts to rally it fail; his sixteen guns are lost and most of the men flee towards Lerma. French cavalry cut down fugitives, and the French sack Burgos that night.',
+        caption: 'The army breaks and Belveder’s two attempts to rally it fail; his sixteen guns are lost and most of the men flee towards Lerma. French cavalry cut down fugitives, and the French sack Burgos that night.',
         at: {
           lasalle: [380, 262],
           mouton: [580, 262],
@@ -105,7 +105,7 @@ const history: BattleHistory = {
     result: 'Decisive French victory',
     losses: 'Spanish probably about 2,500 killed and wounded, some 900 prisoners and all 16 guns (Oman); Napier says 2,500 killed, 900 taken, 20 guns. French under about 200.',
     text: [
-      "Fugitives poured through Burgos, past the jammed baggage, and on to Lerma; Belvedere himself got away. That night the French plundered Burgos, and a house beside Napoleon's own lodging was looted and set on fire.",
+      "Fugitives poured through Burgos, past the jammed baggage, and on to Lerma; Belveder himself got away. That night the French plundered Burgos, and a house beside Napoleon's own lodging was looted and set on fire.",
       "The way to Madrid lay open. Soult went in pursuit of Blake's beaten army, and Victor attacked Blake at Espinosa de los Monteros on 10 and 11 November. Napoleon pushed on through Somosierra and reached Madrid in early December.",
     ],
   },

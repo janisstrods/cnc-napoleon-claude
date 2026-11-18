@@ -39,7 +39,7 @@ const OBJECTIVES: ObjectiveDef[] = [
 ];
 
 const frame: React.CSSProperties = { flex: '1 1 640px', maxWidth: 1200 };
-const h2: React.CSSProperties = { fontFamily: 'Cinzel, serif', fontSize: 20, margin: '26px 0 8px' };
+const h2: React.CSSProperties = { fontFamily: "'IM Fell English SC', serif", fontSize: 20, margin: '26px 0 8px' };
 
 function Board({ terrain, works, flipped, tokens, objectives }: {
   terrain: readonly TerrainType[];
@@ -74,7 +74,7 @@ export default function TerrainGallery() {
   const states: ObjectiveState[][] = [OBJECTIVES.map(() => ({ held: false, count: 0 })), OBJECTIVES.map(() => ({ held: true, count: 0 }))];
   return (
     <div style={{ minHeight: '100vh', background: '#e9e0c8', color: '#2a2418', padding: 20, boxSizing: 'border-box', overflow: 'auto' }}>
-      <h1 style={{ fontFamily: 'Cinzel, serif', margin: 0 }}>Terrain gallery</h1>
+      <h1 style={{ fontFamily: "'IM Fell English SC', serif", margin: 0 }}>Terrain gallery</h1>
       <button style={{ margin: '8px 0' }} onClick={() => setUnits((u) => !u)}>{units ? 'hide' : 'show'} units</button>
 
       {show('legend') && (

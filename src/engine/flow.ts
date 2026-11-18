@@ -2,6 +2,7 @@
 // before it, are listed in the layering of the plan; this one holds the turn, the draw phase and the game loop.
 import { drawCard, takeCard } from './cards';
 import { ask } from './decisions';
+import { guerrillaScoutStep } from './guerrilla';
 import { turnStartObjectives } from './objectives';
 import { battlePhase, cardStep, movePhase } from './phases';
 import { other } from './query';
@@ -13,7 +14,8 @@ import { SIDES, type FlowCtx, type GameState } from './types';
 /**
  * The draw phase, a generator: call with `yield*` (RR §5.2 step 5, §12.4): the played card to the discard; an Élan (turn.reshuffle) shuffles discard and
  * deck together (R53); each other side draws one replacement per First Strike it played (R78); then the active side draws
- * 1, or with a Scout draws 2, keeps 1 and discards the other face up (R51). Card ids appear only in `discarded`.
+ * 1, or with a Scout draws 2, keeps 1 and discards the other face up (R51), unless the guerrilla side takes a counter
+ * and draws 1 instead (RR §15.5, S20). Card ids appear only in `discarded`.
  */
 export function* drawPhase(s: GameState, ctx: FlowCtx): Gen {
   const t = s.turn;
@@ -32,7 +34,8 @@ export function* drawPhase(s: GameState, ctx: FlowCtx): Gen {
     if (o === side) continue;
     for (let i = 0; i < t.firstStrikes[o]; i++) drawCard(s, ctx, o);
   }
-  if (!t.scout) {
+  // a Scout of the guerrilla side may take a counter and one card instead of the two-and-keep-one draw (S20)
+  if (!t.scout || (yield* guerrillaScoutStep(s, ctx, side))) {
     drawCard(s, ctx, side);
     return;
   }

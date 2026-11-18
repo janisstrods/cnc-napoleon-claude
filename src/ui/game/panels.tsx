@@ -43,7 +43,7 @@ export const LogPanel = memo(function LogPanel({ log, human }: { log: LogLine[];
   }, [lastId]);
   return (
     <Panel className="log-panel" title="Battle Log">
-      <div className="log-scroll" ref={ref}>
+      <div className="log-scroll" ref={ref} role="log" aria-label="Battle log">
         {log.map((l) => (
           <div key={l.id} className={`log-line log-${l.kind} ${l.side ? (l.side === human ? 'log-me' : 'log-them') : ''}`}>
             {l.text}
