@@ -3,8 +3,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { CARD_DEFS, cardKind, retireReformOptions, answerError, type Decision, type GameState } from '../../src/engine';
-import { LEADER_ATTACH_OFFSET } from '../../src/art';
-import { Board } from '../../src/ui/game/Board';
+import { Board, SQUARE_COUNTER_OFFSET } from '../../src/ui/game/Board';
 import { facingFor, leaderTokenProps } from '../../src/ui/game/boardProps';
 import { SquareTrack } from '../../src/ui/game/SquareTrack';
 import { commandText } from '../../src/ui/game/squareText';
@@ -26,8 +25,8 @@ describe('the square tracks', () => {
     const html = renderToStaticMarkup(createElement(SquareTrack, { side: 'top', owner: false, s }));
     expect((html.match(/ kit-cardback /g) ?? []).length).toBe(1);
     for (const def of Object.values(CARD_DEFS)) expect(html).not.toContain(def.title);
-    // the id is in no attribute value (the icon paths hold digits of their own)
-    for (const [, v] of html.matchAll(/ [\w-]+="([^"]*)"/g)) if (!/^M?[-\d. a-zA-Z]{40,}$/.test(v)) expect(v).not.toMatch(new RegExp(`(^|\\D)${CARD}(\\D|$)`));
+    // the id is in no attribute of the markup (the digits of the icons' own path data are not attributes of interest)
+    for (const [, name, v] of html.matchAll(/ ([\w-]+)="([^"]*)"/g)) if (name !== 'd') expect(v, name).not.toMatch(new RegExp(`(^|\\D)${CARD}(\\D|$)`));
     expect(html).not.toContain(cardKind(CARD));
   });
 
@@ -71,13 +70,14 @@ describe('the board', () => {
   it('the square counter sits on its unit on a flipped board', () => {
     const s = build({ units: [{ side: 'top', key: 'FR/LN', at: [2, 6], square: 3 }, { side: 'bottom', key: 'BR/LC', at: [6, 5] }] });
     const { x, y } = hexCenterId(s.units[0].hex, true);
-    const dx = -LEADER_ATTACH_OFFSET.x;
+    const dx = SQUARE_COUNTER_OFFSET.x;
     const html = boardHtml(s, 'top');
-    expect(html).toContain(`<g class="square-counter" transform="translate(${x + dx}, ${y + LEADER_ATTACH_OFFSET.y})">`);
-    expect(html).toContain('<title>Square 3</title>');
+    expect(html).toContain(`<g class="square-counter" transform="translate(${x + dx}, ${y + SQUARE_COUNTER_OFFSET.y})">`);
+    expect(html).toContain('>3</text>');
+    expect(html).not.toContain('<title>Square');
     // a different board turn puts the same unit elsewhere
     const up = hexCenterId(s.units[0].hex, false);
-    expect(boardHtml(s, 'bottom')).toContain(`translate(${up.x + dx}, ${up.y + LEADER_ATTACH_OFFSET.y})`);
+    expect(boardHtml(s, 'bottom')).toContain(`translate(${up.x + dx}, ${up.y + SQUARE_COUNTER_OFFSET.y})`);
     // no counter without a square
     s.units[0].square = undefined;
     expect(boardHtml(s, 'top')).not.toContain('square-counter');
@@ -93,10 +93,10 @@ const html = (b: JSX.Element[]) => b.map((x) => renderToStaticMarkup(x));
 
 describe('the defence choices', () => {
   const s = build({ units: [{ side: 'bottom', key: 'BR/LC', at: [6, 5] }, { side: 'top', key: 'FR/LN', at: [5, 5] }] });
-  const d: Decision = { kind: 'defend', side: 'bottom', attacker: 'u2', target: 'u1', options: ['stand', 'retireReform', 'formSquare', 'firstStrike'], bonus: false };
+  const d: Decision = { kind: 'defend', side: 'bottom', attacker: 'u2', target: 'u1', options: ['stand', 'retireReform', 'formSquare', 'firstStrike'], bonus: false, artillery: [] };
   const HINTS = {
     stand: 'Take the attack and battle back if the unit survives in place.',
-    retireReform: 'Fall back 2 hexes before the dice: only cavalry symbols hit, and there is no battle back.',
+    retireReform: 'Fall back 2 hexes: only cavalry symbols hit, and there is no battle back.',
     formSquare: 'A random card from your hand goes face down on the square track. Your square rolls first with 1 die; your Command is a card lower until the square is left.',
     firstStrike: 'Play First Strike: your unit battles first; if the attacker stays, it attacks and you do not battle back.',
   };
@@ -125,6 +125,14 @@ describe('the defence choices', () => {
     expect(on.pathAt(null)!.length).toBe(3);
     expect(boardMarks(s, d, SEL, 'bottom').pathAt(null)).toBeNull();
     expect(boardMarks(s, d, { ...SEL, hoverAction: 'stand' }, 'bottom').pathAt(null)).toBeNull();
+  });
+
+  it('the defend text names the guns that joined', () => {
+    const g = build({ units: [{ side: 'bottom', key: 'BR/LC', at: [6, 5] }, { side: 'top', key: 'FR/LN', at: [5, 5] }, { side: 'top', key: 'FR/FA', at: [3, 5] }] });
+    const text = (artillery: string[]) => promptSpec(g, { ...d, artillery }).text;
+    expect(text([])).toBe('French Line Infantry attacks your British Light Cavalry. How do you defend?');
+    expect(text(['u3'])).toContain('with 1 gun joining (French Foot Artillery)');
+    expect(text(['u3', 'u3'])).toContain('with 2 guns joining');
   });
 
   it('the Retire and Reform choice names its hex', () => {
@@ -158,11 +166,30 @@ describe('leave square', () => {
 
 describe('the computer defending', () => {
   it('shows no thinking indicator and one fixed pause at a defend decision', () => {
-    const mk = (options: ('stand' | 'retireReform' | 'formSquare' | 'firstStrike')[]): Decision => ({ kind: 'defend', side: 'top', attacker: 'u1', target: 'u2', options, bonus: false });
+    const mk = (options: ('stand' | 'retireReform' | 'formSquare' | 'firstStrike')[]): Decision => ({ kind: 'defend', side: 'top', attacker: 'u1', target: 'u2', options, bonus: false, artillery: [] });
     const a = aiPacing(mk(['stand', 'firstStrike']));
     const b = aiPacing(mk(['stand', 'retireReform']));
     expect(a).toEqual(b);
     expect(a.indicator).toBe(false);
     expect(aiPacing({ kind: 'playCard', side: 'top' }).indicator).toBe(true);
+  });
+});
+
+describe('the game screen', () => {
+  it('draws the opponent\'s square track as backs, whoever the human is', async () => {
+    const { GameScreen } = await import('../../src/ui/game/GameScreen');
+    const { GameController, newSessionConfig } = await import('../../src/ui/game/controller');
+    const { SeededOpponent } = await import('./controller-helpers');
+    for (const human of ['bottom', 'top'] as const) {
+      const c = new GameController({ ...newSessionConfig('012', human, 'recruit'), seed: 5 }, new SeededOpponent());
+      const ai = human === 'bottom' ? 'top' : 'bottom';
+      const shown = c.view.display;
+      shown.players[ai].squareTrack = [CARD, null, null, null];
+      shown.players[human].squareTrack = [null, null, null, null];
+      const html = renderToStaticMarkup(createElement(GameScreen, { controller: c, onExit: () => {} }));
+      expect(html).toContain('Square 1: a card face down');
+      expect(html).not.toContain(`Square 1: ${CARD_DEFS[cardKind(CARD)].title}`);
+      c.dispose();
+    }
   });
 });

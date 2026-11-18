@@ -1,6 +1,6 @@
 // Game session controller: owns the engine driver, runs the AI, and turns engine events into paced animations.
 import {
-  CARD_LIST, GameDriver, OFF_BOARD, bannerTotal, cloneState, createGame, freshSeed, other, pieceById, randomAnswer,
+  CARD_LIST, GameDriver, OFF_BOARD, bannerTotal, battleTargets, cloneState, createGame, freshSeed, other, pieceById, randomAnswer,
   type Answer, type CardKind, type Decision, type DieFace, type GameEvent, type GameState, type HexId, type Leader, type QueuedEvent,
   type RollPurpose, type Side, type UndoStep, type Unit,
 } from '../../engine';
@@ -186,6 +186,8 @@ export class GameController {
   private opponent: Opponent;
   private busy = false;
   private disposed = false;
+  /** When the human declared a melee (an attack or a bonus melee) whose first card or roll is not yet shown. */
+  private declaredAt: number | null = null;
   private skipAnim = false;
   /** Toasts waiting for the notice on the board to run its full time (see `toast`). */
   private toastQueue: { text: string; kind: 'turn' | 'notice'; ms: number; stale?: () => boolean }[] = [];
@@ -337,6 +339,9 @@ export class GameController {
     if (!this.view.pending || this.busy || this.view.fatal) return;
     const d = this.view.pending;
     const at = this.driver.answers.length;
+    const melee = a.kind === 'attack'
+      ? battleTargets(this.driver.state, a.unit).find((t) => t.hex === a.target)?.kind === 'melee'
+      : d.kind === 'bonusMelee' && a.kind === 'hex' && a.hex !== null;
     let ok: boolean;
     try {
       ok = this.driver.answer(a);
@@ -351,6 +356,7 @@ export class GameController {
       this.set({ error: this.driver.lastError });
       return;
     }
+    if (melee) this.declaredAt = performance.now();
     this.logMarks.set(at, seq);
     this.thinkSeq++;
     this.set({ pending: null, error: null, undo: null, generalThinking: false });
@@ -370,6 +376,7 @@ export class GameController {
   undo() {
     if (!this.view.undo || this.busy || !this.driver.canUndo()) return;
     this.thinkSeq++;
+    this.declaredAt = null;
     this.driver = this.driver.undo();
     this.driver.drainEvents();
     // the lines the step logged go with it ("… plays …", an arrival)
@@ -583,6 +590,13 @@ export class GameController {
     const log = () => {
       if (line) this.addLog(line);
     };
+    // one pause between a declared melee and the first card or roll it shows, whether or not the computer was asked how to
+    // defend (that wait counts): a pause only when asked would tell the player the computer holds First Strike
+    if (this.declaredAt !== null && (e.t === 'cardPlayed' || e.t === 'combat')) {
+      const wait = this.declaredAt + this.dur(600) - performance.now();
+      this.declaredAt = null;
+      if (wait > 0) await sleep(wait);
+    }
     switch (e.t) {
       case 'turnStart': {
         log();
@@ -733,11 +747,11 @@ export class GameController {
 
 /**
  * How the computer's decision `d` is paced: whether the "thinking" indicator shows, and the least time it takes. A defend
- * decision is raised only when the defender has an option besides standing (it may hold First Strike), so a visible pause
- * there would tell the player what the computer holds: it shows no indicator and takes the same time whatever it answers.
+ * decision is raised only when the defender has an option besides standing (it may hold First Strike), so it shows no
+ * indicator and has no pause of its own: the one pause of a declared melee is held in `animate`.
  */
 export function aiPacing(d: Decision): { indicator: boolean; minMs: number } {
-  if (d.kind === 'defend') return { indicator: false, minMs: 600 };
+  if (d.kind === 'defend') return { indicator: false, minMs: 0 };
   return { indicator: true, minMs: d.kind === 'playCard' ? 700 : d.kind === 'move' || d.kind === 'battle' ? 260 : 150 };
 }
 

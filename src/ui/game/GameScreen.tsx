@@ -34,7 +34,7 @@ export function GameScreen({ controller, onExit, onRematch }: {
   /** After the battle: play it again, with the same or switched sides. */
   onRematch?: (switchSides: boolean) => void;
 }) {
-  const view = useSyncExternalStore(controller.subscribe, controller.getView);
+  const view = useSyncExternalStore(controller.subscribe, controller.getView, controller.getView);
   const s = view.display;
   const human = view.humanSide;
   const ai = other(human);

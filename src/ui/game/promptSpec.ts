@@ -70,10 +70,16 @@ const DEFEND_LABELS: Readonly<Record<DefendChoice, string>> = {
 
 const DEFEND_HINTS: Readonly<Record<DefendChoice, string>> = {
   stand: 'Take the attack and battle back if the unit survives in place.',
-  retireReform: 'Fall back 2 hexes before the dice: only cavalry symbols hit, and there is no battle back.',
+  retireReform: 'Fall back 2 hexes: only cavalry symbols hit, and there is no battle back.',
   formSquare: 'A random card from your hand goes face down on the square track. Your square rolls first with 1 die; your Command is a card lower until the square is left.',
   firstStrike: 'Play First Strike: your unit battles first; if the attacker stays, it attacks and you do not battle back.',
 };
+
+/** " with 2 guns joining (British Foot Artillery, …)" for the guns that joined a melee; nothing for none. */
+function gunsText(s: GameState, ids: readonly string[]): string {
+  if (!ids.length) return '';
+  return ` with ${ids.length} gun${ids.length === 1 ? '' : 's'} joining (${ids.map((id) => unitLabel(s, id)).join(', ')})`;
+}
 
 /** "British Line Infantry" for a unit id (the unit as the board last showed it); "unit" when it is not there. */
 export function unitLabel(s: GameState, id: string): string {
@@ -125,7 +131,7 @@ export function promptSpec(s: GameState, d: Decision): PromptSpec {
       break;
     }
     case 'defend':
-      text = `${unitLabel(s, d.attacker)} attacks your ${unitLabel(s, d.target)}${d.bonus ? ' (bonus melee)' : ''}. How do you defend?`;
+      text = `${unitLabel(s, d.attacker)} attacks your ${unitLabel(s, d.target)}${d.bonus ? ' (bonus melee)' : ''}${gunsText(s, d.artillery)}. How do you defend?`;
       for (const o of d.options) actions.push({ key: o, label: DEFEND_LABELS[o], answer: { kind: 'defend', choice: o }, hint: DEFEND_HINTS[o] });
       break;
     case 'ignoreFlags':

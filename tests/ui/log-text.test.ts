@@ -135,3 +135,11 @@ describe('log wording', () => {
     expect(line({ t: 'log', text: 'u5 is eliminated (melee).' })).toBeNull();
   });
 });
+
+describe('Retire and Reform combat line', () => {
+  it('says the defender retires, not the attacker', () => {
+    const l = eventLog({ t: 'combat', purpose: 'retireReform', attacker: FR_LN, target: BR_LN, dice: 1 }, s, s, HUMAN);
+    expect(l!.text).toMatch(/; the defender retires and reforms\.$/);
+    expect(l!.text).not.toMatch(/retires and reforms against/);
+  });
+});

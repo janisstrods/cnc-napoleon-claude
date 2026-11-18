@@ -10,6 +10,9 @@ export type Highlight =
   | 'eligible' | 'selected' | 'mover' | 'attacker' | 'move' | 'moveNoBattle' | 'moveMustBattle'
   | 'targetClose' | 'targetRanged' | 'option' | 'focus';
 
+/** Where a square's counter sits from its hex centre: beside the base, clear of the strength label below it and of the leader's medallion (lower left, `LEADER_ATTACH_OFFSET`). */
+export const SQUARE_COUNTER_OFFSET = { x: 27, y: 12 } as const;
+
 export interface BoardProps {
   state: GameState;
   flipped: boolean;
@@ -77,12 +80,11 @@ const UnitLayer = memo(function UnitLayer(p: {
           </g>
         );
       })}
-      {/* a square's counter at the token's lower-right corner, opposite the attached leader's medallion; the number never turns */}
+      {/* a square's counter beside the token's base, on the side opposite the attached leader's medallion; the number never turns (its text is in the tooltip) */}
       {units.filter((u) => u.square !== undefined).map((u) => {
         const { x, y } = pos(u.id, u.hex);
         return (
-          <g key={`sq-${u.id}`} className="square-counter" transform={`translate(${x - LEADER_ATTACH_OFFSET.x}, ${y + LEADER_ATTACH_OFFSET.y})`}>
-            <title>{`Square ${u.square}`}</title>
+          <g key={`sq-${u.id}`} className="square-counter" transform={`translate(${x + SQUARE_COUNTER_OFFSET.x}, ${y + SQUARE_COUNTER_OFFSET.y})`}>
             <circle r={11} />
             <text y={5} textAnchor="middle">{u.square}</text>
           </g>
