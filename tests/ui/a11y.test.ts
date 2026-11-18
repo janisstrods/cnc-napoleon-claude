@@ -6,7 +6,7 @@ import pkg from '../../package.json?raw';
 import credits from '../../CREDITS.md?raw';
 import mainTsx from '../../src/main.tsx?raw';
 import rulesTextSrc from '../../src/ui/screens/rulesText.ts?raw';
-import { answerError, shortSupplyTargets, type Answer, type Decision, type GameEvent, type GameState } from '../../src/engine';
+import { answerError, eligiblePieces, shortSupplyTargets, type Answer, type Decision, type GameEvent, type GameState } from '../../src/engine';
 import { ObjectiveMarkers } from '../../src/ui/terrain/objectives';
 import { DiceTray, DieView, FACE_LABEL } from '../../src/ui/kit/Dice';
 import { dialogTab, focusWrap, type DialogItem } from '../../src/ui/kit/controls';
@@ -15,7 +15,7 @@ import gameScreenSrc from '../../src/ui/game/GameScreen.tsx?raw';
 import { SquareTrack } from '../../src/ui/game/SquareTrack';
 import { theme } from '../../src/ui/kit/theme';
 import { LogPanel } from '../../src/ui/game/panels';
-import { PromptBar, focusPromptTarget, gamePrompt } from '../../src/ui/game/prompts';
+import { PromptBar, focusNewDecision, focusPromptTarget, gamePrompt } from '../../src/ui/game/prompts';
 import { devRouteConfig, initialSpeed, type GameController, type ViewState } from '../../src/ui/game/controller';
 import { boardMarks, escapeSelection, gunDice, wantsPromptFocus, type UiSel } from '../../src/ui/game/uiModel';
 import { RULES_TEXT } from '../../src/ui/screens/rulesText';
@@ -334,11 +334,13 @@ describe('where a new decision puts the focus (review 1)', () => {
     return { log, querySelector: (sel: string) => { const k = Object.keys(present).find((x) => sel.includes(x)); return k ? { focus: () => log.push(present[k]) } : null; } };
   };
   it('primary, else the chooser list, else the first ordinary button, else the bar', () => {
-    expect(focusPromptTarget(rootWith({ 'kit-btn--primary': 'p', 'prompt-pick': 'l', ':not(:disabled):not([data-nofocus])': 'b', 'prompt-bar': 'bar' }))).toBe('primary');
-    expect(focusPromptTarget(rootWith({ 'prompt-pick': 'l', 'kit-btn:not': 'b', 'prompt-bar': 'bar' }))).toBe('pick');
-    expect(focusPromptTarget(rootWith({ 'kit-btn:not': 'b', 'prompt-bar': 'bar' }))).toBe('button');
-    expect(focusPromptTarget(rootWith({ 'prompt-bar': 'bar' }))).toBe('bar');
-    expect(focusPromptTarget(rootWith({}))).toBeNull();
+    // each target's element is the one that has focus() called, and only that one (m1: the fake root's log)
+    const run = (present: Record<string, string>) => { const r = rootWith(present); return { got: focusPromptTarget(r), log: r.log }; };
+    expect(run({ 'kit-btn--primary': 'p', 'prompt-pick': 'l', ':not(:disabled):not([data-nofocus])': 'b', 'prompt-bar': 'bar' })).toEqual({ got: 'primary', log: ['p'] });
+    expect(run({ 'prompt-pick': 'l', 'kit-btn:not': 'b', 'prompt-bar': 'bar' })).toEqual({ got: 'pick', log: ['l'] });
+    expect(run({ 'kit-btn:not': 'b', 'prompt-bar': 'bar' })).toEqual({ got: 'button', log: ['b'] });
+    expect(run({ 'prompt-bar': 'bar' })).toEqual({ got: 'bar', log: ['bar'] });
+    expect(run({})).toEqual({ got: null, log: [] });
   });
   it('never the general\'s or Undo button: both carry data-nofocus, and every query skips it', () => {
     const d: Decision = { kind: 'playCard', side: 'bottom' };
@@ -350,7 +352,7 @@ describe('where a new decision puts the focus (review 1)', () => {
     expect(src.match(/\[data-nofocus\]/g)?.length).toBeGreaterThanOrEqual(2);
   });
   it('the game screen calls it, and Escape goes through escapeSelection', () => {
-    expect(gameScreenSrc).toContain('focusPromptTarget(document)');
+    expect(gameScreenSrc).toContain('focusNewDecision(');
     expect(gameScreenSrc).toContain('escapeSelection(s, d, human, u)');
     expect(gameScreenSrc).not.toContain('die: null');
   });
@@ -403,5 +405,73 @@ describe('names and live regions (review 1)', () => {
     const files: string[] = [...walk(new URL('../../src/ui/', import.meta.url)), await readText('../../index.html')];
     expect(files.length).toBeGreaterThan(50);
     expect(files.filter((f) => /cinzel/i.test(f))).toEqual([]);
+  });
+});
+
+describe('a new decision takes the focus only for the keyboard player (m2)', () => {
+  const mine: Decision = { kind: 'playCard', side: 'bottom' };
+  const theirs: Decision = { kind: 'playCard', side: 'top' };
+  /** A fake document: what `querySelector` finds, what has focus, whether a dialog is open. */
+  const fakeDoc = (o: { modal?: boolean; active?: { tagName: string } | null } = {}) => {
+    const log: string[] = [];
+    const doc = {
+      log,
+      activeElement: o.active ?? null,
+      querySelector: (sel: string) => (sel === '.kit-modal' ? (o.modal ? { focus: () => undefined } : null) : { focus: () => log.push(sel) }),
+    };
+    return doc;
+  };
+  it('focuses the prompt for a human decision with the pointer off the board', () => {
+    const doc = fakeDoc();
+    expect(focusNewDecision(mine, 'bottom', false, doc)).toBe('primary');
+    expect(doc.log).toHaveLength(1);
+  });
+  it('never for the computer\'s decision, or for none', () => {
+    const doc = fakeDoc();
+    expect(focusNewDecision(theirs, 'bottom', false, doc)).toBeNull();
+    expect(focusNewDecision(null, 'bottom', false, doc)).toBeNull();
+    expect(doc.log).toEqual([]);
+  });
+  it('never with the pointer over the board', () => {
+    const doc = fakeDoc();
+    expect(focusNewDecision(mine, 'bottom', true, doc)).toBeNull();
+    expect(doc.log).toEqual([]);
+  });
+  it('never over a dialog, or while a select or text field has the focus', () => {
+    for (const doc of [fakeDoc({ modal: true }), fakeDoc({ active: { tagName: 'SELECT' } }), fakeDoc({ active: { tagName: 'INPUT' } })]) {
+      expect(focusNewDecision(mine, 'bottom', false, doc)).toBeNull();
+      expect(doc.log).toEqual([]);
+    }
+  });
+  it('the game screen calls it with the pointer state, in place of its own inline guard', () => {
+    expect(gameScreenSrc).toContain('focusNewDecision(d, human, inBoard ? false : overBoard.current, document)');
+  });
+});
+
+describe('phase-ending and skip buttons never take the focus (m3)', () => {
+  const noFocusLabels = (d: Decision, s: GameState, ui: Partial<UiSel> = {}): string[] => {
+    const p = gamePrompt({ ...ctx(s, d), ui: { ...SEL, ...ui } as UiSel, view: { pending: d, over: null, fatal: false, generalThinking: false, undo: null, display: s } as unknown as ViewState })!;
+    const out: string[] = [];
+    for (const b of p.buttons) {
+      const html = markup([b]);
+      if (html.includes('data-nofocus="true"')) out.push(/<span class="kit-btn__label">(.*?)<\/span>/.exec(html)![1]);
+    }
+    return out;
+  };
+  const s = build({ units: [bot('BR/LN', [6, 6]), top('FR/LN', [2, 6])] });
+  it('Order nothing, End movement, End battles', () => {
+    expect(noFocusLabels({ kind: 'orders', side: 'bottom', card: 'probeC' } as Decision, s)).toContain('Order nothing');
+    expect(noFocusLabels({ kind: 'move', side: 'bottom' } as Decision, s)).toContain('End movement');
+    expect(noFocusLabels({ kind: 'battle', side: 'bottom' } as Decision, s)).toContain('End battles');
+  });
+  it('Confirm N orders (the primary action) stays focusable', () => {
+    const ids = eligiblePieces(s, 'bottom', 'probeC');
+    expect(noFocusLabels({ kind: 'orders', side: 'bottom', card: 'probeC' } as Decision, s, { orderSel: ids.slice(0, 1) })).not.toContain('Confirm 1 order');
+  });
+  it('the decline and no-artillery actions of the generic prompts', () => {
+    const bonus = { kind: 'bonusMelee', side: 'bottom', unit: 'u1', targets: [H(5, 6)] } as unknown as Decision;
+    expect(noFocusLabels(bonus, s)).toContain('Decline');
+    const stay = { kind: 'breakthroughExtra', side: 'bottom', unit: 'u1', options: [H(5, 6)], required: false } as unknown as Decision;
+    expect(noFocusLabels(stay, s)).toContain('Stay here');
   });
 });
