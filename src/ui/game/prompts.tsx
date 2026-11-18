@@ -100,6 +100,8 @@ export function gamePrompt(c: PromptCtx): Prompt | null {
     return { title: 'The battle stalled', text: view.error ?? 'An unexpected error occurred.', buttons: [<Button key="menu" onClick={c.onExit}>Return to menu</Button>], tone: 'danger' };
   }
   if (!d) {
+    // while the opening picks of a Move First battle are made, one bar for both cases (the computer asked or not): any other would tell
+    if (s.special.moveFirst && !s.special.moveFirst.done) return { title: 'Choosing opening cards…', text: '', buttons: [] };
     if (view.aiThinking) return { title: `${s.players[ai].commander} is considering…`, text: '', buttons: [] };
     return { title: s.active === human ? 'Resolving…' : `${s.players[ai].army} turn`, text: '', buttons: [] };
   }

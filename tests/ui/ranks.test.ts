@@ -70,7 +70,7 @@ describe('Napoleonic ranks', () => {
 });
 
 describe('Triumphs for 33 battles', () => {
-  it('lists all 33 catalogue battles; unplayable ones say so', () => {
+  it('lists all 33 catalogue battles; every one is playable', () => {
     stubStorage();
     const html = renderToStaticMarkup(createElement(TriumphsDialog, {
       open: true, record: {}, onClose: () => {}, onRecord: () => {}, onPick: () => {},
@@ -79,11 +79,11 @@ describe('Triumphs for 33 battles', () => {
     for (const c of CATALOGUE) expect(html.split(`>${c.name.replace(/'/g, '&#x27;')}<`).length - 1, c.name).toBe(1);
     const playable = CATALOGUE.filter((c) => SCENARIOS.some((s) => s.id === c.id && !s.hidden));
     expect(html.split('Not yet available').length - 1).toBe(CATALOGUE.length - playable.length);
-    expect(html.split('Not yet available').length - 1).toBe(18);
-    expect(html.split('class="tri-cell"').length - 1).toBe(15);
+    expect(html.split('Not yet available').length - 1).toBe(0);
+    expect(html.split('class="tri-cell"').length - 1).toBe(33);
     const ids = visibleBattles(SCENARIOS).map((s) => s.id);
-    expect(tallyText(recordTotals({}, ids))).toContain('of 30 medals');
-    expect(tallyText(recordTotals({}, ids))).toContain('of 15 battles fought');
+    expect(tallyText(recordTotals({}, ids))).toContain('of 66 medals');
+    expect(tallyText(recordTotals({}, ids))).toContain('of 33 battles fought');
   });
 
   it('a battle in the dialog shows its medals and their meaning', () => {

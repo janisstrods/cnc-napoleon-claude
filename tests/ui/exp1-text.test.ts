@@ -28,7 +28,7 @@ describe('log lines for the Spanish events', () => {
   it('guerrilla stood, cancelled and gained', () => {
     // the guerrilla side is `bottom` here; its opponent is the French
     expect(line({ t: 'guerrilla', side: 'bottom', what: 'stood', held: 2, pool: 4 })!.text).toBe('The guerrillas strike, but the French card stands (sabre).');
-    expect(line({ t: 'guerrilla', side: 'bottom', what: 'cancelled', held: 1, pool: 5 })!.text).toBe('Guerrillas cut the French orders: the card is lost.');
+    expect(line({ t: 'guerrilla', side: 'bottom', what: 'cancelled', held: 1, pool: 5 })!.text).toBe('Guerrillas cut the French orders: nothing moves this turn.');
     expect(line({ t: 'guerrilla', side: 'bottom', what: 'gained', held: 3, pool: 3 })!.text).toBe('The British army gains a Guerrilla counter (3 held).');
   });
 
@@ -41,7 +41,7 @@ describe('log lines for the Spanish events', () => {
   });
 
   it('a broken unit leaves the field, and the engine note with its raw id stays silent', () => {
-    expect(line({ t: 'removed', id: FR_SWI, reason: 'broken' })!.text).toBe('French Swiss Infantry leaves the field.');
+    expect(line({ t: 'removed', id: FR_SWI, reason: 'broken' })!.text).toBe('French Swiss Infantry breaks and leaves the field.');
     expect(line({ t: 'log', text: 'u4 leaves the field (broken).', side: 'top' })).toBeNull();
   });
 

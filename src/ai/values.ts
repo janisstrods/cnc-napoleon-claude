@@ -30,6 +30,12 @@ const CAVALRY_SHOCK = 1.15;
 const SOFT_TARGET = 1.15;
 /** A gun's reach beyond distance 2, in dice per hex. */
 const GUN_REACH = 0.3;
+/** Dice lost per -1 of `movedPlus` (melee after moving), weighted by how often the row melees after moving. */
+export const MOVED_MELEE_DIE = 0.5;
+/** Value of re-rolling the flags of an attack (`rerollsFlags`), in dice. */
+export const REROLL_DIE = 0.25;
+/** Value of not being re-rolled against (`immuneToFlagReroll`), in dice. */
+export const REROLL_IMMUNE_DIE = 0.1;
 
 /** The share of an unwounded unit's staying power that `blocks` blocks still carry: a worn unit dies to the next hit. */
 function staying(blocks: number): number {
@@ -37,7 +43,7 @@ function staying(blocks: number): number {
 }
 
 /** Dice of fighting power (unnormalised): the better of fire and melee plus a share of the other, movement, flag resistance, staying power. */
-function rawPower(st: UnitStats, blocks: number): number {
+function rawPower(st: UnitStats, blocks: number, lancersFacing: boolean): number {
   if (blocks <= 0) return 0;
   const range = st.fire.kind === 'none' ? 0 : st.fire.range;
   // Fire needs a distance of 2 or more (distance 1 is melee); the mean runs over 2..range.
@@ -48,33 +54,42 @@ function rawPower(st: UnitStats, blocks: number): number {
   // Melee: one die per block plus the rule's plus (and half the plus against infantry, the likelier target), or the
   // artillery cell, which is the fire row at distance 1.
   let melee = st.melee.kind === 'artillery' ? baseFireDice(st, blocks, 1, 0) : blocks + st.melee.plus + 0.5 * st.melee.vsInfantry;
+  if (st.melee.kind === 'blocks') melee += MOVED_MELEE_DIE * st.melee.movedPlus;
   if (st.arm === 'cavalry') melee *= CAVALRY_SHOCK;
   const reach = st.move.reduce((m, o) => Math.max(m, o.battle ? o.max : o.max / 2), 0);
   const grit = FLAG_DIE * st.flagIgnore - RETREAT_DIE * (st.retreat.first - 1) - (st.sabreHits ? 0 : NO_SABRE_DIE);
   // The flag, retreat and sabre adjustments scale the whole row, so a worn unit keeps its share of a sound one.
-  const power = (Math.max(fire, melee) + SECOND_ARM * Math.min(fire, melee) + MOVE_DIE * reach) * Math.max(0.2, 1 + grit / 6);
+  const power = (Math.max(fire, melee) + SECOND_ARM * Math.min(fire, melee) + MOVE_DIE * reach + (st.rerollsFlags ? REROLL_DIE : 0) + (st.immuneToFlagReroll && lancersFacing ? REROLL_IMMUNE_DIE : 0)) * Math.max(0.2, 1 + grit / 6);
   return power * staying(blocks) * (st.arm === 'infantry' ? 1 : SOFT_TARGET);
 }
 
-const NORM = LINE_WORTH / rawPower(UNIT_STATS['FR/LN'], 4);
+const NORM = LINE_WORTH / rawPower(UNIT_STATS['FR/LN'], 4, false);
 
 /**
  * Fighting power of a unit of this row with `blocks` blocks, in banners. Fire is the mean of the engine's standing dice
  * over every distance in range; melee is the blocks plus the row's bonus (or the artillery cell). A worn infantry unit
  * loses value faster than linearly: its fire dice shrink and the next hit removes it.
  */
-export function rowValue(st: UnitStats, blocks: number): number {
-  return rawPower(st, blocks) * NORM;
+export function rowValue(st: UnitStats, blocks: number, lancersFacing = false): number {
+  return rawPower(st, blocks, lancersFacing) * NORM;
 }
 
-export function unitValue(s: Pick<GameState, 'scenario'>, u: Pick<Unit, 'key' | 'blocks'>): number {
-  return rowValue(statsOf(s, u), u.blocks);
+/** Whether the unit's opponent fields a row that re-rolls flags: only then is immunity to the re-roll worth anything. */
+function lancersFacing(s: Pick<GameState, 'scenario'> & { units?: readonly Unit[] }, u: { side?: Unit['side'] }): boolean {
+  if (!s.units || !u.side) return false;
+  for (const o of s.units) if (o.side !== u.side && o.blocks > 0 && statsOf(s, o).rerollsFlags) return true;
+  return false;
+}
+
+export function unitValue(s: Pick<GameState, 'scenario'> & { units?: readonly Unit[] }, u: Pick<Unit, 'key' | 'blocks'> & { side?: Unit['side'] }): number {
+  return rowValue(statsOf(s, u), u.blocks, lancersFacing(s, u));
 }
 
 /** The marginal value of the next block this unit loses (its whole worth at one block). */
-export function blockValue(s: Pick<GameState, 'scenario'>, u: Pick<Unit, 'key' | 'blocks'>): number {
+export function blockValue(s: Pick<GameState, 'scenario'> & { units?: readonly Unit[] }, u: Pick<Unit, 'key' | 'blocks'> & { side?: Unit['side'] }): number {
   const st = statsOf(s, u);
-  return rowValue(st, u.blocks) - rowValue(st, u.blocks - 1);
+  const l = lancersFacing(s, u);
+  return rowValue(st, u.blocks, l) - rowValue(st, u.blocks - 1, l);
 }
 
 /** Value of reaching banner number k (the k-th banner) out of T. */

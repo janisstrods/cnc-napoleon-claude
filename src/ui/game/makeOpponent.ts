@@ -10,7 +10,7 @@ export function opponentPersonality(config: SessionConfig): Personality {
   if (config.personality) return personalityById(config.personality);
   const side = other(config.humanSide);
   const army = scenarioById(config.scenarioId).setup[side];
-  return personalityFor(army.commander, army.army);
+  return personalityFor(army.commander, army.army, army.nation);
 }
 
 /** Create the computer opponent for a session (runs in a Web Worker, with in-thread fallback). */

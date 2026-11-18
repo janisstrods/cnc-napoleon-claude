@@ -3,7 +3,7 @@
  * suits what it brought (no fixed order, never reused). Bump for every publish, together with package.json's version.
  */
 export const RELEASES = [
-  { number: '0.1.0', name: 'Unreleased', notes: 'Work in progress: Commands & Colours: Napoleonics, started from the Ancients edition v1.6.2' },
+  { number: '1.0.0', name: 'Talavera', notes: 'The base game (battles 001–015) and Expansion #1, The Spanish Army (battles 101–118), against a computer general at three levels, with original miniatures, the history of every battle, Triumphs medals and the rules in the game' },
 ] as const;
 
 export const RELEASE = RELEASES[0];

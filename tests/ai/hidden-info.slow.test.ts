@@ -2,7 +2,7 @@
 // generator. For each decision of a corpus (every 7th decision of deterministic level-1 games of 000, 004 and 012, plus hand-built
 // positions) a variant re-deals the opponent's hand, track cards and deck (same sizes, same slots) and changes `rng`; the answer
 // (and the line spoken) must be the same. Budget: 15 s.
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   GameDriver, cloneState, createGame, forceDice, type Answer, type Decision, type DieFace, type GameState, type Side,
 } from '../../src/engine';
@@ -14,6 +14,9 @@ import { failOnAiErrors } from './no-ai-errors';
 import { aiOptions } from './soak';
 
 failOnAiErrors();
+
+// a machine 15-20x slower than the dev machine must not time a soak out (the default is 120 s)
+vi.setConfig({ testTimeout: 300_000 });
 
 type Units = NonNullable<Pos['units']>;
 const top = (key: Units[number]['key'], at: [number, number], extra: object = {}) => ({ side: 'top' as const, key, at, ...extra });

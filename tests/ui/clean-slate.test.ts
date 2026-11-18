@@ -1,4 +1,4 @@
-// Clean slate: the Ancients battles are gone; the hidden drill 000 and the generated base battles remain.
+// Clean slate: the Ancients battles are gone; the hidden drill 000, the generated base battles and the Spanish battles 101–118 remain.
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -12,17 +12,19 @@ import { dropStorage, stubStorage } from '../support/storage';
 afterEach(dropStorage);
 
 describe('clean slate', () => {
-  it('the hidden drill battle, the generated base battles and the hidden Spanish battles remain', () => {
+  it('the hidden drill battle, the generated base battles and the Spanish battles remain', () => {
     const spanish = Array.from({ length: 18 }, (_, i) => String(101 + i));
     expect(SCENARIOS.map((s) => s.id)).toEqual(['000', ...Array.from({ length: 15 }, (_, i) => String(i + 1).padStart(3, '0')), ...spanish]);
     expect(scenarioById('000').hidden).toBe(true);
-    for (const id of spanish) expect(scenarioById(id).hidden, id).toBe(true);   // Expansion #1 stays hidden until Task 17
+    for (const id of spanish) expect(scenarioById(id).hidden, id).toBeUndefined();   // visible since Plan 7C Task 17
   });
 
   it('the battle picker shows no hidden battle and random battle never picks the drill', () => {
-    expect(visibleBattles(SCENARIOS).map((s) => s.id)).toEqual(Array.from({ length: 15 }, (_, i) => String(i + 1).padStart(3, '0')));
-    expect(battlesOf(SCENARIOS, 'base').map((s) => s.id)).toEqual(Array.from({ length: 15 }, (_, i) => String(i + 1).padStart(3, '0')));
-    expect(battlesOf(SCENARIOS, 'exp1')).toEqual([]);
+    const base = Array.from({ length: 15 }, (_, i) => String(i + 1).padStart(3, '0'));
+    const spanish = Array.from({ length: 18 }, (_, i) => String(101 + i));
+    expect(visibleBattles(SCENARIOS).map((s) => s.id)).toEqual([...base, ...spanish]);
+    expect(battlesOf(SCENARIOS, 'base').map((s) => s.id)).toEqual(base);
+    expect(battlesOf(SCENARIOS, 'exp1').map((s) => s.id)).toEqual(spanish);
     let n = 0;
     const rnd = () => ((n = (n * 7 + 3) % 101), n / 101);
     for (let i = 0; i < 50; i++) expect(visibleBattles(SCENARIOS).map((s) => s.id)).toContain(randomPick(SCENARIOS, '000', rnd)!.battle.id);
