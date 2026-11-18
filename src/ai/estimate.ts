@@ -7,7 +7,7 @@
 // engine does). The value of following up into a vacated hex (take ground, breakthrough and a cavalry bonus-melee
 // prospect) is part of every melee's `ev`.
 import {
-  artilleryShares, attachedLeader, bannerTotal, escapeDice, fireDice, leaderRetreatOptions, meleeDice, neighbours, noBattleAfterEntering, onBaseline,
+  artilleryShares, attachedLeader, bannerTotal, combinedArmsCandidates, escapeDice, fireDice, leaderRetreatOptions, meleeDice, neighbours, noBattleAfterEntering, onBaseline,
   other,
   passableFor, retreatDistance, retreatOptions, squareFirstApplies, statsOf, unitById,
   type DefendChoice, type GameState, type HexId, type Leader, type MeleeCtx, type Side, type StrikeRole, type Unit,
@@ -369,7 +369,11 @@ export function takeGround(s: GameState, attacker: Unit, hex: HexId, ec: EstCtx)
       for (const h of neighbours(hex)) {
         const foe = ec.occ.unit[h] ?? ec.occ.leader[h];
         if (!foe || foe.side === attacker.side) continue;
-        if (meleeDice(s, moved, foe, { role: 'bonus', moved: ec.moved, declared: true }) < 1) continue;
+        // approximates RR §9.6, §9.8 (engine: afterAndBonus): a target the unit has no die against is still offered when a gun could join
+        if (meleeDice(s, moved, foe, { role: 'bonus', moved: ec.moved, declared: true }) < 1) {
+          const foeUnit = ec.occ.unit[h];
+          if (!foeUnit || !combinedArmsCandidates(s, moved, foeUnit, 'bonus').some((g) => !ec.spentGuns?.includes(g))) continue;
+        }
         p.bonus = true;
         const o = ec.occ.unit[h] ? meleeEstimate(s, moved, h, bec) : loneLeaderEstimate(s, moved, h, bec);
         p.best = Math.max(p.best, o.ev);

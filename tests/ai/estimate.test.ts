@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
-  fireDice, forceDice, forcedDiceLeft, meleeDice, neighbours, rearHexes, unitById,
+  combinedArmsCandidates, fireDice, forceDice, forcedDiceLeft, meleeDice, neighbours, newOrderedPiece, rearHexes, unitById,
   type GameDriver, type GameState, type Unit,
 } from '../../src/engine';
 import { occOf } from '../../src/ai/board';
 import { NEUTRAL_W } from '../../src/ai/values';
-import { flagOutcome, fireEstimate, leaderCheckP, loneLeaderEstimate, makeEstCtx, meleeEstimate, type EstCtx, type Outcome } from '../../src/ai/estimate';
+import { flagOutcome, fireEstimate, leaderCheckP, loneLeaderEstimate, makeEstCtx, meleeEstimate, takeGround, type EstCtx, type Outcome } from '../../src/ai/estimate';
 import { H, attack, build, n, toBattle, type Pos } from '../rules/helpers';
 import { engineTrials, type Trials } from './helpers';
 import { failOnAiErrors } from './no-ai-errors';
@@ -182,5 +182,40 @@ describe('value', () => {
     expect(s.rngCalls).toBe(calls);
     expect(forcedDiceLeft()).toBe(5);
     forceDice([]);
+  });
+});
+
+describe('takeGround: a bonus target a gun could join (Plan 5 Task 7 carry 4)', () => {
+  // the vacated hex is H(5,6); the foot gun u3 at (7,6) is ordered and clear of the enemy, and the bonus target stands in rough ground
+  // where the lone cavalry block rolls no die of its own (the engine offers such a target when a gun could join: melee.ts afterAndBonus)
+  const TERRAINS = ['town', 'fortress', 'forest', 'rugged', 'windmill'] as const;
+  const target = neighbours(H(5, 6)).find((h) => h !== H(6, 6) && !neighbours(H(6, 6)).includes(h))!;
+  const at = (h: number): [number, number] => [Math.floor(h / 13), h % 13];
+
+  function position(terrain: (typeof TERRAINS)[number], gun: boolean): GameState {
+    const units: Units = [
+      { side: 'bottom', key: 'BR/LC', at: [6, 6], blocks: 1 }, { side: 'top', key: 'FR/LN', at: [5, 6], blocks: 1 },
+      { side: 'top', key: 'FR/LN', at: at(target) },
+      ...(gun ? [{ side: 'bottom' as const, key: 'BR/FA' as const, at: [6, 7] as [number, number] }] : []),
+    ];
+    const s = build({ first: 'bottom', units, terrain: [{ at: at(target), t: terrain }] });
+    for (const id of gun ? ['u1', 'u4'] : ['u1']) s.turn.ordered[id] = newOrderedPiece(s, id, false);
+    return s;
+  }
+
+  it('counts the prospect when the lone cavalry has no die but a gun could join', () => {
+    const t = TERRAINS.find((x) => {
+      const s = position(x, true);
+      const moved = { ...unit(s, 'u1'), hex: H(5, 6) };
+      return meleeDice(s, moved, unit(s, 'u3'), { role: 'bonus', moved: 0, declared: true }) < 1
+        && combinedArmsCandidates(s, moved, unit(s, 'u3'), 'bonus').length > 0;
+    });
+    expect(t, 'a terrain that leaves the cavalry no die with a gun able to join').toBeDefined();
+    const withGun = position(t!, true);
+    const noGun = position(t!, false);
+    const w = takeGround(withGun, unit(withGun, 'u1'), H(5, 6), makeEstCtx(withGun, 'bottom', NEUTRAL_W));
+    const n0 = takeGround(noGun, unit(noGun, 'u1'), H(5, 6), makeEstCtx(noGun, 'bottom', NEUTRAL_W));
+    expect(n0.bonus).toBe(false);
+    expect(w.bonus).toBe(true);
   });
 });
