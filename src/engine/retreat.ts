@@ -1,5 +1,5 @@
 // Retreat paths (RR §1, §10.1). Pure functions. Leader retreats (→ T6b) and Retire and Reform (→ T8) are stubs.
-import { rearHexes } from './hex';
+import { onBaseline, rearHexes } from './hex';
 import { attachedLeader, leaderAt, unitAt } from './query';
 import { passableFor } from './terrain';
 import { statsOf } from './units';
@@ -51,9 +51,49 @@ export function retreatOptions(s: GameState, u: Unit, hexes: number): RetreatOpt
     .sort(byKey);
 }
 
-/** A retreating leader's options. Stub: none (→ T6b). */
-export function leaderRetreatOptions(_s: GameState, _l: Leader): LeaderRetreatOption[] {
-  return [];
+/**
+ * A retreating leader's options (RR §11.3, §11.4; R24, R25): paths of 1-3 steps through retreat neighbours. He passes friendly
+ * units and lone friendly leaders, may end on a friendly unit without a leader (attach) but not on a leader or an enemy; a hex
+ * with only an enemy leader is passed with no roll; an enemy unit hex is entered as an escape (the owner may choose one
+ * even when a free path exists), and a third enemy hex eliminates him. A path that reaches his baseline with steps to spare
+ * also has an `offBoard` form (he leaves the map). With no way to take even 1 step the only option is `eliminated`.
+ * Ascending by end hex, then path.
+ */
+export function leaderRetreatOptions(s: GameState, l: Leader): LeaderRetreatOption[] {
+  const out: LeaderRetreatOption[] = [];
+  if (onBaseline(l.hex, l.side)) return [{ path: [], end: l.hex, offBoard: true, escapes: [], attach: null, eliminated: false }];
+  const walk = (cur: HexId, path: HexId[], escapes: string[]) => {
+    if (path.length > 0 && onBaseline(cur, l.side) && path.length < 3) {
+      out.push({ path, end: cur, offBoard: true, escapes, attach: null, eliminated: false });
+    }
+    if (path.length === 3) return;
+    for (const h of rearHexes(cur, l.side)) {
+      if (!passableFor(s, h, null)) continue;
+      const v = unitAt(s, h);
+      const o = leaderAt(s, h);
+      const next = [...path, h];
+      const last = next.length === 3;
+      if (v && v.side !== l.side) {
+        if (escapes.length >= 2) {
+          out.push({ path: next, end: h, offBoard: false, escapes, attach: null, eliminated: true });
+          continue;
+        }
+        if (!last) walk(h, next, [...escapes, v.id]);
+        continue;
+      }
+      if (o && o.side !== l.side) {
+        if (!last) walk(h, next, escapes);
+        continue;
+      }
+      const attachable = v && v.side === l.side && !o;
+      const free = !v && !o;
+      if (free || attachable) out.push({ path: next, end: h, offBoard: false, escapes, attach: attachable ? v.id : null, eliminated: false });
+      if (!last) walk(h, next, escapes);
+    }
+  };
+  walk(l.hex, [], []);
+  if (!out.length) return [{ path: [], end: l.hex, offBoard: false, escapes: [], attach: null, eliminated: true }];
+  return out.sort((a, b) => a.end - b.end || cmpPath(a.path, b.path) || Number(a.offBoard) - Number(b.offBoard));
 }
 
 /** Retire and Reform paths. Stub: none (→ T8). */
