@@ -1,6 +1,8 @@
 /// <reference types="vitest" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { realpathSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import type { TestSequencer, Vitest, WorkspaceSpec } from 'vitest/node';
 
 /**
@@ -32,6 +34,9 @@ export default defineConfig({
   // build stamp shown on the main menu next to the release (src/version.ts)
   define: { __BUILD_TIME__: JSON.stringify(new Date().toISOString()) },
   worker: { format: 'es' },
+  // dev only: a worktree's node_modules is a symlink, so its fonts resolve outside the project root; allow the real
+  // path (the build ignores server options)
+  server: { fs: { allow: ['.', realpathSync(fileURLToPath(new URL('./node_modules', import.meta.url)))] } },
   test: {
     include: ['tests/**/*.test.ts'],
     environment: 'node',

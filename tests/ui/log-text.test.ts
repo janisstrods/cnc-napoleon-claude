@@ -145,3 +145,27 @@ describe('Retire and Reform combat line', () => {
     expect(l!.text).not.toMatch(/retires and reforms against/);
   });
 });
+
+describe('objective banner lines (Plan 4 Task 11 fix round 1)', () => {
+  const two = build({
+    units: [{ side: 'bottom', key: 'BR/LN', at: [6, 6] }, { side: 'top', key: 'FR/LN', at: [2, 6] }],
+    objectives: [{ kind: 'tempGroup', side: 'bottom', hexes: [[4, 3], [4, 4]], timing: 'turnStart', banners: 2, text: 'The French hold Vimiero.' }],
+  });
+  it('a held objective counts banners, not objectives', () => {
+    two.special.objState[0].held = true;
+    const e: GameEvent = { t: 'held', side: 'bottom', held: 1, total: 2, reason: 'The French hold Vimiero.' };
+    expect(eventLog(e, two, two, HUMAN)!.text).toBe('The British army now holds 2 banners (2/' + two.bannersToWin + ') — The French hold Vimiero.');
+  });
+  it('a lost objective has no doubled punctuation', () => {
+    const e: GameEvent = { t: 'held', side: 'bottom', held: 0, total: 0, reason: 'The French hold Vimiero. (lost)' };
+    const t = eventLog(e, two, two, HUMAN)!.text;
+    expect(t).toContain('The French hold Vimiero (lost).');
+    expect(t).not.toContain('. (');
+  });
+  it('an exit banner names the unit that left, though it is gone from both states', () => {
+    const e: GameEvent = { t: 'banner', side: 'top', total: 1, reason: 'Anglo-Portuguese u98 crosses the Côa bridge.' };
+    expect(eventLog(e, two, two, HUMAN, { id: 'u99', name: 'Line Infantry' })!.text).toContain('Anglo-Portuguese unit crosses');
+    const e2: GameEvent = { t: 'banner', side: 'top', total: 1, reason: 'Anglo-Portuguese u99 crosses the Côa bridge.' };
+    expect(eventLog(e2, two, two, HUMAN, { id: 'u99', name: 'Line Infantry' })!.text).toContain('Anglo-Portuguese Line Infantry crosses');
+  });
+});
