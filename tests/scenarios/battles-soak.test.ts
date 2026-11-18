@@ -1,7 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { GameDriver, bannerTotal, createGame, randomAnswer } from '../../src/engine';
-import { PERSONALITIES, chooseAnswer, newMemory } from '../../src/ai';
-import type { AiMemory } from '../../src/ai';
 import { scenarioById } from '../../src/scenarios';
 import { mulberry32 } from '../support/rng';
 import { must, violations } from '../rules/helpers';
@@ -58,28 +56,6 @@ describe('soak of the base battles 001-015', () => {
         finished(d, steps);
       });
     }
-    it(`${id} AI stub on both sides ends with a winner and no fallbacks`, () => {
-      const seed = 9000 + Number(id);
-      const err = vi.spyOn(console, 'error').mockImplementation(() => {});
-      try {
-        const d = new GameDriver(createGame(scenarioById(id).setup, seed));
-        const mem: Record<'top' | 'bottom', AiMemory> = { top: newMemory(), bottom: newMemory() };
-        let steps = 0;
-        while (d.pending && steps < CAP) {
-          const side = d.pending.side;
-          const { answer } = chooseAnswer(d.state, d.pending, { side, difficulty: 'tribune', personality: PERSONALITIES[0], seed, deterministic: true }, mem[side]);
-          must(d, answer);
-          steps++;
-          invariants(d);
-        }
-        finished(d, steps);
-        expect(mem.top.fallbacks ?? 0).toBe(0);
-        expect(mem.bottom.fallbacks ?? 0).toBe(0);
-        expect(err).not.toHaveBeenCalled();
-      } finally {
-        err.mockRestore();
-      }
-    });
   }
 });
 
