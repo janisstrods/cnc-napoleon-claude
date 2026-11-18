@@ -6,6 +6,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { UNIT_STATS, cloneState, randomAnswer, type Side } from '../../src/engine';
 import { SCENARIOS } from '../../src/scenarios';
+import { TEXTS } from '../../src/scenarios/texts';
 import { GameController, devRouteConfig, loadSaved, newSessionConfig, type SessionConfig } from '../../src/ui/game/controller';
 import { RandomOpponent } from '../../src/ui/game/opponent';
 import { PICKER_TABS, battlesOf, loadPickerTab, savePickerTab, tabForKey } from '../../src/ui/screens/picker';
@@ -73,6 +74,19 @@ describe('battle picker tabs', () => {
     expect(attr(panel, 'aria-labelledby')).toBe(attr(tabs[1], 'id'));
     expect(html).toContain('Visible drill'); // the Spanish Army list is the one shown
     expect(html).not.toContain('>Drill<');
+  });
+});
+
+describe('base battle briefings in the picker', () => {
+  const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
+  it('the briefing of each base battle shows its blurb and special rules', () => {
+    for (let i = 1; i <= 15; i++) {
+      const id = String(i).padStart(3, '0');
+      const html = renderToStaticMarkup(createElement(ScenarioSelect, { onBack: () => {}, onStart: () => {}, initialBattle: id }));
+      expect(html, id).toContain(esc(sc(id).name));
+      expect(html, id).toContain(esc(TEXTS[id].blurb));
+      for (const line of TEXTS[id].specialText ?? []) expect(html, `${id}: ${line}`).toContain(esc(line));
+    }
   });
 });
 
