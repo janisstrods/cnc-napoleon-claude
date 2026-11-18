@@ -3,7 +3,6 @@
   "name": "Gamonal",
   "year": "1808",
   "expansion": "exp1",
-  "hidden": true,
   "top": {"army":"Spanish","nation":"SP","commander":"Belveder","cards":5},
   "bottom": {"army":"French","nation":"FR","commander":"Soult","cards":6},
   "first": "bottom",

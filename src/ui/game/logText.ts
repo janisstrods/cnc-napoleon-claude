@@ -188,7 +188,7 @@ export function eventLog(e: GameEvent, before: GameState, after: GameState, huma
       // `e.side` is the guerrilla side; the card at stake is its opponent's
       if (e.what === 'gained') return line(`The ${army(e.side)} army gains a Guerrilla counter (${e.held} held).`, 'info', e.side);
       return line(
-        e.what === 'cancelled' ? `Guerrillas cut the ${army(other(e.side))} orders: the card is lost.` : `The guerrillas strike, but the ${army(other(e.side))} card stands (sabre).`,
+        e.what === 'cancelled' ? `Guerrillas cut the ${army(other(e.side))} orders: nothing moves this turn.` : `The guerrillas strike, but the ${army(other(e.side))} card stands (sabre).`,
         'result', e.side,
       );
     }

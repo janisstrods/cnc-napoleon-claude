@@ -345,5 +345,132 @@ export const RULES_TEXT: Record<RulesTab, RulesBlock[]> = {
   ],
 
   base: [],
-  exp1: [],
+  exp1: [
+    // RR §15.1, §15.3
+    {
+      heading: 'Spanish units',
+      paragraphs: [
+        'The Spanish army fights with its own rows, listed below. Spanish infantry and horse give ground further than the other nations: two hexes for each flag, three for the Militia. Grenadiers melee with a die more and ignore a flag; Cuirassiers ignore one as well and shrug off one hit from each infantry volley. The Militia’s sabres do not hit units, though they still kill a lone leader.',
+        'The Light infantry may battle the turn it enters a forest, and its moving fire is not cut by a further die. The foot artillery is the ordinary foot artillery under another flag.',
+      ],
+    },
+    // RR §15.1, §16.1
+    {
+      heading: 'Swiss infantry',
+      paragraphs: [
+        'Swiss battalions serve on both sides. They are ordinary five-block infantry that fall back one hex for each flag, move and fire like a line unit that rounds down after moving, and may form square. A French Swiss unit is not French line infantry: it never gets the extra melee die against infantry.',
+        'At Bailén, once the second French Swiss unit is destroyed, every other French Swiss unit leaves the board at once. The two losses score the Spanish their banners; the units that leave score nothing.',
+      ],
+      reading: 'A leader attached to a Swiss unit that leaves the board stays on his hex as a lone leader.',
+    },
+    // RR §15.4
+    {
+      heading: 'Lancers and Guard light cavalry',
+      paragraphs: [
+        'After an ordered lancer rolls its melee, it rolls once more every die that showed a flag, and the new faces count: matching symbols and sabres score, and a flag adds to the flags already rolled. The re-roll works against a square and against a lone leader, but never against a cuirassier, never in a battle back, and never in a roll at an escaping leader.',
+        'The French Guard light cavalry ignores two flags, retreats one hex for each flag, may Retire and Reform, and gets the two extra dice that Cavalry Charge gives Guard cavalry.',
+      ],
+    },
+    // RR §15.2
+    {
+      heading: 'Moving penalties',
+      paragraphs: [
+        'A Spanish or Swiss unit that changed hex in its own Movement phase has moved, under any card, Force March and Bayonet Charge included. Moving fire rounds down, and the Spanish line and Militia lose a further die. Moving melee is a die less for the Spanish line, Light infantry and Militia; Grenadiers, Swiss and cavalry lose none.',
+        'A unit that stays put, only comes out of square, is rallied or is placed by Short Supply has not moved. Taking ground after a melee changes nothing.',
+      ],
+      reading: 'Battle back and First Strike always use the standing dice, and so does a roll at an escaping leader, because they fall on the enemy’s turn.',
+    },
+    // RR §15.2
+    {
+      heading: 'Cells with no dice',
+      paragraphs: [
+        'Where the moving formula gives no fire dice, the unit cannot fire and no card creates the shot: a moved Spanish line or Militia unit with one to three blocks, or a moved Light infantry, Grenadier or Swiss unit with a single block.',
+        'A one-block unit that moved has no melee dice of its own, but that is a value, not a ban. Cards and terrain adjust it as usual, and the unit may melee whenever the total, with any Combined Arms artillery dice, reaches one.',
+      ],
+      reading: 'A moved one-block unit with 0 dice may still declare a melee with a card die, or by leading a Combined Arms attack whose artillery rolls, but it never fires.',
+    },
+    // RR §15.3
+    {
+      heading: 'Retreats of two and three hexes',
+      paragraphs: [
+        'Every flag not ignored moves the unit its whole distance: one hex for Swiss, lancers, Guard light cavalry and foot artillery, two for the other Spanish rows, three for the Militia. Ignoring a flag cancels all of its distance. A unit that cannot finish the path takes the longest one open and loses one block for each hex it falls short.',
+        'A unit in square never moves, so it loses its whole distance in blocks for each flag: two for Spanish infantry, three for the Militia, one for Swiss. Retire and Reform is always two hexes, and a lone leader still retreats one to three.',
+      ],
+    },
+    // RR §15.5
+    {
+      heading: 'Guerrilla Action',
+      paragraphs: [
+        'In most Spanish battles the Allied side holds Guerrilla counters in the open. There are six counters in all; those not held wait in the pool, and the French never hold any. Each turn the French play a card, before they order anything, the Allied side may spend a counter: it goes to the pool and the French roll one die. A sabre means the action fails and the card is played; any other face cancels it.',
+        'A cancelled card orders nothing. The French discard it, draw a single card, and the turn ends; a cancelled Scout gives that one card, a cancelled Élan still reshuffles, and a Counter-Attack the next turn copies it in full. Only one attempt is made each turn, and no First Strike can be played in a cancelled turn.',
+      ],
+      reading: 'The counters belong to the whole Allied side, not to a nation: any French card may be targeted, any Allied Scout may gain one, and the rule holds after the last Spanish unit is gone.',
+    },
+    // RR §15.5
+    {
+      heading: 'Gaining counters',
+      paragraphs: [
+        'When the Allied side plays a Scout, a Counter-Attack copying one included, it may take a counter from the pool and draw one card, instead of drawing two and keeping one. It is asked after the French have drawn any First Strike replacements and before it draws its own cards.',
+        'With the pool empty it is not asked and draws as usual. Battles 114 and 116 have no Guerrilla Action: there a Scout works normally.',
+      ],
+      reading: 'The only limit on holding counters is the six in the box, so an Allied side may hold all six and then no longer sees the question.',
+    },
+    // RR §15.6
+    {
+      heading: 'Terrain and water',
+      paragraphs: [
+        'River bends, river ends and junctions are River hexes. Each battle says how its water behaves: fordable, impassable except at a bridge, or a brook that stops a move but costs nothing in battle; one battle gives a few hexes their own rule. Albuera has four fords that keep the fordable-river battle effects but do not stop a move.',
+        'A Walled Farm is a Town in every respect and gives no flag-ignore. Field works with two, three or four sides, flat or on a hill, follow the Field Works rules on the sides they cover.',
+      ],
+    },
+    // RR §15.7
+    {
+      heading: 'Mixed armies',
+      paragraphs: [
+        'In the battles with Spanish and British, Portuguese or Swiss units, each side is one player with one hand, one Command and one banner count. Every unit and leader of a side is friendly to every other, whatever its nation: any leader may attach to any unit, and gives his flag-ignore, support and escape cover across nations. A commander’s name has no effect on the rules.',
+        'The units of a side share one square track of four places. The French move first in every battle but Medellín and María, where the Allied side does; Vitoria decides it by the opening cards.',
+      ],
+    },
+    // RR §15.8
+    {
+      heading: 'New objectives',
+      paragraphs: [
+        'Some objectives are held by any unit on one of several hexes (Albuera), or by having more units than the enemy on a group of hexes (the Barrosa ridge and the San Marcial hills). Both are temporary banners, counted only while held. Zornoza adds exits: after the first three, each unit your side moves off the far edge scores a banner. At Somosierra the French win the instant the third Spanish gun is destroyed.',
+        'A majority banner is taken at the start of your own turn when you hold more of the group than the enemy; one hex against none is enough, and lone leaders never count.',
+      ],
+      reading: 'A majority banner is lost at once, on either player’s turn, the moment the holder’s count is no longer greater than the enemy’s, and it can be taken again only at the start of its owner’s own turn.',
+    },
+    // RR §16.6, §15.8
+    {
+      heading: 'Medellín: the shrinking hand',
+      paragraphs: [
+        'Each time the French gain a permanent banner, the Allied hand falls by one while it is above three: a card is taken at random from the cards held and discarded face up, never the card just played. The normal draw then keeps the hand at its new size.',
+      ],
+      reading: 'Cards on the square track count in the hand size, but a card on the track is never the one taken.',
+    },
+    // RR §16.6, §15.8
+    {
+      heading: 'Medellín: two squares only',
+      paragraphs: [
+        'The Allied infantry may form square with no more than two units in the battle. Every other limit on squares still applies.',
+      ],
+      reading: 'The limit counts two units over the whole battle, so a third unit may never form square, but either of the first two may form square again.',
+    },
+    // RR §15.8, §16.16
+    {
+      heading: 'Vitoria: the opening cards',
+      paragraphs: [
+        'Before the first turn each side secretly picks one card from its hand, the Allied side first, and both are revealed together. Counter-Attack, Élan, First Strike, Leadership and Rally cannot be picked. The lower value moves first, and a tie goes to the Allied side; each side must play its pick on its first turn.',
+      ],
+      reading: 'The value of a card is the units it orders: Scout is 1, Probe 2, Attack and Recon in Force 3, Coordinated Advance and Flank Attack 4, Forward 6, Assault the picker’s Command, and Short Supply 1.',
+    },
+    // RR §15.8, §16.16
+    {
+      heading: 'Vitoria: no card to pick',
+      paragraphs: [
+        'A side whose hand holds only cards that cannot be picked is not asked: it picks nothing, plays any card on its first turn, and the game goes on.',
+      ],
+      reading: 'A side that picks nothing counts above every card, so it moves second; if both sides pick nothing, the Allied side moves first.',
+    },
+  ],
 };

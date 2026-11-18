@@ -3,7 +3,6 @@
   "name": "Alba de Tormes",
   "year": "1809",
   "expansion": "exp1",
-  "hidden": true,
   "top": {"army":"Spanish","nation":"SP","commander":"Del Parque","cards":4},
   "bottom": {"army":"French","nation":"FR","commander":"Kellermann","cards":5},
   "first": "bottom",

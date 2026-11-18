@@ -28,7 +28,7 @@ describe('log lines for the Spanish events', () => {
   it('guerrilla stood, cancelled and gained', () => {
     // the guerrilla side is `bottom` here; its opponent is the French
     expect(line({ t: 'guerrilla', side: 'bottom', what: 'stood', held: 2, pool: 4 })!.text).toBe('The guerrillas strike, but the French card stands (sabre).');
-    expect(line({ t: 'guerrilla', side: 'bottom', what: 'cancelled', held: 1, pool: 5 })!.text).toBe('Guerrillas cut the French orders: the card is lost.');
+    expect(line({ t: 'guerrilla', side: 'bottom', what: 'cancelled', held: 1, pool: 5 })!.text).toBe('Guerrillas cut the French orders: nothing moves this turn.');
     expect(line({ t: 'guerrilla', side: 'bottom', what: 'gained', held: 3, pool: 3 })!.text).toBe('The British army gains a Guerrilla counter (3 held).');
   });
 

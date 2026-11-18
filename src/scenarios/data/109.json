@@ -3,7 +3,6 @@
   "name": "Talavera (Spanish Flank)",
   "year": "1809",
   "expansion": "exp1",
-  "hidden": true,
   "top": {"army":"Anglo-Spanish","nation":"SP","commander":"Cuesta","cards":5},
   "bottom": {"army":"French","nation":"FR","commander":"Victor","cards":5},
   "first": "bottom",
