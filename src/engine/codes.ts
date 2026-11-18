@@ -1,5 +1,5 @@
 // Napoleonics vocabulary: nations, arms and unit codes. Imports nothing.
-// `UnitKey` is the vocabulary (it names units that have no row, such as FR/LNC and SP/SWI); UNIT_KEYS lists the rows of RR §2.
+// `UnitKey` is the vocabulary (it can name a unit that has no row); UNIT_KEYS lists the rows of RR §2 (base game) and §15.1 (Expansion #1: lancers, Guard light cavalry, Swiss, the Spanish army).
 export const NATIONS = ['FR', 'BR', 'PT', 'AL', 'SP'] as const;
 export type Nation = (typeof NATIONS)[number];
 export const ARMS = ['infantry', 'cavalry', 'artillery'] as const;
@@ -38,6 +38,8 @@ export const UNIT_KEYS = [
   'BR/LN', 'BR/LT', 'BR/RI', 'BR/GR', 'BR/GG', 'BR/LC', 'BR/HC', 'BR/GHC', 'BR/FA', 'BR/HA',
   'PT/LN', 'PT/LT', 'PT/ML', 'PT/LC', 'PT/HC', 'PT/FA',
   'AL/LN', 'AL/LT', 'AL/ML', 'AL/LC', 'AL/FA',
+  'FR/LNC', 'FR/GLC', 'FR/SWI',
+  'SP/LN', 'SP/LT', 'SP/GR', 'SP/ML', 'SP/SWI', 'SP/LC', 'SP/HC', 'SP/CU', 'SP/FA',
 ] as const satisfies readonly UnitKey[];
 /** A UnitKey that has a UNIT_STATS row. */
 export type RowKey = (typeof UNIT_KEYS)[number];

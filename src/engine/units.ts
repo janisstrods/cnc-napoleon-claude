@@ -5,7 +5,7 @@ import type { Expansion } from './expansions';
 import type { GameState, MoveOption, Unit, UnitMatch, UnitTag } from './types';
 
 export interface ArtilleryRow { full: readonly number[]; one: readonly number[] }  // dice at distance 1..5 (index d-1): 3 or 2 blocks / 1 block
-export type MeleeRule = { kind: 'blocks'; plus: number; vsInfantry: number; movedPlus: number } | { kind: 'artillery' };  // movedPlus: added after moving (0 in the base game; Spanish −1 later)
+export type MeleeRule = { kind: 'blocks'; plus: number; vsInfantry: number; movedPlus: number } | { kind: 'artillery' };  // movedPlus: added after moving (0 in the base game; −1 for the Spanish line, light and militia)
 export type FireRule =
   | { kind: 'none' }
   | { kind: 'musket'; range: number; standing: number; moving: number; round: 'up' | 'down' }  // b+standing; ⌈b/2⌉ or ⌊b/2⌋ + moving
@@ -14,6 +14,8 @@ export interface UnitStats {
   key: RowKey; name: string; arm: Arm; tags: readonly UnitTag[]; expansion: Expansion; blocks: number;
   move: readonly MoveOption[]; battleAfterMoveMinBlocks: number; melee: MeleeRule; fire: FireRule;
   retreat: { first: number; then: number }; flagIgnore: number; sabreHits: boolean; ignoresInfantryFireHits: number;
+  rerollsFlags: boolean;  // lancers: re-roll the flags of an attack (S12)
+  immuneToFlagReroll: boolean;  // a lancer does not re-roll flags against it (S5, S12)
 }
 
 const LINE: readonly MoveOption[] = [{ max: 1, battle: true }];
@@ -35,21 +37,23 @@ const NONE: FireRule = { kind: 'none' };
 interface RowSpec {
   blocks: number; move: readonly MoveOption[]; melee?: number | 'artillery'; vsInfantry?: number; fire: FireRule | [number, number, number];
   retreat?: number; flags?: number; sabre?: boolean; tags?: UnitTag[]; minBlocks?: number; ignoresInfantryFireHits?: number;
+  round?: 'up' | 'down'; movedPlus?: number; expansion?: Expansion; reroll?: boolean; rerollImmune?: boolean;
 }
 
 function row(key: RowKey, x: RowSpec): UnitStats {
   const code = codeOf(key);
   const nation = key.slice(0, 2);
   const fire: FireRule = Array.isArray(x.fire)
-    ? { kind: 'musket', range: x.fire[0], standing: x.fire[1], moving: x.fire[2], round: nation === 'PT' || nation === 'AL' ? 'down' : 'up' }
+    ? { kind: 'musket', range: x.fire[0], standing: x.fire[1], moving: x.fire[2], round: x.round ?? (nation === 'PT' || nation === 'AL' ? 'down' : 'up') }
     : x.fire;
   const n = x.retreat ?? 1;
   return {
-    key, name: CODE_NAMES[code], arm: ARM_OF[code], tags: x.tags ?? [], expansion: 'base', blocks: x.blocks, move: x.move,
+    key, name: CODE_NAMES[code], arm: ARM_OF[code], tags: x.tags ?? [], expansion: x.expansion ?? 'base', blocks: x.blocks, move: x.move,
     battleAfterMoveMinBlocks: x.minBlocks ?? 1,
-    melee: x.melee === 'artillery' ? { kind: 'artillery' } : { kind: 'blocks', plus: x.melee ?? 0, vsInfantry: x.vsInfantry ?? 0, movedPlus: 0 },
+    melee: x.melee === 'artillery' ? { kind: 'artillery' } : { kind: 'blocks', plus: x.melee ?? 0, vsInfantry: x.vsInfantry ?? 0, movedPlus: x.movedPlus ?? 0 },
     fire, retreat: { first: n, then: n }, flagIgnore: x.flags ?? 0, sabreHits: x.sabre ?? true,
     ignoresInfantryFireHits: x.ignoresInfantryFireHits ?? 0,
+    rerollsFlags: x.reroll ?? false, immuneToFlagReroll: x.rerollImmune ?? false,
   };
 }
 
@@ -62,7 +66,7 @@ export const UNIT_STATS: Readonly<Record<RowKey, UnitStats>> = {
   'FR/ML': row('FR/ML', { blocks: 4, move: LINE, fire: [2, 0, 0], retreat: 3, sabre: false }),
   'FR/LC': row('FR/LC', { blocks: 4, move: LIGHT_CAV, fire: NONE }),
   'FR/HC': row('FR/HC', { blocks: 4, move: HEAVY_CAV, melee: 1, fire: NONE, tags: ['heavy'] }),
-  'FR/CU': row('FR/CU', { blocks: 4, move: HEAVY_CAV, melee: 1, fire: NONE, flags: 1, tags: ['heavy'], ignoresInfantryFireHits: 1 }),
+  'FR/CU': row('FR/CU', { blocks: 4, move: HEAVY_CAV, melee: 1, fire: NONE, flags: 1, tags: ['heavy'], ignoresInfantryFireHits: 1, rerollImmune: true }),
   'FR/GHC': row('FR/GHC', { blocks: 4, move: HEAVY_CAV, melee: 1, fire: NONE, flags: 2, tags: ['heavy', 'guard'] }),
   'FR/FA': row('FR/FA', { blocks: 3, move: FOOT_GUNS, melee: 'artillery', fire: FA }),
   'FR/HA': row('FR/HA', { blocks: 3, move: HORSE_GUNS, melee: 'artillery', fire: HA, tags: ['horseArtillery'], minBlocks: 2 }),
@@ -88,6 +92,18 @@ export const UNIT_STATS: Readonly<Record<RowKey, UnitStats>> = {
   'AL/ML': row('AL/ML', { blocks: 4, move: LINE, fire: [2, 0, 0], retreat: 3, sabre: false }),
   'AL/LC': row('AL/LC', { blocks: 3, move: LIGHT_CAV, fire: NONE }),
   'AL/FA': row('AL/FA', { blocks: 3, move: FOOT_GUNS, melee: 'artillery', fire: FA }),
+  'FR/LNC': row('FR/LNC', { blocks: 4, move: LIGHT_CAV, fire: NONE, reroll: true, expansion: 'exp1' }),
+  'FR/GLC': row('FR/GLC', { blocks: 4, move: LIGHT_CAV, fire: NONE, flags: 2, tags: ['guard'], expansion: 'exp1' }),
+  'FR/SWI': row('FR/SWI', { blocks: 5, move: LINE, fire: [2, 0, 0], round: 'down', expansion: 'exp1' }),
+  'SP/LN': row('SP/LN', { blocks: 4, move: LINE, fire: [2, 0, -1], round: 'down', movedPlus: -1, retreat: 2, expansion: 'exp1' }),
+  'SP/LT': row('SP/LT', { blocks: 5, move: LIGHT, fire: [2, 0, 0], round: 'down', movedPlus: -1, retreat: 2, tags: ['light'], expansion: 'exp1' }),
+  'SP/GR': row('SP/GR', { blocks: 4, move: LINE, melee: 1, fire: [2, 0, 0], round: 'down', retreat: 2, flags: 1, tags: ['grenadier'], expansion: 'exp1' }),
+  'SP/ML': row('SP/ML', { blocks: 4, move: LINE, fire: [2, 0, -1], round: 'down', movedPlus: -1, retreat: 3, sabre: false, expansion: 'exp1' }),
+  'SP/SWI': row('SP/SWI', { blocks: 5, move: LINE, fire: [2, 0, 0], round: 'down', expansion: 'exp1' }),
+  'SP/LC': row('SP/LC', { blocks: 3, move: LIGHT_CAV, fire: NONE, retreat: 2, expansion: 'exp1' }),
+  'SP/HC': row('SP/HC', { blocks: 3, move: HEAVY_CAV, melee: 1, fire: NONE, retreat: 2, tags: ['heavy'], expansion: 'exp1' }),
+  'SP/CU': row('SP/CU', { blocks: 3, move: HEAVY_CAV, melee: 1, fire: NONE, retreat: 2, flags: 1, tags: ['heavy'], ignoresInfantryFireHits: 1, rerollImmune: true, expansion: 'exp1' }),
+  'SP/FA': row('SP/FA', { blocks: 3, move: FOOT_GUNS, melee: 'artillery', fire: FA, expansion: 'exp1' }),
 };
 
 /** A leader moves 3 hexes (RR §2.5). */
