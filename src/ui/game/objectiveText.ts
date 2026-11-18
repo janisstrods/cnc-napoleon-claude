@@ -40,18 +40,22 @@ export function objectiveTipLines(s: GameState, h: HexId): string[] {
  * merged, and the last line is the rule every battle has.
  */
 export function objectiveSummary(s: GameState, side: Side): string[] {
-  const lines: string[] = [];
-  const merged = new Map<string, number[]>();
+  // identical tempHex objectives (same text, same banners) are one line
+  type Merged = { text: string; banners: number; ids: number[] };
+  const lines: (string | Merged)[] = [];
+  const merged: Merged[] = [];
+  let kills = false;
   s.scenario.objectives.forEach((o, i) => {
     if (o.side !== side) return;
     switch (o.kind) {
       case 'tempHex': {
-        const key = `${bare(o.text)}|${o.banners}`;
-        const at = merged.get(key);
-        if (at) at.push(i);
+        const text = bare(o.text);
+        const at = merged.find((m) => m.text === text && m.banners === o.banners);
+        if (at) at.ids.push(i);
         else {
-          merged.set(key, [i]);
-          lines.push(key);
+          const m = { text, banners: o.banners, ids: [i] };
+          merged.push(m);
+          lines.push(m);
         }
         break;
       }
@@ -62,19 +66,18 @@ export function objectiveSummary(s: GameState, side: Side): string[] {
         lines.push(`${bare(o.text)}: a unit ${o.leadersScore ? 'or leader ' : ''}that leaves the battlefield here scores ${plural(o.banners, 'banner')}`);
         break;
       case 'killWeight':
+        kills = true;
         lines.push(`First ${s.players[other(side)].army} ${o.enemyArm} unit eliminated: ${plural(o.first, 'banner')}; each later one: ${o.later}`);
         break;
     }
   });
   const out = lines.map((l) => {
-    const ids = merged.get(l);
-    if (!ids) return l;
-    const [text, banners] = l.split('|');
-    const n = Number(banners);
-    const held = ids.filter((i) => s.special.objState[i]?.held).length;
-    if (ids.length === 1) return `${text}: ${plural(n, 'banner')} while held at the start of its turn${held ? ' (held now)' : ''}`;
-    return `${text} (${ids.length} hexes): ${plural(n, 'banner')} each while held at the start of their turn${held ? ` (${held} held now)` : ''}`;
+    if (typeof l === 'string') return l;
+    const held = l.ids.filter((i) => s.special.objState[i]?.held).length;
+    if (l.ids.length === 1) return `${l.text}: ${plural(l.banners, 'banner')} while held at the start of its turn${held ? ' (held now)' : ''}`;
+    return `${l.text} (${l.ids.length} hexes): ${plural(l.banners, 'banner')} each while held at the start of their turn${held ? ` (${held} held now)` : ''}`;
   });
-  out.push('Each enemy unit or leader eliminated: 1 banner');
+  // a side with a weighted kill objective already scores its first enemy casualties above: the plain rule covers the rest
+  out.push(kills ? 'Each other enemy unit or leader eliminated: 1 banner' : 'Each enemy unit or leader eliminated: 1 banner');
   return out;
 }

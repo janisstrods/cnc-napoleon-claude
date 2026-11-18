@@ -312,10 +312,10 @@ body {
 
 .modal-p { margin: 0 0 10px; font-size: 16px; line-height: 1.4; }
 .modal-buttons { display: flex; gap: 10px; justify-content: flex-end; margin-top: 12px; }
-.assign-list { display: flex; flex-direction: column; gap: 8px; }
+.assign-list { display: flex; flex-direction: column; gap: 2px; }
 .assign-row { display: flex; gap: 12px; align-items: center; }
-.assign-row select { flex: 1; padding: 5px; font-family: inherit; font-size: 15px; background: #fbf3dc; border: 1px solid #b0823a; border-radius: 4px; }
-.assign-none { color: #7a6448; font-style: italic; }
+.assign-row select { flex: 1; min-width: 0; padding: 4px; font-family: inherit; font-size: 13px; color: var(--kit-ink); background: #fbf3dc; border: 1px solid #b0823a; border-radius: 4px; }
+.assign-none { color: rgba(240, 227, 194, .6); font-style: italic; }
 .victory { min-width: min(400px, 100%); }
 .victory-reason { margin: 0 0 12px; text-align: center; font-style: italic; font-size: 17px; }
 .victory-score {
@@ -413,19 +413,14 @@ body {
 }
 @keyframes toast { 0% { opacity: 0; transform: translate(-50%, -40%) scale(.9); } 20% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 75% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -58%); } }
 
-.assign-float {
-  position: fixed;
-  left: 24px;
-  top: 64px;
-  width: 470px;
-  z-index: 30;
-  padding: 14px 16px;
-  color: var(--kit-ink);
-  background: var(--kit-parchment-bg);
-  border: 2px solid var(--kit-bronze);
-  border-radius: 10px;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, .65);
-  animation: fadein .2s ease-out;
-}
-.assign-title { font-family: var(--kit-font-title); font-size: 19px; color: #6e1a14; margin-bottom: 6px; }
-.assign-float .modal-p { font-size: 14.5px; }
+
+/* ---------- Élan / Rally dice (beside the board) and the Scout's cards (in the prompt bar) */
+.assign-panel { flex: none; padding: 8px 10px; background: linear-gradient(180deg, rgba(43, 26, 14, .95), rgba(28, 16, 8, .95)); border: 1px solid rgba(226, 189, 114, .55); border-radius: 10px; }
+.assign-text { margin: 0 0 4px; font-size: 12px; line-height: 1.2; color: rgba(240, 227, 194, .85); }
+.assign-row { padding: 2px 4px; border-radius: 6px; border: 1px solid transparent; }
+.assign-row.is-armed { border-color: var(--kit-gold); background: rgba(232, 196, 90, .1); }
+.assign-die { flex: none; padding: 0; background: none; border: 0; cursor: pointer; line-height: 0; border-radius: 6px; }
+.assign-die:disabled { cursor: default; }
+.assign-die:focus-visible { outline: 2px solid var(--kit-gold); outline-offset: 2px; }
+.assign-panel .prompt-err { margin-top: 6px; }
+.scout-cards { display: flex; gap: 12px; flex: none; padding: 4px 0; }

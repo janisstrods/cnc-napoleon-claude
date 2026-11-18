@@ -62,8 +62,10 @@ export function randomAnswer(s: GameState, d: Decision, rnd: Rand): Answer {
       const id = pick(ids, rnd);
       return { kind: 'attack', unit: id, target: pick(battleTargets(s, id), rnd).hex };
     }
-    case 'combinedArms':
-      return { kind: 'select', ids: d.options.filter(() => rnd() < 0.5) };
+    case 'combinedArms': {
+      const ids = d.options.filter(() => rnd() < 0.5);
+      return { kind: 'select', ids: ids.length === 0 && d.required ? [pick(d.options, rnd)] : ids };
+    }
     case 'defend':
       return { kind: 'defend', choice: pick(d.options, rnd) };
     case 'ignoreFlags':

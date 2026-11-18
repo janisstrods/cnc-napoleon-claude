@@ -100,8 +100,19 @@ describe('log wording', () => {
 
   it('a killWeight objective is listed for its side', () => {
     const k = build({ units: [{ side: 'top', key: 'FR/LN', at: [2, 6] }], objectives: [{ kind: 'killWeight', side: 'bottom', enemyArm: 'infantry', first: 1, later: 2 }] });
-    expect(objectiveSummary(k, 'bottom')).toEqual(['First French infantry unit eliminated: 1 banner; each later one: 2', KILL]);
+    expect(objectiveSummary(k, 'bottom')).toEqual(['First French infantry unit eliminated: 1 banner; each later one: 2', 'Each other enemy unit or leader eliminated: 1 banner']);
     expect(objectiveSummary(k, 'top')).toEqual([KILL]);
+  });
+
+  it('a roll that no combat line announced names itself; an attack roll gets the short arrow', () => {
+    const roll = (purpose: 'elan' | 'rally' | 'leaderCheck' | 'escape' | 'fire', by: string | null, against: string | null): GameEvent => ({
+      t: 'roll', purpose, faces: ['sabre', 'flag'], scoring: [true, false], by, against,
+    });
+    expect(line(roll('elan', null, null))!.text).toBe('Élan: 1 flag, 1 sabre.');
+    expect(line(roll('rally', null, null))!.text).toBe('Rally: 1 flag, 1 sabre.');
+    expect(line(roll('leaderCheck', null, lead))!.text).toBe('Wellesley — leader casualty check: 1 sabre rolled.');
+    expect(line(roll('escape', FR_LC, lead))!.text).toBe('Wellesley tries to escape: the leader is hit.');
+    expect(line(roll('fire', FR_LN, BR_LN))!.text).toMatch(/^→ /);
   });
 
   it("001's two identical hill objectives are one line, without a stray full stop", () => {

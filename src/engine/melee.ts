@@ -5,9 +5,10 @@ import { combinedArmsStep } from './combinedArms';
 import { ask, type Gen } from './decisions';
 import { meleeDice, scoreRoll } from './dice';
 import { neighbours } from './hex';
-import { leaderAt, unitAt, unitById } from './query';
 import { loneLeaderMelee } from './leaders';
-import { defenderReaction, firstStrikeRoll, resolveRetireReform } from './reactions';
+import { combinedArmsCandidates } from './options';
+import { leaderAt, unitAt, unitById } from './query';
+import { attackerStrike, defenderReaction, firstStrikeRoll, resolveRetireReform } from './reactions';
 import { rollDice } from './rng';
 import { applyOutcome } from './resolve';
 import { formSquare, squareFightsFirst, squareFirstApplies } from './squares';
@@ -26,7 +27,8 @@ function* afterAndBonus(s: GameState, ctx: FlowCtx, m: MeleeCtx, vacated: HexId)
     const t = unitAt(s, h);
     const l = t ? undefined : leaderAt(s, h);
     const foe = t ?? l;
-    return !!foe && foe.side !== u.side && meleeDice(s, u, foe, { role: 'bonus', moved: op.moved, declared: true }) >= 1;
+    return !!foe && foe.side !== u.side
+      && (meleeDice(s, u, foe, { role: 'bonus', moved: op.moved, declared: true }) >= 1 || (!!t && combinedArmsCandidates(s, u, t, 'bonus').length > 0));
   });
   if (targets.length === 0) return;
   const a = yield* ask(s, ctx, { kind: 'bonusMelee', side: u.side, unit: u.id, targets });
@@ -59,24 +61,24 @@ export function* meleeAttack(s: GameState, ctx: FlowCtx, attackerId: string, tar
   }
   if (m.reaction === 'formSquare') formSquare(s, ctx, defender);
   if ((yield* squareFightsFirst(s, ctx, m)) === 'stop') return false;
-  const squareFought = squareFirstApplies(s, m);  // the square already struck first: no battle back (R29)
-  if (m.reaction === 'firstStrike' && (yield* firstStrikeRoll(s, ctx, m)) === 'stop') return false;
+  let fought = squareFirstApplies(s, m);  // the square already struck first: no battle back (R29)
+  if (m.reaction === 'firstStrike') {
+    if ((yield* firstStrikeRoll(s, ctx, m)) === 'stop') return false;
+    fought = true;  // the First Strike unit does not battle back either (R63); never re-check canBattleAfterMove after the declaration
+  }
 
-  // the attacker's roll
+  // the attacker's roll: the melee unit's dice and every joining gun's, together (R41)
   const purpose = role === 'bonus' ? 'bonus' : 'melee';
-  const dice = meleeDice(s, attacker, defender, { role, moved: op.moved, declared: true });
-  ctx.emit({ t: 'combat', purpose, attacker: attackerId, target: defender.id, dice });
-  const faces = rollDice(s, dice);
-  const sc = scoreRoll(faces, 'melee', statsOf(s, attacker), statsOf(s, defender).arm);
-  emitRoll(ctx, purpose, faces, sc.scoring, attackerId, defender.id);
-  const applied = yield* applyOutcome(s, ctx, defender, { hits: sc.hits, flags: sc.flags, bounce: false }, attacker, 'melee');
+  const sc = attackerStrike(s, ctx, m, purpose, 'melee');
+  const bounce = sc.own >= 1 && attacker.square !== undefined && statsOf(s, defender).arm === 'cavalry';  // R30: the square's die and the guns' flags
+  const applied = yield* applyOutcome(s, ctx, defender, { hits: sc.hits, flags: sc.flags, bounce }, attacker, 'melee');
   if (s.winner) return false;
   if (applied.eliminated || applied.left) {
     yield* afterAndBonus(s, ctx, m, targetHex);
     return true;
   }
   // battle back: the defender survives in place and the attacker is still there
-  if (!squareFought && defender.blocks >= 1 && unitById(s, attackerId)) {
+  if (!fought && defender.blocks >= 1 && unitById(s, attackerId)) {
     const back = meleeDice(s, defender, attacker, { role: 'back', moved: 0 });
     ctx.emit({ t: 'combat', purpose: 'battleBack', attacker: defender.id, target: attackerId, dice: back });
     const bf = rollDice(s, back);

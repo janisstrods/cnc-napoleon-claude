@@ -42,7 +42,8 @@ export function answerError(s: GameState, d: Decision, a: Answer | null | undefi
     case 'battle':
       return validateBattle(s, a, found);
     case 'combinedArms':
-      return a.kind === 'select' && new Set(a.ids).size === a.ids.length && a.ids.every((id) => d.options.includes(id)) ? null : 'Choose artillery from the list.';
+      if (a.kind !== 'select' || new Set(a.ids).size !== a.ids.length || !a.ids.every((id) => d.options.includes(id))) return 'Choose artillery from the list.';
+      return d.required && a.ids.length === 0 ? 'This unit has no dice of its own; at least one gun must join.' : null;
     case 'defend':
       return a.kind === 'defend' && d.options.includes(a.choice) ? null : 'Choose how to defend.';
     case 'ignoreFlags':

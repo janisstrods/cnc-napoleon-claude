@@ -363,7 +363,8 @@ export class GameController {
    * unit moves or battles.
    */
   private undoable(d: Decision | null): UndoStep | null {
-    return d?.side === this.config.humanSide ? this.driver.undoStep() : null;
+    // never after a Scout's cards are shown: undoing would return them to the deck top, known to the player
+    return d?.side === this.config.humanSide && d.kind !== 'scoutKeep' ? this.driver.undoStep() : null;
   }
 
   undo() {

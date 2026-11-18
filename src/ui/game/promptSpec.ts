@@ -6,6 +6,7 @@ import {
   CARD_DEFS, UNIT_STATS, cardKind, hexLabel, pieceHex, unitById,
   type Answer, type Decision, type DefendChoice, type GameState, type HexId,
 } from '../../engine';
+import { suggestAssign } from './assign';
 
 export interface PromptAction { key: string; label: string; answer: Answer | 'auto' }
 export interface PromptSpec { title: string; text: string; actions: PromptAction[]; hexes: HexId[] }
@@ -30,6 +31,9 @@ export const DECISION_TITLES: Readonly<Record<Decision['kind'], string>> = {
   shortSupplyTarget: 'Short Supply: choose a unit',
   shortSupplyHex: 'Short Supply: choose a hex',
 };
+
+export const ELAN_TEXT = 'Give each die to a piece. An arm symbol orders a unit of that arm (horse artillery is artillery); a flag orders any unit or leader. Sabres order nothing. Ordered units roll one extra die in every battle this turn.';
+export const RALLY_TEXT = 'Each infantry, cavalry or artillery symbol returns one block to a weakened unit of that arm, anywhere on the field, never above its starting strength. Flags and sabres do nothing. A unit that gains a block is ordered.';
 
 export const AUTO_ACTION: PromptAction = { key: 'auto', label: 'Let the general decide', answer: 'auto' };
 
@@ -79,11 +83,11 @@ export function promptSpec(s: GameState, d: Decision): PromptSpec {
       );
       break;
     case 'combinedArms': {
-      text = `${unitLabel(s, d.unit)} attacks: artillery may join the melee. Choose a gun, or none.`;
+      text = `${unitLabel(s, d.unit)} attacks: artillery may join the melee. ${d.required ? 'It has no dice of its own: choose a gun.' : 'Choose a gun, or none.'}`;
       hexes = hexesOf(s, d.options);
       for (const id of d.options) actions.push({ key: id, label: unitHexLabel(s, id), answer: { kind: 'select', ids: [id] } });
       if (d.options.length > 1) actions.push({ key: 'all', label: `Combine all ${d.options.length} guns`, answer: { kind: 'select', ids: [...d.options] } });
-      actions.push({ key: 'none', label: 'No artillery', answer: { kind: 'select', ids: [] } });
+      if (!d.required) actions.push({ key: 'none', label: 'No artillery', answer: { kind: 'select', ids: [] } });
       break;
     }
     case 'defend':
@@ -119,19 +123,20 @@ export function promptSpec(s: GameState, d: Decision): PromptSpec {
       break;
     case 'elan':
     case 'rally':
-      text = `The general assigns the ${d.kind === 'elan' ? 'Élan' : 'Rally'} dice (choosing them yourself comes in a later version).`;
+      text = d.kind === 'elan' ? ELAN_TEXT : RALLY_TEXT;
+      actions.push({ key: 'suggested', label: 'Confirm', answer: { kind: 'assign', ids: suggestAssign(s, d) } });
       break;
     case 'scoutKeep':
-      text = 'Keep one of the two cards you drew; the other is discarded.';
+      text = 'You drew two cards: keep one; the other is discarded face up.';
       d.cards.forEach((c, i) => actions.push({ key: `keep${i}`, label: CARD_DEFS[cardKind(c)].title, answer: { kind: 'choose', index: i } }));
       break;
     case 'shortSupplyTarget':
-      text = 'Choose the unit that goes short of supplies.';
+      text = "Choose any unit not in square, yours or the enemy's: its owner lifts it back to its own baseline.";
       hexes = hexesOf(s, d.options);
       d.options.forEach((id, i) => actions.push({ key: id, label: unitHexLabel(s, id), answer: { kind: 'choose', index: i } }));
       break;
     case 'shortSupplyHex':
-      text = `Click the hex ${unitLabel(s, d.unit)} is moved to.`;
+      text = `Place ${unitLabel(s, d.unit)} on a hex of its own baseline (the row in front when the baseline is full).`;
       hexes = [...d.options];
       break;
   }
