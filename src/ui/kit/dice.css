@@ -79,7 +79,7 @@
   100% { transform: scale(1); }
 }
 
-/* Rolling: the die tumbles while the faces flicker through all six symbols. */
+/* Rolling: the die tumbles while the faces flicker through all five symbols. */
 .kit-die.is-rolling .kit-die__body {
   animation: kit-die-tumble .68s cubic-bezier(.45, .05, .55, .95) infinite;
   animation-delay: var(--die-delay);
@@ -90,13 +90,13 @@
 }
 .kit-die__layer { opacity: 0; }
 .kit-die.is-rolling .kit-die__layer {
-  animation: kit-die-cycle .54s step-end infinite;
-  animation-delay: calc(var(--i) * .09s - .54s + var(--die-delay));
+  animation: kit-die-cycle .45s step-end infinite;
+  animation-delay: calc(var(--i) * .09s - .45s + var(--die-delay));
 }
 
 @keyframes kit-die-cycle {
   0% { opacity: 1; }
-  16.667% { opacity: 0; }
+  20% { opacity: 0; }
   100% { opacity: 0; }
 }
 @keyframes kit-die-tumble {
