@@ -128,7 +128,7 @@ export function eventLog(e: GameEvent, before: GameState, after: GameState, huma
       const by = e.by ?? e.against;
       const summary = rollSummary(e.purpose, e.faces, e.scoring);
       // a roll that no combat line announced says what it is for; the short arrow follows an attack's own line
-      const alone = e.purpose === 'elan' || e.purpose === 'rally' || e.purpose === 'leaderCheck' || e.purpose === 'escape' || e.purpose === 'guerrilla';
+      const alone = e.purpose === 'elan' || e.purpose === 'rally' || e.purpose === 'leaderCheck' || e.purpose === 'escape';
       const tail = (e.purpose === 'escape' ? summary.charAt(0).toLowerCase() + summary.slice(1) : summary).replace(/[.!]$/, '');
       // the lancers' second roll is one event for the whole attack: it cannot say which die came from whom
       const again = e.reroll ? `re-rolled flags${e.from && e.from.length > 1 ? ' (with guns)' : ''}: ` : '';
@@ -194,7 +194,8 @@ export function eventLog(e: GameEvent, before: GameState, after: GameState, huma
     }
     case 'moveFirst': {
       const pick = (side: Side) => (e.picks[side] === null ? 'no card' : `${CARD_DEFS[cardKind(e.picks[side])].title} (${e.values[side]})`);
-      return line(`Opening cards: ${pick('top')} against ${pick('bottom')}; the ${army(e.first)} army moves first.`, 'card', e.first);
+      const pick2 = (side: Side) => `${army(side)} ${pick(side)}`;
+      return line(`Opening cards: ${pick2('top')} against ${pick2('bottom')}; the ${army(e.first)} army moves first.`, 'card', e.first);
     }
   }
 }

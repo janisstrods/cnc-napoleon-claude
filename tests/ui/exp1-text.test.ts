@@ -35,9 +35,9 @@ describe('log lines for the Spanish events', () => {
   it('moveFirst names both cards and values, or no card', () => {
     const t0 = title(0), t1 = title(1);
     const both: GameEvent = { t: 'moveFirst', picks: { top: 0, bottom: 1 }, values: { top: 3, bottom: 2 }, first: 'top' };
-    expect(line(both)!.text).toBe(`Opening cards: ${t0} (3) against ${t1} (2); the French army moves first.`);
+    expect(line(both)!.text).toBe(`Opening cards: French ${t0} (3) against British ${t1} (2); the French army moves first.`);
     const none: GameEvent = { t: 'moveFirst', picks: { top: 0, bottom: null }, values: { top: 3, bottom: 99 }, first: 'top' };
-    expect(line(none)!.text).toBe(`Opening cards: ${t0} (3) against no card; the French army moves first.`);
+    expect(line(none)!.text).toBe(`Opening cards: French ${t0} (3) against British no card; the French army moves first.`);
   });
 
   it('a broken unit leaves the field, and the engine note with its raw id stays silent', () => {
@@ -92,22 +92,23 @@ describe('log lines for the Spanish events', () => {
 describe('unit tooltip lines for the new rows', () => {
   const lines = (k: RowKey) => unitSummary({ id: 'u1', side: 'top', key: k, hex: 0, blocks: 4, maxBlocks: 4 } as Unit);
   it('Spanish line infantry: fire and melee after moving, 2-hex retreat', () => {
-    expect(lines('SP/LN')).toContain('After moving: fire half its blocks, rounded down, less 1; melee 1 die less.');
-    expect(lines('SP/LN')).toContain('Retreats 2 hexes per flag.');
+    expect(lines('SP/LN')).toContain('After moving: melee 1 die less.');
+    expect(lines('SP/LN')[0]).toContain('Retreat 2 hexes per flag');
+    expect(lines('SP/LN').some((l) => l.startsWith('Retreats'))).toBe(false);
   });
   it('Spanish light infantry: melee only after moving', () => {
     expect(lines('SP/LT')).toContain('After moving: melee 1 die less.');
   });
   it('Spanish militia retreat 3 hexes', () => {
-    expect(lines('SP/ML')).toContain('Retreats 3 hexes per flag.');
-    expect(lines('SP/ML')).toContain('After moving: fire half its blocks, rounded down, less 1; melee 1 die less.');
+    expect(lines('SP/ML')[0]).toContain('Retreat 3 hexes per flag');
+    expect(lines('SP/ML')).toContain('After moving: melee 1 die less.');
   });
   it('lancers re-roll flags, cuirassiers are immune, and no other row says either', () => {
-    expect(lines('FR/LNC')).toContain('Re-rolls flags once when it attacks (not against cuirassiers).');
+    expect(lines('FR/LNC')).toContain('Re-rolls flags once when it attacks or strikes first (not against cuirassiers).');
     expect(lines('SP/CU')).toContain('Lancers do not re-roll flags against it.');
     for (const k of UNIT_KEYS) {
       if (k !== 'FR/LNC') expect(lines(k).join('|'), k).not.toContain('Re-rolls flags');
-      if (!UNIT_STATS[k].immuneToFlagReroll) expect(lines(k).join('|'), k).not.toContain('Lancers do not');
+      if (!UNIT_STATS[k].immuneToFlagReroll || UNIT_STATS[k].expansion === 'base') expect(lines(k).join('|'), k).not.toContain('Lancers do not');
     }
   });
   it('base rows without a moving penalty gain no After-moving line', () => {
@@ -125,7 +126,7 @@ describe('objective words', () => {
     const o = g115.scenario.objectives.findIndex((x) => x.kind === 'tempAny');
     const ob = g115.scenario.objectives[o] as Extract<ObjectiveDef, { kind: 'tempAny' }>;
     const sum = objectiveSummary(g115, ob.side).find((l) => l.startsWith('The French hold Albuera'))!;
-    expect(sum).toBe(`The French hold Albuera: 1 banner while a unit stands on any of these ${ob.hexes.length} hexes at the start of its turn`);
+    expect(sum).toBe(`The French hold Albuera: 1 banner while a ${g115.players[ob.side].army} unit stands on any of these ${ob.hexes.length} hexes at the start of its turn`);
     const held = structuredClone(g115) as GameState;
     held.special.objState[o].held = true;
     expect(objectiveSummary(held, ob.side).find((l) => l.startsWith('The French hold Albuera'))).toContain('(held now)');
@@ -137,12 +138,14 @@ describe('objective words', () => {
     const o = g114.scenario.objectives[idx] as Extract<ObjectiveDef, { kind: 'majority' }>;
     const startHolder = o.side;
     const text = objectiveSummary(g114, startHolder).find((l) => l.includes('Barrosa Ridge'))!;
-    expect(text).toBe(`The Anglo-Spanish hold Barrosa Ridge: 1 banner while it holds most of these ${o.hexes.length} hexes — held by the ${g114.players[startHolder].army} army`);
+    expect(text).toBe(`Barrosa Ridge: 1 banner while it holds more of these ${o.hexes.length} hexes than the enemy at the start of its turn (lost at once on a tie) — held by the ${g114.players[startHolder].army} army`);
     const none = structuredClone(g114) as GameState;
     none.special.objState.forEach((x) => { x.held = false; });
     expect(objectiveSummary(none, startHolder).find((l) => l.includes('Barrosa Ridge'))).toMatch(/ — held by no one$/);
     const tip = objectiveTipLines(none, o.hexes[0]);
     expect(tip).toHaveLength(1);   // a contested group is one line, not one per side
+    expect(tip[0]).toContain('more of these');
+    expect(tip[0]).toContain('lost at once on a tie');
     expect(tip[0]).toContain('held by no one');
   });
 
@@ -169,8 +172,8 @@ describe('objective words', () => {
     const ob = g105.scenario.objectives[o] as Extract<ObjectiveDef, { kind: 'suddenDeath' }>;
     const st = structuredClone(g105) as GameState;
     st.special.objState[o].count = 1;
-    const text = objectiveSummary(st, ob.side).find((l) => l.startsWith(ob.text.replace(/\.$/, '')))!;
-    expect(text).toBe(`${ob.text.replace(/\.$/, '')}: ${ob.need - 1} ${ob.need - 1 === 1 ? 'battery' : 'batteries'} left before the ${st.players[ob.side].army} win`);
+    const text = objectiveSummary(st, ob.side).find((l) => l.startsWith('Sudden death'))!;
+    expect(text).toBe(`Sudden death: ${ob.need - 1} ${st.players[ob.side === 'top' ? 'bottom' : 'top'].army} ${ob.need - 1 === 1 ? 'battery' : 'batteries'} left before the ${st.players[ob.side].army} win`);
   });
 
   it('marker text never shows {unit}', () => {

@@ -59,11 +59,11 @@ function objectiveLines(s: GameState, o: ObjectiveDef, i: number, h: HexId): str
     case 'exit':
       return o.hex === h ? [`${bare(o.text)}: ${aOrAn(army(o.side))} unit here may leave the battlefield — ${plural(o.banners, 'banner')}`] : [];
     case 'tempAny':
-      return o.hexes.includes(h) ? [`${bare(o.text)}: ${plural(o.banners, 'banner')} for the ${army(o.side)} army while a unit stands on any of these ${o.hexes.length} hexes at the start of its turn${st?.held ? ' (held now)' : ''}`] : [];
+      return o.hexes.includes(h) ? [`${bare(o.text)}: ${plural(o.banners, 'banner')} for the ${army(o.side)} army while ${aOrAn(army(o.side))} unit stands on any of these ${o.hexes.length} hexes at the start of its turn${st?.held ? ' (held now)' : ''}`] : [];
     case 'majority': {
       const group = groupOf(s, i);
       // a contested group is one line, said by its first record
-      return o.hexes.includes(h) && group[0] === i ? [`${placeOf(o.text)}: ${plural(o.banners, 'banner')} for the army that holds most of these ${o.hexes.length} hexes at the start of its turn — held by ${holderName(s, group)}`] : [];
+      return o.hexes.includes(h) && group[0] === i ? [`${placeOf(o.text)}: ${plural(o.banners, 'banner')} for the army holding more of these ${o.hexes.length} hexes than the enemy at the start of its turn (lost at once on a tie) — held by ${holderName(s, group)}`] : [];
     }
     case 'exitEdge':
       return rowOf(h) === o.row ? [exitsUsed(o, st?.count ?? 0)] : [];
@@ -109,10 +109,10 @@ export function objectiveSummary(s: GameState, side: Side): string[] {
         lines.push(`${bare(o.text)}: a unit ${o.leadersScore ? 'or leader ' : ''}that leaves the battlefield here scores ${plural(o.banners, 'banner')}`);
         break;
       case 'tempAny':
-        lines.push(`${bare(o.text)}: ${plural(o.banners, 'banner')} while a unit stands on any of these ${o.hexes.length} hexes at the start of its turn${s.special.objState[i]?.held ? ' (held now)' : ''}`);
+        lines.push(`${bare(o.text)}: ${plural(o.banners, 'banner')} while ${aOrAn(s.players[o.side].army)} unit stands on any of these ${o.hexes.length} hexes at the start of its turn${s.special.objState[i]?.held ? ' (held now)' : ''}`);
         break;
       case 'majority':
-        lines.push(`${bare(o.text)}: ${plural(o.banners, 'banner')} while it holds most of these ${o.hexes.length} hexes — held by ${holderName(s, groupOf(s, i))}`);
+        lines.push(`${placeOf(o.text)}: ${plural(o.banners, 'banner')} while it holds more of these ${o.hexes.length} hexes than the enemy at the start of its turn (lost at once on a tie) — held by ${holderName(s, groupOf(s, i))}`);
         break;
       case 'exitEdge':
         lines.push(exitsUsed(o, s.special.objState[i]?.count ?? 0));
@@ -120,7 +120,7 @@ export function objectiveSummary(s: GameState, side: Side): string[] {
       case 'suddenDeath': {
         const left = Math.max(0, o.need - (s.special.objState[i]?.count ?? 0));
         const guns = o.keys.every((k) => UNIT_STATS[k].arm === 'artillery');
-        lines.push(`${bare(o.text)}: ${left} ${guns ? (left === 1 ? 'battery' : 'batteries') : (left === 1 ? 'unit' : 'units')} left before the ${s.players[o.side].army} win`);
+        lines.push(`Sudden death: ${left} ${s.players[other(o.side)].army} ${guns ? (left === 1 ? 'battery' : 'batteries') : (left === 1 ? 'unit' : 'units')} left before the ${s.players[o.side].army} win`);
         break;
       }
       case 'killWeight':
