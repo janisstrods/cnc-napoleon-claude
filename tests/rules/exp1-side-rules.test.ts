@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { GameDriver, bannerTotal, createGame, forceDice, gainBanner, type FlowCtx, type GameEvent, type GameState, type Side } from '../../src/engine';
 import { damage } from '../../src/engine/casualties';
 import { SCENARIOS } from '../../src/scenarios';
-import { H, build, duel, endTurn, ev, endMoves, must, n, passTurn, play, violations, type Pos } from './helpers';
+import { H, build, duel, giveCard, endTurn, ev, endMoves, must, n, passTurn, play, violations, type Pos } from './helpers';
 
 const bot = (key: 'FR/SWI' | 'FR/LN' | 'BR/LN', at: [number, number], extra: object = {}) => ({ side: 'bottom' as const, key, at, ...extra });
 const top = (key: 'FR/SWI' | 'FR/LN' | 'BR/LN', at: [number, number], extra: object = {}) => ({ side: 'top' as const, key, at, ...extra });
@@ -78,10 +78,10 @@ describe('101: the Swiss break (S30)', () => {
     expect(ad).toBeGreaterThan(0);
     const s = build({
       sideRules: BREAK,
-      units: [bot('FR/SWI', [8, 0]), bot('FR/SWI', [5, 6], { blocks: 1 }), bot('FR/SWI', [8, 2]), bot('FR/SWI', [8, 3]), top('FR/LN', [4, 6]), top('FR/LN', [0, 0])],
+      units: [bot('FR/SWI', [8, 0]), bot('FR/SWI', [5, 6], { blocks: 1 }), bot('FR/SWI', [8, 2]), bot('FR/SWI', [8, 3]), top('FR/LN', [4, 6]), top('FR/LN', [0, 0]), bot('FR/LN', [4, 7])],
     });
     damage(s, { emit: () => undefined }, s.units[0], 5, 'earlier');
-    const d = play(s, 'forward', ['u2', 'u3', 'u4']);
+    const d = play(s, 'forward', ['u2', 'u3', 'u4', 'u7']);
     endMoves(d);
     expect(d.pending?.kind).toBe('battle');
     ev(d);
@@ -92,10 +92,13 @@ describe('101: the Swiss break (S30)', () => {
     expect(es.filter((e) => e.t === 'eliminated')).toEqual([{ t: 'eliminated', id: 'u2' }]);
     expect(removedEvents(es)).toEqual([{ t: 'removed', id: 'u3', reason: 'broken' }, { t: 'removed', id: 'u4', reason: 'broken' }]);
     expect(d.state.units.filter((x) => x.key === 'FR/SWI')).toHaveLength(0);
+    // still in the battle phase: the removed units are no longer ordered and cannot attack; the unbattled FR/LN can
+    expect(d.pending?.kind).toBe('battle');
     for (const gone of ['u2', 'u3', 'u4']) expect(d.state.turn.ordered[gone]).toBeUndefined();
+    expect(d.state.turn.ordered['u7']).toBeDefined();
     expect(d.state.winner).toBeNull();
-    // the turn goes on: the removed units are not offered, and the game reaches the next card decision
-    expect(d.pending?.kind).not.toBe('battle'); // nothing left that can battle
+    expect(d.answer({ kind: 'attack', unit: 'u3', target: H(4, 6) })).toBe(false);
+    d.lastError = null;
     endTurn(d);
     expect(d.pending).toMatchObject({ kind: 'playCard', side: 'top' });
     expect(violations(d.state, true)).toEqual([]);
@@ -114,13 +117,27 @@ describe('101: the Swiss break (S30)', () => {
   it("101: the other side's Swiss have no such rule", () => {
     const s = build({
       sideRules: BREAK,
-      units: [top('FR/SWI', [0, 0]), top('FR/SWI', [0, 1]), top('FR/SWI', [0, 2]), bot('FR/SWI', [8, 0]), bot('FR/SWI', [8, 1]), bot('FR/LN', [8, 8])],
+      units: [...[0, 1, 2, 3].map((c) => top('FR/SWI', [0, c])), ...[0, 1, 2, 3].map((c) => bot('FR/SWI', [8, c])), bot('FR/LN', [8, 8])],
     });
     const { ctx, events } = recorder();
     damage(s, ctx, s.units[0], 5, 'test');
-    damage(s, ctx, s.units[0], 5, 'test');
-    expect(ids(s)).toEqual(['u3', 'u4', 'u5', 'u6']);
+    damage(s, ctx, s.units[0], 5, 'test'); // two top Swiss lost: the other two stay
+    expect(ids(s)).toEqual(['u3', 'u4', 'u5', 'u6', 'u7', 'u8', 'u9']);
     expect(removedEvents(events)).toHaveLength(0);
+    damage(s, ctx, s.units.find((x) => x.id === 'u5')!, 5, 'test');
+    damage(s, ctx, s.units.find((x) => x.id === 'u6')!, 5, 'test'); // two bottom Swiss lost: theirs break
+    expect(ids(s)).toEqual(['u3', 'u4', 'u9']);
+    expect(removedEvents(events).map((e) => (e as { id: string }).id)).toEqual(['u7', 'u8']);
+  });
+
+  it('101: a break updates a held objective of the broken side (S30)', () => {
+    const s = swissBattle({ objectives: [{ kind: 'tempHex', side: 'bottom', hex: [8, 3] }] });
+    s.special.objState[0].held = true;
+    const { ctx, events } = recorder();
+    damage(s, ctx, s.units[0], 5, 'test');
+    damage(s, ctx, s.units[0], 5, 'test'); // u4 on the objective hex is removed with the rest
+    expect(s.special.objState[0].held).toBe(false);
+    expect(events.some((e) => e.t === 'held' && e.side === 'bottom')).toBe(true);
   });
 
   it('101 (real battle): the second FR/SWI lost removes the other two; Schramm stays alone', () => {
@@ -228,17 +245,20 @@ describe('106: the shrinking hand (S33, S46)', () => {
     expect(violations(s, true)).toEqual([]);
   });
 
-  it('106: the random card is seeded: the same seed takes the same card', () => {
-    const taken = (seed: number): number[] => {
+  it('106: the random card is seeded: the same seed takes the same card (S33)', () => {
+    const taken = (seed: number): { cards: number[]; calls: number } => {
       const s = shrinkBattle(seed);
+      s.players.top.hand = [0, 1, 2, 3, 4, 5]; // the same hand for every seed: only the seed varies
+      const calls = s.rngCalls;
       const { ctx, events } = recorder();
       gains(s, ctx, 3);
-      return events.flatMap((e) => (e.t === 'discarded' ? [e.card] : []));
+      return { cards: events.flatMap((e) => (e.t === 'discarded' ? [e.card] : [])), calls: s.rngCalls - calls };
     };
     expect(taken(7)).toEqual(taken(7));
     expect(taken(8)).toEqual(taken(8));
-    const all = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((x) => taken(x).join(','));
-    expect(new Set(all).size).toBeGreaterThan(1);
+    expect(taken(7).calls).toBe(3); // one random draw per card taken
+    const all = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((x) => taken(x).cards.join(','));
+    expect(new Set(all).size).toBeGreaterThan(2);
   });
 
   it('106: a banner while no card is held takes its card right after the next draw (S46)', () => {
@@ -265,6 +285,37 @@ describe('106: the shrinking hand (S33, S46)', () => {
     expect(taken).toHaveLength(1); // the drawn card goes at once: 0 + 1 + 3 squares > 3
     expect(d.state.players.top.hand).toHaveLength(0);
     expect(d.state.players.top.squareTrack.filter((c) => c !== null)).toHaveLength(3);
+    expect(violations(d.state, true)).toEqual([]);
+  });
+
+  it('106: the side that is not moving takes its owed card after its First Strike replacement draw (S46)', () => {
+    // top holds 3 squares and one First Strike (size 4). It plays the First Strike on the enemy turn, so it holds nothing when the banner falls.
+    const s = shrinkBattle(4242, {
+      topCards: 4,
+      first: 'bottom',
+      units: [bot('BR/LN', [5, 6]), top('BR/LN', [4, 6]), top('BR/LN', [0, 2], { square: 1 }), top('BR/LN', [0, 6], { square: 2 }), top('BR/LN', [0, 9], { square: 3 }), bot('BR/LN', [4, 7])],
+    });
+    s.special.handSize.top = 4;
+    giveCard(s, 'top', 'firstStrike');
+    const d = play(s, 'forward', ['u1', 'u6'], { keepFS: true });
+    endMoves(d);
+    ev(d);
+    forceDice(n('cavalry', 40));
+    must(d, { kind: 'attack', unit: 'u1', target: H(4, 6) });
+    must(d, { kind: 'defend', choice: 'firstStrike' });
+    expect(d.pending?.kind).toBe('battle'); // u6 can still attack: the turn, and its draw, are not over
+    expect(d.state.players.top.hand).toHaveLength(0);
+    const { ctx, events } = recorder();
+    gains(d.state, ctx, 1);
+    expect(events.filter((e) => e.t === 'discarded')).toHaveLength(0);
+    expect(d.state.special.handSize.top).toBe(3);
+    ev(d);
+    endTurn(d);
+    expect(d.pending).toMatchObject({ kind: 'playCard', side: 'top' });
+    const es = ev(d);
+    expect(es.filter((e) => e.t === 'draw' && e.side === 'top')).toHaveLength(1);
+    expect(es.filter((e) => e.t === 'discarded' && e.side === 'top')).toHaveLength(1);
+    expect(d.state.players.top.hand).toHaveLength(0);
     expect(violations(d.state, true)).toEqual([]);
   });
 
