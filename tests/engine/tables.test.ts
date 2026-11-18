@@ -7,42 +7,44 @@ import type { CardKind } from '../../src/engine/types';
 import { UNIT_STATS, retreatDistance } from '../../src/engine/units';
 
 const S = (k: RowKey) => UNIT_STATS[k];
+/** The base game's rows (Expansion #1's twelve are checked in tests/rules/exp1-units.test.ts). */
+const BASE = UNIT_KEYS.filter((k) => UNIT_STATS[k].expansion === 'base');
 
 describe('unit, terrain and card tables', () => {
-  it('UNIT_KEYS are the 34 rows of RR §2, exactly the keys the 15 battles use', () => {
-    expect(UNIT_KEYS).toHaveLength(34);
+  it('BASE are the 34 rows of RR §2, exactly the keys the 15 battles use', () => {
+    expect(BASE).toHaveLength(34);
     const battles = import.meta.glob<{ units: { key: string }[] }>('../../design/data/0??.json', { eager: true, import: 'default' });   // base battles only; 1xx files are Spanish
     expect(Object.keys(battles)).toHaveLength(15);
     const used = new Set(Object.values(battles).flatMap((b) => b.units.map((x) => x.key)));
-    expect([...used].sort()).toEqual([...UNIT_KEYS].sort());
-    expect(isRowKey('FR/LNC')).toBe(false); expect(isUnitKey('FR/LNC')).toBe(true);
+    expect([...used].sort()).toEqual([...BASE].sort());
+    expect(UNIT_KEYS).toHaveLength(34 + 12); expect(isRowKey('FR/LNC')).toBe(true); expect(isRowKey('BR/YG')).toBe(false); expect(isUnitKey('BR/YG')).toBe(true);
   });
   it('blocks (RR §2.2–§2.4)', () => {
-    expect(UNIT_KEYS.filter((k) => S(k).blocks === 5)).toEqual(['BR/LT', 'BR/GG']);
-    expect(UNIT_KEYS.filter((k) => S(k).blocks === 3)).toEqual(['FR/FA', 'FR/HA', 'FR/GA', 'BR/RI', 'BR/LC', 'BR/HC', 'BR/GHC',
+    expect(BASE.filter((k) => S(k).blocks === 5)).toEqual(['BR/LT', 'BR/GG']);
+    expect(BASE.filter((k) => S(k).blocks === 3)).toEqual(['FR/FA', 'FR/HA', 'FR/GA', 'BR/RI', 'BR/LC', 'BR/HC', 'BR/GHC',
       'BR/FA', 'BR/HA', 'PT/LT', 'PT/LC', 'PT/HC', 'PT/FA', 'AL/LT', 'AL/LC', 'AL/FA']);
   });
   it('retreat per flag: AL/LN 2, every ML 3, others 1 (R10)', () => {
-    expect(UNIT_KEYS.filter((k) => S(k).retreat.first !== 1)).toEqual(['FR/ML', 'PT/ML', 'AL/LN', 'AL/ML']);
+    expect(BASE.filter((k) => S(k).retreat.first !== 1)).toEqual(['FR/ML', 'PT/ML', 'AL/LN', 'AL/ML']);
     expect(retreatDistance(S('AL/LN'), 2)).toBe(4); expect(retreatDistance(S('FR/ML'), 2)).toBe(6); expect(retreatDistance(S('FR/LN'), 0)).toBe(0);
   });
   it('flags ignored: GR, YG, CU 1; OG, GG, GHC, GA 2 (RR §10.2)', () => {
-    expect(UNIT_KEYS.filter((k) => S(k).flagIgnore === 1)).toEqual(['FR/GR', 'FR/YG', 'FR/CU', 'BR/GR']);
-    expect(UNIT_KEYS.filter((k) => S(k).flagIgnore === 2)).toEqual(['FR/OG', 'FR/GHC', 'FR/GA', 'BR/GG', 'BR/GHC']);
+    expect(BASE.filter((k) => S(k).flagIgnore === 1)).toEqual(['FR/GR', 'FR/YG', 'FR/CU', 'BR/GR']);
+    expect(BASE.filter((k) => S(k).flagIgnore === 2)).toEqual(['FR/OG', 'FR/GHC', 'FR/GA', 'BR/GG', 'BR/GHC']);
   });
-  it('every base melee row has movedPlus 0; SWI is a code with no row', () => {
-    for (const k of UNIT_KEYS) { const m = S(k).melee; if (m.kind === 'blocks') expect(m.movedPlus).toBe(0); }
-    expect(ARM_OF.SWI).toBe('infantry'); expect(isUnitKey('SP/SWI')).toBe(true); expect(isRowKey('SP/SWI')).toBe(false);
+  it('every base melee row has movedPlus 0; SWI is an infantry code with rows in Expansion #1', () => {
+    for (const k of BASE) { const m = S(k).melee; if (m.kind === 'blocks') expect(m.movedPlus).toBe(0); }
+    expect(ARM_OF.SWI).toBe('infantry'); expect(isUnitKey('SP/SWI')).toBe(true); expect(isRowKey('SP/SWI')).toBe(true);
   });
   it('ML and RI score no sabre hits; only FR/CU ignores an infantry fire hit', () => {
-    expect(UNIT_KEYS.filter((k) => !S(k).sabreHits)).toEqual(['FR/ML', 'BR/RI', 'PT/ML', 'AL/ML']);
-    expect(UNIT_KEYS.filter((k) => S(k).ignoresInfantryFireHits)).toEqual(['FR/CU']);
+    expect(BASE.filter((k) => !S(k).sabreHits)).toEqual(['FR/ML', 'BR/RI', 'PT/ML', 'AL/ML']);
+    expect(BASE.filter((k) => S(k).ignoresInfantryFireHits)).toEqual(['FR/CU']);
   });
   it('moving fire rounds up for FR and BR rows, down for PT and AL rows (R5)', () => {
-    for (const k of UNIT_KEYS) { const f = S(k).fire; if (f.kind === 'musket') expect(f.round).toBe(['PT', 'AL'].includes(k.slice(0, 2)) ? 'down' : 'up'); }
+    for (const k of BASE) { const f = S(k).fire; if (f.kind === 'musket') expect(f.round).toBe(['PT', 'AL'].includes(k.slice(0, 2)) ? 'down' : 'up'); }
   });
   it('every row has the arm of its code, a name, and the base box', () => {
-    for (const k of UNIT_KEYS) {
+    for (const k of BASE) {
       expect(S(k).arm).toBe(ARM_OF[k.split('/')[1] as keyof typeof ARM_OF]);
       expect(S(k).expansion).toBe('base'); expect(S(k).name).not.toBe('');
     }
