@@ -38,8 +38,11 @@ export function greedyAssign(
 /** A random legal answer for any decision. */
 export function randomAnswer(s: GameState, d: Decision, rnd: Rand): Answer {
   switch (d.kind) {
-    case 'playCard':
-      return { kind: 'playCard', card: pick(s.players[d.side].hand, rnd) };
+    case 'playCard': {
+      // a side bound to its opening card on its first turn (RR §15.8) has one legal card
+      const bound = s.special.turnsDone[d.side] === 0 ? (s.special.moveFirst?.committed[d.side] ?? null) : null;
+      return { kind: 'playCard', card: bound ?? pick(s.players[d.side].hand, rnd) };
+    }
     case 'orders': {
       const o = sampleOrders(s, d.side, d.card, rnd);
       return o.single ? { kind: 'orders', pieces: o.pieces, single: true } : { kind: 'orders', pieces: o.pieces };

@@ -394,7 +394,9 @@ describe('Guerrilla Action: undo and replay (Review Focus 4)', () => {
     const { d: b, ids: ib } = dealt(pos('bottom', 1), { top: ['attackC'], bottom: ['probeC'] });
     must(b, { kind: 'playCard', card: ib['top:attackC'] });
     forceDice(['infantry']);
+    const rngBefore = b.state.rngCalls;
     yes(b);
+    expect(b.state.rngCalls).toBe(rngBefore + 1);   // the roll used a die: undo past it is blocked by the die itself
     expect(b.undoStep()).toBeNull();
     must(b, { kind: 'playCard', card: ib['bottom:probeC'] });
     expect(b.undoStep()).toBe('card');
