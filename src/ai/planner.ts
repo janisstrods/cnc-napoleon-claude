@@ -12,7 +12,8 @@
 // - plan building draws on the nodes left above the screening reserve (k0 samples for every card still to screen), so the floor
 //   (cards × k0 nodes) always buys every card its k0 samples; once that share is gone, a plan is still built for every card but
 //   uncharged and without scoring: its card step on the Stepper, and moves by the zero-cost step towards the goal (moves.ts
-//   `nearestToGoal`);
+//   `nearestToGoal`); a widened plan is built only when the nodes left pay for its line, its move scoring and its own k0 samples,
+//   which are then reserved like the screening's, so no plan is built that cannot be sampled;
 // - fixed per-decision setup is not a node: `makeEstCtx` (made once in `makeCtx`, after the deadline starts, so its time counts
 //   against the wall clock), one quick score and one order-candidate list per card, and the base plan's card step when the planning
 //   share is gone. It is bounded by the hand size (measured 0.06–0.19 ms for `makeEstCtx` on 001/004/015).
@@ -24,6 +25,8 @@
 //   it as their "sampled" opponent hand (`sampledOppHolds`, `estCtxFor` from its side) — a pessimistic bias;
 // - inside a simulation `estCtxFor` keeps the first call's card value for the whole turn, and the final evaluation prices our own
 //   squares with the root decision's card value (the hand has changed by one card): approximations;
+// - an Élan plan's moves are planned in each sample from the planning share; at the floor that share is empty, so its samples move
+//   by the zero-cost step towards the goal and the card is undervalued there (Task 11 tunes);
 // - strike-first piece ordering (Ancients) is not ported (optional): moves.ts plans the front units first; add it only if a
 //   shooter's only firing hex turns out to be taken by an earlier-planned piece.
 import {
@@ -136,6 +139,8 @@ export interface TurnPlan {
   /** Simulated turns played for this decision. */
   sims: number;
   cands?: PlanCandInfo[];
+  /** An Élan plan (`moves` empty): the movement style its winning variant planned the moves in, per sample. */
+  style?: MoveStyle;
 }
 
 /** A battle decision's share of the level's budget (time, or nodes in deterministic mode). */
@@ -203,7 +208,7 @@ interface Search {
   root: GameState;
   ctx: PlanCtx;
   sims: number;
-  /** Nodes still owed to the screening samples: plan building may not take them. */
+  /** Nodes still owed to samples not yet taken (screening, then the widened plans): plan building may not take them. */
   reserve: number;
   judgeEc: EstCtx;
   cands: Cand[];
@@ -278,6 +283,7 @@ function sample(S: Search, c: Cand): void {
   const rand = new Rng(seedAt(ctx, c.n) ^ 0x5bd1e995);
   const st = blindClone(root, ctx.me);
   determinize(st, ctx.me, rand);
+  if (S.reserve > 0) S.reserve--; // this sample's node was owed
   runTurn(st, simPolicy(S, c, rand), rand, ctx.budget);
   const v = judge(st, ctx, S.judgeEc);
   c.vals.push(v);
@@ -302,7 +308,9 @@ function sampleTo(S: Search, cands: readonly Cand[], n: number): void {
  * before the movement by the policies, then plan the moves greedily in `style` (scored targets charge a plan view of at most `cap`
  * nodes). An Élan's moves are left to each sample. The plan is added unless an identical one exists.
  */
-function buildCand(S: Search, card: number, oc: OrderCandidate | null, style: MoveStyle, W: Weights, tag: string, cap: number): Cand | null {
+function buildCand(
+  S: Search, card: number, keep: number, oc: OrderCandidate | null, style: MoveStyle, W: Weights, tag: string, cap: number,
+): Cand | null {
   const { ctx, root } = S;
   const me = ctx.me;
   const rand = new Rng(ctx.rand.u32());
@@ -343,7 +351,7 @@ function buildCand(S: Search, card: number, oc: OrderCandidate | null, style: Mo
   const c: Cand = {
     card, kind, orders, moves, online, style,
     label: `${kind}${eff && eff !== kind ? `->${eff}` : ''} [${orders ? orders.pieces.join(',') : ''}] ${tag}`,
-    keep: keepValue(root, me, card, ctx.W, ctx.ec.occ),
+    keep,
     vals: [], sum: 0, n: 0, key,
   };
   S.cands.push(c);
@@ -458,13 +466,10 @@ export function planTurn(root: GameState, ctx: PlanCtx): TurnPlan {
     const cap = Math.floor(surplus(S) / (byQuick.length - i));
     let c: Cand | null = null;
     for (const oc of ocs.length ? ocs : [null]) {
-      c = buildCand(S, card, oc, 'base', ctx.W, 'base', cap);
+      c = buildCand(S, card, keep.get(card)!, oc, 'base', ctx.W, 'base', cap);
       if (c) break;
     }
-    for (let j = 0; c && j < cfg.k0 && !ctx.budget.spent(); j++) {
-      S.reserve--;
-      sample(S, c);
-    }
+    for (let j = 0; c && j < cfg.k0 && !ctx.budget.spent(); j++) sample(S, c);
     S.reserve = (byQuick.length - i - 1) * cfg.k0;
   }
   S.reserve = 0;
@@ -473,20 +478,32 @@ export function planTurn(root: GameState, ctx: PlanCtx): TurnPlan {
   // 5. widen the best cards: more order candidates and movement styles, then perturbed plans for the two leaders
   const bestOf = (card: number): number => Math.max(...S.cands.filter((c) => c.card === card).map(scoreOf));
   const top = cards.filter(screened).sort((a, b) => bestOf(b) - bestOf(a) || a - b).slice(0, cfg.topCards);
+  // a widened plan is built only when the nodes left, after the samples owed to the plans already built, pay for its line, its
+  // move scoring (at most a quarter of them) and its own k0 samples; the samples it will need are then reserved
+  const wideCap = (): number => {
+    const avail = ctx.budget.maxNodes - ctx.budget.nodes - S.reserve;
+    return Math.min(Math.floor(avail / 4), avail - cfg.k0);
+  };
+  const widen = (out: Cand[], build: (cap: number) => Cand | null): void => {
+    const cap = wideCap();
+    if (cap < 1 || ctx.budget.spent()) return;
+    const c = build(cap);
+    if (!c) return;
+    out.push(c);
+    S.reserve += cfg.k0;
+  };
   const fresh: Cand[] = [];
-  const wideCap = (): number => Math.floor((ctx.budget.maxNodes - ctx.budget.nodes) / 4);
   for (const card of top) {
     const ocs = (ocsOf.get(card) ?? []).slice(0, cfg.orderCands);
     for (let oi = 0; oi < ocs.length; oi++) {
       for (const style of STYLES.slice(0, oi === 0 ? cfg.moveVariants : Math.min(2, cfg.moveVariants))) {
         if (oi === 0 && style === 'base') continue;
-        if (ctx.budget.spent()) break;
-        const c = buildCand(S, card, ocs[oi], style, ctx.W, `${style}${oi ? ` o${oi}` : ''}`, wideCap());
-        if (c) fresh.push(c);
+        widen(fresh, (cap) => buildCand(S, card, keep.get(card)!, ocs[oi], style, ctx.W, `${style}${oi ? ` o${oi}` : ''}`, cap));
       }
     }
   }
   sampleTo(S, fresh, cfg.k0);
+  S.reserve = 0;
   let pool = S.cands.filter((c) => c.n > 0).sort(byScore);
   const extra: Cand[] = [];
   for (let i = 0; i < cfg.extraVariants && pool.length && !ctx.budget.spent(); i++) {
@@ -494,10 +511,10 @@ export function planTurn(root: GameState, ctx: PlanCtx): TurnPlan {
     if (lead.online) continue;
     const r = ctx.rand;
     const Wv: Weights = { ...ctx.W, riskSelf: ctx.W.riskSelf * (0.65 + 0.7 * r.next()), advance: ctx.W.advance * (0.4 + 1.2 * r.next()) };
-    const c = buildCand(S, lead.card, lead.orders, 'noisy', Wv, `var${i}`, wideCap());
-    if (c) extra.push(c);
+    widen(extra, (cap) => buildCand(S, lead.card, lead.keep, lead.orders, 'noisy', Wv, `var${i}`, cap));
   }
   sampleTo(S, extra, cfg.k0);
+  S.reserve = 0;
 
   // 6. successive halving up to kMax, then the leftover budget on close rivals
   pool = S.cands.filter((c) => c.n > 0).sort(byScore);
@@ -542,7 +559,10 @@ export function planTurn(root: GameState, ctx: PlanCtx): TurnPlan {
     const est = rootV + quick.get(u)!;
     if (est > scoreOf(best)) return quickPlan(u, 'quick, unscreened', est, ocsOf.get(u));
   }
-  return { card: best.card, orders: best.orders, moves: best.online ? [] : best.moves, label: best.label, score: scoreOf(best), sims: S.sims, cands: info(S) };
+  return {
+    card: best.card, orders: best.orders, moves: best.online ? [] : best.moves, label: best.label, score: scoreOf(best), sims: S.sims, cands: info(S),
+    ...(best.online ? { style: best.style } : {}),
+  };
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -589,7 +609,8 @@ const sameAnswer = (a: Answer, b: Answer): boolean => JSON.stringify(a) === JSON
 
 /**
  * The battle decision of `ctx.me` on `s` (at its `battle` decision): the attacks ranked by estimate. Without rollouts (or while
- * forced dice are queued) the best one above `attackThreshold`, the estimates noised by `battleNoise`, else end the phase. With
+ * forced dice are queued) the best one above `attackThreshold`, the estimates noised by `battleNoise`, else end the phase; every
+ * answer returned passes `answerError`. With
  * rollouts, the top `battleCands` attacks and ending the phase are rolled out in rounds under common seeds (whole rounds only, so
  * the node cap holds), and the best mean wins; at a match point or after a game-deciding rollout the two best get more rounds.
  */
@@ -607,7 +628,7 @@ export function decideBattle(s: GameState, ctx: PlanCtx): Answer {
   const noisy = opts.map((o) => o.v + (cfg.battleNoise > 0 ? cfg.battleNoise * ctx.rand.normal() : 0));
   let gi = 0;
   for (let i = 1; i < opts.length; i++) if (noisy[i] > noisy[gi]) gi = i;
-  const greedy = noisy[gi] > W.attackThreshold ? opts[gi].a : end;
+  const greedy = noisy[gi] > W.attackThreshold && answerError(s, d, opts[gi].a) === null ? opts[gi].a : end;
   if (cfg.battleRollouts <= 0 || forcedDiceLeft() > 0) return greedy;
 
   const answers = [...opts].sort((x, y) => y.v - x.v).slice(0, Math.max(1, cfg.battleCands)).map((o) => o.a);

@@ -2,10 +2,14 @@
 // simulations and rollouts; deterministic mode never reads a clock; the plans are legal and blind to hidden information.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
-  CARD_LIST, GameDriver, answerError, cardKind, cloneState, forceDice, forcedDiceLeft, other,
+  CARD_LIST, GameDriver, answerError, cardKind, cloneState, createGame, forceDice, forcedDiceLeft, moveFirstOptions, other, unitById,
   type Answer, type CardKind, type Decision, type GameState, type Side,
 } from '../../src/engine';
+import { SCENARIOS } from '../../src/scenarios';
+import * as cardsense from '../../src/ai/cardsense';
 import { keepValue } from '../../src/ai/cardsense';
+import { quickCardScore } from '../../src/ai/ordering';
+import * as sim from '../../src/ai/sim';
 import * as evaluateModule from '../../src/ai/evaluate';
 import { isDeterminised } from '../../src/ai/view';
 import { greedyBattle } from '../../src/ai/policies';
@@ -359,4 +363,230 @@ describe('decideBattle', () => {
   });
 });
 
-void cardKind;
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Review round 1
+
+/** A wider position with moves to make (several units out of the enemy's reach). */
+function wideKit(): GameState {
+  const s = build({
+    units: [bot('BR/LN', [8, 4]), bot('BR/LN', [8, 6]), bot('BR/LC', [8, 8]), bot('BR/FA', [7, 6]), top('FR/LN', [2, 4]), top('FR/LN', [2, 7]), top('FR/HC', [1, 9])],
+  });
+  noFS(s);
+  return s;
+}
+
+/** The keep-value kit: Probe and Assault order the same two centre units; the Scouts order nothing. */
+function keepKit(): { s: GameState; probe: number; assault: number } {
+  const s = build({
+    cards: 4,
+    units: [bot('BR/LN', [6, 5]), bot('BR/LN', [6, 7]), top('FR/LN', [4, 5], { blocks: 2 }), top('FR/LN', [4, 7], { blocks: 2 }), top('FR/LN', [1, 1])],
+  });
+  const [probe, assault] = holding(s, ME, ['probeC', 'assaultC', 'scoutL', 'scoutR']);
+  noFS(s);
+  return { s, probe, assault };
+}
+
+describe('planTurn (review round 1)', () => {
+  it('widening never builds a plan it cannot sample: every plan built gets k0 samples, within the node cap (tight marshal budget)', () => {
+    let widened = 0;
+    for (const scale of [0.02, 0.03, 0.05]) {
+      const s = wideKit();
+      const ctx = ctxOf(s, 2, { scale });
+      const plan = planTurn(s, ctx);
+      expect(ctx.budget.nodes).toBeLessThanOrEqual(ctx.budget.maxNodes);
+      const cands = plan.cands ?? [];
+      widened += cands.length - new Set(s.players[ME].hand.map(cardKind)).size;
+      for (const c of cands) expect(c.n, `${c.label} at scale ${scale}`).toBeGreaterThanOrEqual(LEVELS[2].k0);
+    }
+    expect(widened, 'some widening happened').toBeGreaterThan(0);
+  });
+
+  it('the samples replay the stored moves: a melee three hexes off is won by moving first', () => {
+    // our light cavalry (no fire) three hexes from a 1-block Guard, one banner to win: the plan must ride up to it, then charge
+    const s = build({ banners: 1, units: [bot('BR/LC', [7, 6]), top('FR/GR', [4, 6], { blocks: 1 }), top('FR/LN', [1, 2])] });
+    const ids = holding(s, ME, ['attackL', 'attackR', 'attackC', 'probeL', 'probeR']);
+    noFS(s);
+    const plan = planTurn(s, ctxOf(s, 1, { scale: 0.05 }));
+    expect(plan.card).toBe(ids[2]);
+    expect(plan.moves.length).toBeGreaterThan(0);
+    const won = (plan.cands ?? []).filter((c) => c.card === ids[2] && c.n > 0).map((c) => c.mean);
+    // the moving plan's samples win most of the time (a plan whose moves were not replayed could never fight)
+    expect(Math.max(...won)).toBeGreaterThan(50);
+  });
+
+  it('level 0 noise changes the pick across seeds on a near tie; without noise the pick is fixed', () => {
+    const picks = (over: Partial<LevelCfg>): Set<number> =>
+      new Set([...Array(12).keys()].map((i) => {
+        const { s } = keepKit();
+        return planTurn(s, ctxOf(s, 0, { seed: i + 1, scale: 0.05, over: { hastyShare: 0, ...over } })).card;
+      }));
+    expect(picks({}).size).toBeGreaterThan(1);
+    expect(picks({ evalNoise: 0, pickTemp: 0 }).size).toBe(1);
+  });
+
+  it('the hand-floor penalty is subtracted from every sample', () => {
+    const { s } = keepKit();
+    const run = (pen: number): Map<string, { n: number; mean: number }> => {
+      const spy = vi.spyOn(cardsense, 'handFloorPenalty').mockReturnValue(pen);
+      try {
+        const plan = planTurn(cloneState(s), ctxOf(s, 1, { seed: 3, scale: 0.05 }));
+        return new Map((plan.cands ?? []).map((c) => [c.label, { n: c.n, mean: c.mean }]));
+      } finally {
+        spy.mockRestore();
+      }
+    };
+    const none = run(0);
+    const five = run(5);
+    expect(five.size).toBe(none.size);
+    for (const [label, c] of none) {
+      if (c.n === 0) continue;
+      expect(five.get(label)!.n).toBe(c.n);
+      expect(five.get(label)!.mean, label).toBeCloseTo(c.mean - 5, 9);
+    }
+  });
+
+  it('a deadline cut: screened cards keep their partial means, unscreened ones their quick score on the evaluation scale', () => {
+    // the clock jumps past the deadline at a later check (the budget reads it at 0 charges, then every 16): the screening is cut
+    let branches = 0;
+    let cuts = 0;
+    const kits: (() => GameState)[] = [() => winKit().s, () => keepKit().s, wideKit];
+    for (const make of kits) {
+      for (const [level, after] of [[1, 1], [1, 2], [2, 1], [2, 2], [2, 3]] as const) {
+        let reads = 0;
+        const jump = (): number => (reads++ <= after ? 0 : 1e9);
+        const s = make();
+        const ctx = makeCtx(ME, W, W, new Rng(2), { ...LEVELS[level], hastyShare: 0 }, 1, false, jump, s);
+        const plan = planTurn(s, ctx);
+        const sampled = new Set((plan.cands ?? []).filter((c) => c.n > 0).map((c) => cardKind(c.card)));
+        const kinds = [...new Set(s.players[ME].hand.map(cardKind))];
+        const unscreened = kinds.filter((k) => !sampled.has(k));
+        if (!unscreened.length) continue;
+        cuts++;
+        if (!sampled.size) {
+          expect(plan.label).toContain('quick');
+          continue;
+        }
+        // the rule: the best screened score against the root evaluation plus the best unscreened quick score
+        const best = Math.max(...(plan.cands ?? []).filter((c) => c.n > 0).map((c) => c.score));
+        const q = (k: CardKind): number => {
+          const card = s.players[ME].hand.find((c) => cardKind(c) === k)!;
+          return quickCardScore(s, ME, card, W, ctx.ec) - keepValue(s, ME, card, W);
+        };
+        const top = [...unscreened].sort((a, b) => q(b) - q(a))[0];
+        const est = realEvaluate(s, ME, W, ctx.ec) + q(top);
+        if (est > best) {
+          branches++;
+          expect(cardKind(plan.card)).toBe(top);
+          expect(plan.label).toContain('unscreened');
+          expect(plan.score).toBeCloseTo(est, 9);
+        } else {
+          expect(plan.label).not.toContain('unscreened');
+          expect(plan.score).toBeCloseTo(best, 9);
+        }
+      }
+    }
+    expect(cuts, 'some cut left a card unscreened').toBeGreaterThan(0);
+    expect(branches, 'some kit takes the unscreened card').toBeGreaterThan(0);
+  });
+
+  it('battle 116: the first turn plays the opening card committed to move first', () => {
+    const info = SCENARIOS.find((x) => x.id === '116')!;
+    let tested = 0;
+    for (let seed = 1; seed <= 30 && tested < 2; seed++) {
+      // commit, for each side, the option the planner likes least (by quick score), so the binding must override it
+      const d = new GameDriver(createGame(info.setup, seed));
+      while (d.pending?.kind === 'moveFirst') {
+        const side = d.pending.side;
+        const st = d.state;
+        const ec0 = makeCtx(side, W, W, new Rng(1), LEVELS[0], 0.01, true, null, st).ec;
+        const worst = [...moveFirstOptions(st, side)].sort((a, b) => quickCardScore(st, side, a, W, ec0) - quickCardScore(st, side, b, W, ec0) || a - b)[0];
+        must(d, { kind: 'playCard', card: worst });
+      }
+      if (d.pending?.kind !== 'playCard') continue;
+      const s = cloneState(d.state);
+      const me = s.active;
+      const committed = s.special.moveFirst?.committed[me] ?? null;
+      if (committed === null) continue;
+      // the same position unbound: the planner would play another card
+      const free = cloneState(s);
+      free.special.moveFirst!.committed[me] = null;
+      const unbound = planTurn(free, makeCtx(me, W, W, new Rng(4), { ...LEVELS[1], hastyShare: 0 }, 0.02, true, null, free));
+      if (cardKind(unbound.card) === cardKind(committed)) continue;
+      const plan = planTurn(s, makeCtx(me, W, W, new Rng(4), { ...LEVELS[1], hastyShare: 0 }, 0.02, true, null, s));
+      expect(plan.card).toBe(committed);
+      expect(answerError(s, { kind: 'playCard', side: me }, { kind: 'playCard', card: plan.card })).toBeNull();
+      // the paths without simulation (a hasty turn, forced dice) are bound too
+      const hasty = planTurn(s, makeCtx(me, W, W, new Rng(4), { ...LEVELS[0], hastyShare: 1 }, 0.02, true, null, s));
+      expect(hasty.label).toContain('hasty');
+      expect(hasty.card).toBe(committed);
+      forceDice(['sabre']);
+      const forced = planTurn(s, makeCtx(me, W, W, new Rng(4), LEVELS[2], 0.02, true, null, s));
+      forceDice([]);
+      expect(forced.card).toBe(committed);
+      tested++;
+    }
+    expect(tested).toBeGreaterThan(0);
+  });
+
+  it('an Élan plan names the movement style its moves are to be planned in', () => {
+    const s = build({ units: [bot('BR/LN', [5, 6]), bot('BR/LN', [5, 5]), top('FR/LN', [4, 6], { blocks: 1 }), top('FR/LN', [4, 5], { blocks: 1 }), top('FR/LN', [1, 1])] });
+    const [elan] = holding(s, ME, ['elan', 'scoutL', 'scoutR', 'probeL', 'probeR']);
+    noFS(s);
+    const plan = planTurn(s, ctxOf(s, 1, { scale: 0.05 }));
+    expect(plan.card).toBe(elan);
+    expect(plan.moves).toEqual([]);
+    expect(['base', 'hold', 'bold', 'safe', 'noisy']).toContain(plan.style);
+    const keepPlan = planTurn(keepKit().s, ctxOf(keepKit().s, 1, { scale: 0.05 }));
+    expect(keepPlan.style).toBeUndefined();
+  });
+});
+
+describe('decideBattle (review round 1)', () => {
+  /** Two of our units, each with a target: a sure kill of a worn unit and a poor fire at a full one; five banners to win. */
+  function twoAttacks(): GameDriver {
+    const s = build({
+      banners: 5,
+      units: [bot('BR/LN', [5, 6]), bot('BR/LN', [5, 5]), top('FR/LN', [4, 7], { blocks: 1 }), top('FR/GR', [4, 5]), top('FR/LN', [1, 10])],
+    });
+    noFS(s);
+    const d = toBattle(s, 'attackC', ['u1', 'u2']);
+    expect(d.pending?.kind).toBe('battle');
+    return d;
+  }
+
+  it('ranks the attacks by estimate and rolls out the best against ending, without extra rounds away from a match point', () => {
+    const d = twoAttacks();
+    const s = d.state;
+    const cfg: LevelCfg = { ...LEVELS[1], battleCands: 1 };
+    const ctx = makeCtx(ME, W, W, new Rng(5), cfg, 1, true, null, s, true);
+    const a = decideBattle(s, ctx);
+    expect(a).toMatchObject({ kind: 'attack', target: unitById(s, 'u3')!.hex });
+    // one attack and ending the phase, battleRollouts rounds each, and no game-deciding extra rounds
+    expect(ctx.budget.nodes).toBe(cfg.battleRollouts * 2);
+  });
+
+  it('rolls every candidate of a round out under the same seed (common random numbers)', () => {
+    const d = twoAttacks();
+    const s = d.state;
+    const seeds: number[] = [];
+    const real = sim.runTurn;
+    const spy = vi.spyOn(sim, 'runTurn').mockImplementation((st, p, r, b) => {
+      seeds.push(st.rng); // determinize gave the clone its game seed from the round's generator
+      return real(st, p, r, b);
+    });
+    try {
+      const ctx = makeCtx(ME, W, W, new Rng(5), { ...LEVELS[1], battleRollouts: 6 }, 1, true, null, s, true);
+      decideBattle(s, ctx);
+    } finally {
+      spy.mockRestore();
+    }
+    const per = seeds.length / 6;
+    expect(Number.isInteger(per) && per >= 2).toBe(true);
+    for (let r = 0; r < 6; r++) {
+      const round = seeds.slice(r * per, (r + 1) * per);
+      expect(new Set(round).size, `round ${r}`).toBe(1);
+    }
+    expect(new Set(seeds).size).toBe(6);
+  });
+});
