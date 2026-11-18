@@ -1,4 +1,4 @@
-// Retreat paths (RR §1, §10.1). Pure functions. Leader retreats (→ T6b) and Retire and Reform (→ T8) are stubs.
+// Retreat paths (RR §1, §10.1). Pure functions. Retire and Reform (→ T8) is a stub.
 import { onBaseline, rearHexes } from './hex';
 import { attachedLeader, leaderAt, unitAt } from './query';
 import { passableFor } from './terrain';
@@ -92,8 +92,21 @@ export function leaderRetreatOptions(s: GameState, l: Leader): LeaderRetreatOpti
     }
   };
   walk(l.hex, [], []);
-  if (!out.length) return [{ path: [], end: l.hex, offBoard: false, escapes: [], attach: null, eliminated: true }];
-  return out.sort((a, b) => a.end - b.end || cmpPath(a.path, b.path) || Number(a.offBoard) - Number(b.offBoard));
+  const safe = out.filter((x) => !x.eliminated);
+  const pool = safe.length ? safe : out;
+  // one off-board form per escape set (the owner gains nothing from the others)
+  const seen = new Set<string>();
+  const kept = pool.filter((x) => {
+    if (!x.offBoard) return true;
+    const k = x.escapes.join(',');
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+  if (!kept.length) return [{ path: [], end: l.hex, offBoard: false, escapes: [], attach: null, eliminated: true }];
+  // the first option for an end hex is the safest (the UI picks the first match by end hex)
+  return kept.sort((a, b) => a.end - b.end || Number(a.eliminated) - Number(b.eliminated) || a.escapes.length - b.escapes.length
+    || Number(a.offBoard) - Number(b.offBoard) || cmpPath(a.path, b.path));
 }
 
 /** Retire and Reform paths. Stub: none (→ T8). */

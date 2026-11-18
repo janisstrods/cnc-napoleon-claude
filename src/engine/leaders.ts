@@ -3,7 +3,7 @@ import { ask, type Gen } from './decisions';
 import { emitRoll, killLeader } from './casualties';
 import { escapeDice, meleeDice, sabreKills } from './dice';
 import { onBaseline } from './hex';
-import { attachedLeader, unitById } from './query';
+import { attachedLeader, unitAt } from './query';
 import { leaderRetreatOptions } from './retreat';
 import { rollDice } from './rng';
 import type { FlowCtx, GameState, Leader, MeleeCtx, Unit } from './types';
@@ -46,27 +46,35 @@ export function* leaderLosesUnit(s: GameState, ctx: FlowCtx, l: Leader): Gen {
   const options = leaderRetreatOptions(s, l);
   const a = yield* ask(s, ctx, { kind: 'leaderRetreat', side: l.side, leader: l.id, options });
   const pick = options[(a as { index: number }).index];
-  for (const id of pick.escapes) {
-    const enemy = unitById(s, id)!;
-    const dice = escapeDice(s, enemy);
-    const faces = rollDice(s, dice);
+  const from = l.hex;
+  const seen = (i: number) => [from, ...pick.path.slice(0, i + 1)];
+  for (let i = 0; i < pick.path.length; i++) {
+    const enemy = unitAt(s, pick.path[i]);
+    if (!enemy || enemy.side === l.side || !pick.escapes.includes(enemy.id)) continue;
+    const faces = rollDice(s, escapeDice(s, enemy));
     emitRoll(ctx, 'escape', faces, faces.map((f) => f === 'sabre'), enemy.id, l.id);
     if (sabreKills(faces)) {
+      l.hex = enemy.hex;
+      ctx.emit({ t: 'leaderRetreat', id: l.id, path: seen(i), offBoard: false });
       killLeader(s, ctx, l, 'escape failed');
       return;
     }
   }
   if (pick.eliminated) {
+    if (pick.path.length) {
+      l.hex = pick.end;
+      ctx.emit({ t: 'leaderRetreat', id: l.id, path: [from, ...pick.path], offBoard: false });
+    }
     killLeader(s, ctx, l, 'no way out');
     return;
   }
-  const from = l.hex;
-  ctx.emit({ t: 'leaderRetreat', id: l.id, path: [from, ...pick.path], offBoard: pick.offBoard });
   if (pick.offBoard) {
+    ctx.emit({ t: 'leaderRetreat', id: l.id, path: [from, ...pick.path], offBoard: true });
     leaveMap(s, ctx, l);
     return;
   }
   l.hex = pick.end;
+  ctx.emit({ t: 'leaderRetreat', id: l.id, path: [from, ...pick.path], offBoard: false });
   if (pick.attach) ctx.emit({ t: 'attach', leader: l.id, unit: pick.attach });
 }
 
@@ -77,6 +85,7 @@ export function* leaderLosesUnit(s: GameState, ctx: FlowCtx, l: Leader): Gen {
 export function* loneLeaderMelee(s: GameState, ctx: FlowCtx, attacker: Unit, l: Leader, m: MeleeCtx): Gen<boolean> {
   const purpose = m.role === 'bonus' ? 'bonus' : 'melee';
   const dice = meleeDice(s, attacker, l, { role: m.role, moved: m.declaredMoved, declared: true });
+  if (dice === 0) return false;  // RR §3.2, R15: nothing to roll, he stays
   ctx.emit({ t: 'combat', purpose, attacker: attacker.id, target: l.id, dice });
   const faces = rollDice(s, dice);
   emitRoll(ctx, purpose, faces, faces.map((f) => f === 'sabre'), attacker.id, l.id);

@@ -1,7 +1,7 @@
 // Rules: RR §2.7, §3.3, §3.4, §6.2, §11.1, §11.2, §11.3, §11.4, §12.2 (design/rules-reference.md)
 import { describe, expect, it } from 'vitest';
 import type { DieFace, GameDriver, GameEvent, LeaderRetreatOption, RowKey } from '../../src/engine';
-import { OFF_BOARD, battleTargets, fireDice, retreatOptions, rowOf, supportCount } from '../../src/engine';
+import { battleTargets, fireDice, retreatOptions, rowOf, supportCount } from '../../src/engine';
 import { H, attack, build, combatDice, endMoves, ev, forceDice, leaderId, miss, must, n, play, rolls, toBattle, u, duel, type Pos } from './helpers';
 
 const bot = (key: RowKey, at: [number, number], extra: object = {}) => ({ side: 'bottom' as const, key, at, ...extra });
@@ -272,6 +272,82 @@ describe('lone leaders in melee (§3.3, §11.4, R21, R22, R6)', () => {
   });
 });
 
+describe('leader retreat options and outcomes (§11.2, §11.3, R25)', () => {
+  it('the first option for an end hex is the safest: no escape when a free path reaches it', () => {
+    const d = melee({ ...LDR, units: [top('FR/LN', [4, 6], { blocks: 1 }), bot('BR/LN', [3, 5])] }, four(dud));
+    const o = retreatDecision(d);
+    const toEnd = o.filter((x) => x.end === H(2, 6));
+    expect(toEnd.length).toBeGreaterThan(1);
+    expect(toEnd[0].escapes).toEqual([]);
+    expect(toEnd.some((x) => x.escapes.length === 1)).toBe(true);
+    forceDice([]);
+  });
+  it('eliminated options are offered only when nothing else exists', () => {
+    const wall = [[3, 5], [3, 6], [2, 5], [2, 6], [2, 7], [1, 4], [1, 5], [1, 6], [1, 7]].map(([r, c]) => bot('BR/LN', [r, c]));
+    const open = melee({ ...LDR, units: [top('FR/LN', [4, 6], { blocks: 1 }), ...wall.slice(0, 2)] }, four(dud));
+    expect(retreatDecision(open).some((x) => x.eliminated)).toBe(false);
+    forceDice([]);
+  });
+  it('a lone leader on row 2 may retreat off his baseline: no banner (R25)', () => {
+    const s = build({ leaders: [topLdr([2, 6])], units: [bot('BR/LN', [3, 6])] });
+    const d = toBattle(s, 'attackC', ['u1']);
+    ev(d);
+    forceDice(n(dud, 30));
+    attack(d, 'u1', H(2, 6));
+    const o = retreatDecision(d);
+    const off = o.find((x) => x.offBoard)!;
+    expect(off).toBeDefined();
+    must(d, { kind: 'choose', index: o.indexOf(off) });
+    const es = ev(d);
+    expect(es.filter((e) => e.t === 'leaderRetreat')).toMatchObject([{ offBoard: true }]);
+    expect(kinds(es, 'leaderLeft')).toHaveLength(1);
+    expect(d.state.leaders).toHaveLength(0);
+    expect(banners(d, 'bottom')).toBe(0);
+    forceDice([]);
+  });
+  it('he may not end on a friendly unit that already has a leader (§11.3)', () => {
+    const d = melee({
+      leaders: [topLdr([4, 6]), topLdr([3, 6])],
+      units: [top('FR/LN', [4, 6], { blocks: 1 }), top('FR/LN', [3, 6])],
+    }, four(dud));
+    const o = retreatDecision(d);
+    expect(o.some((x) => x.end === H(3, 6))).toBe(false);
+    expect(o.some((x) => x.path[0] === H(3, 6) && x.path.length >= 2)).toBe(true);
+    forceDice([]);
+  });
+  it('choosing an attach option emits attach and leaves him on that hex', () => {
+    const d = melee({ ...LDR, units: [top('FR/LN', [4, 6], { blocks: 1 }), top('FR/LN', [3, 6])] }, four(dud));
+    const o = retreatDecision(d);
+    const at = o.find((x) => x.end === H(3, 6) && x.attach === 'u3')!;
+    choose(d, at);
+    const es = ev(d);
+    expect(kinds(es, 'attach')).toEqual([{ t: 'attach', leader: leaderId(d.state, 0), unit: 'u3' }]);
+    expect(d.state.leaders[0].hex).toBe(H(3, 6));
+    forceDice([]);
+  });
+  it('he retreats from the end of a partial retreat (R18)', () => {
+    const blk = [[2, 5], [2, 6], [2, 7]].map(([r, c]) => top('FR/LN', [r, c]));
+    const d = melee({ ...LDR, units: [top('FR/LN', [4, 6], { blocks: 1 }), ...blk] }, ['flag', 'flag', dud, dud, dud, dud]);
+    must(d, { kind: 'ignoreFlags', count: 0 });
+    expect(d.pending?.kind).toBe('retreat');
+    must(d, { kind: 'choose', index: 0 });
+    const o = retreatDecision(d);
+    expect(d.state.leaders[0].hex).toBe(H(3, 5));
+    expect(o.every((x) => [H(2, 5), H(2, 6)].includes(x.path[0]))).toBe(true);
+    forceDice([]);
+  });
+  it('an escape roll that kills him shows his path up to the hex where he was caught', () => {
+    const d = melee({ ...LDR, units: [top('FR/LN', [4, 6], { blocks: 1 }), bot('BR/LN', [3, 5]), bot('BR/LN', [3, 6])] }, [...four(dud), 'sabre', dud, dud, dud]);
+    const o = retreatDecision(d);
+    choose(d, o.find((x) => x.path.length === 2 && x.escapes.length === 1 && !x.eliminated)!);
+    const es = ev(d);
+    const r = es.find((e) => e.t === 'leaderRetreat') as { path: number[] };
+    expect(r.path).toHaveLength(2);
+    expect([H(3, 5), H(3, 6)]).toContain(r.path[1]);
+    forceDice([]);
+  });
+});
+
 describe('T6a carry-forward: retreats and targets', () => {
   it('an enemy lone leader blocks a unit retreat (R74)', () => {
     const s = build({ units: [top('FR/LN', [4, 6])], leaders: [botLdr([3, 5]), botLdr([3, 6])] });
@@ -311,7 +387,7 @@ describe('Leadership: a unit is ordered only while its leader stays (§6.2, §12
     endMoves(d);
     expect(battleTargets(d.state, 'u1')).toEqual([]);
   });
-  it('a leader that leaves the board also frees his unit; a unit whose leader stays stays ordered', () => {
+  it('a unit whose leader stays (the other leader moves) stays ordered', () => {
     const s = build(P);
     const [L1, L2] = [leaderId(s, 0), leaderId(s, 1)];
     const d = play(s, 'leadership', [L1, L2, 'u1']);
@@ -319,6 +395,5 @@ describe('Leadership: a unit is ordered only while its leader stays (§6.2, §12
     expect(d.state.turn.ordered.u1).toBeDefined();
     endMoves(d);
     expect(battleTargets(d.state, 'u1')).toEqual([{ hex: H(4, 6), kind: 'melee', dice: 5 }]);
-    expect(OFF_BOARD).toBeLessThan(0);
   });
 });
