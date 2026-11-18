@@ -16,7 +16,6 @@ describe('release', () => {
   it('every release is named after a different battle of the game, numbers newest first', () => {
     const battles = new Set(SCENARIOS.map((s) => s.name));
     for (const r of RELEASES) {
-      if (r.name === 'Unreleased') continue; // until the first release (Plan 8)
       expect(battles, r.name).toContain(r.name);
     }
     expect(new Set(RELEASES.map((r) => r.name)).size).toBe(RELEASES.length);
@@ -26,6 +25,10 @@ describe('release', () => {
       const cmp = a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
       expect(cmp, `${RELEASES[i - 1].number} after ${RELEASES[i].number}`).toBeGreaterThan(0);
     }
+  });
+
+  it('the first release is v1.0.0 "Talavera"', () => {
+    expect(RELEASES[RELEASES.length - 1]).toMatchObject({ number: '1.0.0', name: 'Talavera' });
   });
 
   it('labels the build by its UTC time, or as a dev build', () => {
