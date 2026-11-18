@@ -90,6 +90,8 @@ export function BannerTrack(p: {
   target: number;
   nation: Nation;
   label: string;
+  /** What the banners are won by (the battle's objectives): the group's tooltip and part of its accessible name. */
+  detail?: string[];
   bannerSize?: number;
   className?: string;
   style?: CSSProperties;
@@ -103,7 +105,8 @@ export function BannerTrack(p: {
       className={`kit-banners ${near ? 'is-near' : ''} ${count >= target && target > 0 ? 'is-won' : ''} ${p.className ?? ''}`}
       style={p.style}
       role="group"
-      aria-label={`${p.label}: ${p.count} of ${p.target} banners${held ? ` (${held} held, can be lost)` : ''}`}
+      title={p.detail?.length ? p.detail.join('\n') : undefined}
+      aria-label={`${p.label}: ${p.count} of ${p.target} banners${held ? ` (${held} held, can be lost)` : ''}${p.detail?.length ? `. ${p.detail.join('; ')}` : ''}`}
     >
       <div className="kit-banners__head">
         <span className="kit-banners__label">{p.label}</span>

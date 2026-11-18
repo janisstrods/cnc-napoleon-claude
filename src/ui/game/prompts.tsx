@@ -54,7 +54,7 @@ function btn(label: string, onClick: () => void, opts: { variant?: 'primary' | '
 
 /** The general's button: the computer's own policy answers for the human. */
 function autoButton(c: PromptCtx): JSX.Element {
-  return btn(AUTO_ACTION.label, () => c.controller.autoAnswer(), { variant: 'ghost', key: 'auto', title: 'The computer plays this decision for you' });
+  return btn(AUTO_ACTION.label, () => void c.controller.autoAnswer(), { variant: 'ghost', key: 'auto', title: 'The computer plays this decision for you' });
 }
 
 /** The prompt bar's content: null once the battle is over, and while the computer decides something that shows nothing. */
@@ -70,6 +70,7 @@ export function gamePrompt(c: PromptCtx): Prompt | null {
     return { title: s.active === human ? 'Resolving…' : `${s.players[ai].army} turn`, text: '', buttons: [] };
   }
   if (d.side !== human) return null;
+  if (view.generalThinking) return { title: DECISION_TITLES[d.kind], text: 'Your general is deciding…', buttons: [] };
   const p = decisionPrompt(c, d);
   const undo = undoButton(c);
   return undo ? { ...p, buttons: [...p.buttons, undo] } : p;

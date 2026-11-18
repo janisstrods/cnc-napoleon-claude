@@ -1,0 +1,163 @@
+// The battle log's wording: one line for every kind of engine event (`eventLog`), and the dice tray's title and summary of
+// a roll. Pure: it reads the states before and after the event and says what happened, nothing is hidden that the table
+// would not see (a card is named only when it has been shown).
+import {
+  CARD_DEFS, OFF_BOARD, UNIT_STATS, cardKind, pieceById,
+  type DieFace, type GameEvent, type GameState, type Leader, type RollPurpose, type Side, type Unit,
+} from '../../engine';
+import type { LogLine } from './controller';
+
+const plural = (n: number, w: string, many = `${w}s`) => `${n} ${n === 1 ? w : many}`;
+
+type Piece = Leader | Unit;
+const find = (id: string, ...states: GameState[]): Piece | undefined => {
+  for (const s of states) {
+    const p = pieceById(s, id);
+    if (p) return p;
+  }
+  return undefined;
+};
+
+/** "British Line Infantry", a leader's name ("Leader" when he has none), or "unit"/"Leader" for a piece not found. */
+function nameOf(id: string, ...states: GameState[]): string {
+  const p = find(id, ...states);
+  if (!p) return id.startsWith('L') ? 'Leader' : 'unit';
+  return 'key' in p ? `${states[0].players[p.side].army} ${UNIT_STATS[p.key].name}` : p.name || 'Leader';
+}
+
+const VERB: Record<Exclude<RollPurpose, 'elan' | 'rally'>, string> = {
+  fire: 'fires on', melee: 'attacks', battleBack: 'battles back against', firstStrike: 'strikes first at', bonus: 'attacks again, into',
+  squareFirst: 'in square, strikes first at', retireReform: 'retires and reforms against', leaderCheck: 'threatens',
+  escape: 'tries to catch',
+};
+
+/** Title of a roll in the dice tray. */
+export function rollTitle(p: RollPurpose, by: string | null, against: string | null, s: GameState): string {
+  const a = by ? nameOf(by, s) : '';
+  const t = against ? nameOf(against, s) : '';
+  switch (p) {
+    case 'fire': return `${a} fires`;
+    case 'melee': return `${a} attacks`;
+    case 'bonus': return `${a} — bonus melee`;
+    case 'battleBack': return `${a} battles back`;
+    case 'firstStrike': return `${a} — First Strike`;
+    case 'squareFirst': return `${a || t} — square strikes first`;
+    case 'retireReform': return `${a || t} — Retire and Reform`;
+    case 'leaderCheck': return `${t || a} — leader casualty check`;
+    case 'escape': return `${t || a} tries to escape`;
+    case 'elan': return 'Élan';
+    case 'rally': return 'Rally';
+  }
+}
+
+/** Subtitle of a roll in the dice tray. */
+export function rollSummary(p: RollPurpose, faces: DieFace[], scoring: boolean[]): string {
+  if (p === 'elan' || p === 'rally') {
+    const n = (f: DieFace) => faces.filter((x) => x === f).length;
+    const parts = (['infantry', 'cavalry', 'artillery', 'flag', 'sabre'] as DieFace[]).filter(n).map((f) => `${n(f)} ${f}`);
+    return parts.join(', ') || 'No dice';
+  }
+  if (p === 'leaderCheck' || p === 'escape') return faces.includes('sabre') ? 'The leader is hit!' : 'The leader is safe';
+  const hits = scoring.filter(Boolean).length;
+  const flags = faces.filter((f) => f === 'flag').length;
+  const parts = [`${hits} ${hits === 1 ? 'hit' : 'hits'}`];
+  if (flags && p !== 'retireReform') parts.push(plural(flags, 'flag'));
+  const text = parts.join(', ');
+  return p === 'retireReform' ? `${text} (cavalry symbols only)` : text;
+}
+
+/**
+ * The log line of event `e` (`before`/`after`: the states either side of it), or null for what stays silent: the human's own
+ * routine move, a retreat of no hexes, and the human's own orders.
+ */
+export function eventLog(e: GameEvent, before: GameState, after: GameState, human: Side): Omit<LogLine, 'id'> | null {
+  const army = (side: Side) => after.players[side].army;
+  const who = (id: string) => nameOf(id, after, before);
+  const sideOf = (id: string) => find(id, after, before)?.side;
+  const hexes = (path: number[]) => Math.max(0, path.filter((h) => h >= 0).length - 1);
+  const line = (text: string, kind: LogLine['kind'], side?: Side): Omit<LogLine, 'id'> => ({ text, kind, ...(side ? { side } : {}) });
+  switch (e.t) {
+    case 'turnStart':
+      return line(`Turn ${e.turn} — ${army(e.side)}${e.side === human ? ' (you)' : ''}`, 'turn', e.side);
+    case 'cardPlayed': {
+      const eff = e.effective !== null && e.effective !== e.kind ? ` → ${CARD_DEFS[e.effective].title}` : '';
+      return line(`${after.players[e.side].commander} plays ${CARD_DEFS[e.kind].title}${eff}.`, 'card', e.side);
+    }
+    case 'ordered':
+      if (e.side === human) return null;
+      return line(e.ids.length === 0 ? 'No units could be ordered.' : `${after.players[e.side].commander} orders ${plural(e.ids.length, 'unit')}.`, 'info', e.side);
+    case 'move': {
+      if (e.path[e.path.length - 1] === OFF_BOARD) return line(`${who(e.id)} leaves the battlefield.`, 'result', sideOf(e.id));
+      if (sideOf(e.id) === human) return null;
+      return line(`${who(e.id)} moves ${plural(hexes(e.path), 'hex', 'hexes')}.`, 'info', sideOf(e.id));
+    }
+    case 'retreat': {
+      const n = hexes(e.path);
+      return n > 0 ? line(`${who(e.id)} retreats ${plural(n, 'hex', 'hexes')}.`, 'result', sideOf(e.id)) : null;
+    }
+    case 'retire':
+      return line(`${who(e.id)} retires and reforms ${plural(hexes(e.path), 'hex', 'hexes')}.`, 'result', sideOf(e.id));
+    case 'leaderRetreat':
+      return line(e.offBoard ? `${who(e.id)} leaves the battlefield.` : `${who(e.id)} falls back.`, 'result', sideOf(e.id));
+    case 'advance':
+      return line(`${who(e.id)} advances.`, 'result', sideOf(e.id));
+    case 'combat': {
+      const guns = e.artillery?.length ? ` and ${plural(e.artillery.length, 'gun')}` : '';
+      const dice = `(${plural(e.dice, 'die', 'dice')}${guns})`;
+      const a = who(e.attacker);
+      if (e.purpose === 'elan' || e.purpose === 'rally') {
+        return line(`${a} rolls for ${e.purpose === 'elan' ? 'Élan' : 'Rally'} ${dice}.`, 'combat', sideOf(e.attacker));
+      }
+      return line(`${a} ${VERB[e.purpose]} ${who(e.target)} ${dice}.`, 'combat', sideOf(e.attacker));
+    }
+    case 'roll': {
+      const by = e.by ?? e.against;
+      return line(`${rollTitle(e.purpose, e.by, e.against, after)}: ${rollSummary(e.purpose, e.faces, e.scoring)}.`, 'combat', by ? sideOf(by) : undefined);
+    }
+    case 'damage':
+      return line(`${who(e.id)} loses ${plural(e.amount, 'block')} (${e.reason}).`, 'result', sideOf(e.id));
+    case 'eliminated':
+      return line(`${who(e.id)} is eliminated.`, 'result', sideOf(e.id));
+    case 'removed':
+      return line(`${who(e.id)} removed from the field (${e.reason}).`, 'result', sideOf(e.id));
+    case 'leaderKilled':
+      return line(`${who(e.id)} is slain.`, 'result', sideOf(e.id));
+    case 'leaderSafe':
+      return line(`${who(e.id)} is safe.`, 'result', sideOf(e.id));
+    case 'leaderLeft':
+      return line(`${who(e.id)} leaves the field.`, 'result', sideOf(e.id));
+    case 'flags': {
+      const text = e.ignored > 0 ? `${who(e.id)} ignores ${plural(e.ignored, 'flag')}.` : `${plural(e.flags, 'flag')} against ${who(e.id)}.`;
+      return line(e.bounce ? `${text} It cannot fall back: it is bounced.` : text, 'result', sideOf(e.id));
+    }
+    case 'attach':
+      return line(`${who(e.leader)} joins ${who(e.unit)}.`, 'info', sideOf(e.leader));
+    case 'squareFormed':
+      return line(`${who(e.id)} forms square (counter ${e.slot}).`, 'result', sideOf(e.id));
+    case 'squareLeft':
+      return line(`${who(e.id)} leaves the square (counter ${e.slot}).`, 'info', sideOf(e.id));
+    case 'cardReturned':
+      return line(`A card returns to the ${army(e.side)} hand from the square track.`, 'card', e.side);
+    case 'rallied':
+      return line(`${who(e.id)} rallies ${plural(e.blocks, 'block')}.`, 'result', sideOf(e.id));
+    case 'shortSupply':
+      return line(`${who(e.id)} is moved by Short Supply.`, 'result', sideOf(e.id));
+    case 'banner':
+      return line(`The ${army(e.side)} army gains a Victory Banner (${e.total}/${after.bannersToWin}) — ${e.reason}.`, 'banner', e.side);
+    case 'held':
+      return line(`The ${army(e.side)} army now holds ${plural(e.held, 'banner')} (${e.total}/${after.bannersToWin}) — ${e.reason}.`, 'banner', e.side);
+    case 'draw':
+      return line(`The ${army(e.side)} army draws a card.`, 'info', e.side);
+    case 'scoutDrew':
+      return line(`The ${army(e.side)} army draws two cards and keeps one.`, 'info', e.side);
+    case 'discarded':
+      // the Scout's dropped card is the owner's business until it is shown: only the human's own is named
+      return line(e.side === human ? `The ${army(e.side)} army discards ${CARD_DEFS[cardKind(e.card)].title}.` : `The ${army(e.side)} army discards a card.`, 'card', e.side);
+    case 'reshuffle':
+      return line('The command deck is reshuffled.', 'info');
+    case 'log':
+      return line(e.text, 'info', e.side);
+    case 'victory':
+      return line(`Victory: ${e.winner === 'draw' ? 'Draw' : army(e.winner)} — ${e.reason}.`, 'victory');
+  }
+}

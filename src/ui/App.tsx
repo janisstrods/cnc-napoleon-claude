@@ -5,7 +5,7 @@ import {
   type SavedGame, type SessionConfig,
 } from './game/controller';
 import { GameScreen } from './game/GameScreen';
-import { makeOpponent } from './game/makeOpponent';
+import { makeGeneral, makeOpponent } from './game/makeOpponent';
 import { MainMenu, ScenarioSelect } from './screens/Menus';
 import { ErrorBoundary } from './ErrorBoundary';
 import './kit';
@@ -30,10 +30,12 @@ type Screen = { kind: 'menu' } | { kind: 'select'; battle?: string } | { kind: '
 
 function startController(config: SessionConfig, answers: SavedGame['answers'] = [], check?: SavedGame['check']): GameController {
   const opponent = makeOpponent(config);
+  const general = makeGeneral(config);
   try {
-    return new GameController(config, opponent, answers, check);
+    return new GameController(config, opponent, answers, check, general);
   } catch (e) {
     opponent.dispose();
+    general.dispose();
     throw e;
   }
 }

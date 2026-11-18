@@ -10,7 +10,7 @@ import { Board } from './Board';
 import type { GameController } from './controller';
 import { HoverTip, LogPanel } from './panels';
 import { gamePrompt } from './prompts';
-import { bannerCounts, objectiveTipLines } from './objectiveText';
+import { bannerCounts, objectiveSummary, objectiveTipLines } from './objectiveText';
 import { boardMarks, selectionDeps, type UiSel } from './uiModel';
 import { leaderTraitLines, unitSummary } from './unitText';
 import { TerrainTipBlock } from './TerrainTipBlock';
@@ -304,7 +304,7 @@ export function GameScreen({ controller, onExit, onRematch }: {
                 {Array.from({ length: them.hand.length }).map((_, i) => <CardBack key={i} size="sm" style={{ fontSize: '1.7px', marginLeft: i ? -9 : 0 }} />)}
               </div>
             </div>
-            <BannerTrack count={themBanners.total} held={themBanners.held} target={s.bannersToWin} nation={me.nation} label="Banners won" />
+            <BannerTrack count={themBanners.total} held={themBanners.held} target={s.bannersToWin} nation={me.nation} label="Banners won" detail={objectiveSummary(s, ai)} />
             <div className="divider" />
             <div className="army-row">
               <div>
@@ -312,7 +312,7 @@ export function GameScreen({ controller, onExit, onRematch }: {
                 <div className="army-cmd">{me.commander} · {commandLabel(s, human)}</div>
               </div>
             </div>
-            <BannerTrack count={meBanners.total} held={meBanners.held} target={s.bannersToWin} nation={them.nation} label="Banners won" />
+            <BannerTrack count={meBanners.total} held={meBanners.held} target={s.bannersToWin} nation={them.nation} label="Banners won" detail={objectiveSummary(s, human)} />
             <div className="deck-row">Deck {s.deck.length} · Discards {s.discard.length}</div>
           </Panel>
           <div className="dice-slot">

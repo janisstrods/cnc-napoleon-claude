@@ -1,6 +1,6 @@
 // Battle objectives on the game screen (rules-reference §13): the banner track's counts, and the tooltip lines of an
 // objective hex: what it scores, for whom, and its state now.
-import { bannerTotal, type GameState, type HexId, type ObjectiveDef, type Side } from '../../engine';
+import { bannerTotal, other, type GameState, type HexId, type ObjectiveDef, type Side } from '../../engine';
 
 /** A side's banners for the track: `total` (permanent + held, the number that wins) and `held` (of them, can be lost). */
 export function bannerCounts(s: GameState, side: Side): { total: number; held: number } {
@@ -31,4 +31,19 @@ function objectiveLines(s: GameState, o: ObjectiveDef, i: number, h: HexId): str
 /** Tooltip lines of the battle objectives on hex `h`: what the hex scores, for whom, and its state now. */
 export function objectiveTipLines(s: GameState, h: HexId): string[] {
   return s.scenario.objectives.flatMap((o, i) => objectiveLines(s, o, i, h));
+}
+
+/** What each of `side`'s battle objectives scores, one line each (the banner track's tooltip). */
+export function objectiveSummary(s: GameState, side: Side): string[] {
+  return s.scenario.objectives.filter((o) => o.side === side).map((o) => {
+    switch (o.kind) {
+      case 'tempHex':
+      case 'tempGroup':
+        return `${o.text}: ${plural(o.banners, 'banner')} while held at the start of the turn`;
+      case 'exit':
+        return `${o.text}: ${plural(o.banners, 'banner')} for a unit that leaves the battlefield here`;
+      case 'killWeight':
+        return `First ${s.players[other(side)].army} ${o.enemyArm} unit eliminated: ${plural(o.first, 'banner')}; each later one: ${o.later}`;
+    }
+  });
 }
