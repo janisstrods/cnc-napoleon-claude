@@ -1,6 +1,7 @@
+import { readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { UNIT_KEYS, UNIT_STATS, type RowKey } from '../../src/engine';
-import { NEUTRAL_W, WIN_SCORE, bannerScore, bannerStep, bannersWorth, rowValue, weightsFor } from '../../src/ai/values';
+import { ELAN_SHARE, NEUTRAL_W, WIN_SCORE, bannerScore, bannerStep, bannersWorth, rowValue, weightsFor } from '../../src/ai/values';
 import { PERSONALITIES, personalityById } from '../../src/ai/personality';
 
 const full = (k: RowKey): number => rowValue(UNIT_STATS[k], UNIT_STATS[k].blocks);
@@ -78,5 +79,13 @@ describe('values', () => {
         expect(hi, `${k} block ${b}`).toBeGreaterThanOrEqual(lo - 1e-9);
       }
     }
+  });
+});
+
+describe('shared constants', () => {
+  it('Elan orders about 0.6 of a unit per Command die: one definition, in values.ts', () => {
+    expect(ELAN_SHARE).toBe(0.6);
+    const defs = readdirSync('src/ai').filter((f) => f.endsWith('.ts') && /const ELAN_SHARE\b/.test(readFileSync(`src/ai/${f}`, 'utf8')));
+    expect(defs).toEqual(['values.ts']);
   });
 });

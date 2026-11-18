@@ -7,6 +7,8 @@ export const WIN_SCORE = 100;
 export const LEADER_VALUE = 0.4;
 /** The mean keep value of a hand card, in banners (Task 6a's `meanHandValue` replaces it). */
 export const CARD_VALUE = 0.25;
+/** Élan orders a unit when a die shows its arm or a flag: about this share of Command dice (one definition for the evaluation and card sense). */
+export const ELAN_SHARE = 0.6;
 /** Cap on the value of the winning banner used in risk estimates (they are approximate). */
 const WINNING_BANNER = 6;
 
