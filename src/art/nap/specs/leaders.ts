@@ -8,9 +8,11 @@ import { CLOTH, METAL } from '../nations';
 import type { ArtNation } from '../keys';
 import type { Dress, LeaderSpec } from '../uniform';
 
-// Local swatches: the British dark-blue facing (also used by the heavy dragoons in specs/cavalry.ts) and the Spanish blue.
+// Local swatches: the British dark-blue facing (also used by the heavy dragoons in specs/cavalry.ts), the Spanish blue and
+// the Spanish cockade red.
 const DARK_BLUE = '#1f2a55';
 const SP_BLUE = '#1e2a52'; // the Spanish dark blue (as in the Spanish unit specs)
+const SP_COCKADE = '#961820'; // the Spanish red cockade (as in the Spanish unit specs)
 
 const gen = (d: Pick<Dress, 'coat' | 'facings' | 'sash'>): Dress => ({
   cut: 'tails', trousers: CLOTH.white, belts: CLOTH.white, lace: METAL.gold, shoulders: { kind: 'epaulettes', colour: METAL.gold }, ...d,
@@ -57,7 +59,7 @@ export const LEADER_SPECS: Record<ArtNation, LeaderSpec> = {
   // width of the red (listed twice), after the 1785 ensign (a readability device, as for every nation).
   SP: {
     dress: gen({ coat: SP_BLUE, facings: CLOTH.scarlet, sash: CLOTH.scarlet }),
-    head: { kind: 'bicorne', cords: METAL.gold, plume: { colour: CLOTH.white }, pompoms: [CLOTH.scarlet] },
+    head: { kind: 'bicorne', cords: METAL.gold, plume: { colour: CLOTH.white }, pompoms: [SP_COCKADE] },
     horse: 'dun',
     flag: { kind: 'horizontal', colours: [CLOTH.scarlet, CLOTH.yellow, CLOTH.yellow, CLOTH.scarlet] },
   },

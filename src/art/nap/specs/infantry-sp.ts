@@ -14,6 +14,8 @@ const SP_BLUE = '#1e2a52'; // the Spanish dark blue of the light infantry, the S
 const MILITIA_BROWN = '#6e4a2a'; // a brown civilian coat
 const MILITIA_BREECHES = '#9a8a68'; // undyed cloth breeches
 const BLACK_FELT = '#1b1a1a';
+const COCKADE = '#961820'; // the red cockade, a quarter darker than the scarlet: a calm dot on the hat, not a beacon
+const TAPE_GREY = '#8a8780'; // the bicorne's edging tape, toned to grey so it does not ring the cockade in white
 
 const foot = (dress: Dress, head: Headwear, poses: FootSpec['poses'], order: FootSpec['order'], pack = true): FootSpec => ({
   drawing: 'foot', dress, head, weapon: 'musket', poses, order, pack,
@@ -26,10 +28,11 @@ const SP_LINE: Dress = {
 };
 
 export const SP_INFANTRY_SPECS: Record<SpInfantryKey, FootSpec> = {
-  // Line (the 1808 look): the white coat above, and a black bicorne worn athwart, edged with white tape, with the red cockade.
+  // Line (the 1808 look): the white coat above, and a black bicorne worn athwart, edged with tape (white, drawn grey so that
+  // a battalion does not show a row of rings at board scale), with the red cockade.
   'SP/LN': foot(
     SP_LINE,
-    { kind: 'bicorne', body: BLACK_FELT, cords: CLOTH.white, pompoms: [CLOTH.scarlet] },
+    { kind: 'bicorne', body: BLACK_FELT, cords: TAPE_GREY, pompoms: [COCKADE] },
     ['shoulder', 'aim', 'shoulder', 'shoulder'], 'close',
   ),
   // Light infantry: a dark blue jacket with scarlet collar and cuffs, blue breeches, black belts and the round hat. Sources

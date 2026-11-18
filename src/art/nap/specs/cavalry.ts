@@ -14,6 +14,8 @@ const WHITE_PLUME = '#f0ece0';
 const COLPACK_FUR = '#3a2a1e'; // the Guard chasseurs' dark brown fur
 const SP_BLUE = '#1e2a52'; // the Spanish dark blue of the line cavalry and the cuirassiers
 const BLACK_FELT = '#1b1a1a';
+const COCKADE = '#961820'; // the Spanish red cockade, a quarter darker than the scarlet (calmer at board scale)
+const TAPE_GREY = '#8a8780'; // bicorne edging tape, toned to grey
 
 const white = CLOTH.white;
 const dress = (d: Pick<Dress, 'coat' | 'cut' | 'facings' | 'trousers'> & Partial<Dress>): Dress => ({ belts: white, ...d });
@@ -111,20 +113,21 @@ export const CAVALRY_SPECS: Record<CavalryKey, HorseSpec> = {
     shabraque: { cloth: CLOTH.black, trim: CLOTH.sky },
   },
   // Spanish hussars (the María Luisa and Españoles regiments): a sky-blue dolman and pelisse laced white, the pelisse edged with
-  // white fur, scarlet facings and blue overalls, a black shako with white cords and a short scarlet plume. Spanish light
+  // white fur, scarlet facings and blue overalls, a black shako with white cords and a short scarlet plume; a plain blue
+  // shabraque (no sheepskin), so the light dolman is the one bright mass. Spanish light
   // cavalry also wore green or yellow; of the brief's green or light blue, the light blue reads better on the yellow base.
   'SP/LC': {
     drawing: 'horse', horse: 'light', weapon: 'sabre', coats: ['chestnut', 'bay'],
     dress: dress({ coat: CLOTH.sky, cut: 'dolman', facings: CLOTH.scarlet, lace: white, trousers: SP_BLUE, pelisse: { colour: CLOTH.sky, fur: white } }),
     head: { kind: 'shako', body: BLACK_FELT, plate: 'none', cords: white, plume: { colour: CLOTH.scarlet } },
-    shabraque: { cloth: SP_BLUE, trim: white, sheepskin: true },
+    shabraque: { cloth: SP_BLUE, trim: white },
   },
   // Spanish line cavalry: a dark blue coat with scarlet facings and lapels, buff breeches, a black bicorne worn athwart with the
   // red cockade; carbine. The sword is sloped, the heavy cavalry's carry.
   'SP/HC': {
     drawing: 'horse', horse: 'heavy', weapon: 'sword', carry: 'sloped', carbine: true, coats: ['bay', 'black'],
     dress: dress({ coat: SP_BLUE, cut: 'tails', facings: CLOTH.scarlet, lapels: CLOTH.scarlet, trousers: CLOTH.buff, belts: CLOTH.buff }),
-    head: { kind: 'bicorne', body: BLACK_FELT, cords: white, pompoms: [CLOTH.scarlet] },
+    head: { kind: 'bicorne', body: BLACK_FELT, cords: TAPE_GREY, pompoms: [COCKADE] },
     shabraque: { cloth: SP_BLUE, trim: CLOTH.scarlet },
   },
   // Spanish cuirassiers (the few regiments raised from 1810, partly with captured cuirasses): a dark blue jacket with scarlet
