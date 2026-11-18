@@ -27,3 +27,4 @@ export * from './text';
 export { answerError } from './decisions';
 export type { Gen } from './decisions';
 export { gameFlow, turnFlow, nextTurn, continueTurn, drawPhase } from './flow';
+export { guerrillaSpendStep, guerrillaScoutStep } from './guerrilla';
