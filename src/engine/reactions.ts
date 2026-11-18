@@ -38,9 +38,10 @@ export function* defenderReaction(s: GameState, ctx: FlowCtx, m: MeleeCtx): Gen<
 /**
  * The attacking side's one roll of a melee (RR §9.6, R41): the melee unit's dice (counted now, for its current blocks) and
  * each joining gun's dice, rolled together as one `combat` event and one `roll` with `from[]`. Sabres score by the melee
- * unit's row; `retireReform` scores cavalry symbols only (R40).
+ * unit's row; `retireReform` scores cavalry symbols only (R40). `from[]` lists the melee unit first, then the guns in
+ * `m.artillery` order; `faces` are matching consecutive chunks of the melee unit's and each gun's dice. Returns the melee unit's own dice too.
  */
-export function attackerStrike(s: GameState, ctx: FlowCtx, m: MeleeCtx, purpose: RollPurpose, kind: 'melee' | 'retireReform'): Scored {
+export function attackerStrike(s: GameState, ctx: FlowCtx, m: MeleeCtx, purpose: RollPurpose, kind: 'melee' | 'retireReform'): Scored & { own: number } {
   const attacker = unitById(s, m.attacker)!;
   const target = unitById(s, m.target)!;
   const own = meleeDice(s, attacker, target, { role: m.role, moved: s.turn.ordered[m.attacker]?.moved ?? 0, declared: true });
@@ -49,7 +50,7 @@ export function attackerStrike(s: GameState, ctx: FlowCtx, m: MeleeCtx, purpose:
   const faces = rollDice(s, shares.reduce((sum, g) => sum + g.dice, own));
   const sc = scoreRoll(faces, kind, statsOf(s, attacker), kind === 'retireReform' ? 'cavalry' : statsOf(s, target).arm);
   emitRoll(ctx, purpose, faces, sc.scoring, m.attacker, m.target, shares.length ? [m.attacker, ...shares.map((g) => g.id)] : undefined);
-  return sc;
+  return { ...sc, own };
 }
 
 /**

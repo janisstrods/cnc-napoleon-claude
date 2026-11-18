@@ -1,6 +1,7 @@
 // The options of the turn being played, as pure queries of the state, with the move and battle validators that
 // `answerError` (decisions.ts) dispatches to. Fire targets come from `fireTargets`; melee targets are the adjacent enemy
-// units and lone leaders; a target is offered only with dice >= 1.
+// units and lone leaders; a target is offered only with dice >= 1 (R15), the exception being a melee unit with none of its own
+// when a Combined Arms gun could join (the combinedArms decision then requires one).
 import { cardForbidsBattle } from './cards';
 import { fireDice, meleeDice } from './dice';
 import { distance, neighbours } from './hex';

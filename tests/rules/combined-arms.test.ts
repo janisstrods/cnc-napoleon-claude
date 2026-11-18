@@ -1,6 +1,6 @@
 // Rules: RR §9.6 (design/rules-reference.md)
 import { describe, expect, it } from 'vitest';
-import { battleTargets, type CardKind, type DieFace, type GameDriver, type GameEvent } from '../../src/engine';
+import { answerError, battleTargets, randomAnswer, type CardKind, type DieFace, type GameDriver, type GameEvent } from '../../src/engine';
 import { H, attack, build, endMoves, ev, forceDice, must, n, play, toBattle, u, type Pos } from './helpers';
 
 const PAD = n('artillery', 60); // an artillery face never hits infantry or cavalry
@@ -234,5 +234,52 @@ describe('Combined Arms (§9.6)', () => {
     const es = ev(d);
     expect(combats(es).find((e) => e.purpose === 'battleBack')).toMatchObject({ attacker: 'u2', target: 'u1' });
     expect(u(d, 'u3')!.blocks).toBe(3);
+  });
+
+  describe('a melee unit with no dice of its own (R15)', () => {
+    const zero = (): GameDriver => {
+      const s = build({ terrain: [{ t: 'town', at: [4, 6] }], units: [bot('BR/LC', [5, 6], { blocks: 1 }), top('FR/LN', [4, 6]), bot('BR/FA', [6, 5])] });
+      const d = toBattle(s, 'attackC', ['u1', 'u3']);
+      must(d, { kind: 'attack', unit: 'u1', target: H(4, 6) });
+      return d;
+    };
+    it('must bring at least one gun: select [] is refused', () => {
+      const d = zero();
+      expect(d.pending).toMatchObject({ kind: 'combinedArms', required: true, options: ['u3'] });
+      expect(d.answer({ kind: 'select', ids: [] })).toBe(false);
+      expect(answerError(d.state, d.pending!, { kind: 'select', ids: [] })).toMatch(/at least one gun/);
+      expect(answerError(d.state, d.pending!, { kind: 'select', ids: ['u3'] })).toBeNull();
+    });
+    it('the random answer always includes a gun', () => {
+      const d = zero();
+      for (let i = 0; i < 30; i++) {
+        const a = randomAnswer(d.state, d.pending!, () => (i % 2 ? 0.99 : 0.01));
+        expect(a).toMatchObject({ kind: 'select' });
+        expect((a as { ids: string[] }).ids.length).toBeGreaterThan(0);
+      }
+    });
+    it('with one gun the attack resolves normally', () => {
+      const d = zero();
+      ev(d);
+      forceDice(PAD);
+      must(d, { kind: 'select', ids: ['u3'] });
+      expect(rollEvents(ev(d)).find((e) => e.purpose === 'melee')!.faces).toHaveLength(2);
+    });
+    it('a unit with dice of its own is not required to bring a gun', () => {
+      const d = declare(P([6, 5]));
+      expect(d.pending).toMatchObject({ kind: 'combinedArms', required: false });
+      expect(d.answer({ kind: 'select', ids: [] })).toBe(true);
+    });
+  });
+
+  it('a square attacking cavalry with no gun: its flags bounce (R30)', () => {
+    const s = build({ units: [bot('BR/LN', [5, 6], { square: 1 }), top('FR/HC', [4, 6])] });
+    const d = toBattle(s, 'attackC', ['u1']);
+    ev(d);
+    forceDice(['flag', ...PAD]);
+    must(d, { kind: 'attack', unit: 'u1', target: H(4, 6) });
+    must(d, { kind: 'defend', choice: 'stand' });
+    expect(d.pending?.kind).not.toBe('ignoreFlags');
+    expect(ev(d).find((e) => e.t === 'flags')).toMatchObject({ bounce: true, flags: 1, ignored: 0 });
   });
 });

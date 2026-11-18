@@ -24,7 +24,7 @@ const SAMPLES: Decision[] = [
   { kind: 'leaveSquare', side: 'bottom', unit: 'u6' },
   { kind: 'move', side: 'bottom' },
   { kind: 'battle', side: 'bottom' },
-  { kind: 'combinedArms', side: 'bottom', unit: 'u7', target: hexId(2, 6), options: ['u10'] },
+  { kind: 'combinedArms', side: 'bottom', unit: 'u7', target: hexId(2, 6), options: ['u10'], required: false },
   { kind: 'defend', side: 'bottom', attacker: 'u1', target: 'u6', options: DEFENCES, bonus: false },
   { kind: 'ignoreFlags', side: 'bottom', unit: 'u6', flags: 2, max: 1 },
   { kind: 'retreat', side: 'bottom', unit: 'u6', options: [{ path: [hexId(7, 4)], end: hexId(7, 4), losses: 0, attach: null }], reason: 'retreat' },
@@ -82,7 +82,7 @@ describe('a prompt for every decision', () => {
   });
 
   it('Combined Arms with two guns offers to combine them all', () => {
-    const d: Decision = { kind: 'combinedArms', side: 'bottom', unit: 'u7', target: hexId(2, 6), options: ['u10', 'u6'] };
+    const d: Decision = { kind: 'combinedArms', side: 'bottom', unit: 'u7', target: hexId(2, 6), options: ['u10', 'u6'], required: false };
     const all = promptSpec(s, d).actions.find((a) => a.key === 'all')!;
     expect(all.label).toBe('Combine all 2 guns');
     expect(all.answer).toEqual({ kind: 'select', ids: ['u10', 'u6'] });

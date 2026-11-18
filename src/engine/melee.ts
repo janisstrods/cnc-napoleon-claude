@@ -4,10 +4,10 @@ import { emitRoll } from './casualties';
 import { combinedArmsStep } from './combinedArms';
 import { ask, type Gen } from './decisions';
 import { meleeDice, scoreRoll } from './dice';
-import { combinedArmsCandidates } from './options';
 import { neighbours } from './hex';
-import { leaderAt, unitAt, unitById } from './query';
 import { loneLeaderMelee } from './leaders';
+import { combinedArmsCandidates } from './options';
+import { leaderAt, unitAt, unitById } from './query';
 import { attackerStrike, defenderReaction, firstStrikeRoll, resolveRetireReform } from './reactions';
 import { rollDice } from './rng';
 import { applyOutcome } from './resolve';
@@ -67,7 +67,7 @@ export function* meleeAttack(s: GameState, ctx: FlowCtx, attackerId: string, tar
   // the attacker's roll: the melee unit's dice and every joining gun's, together (R41)
   const purpose = role === 'bonus' ? 'bonus' : 'melee';
   const sc = attackerStrike(s, ctx, m, purpose, 'melee');
-  const bounce = attacker.square !== undefined && statsOf(s, defender).arm === 'cavalry';  // R30: the square's die and the guns' flags
+  const bounce = sc.own >= 1 && attacker.square !== undefined && statsOf(s, defender).arm === 'cavalry';  // R30: the square's die and the guns' flags
   const applied = yield* applyOutcome(s, ctx, defender, { hits: sc.hits, flags: sc.flags, bounce }, attacker, 'melee');
   if (s.winner) return false;
   if (applied.eliminated || applied.left) {
