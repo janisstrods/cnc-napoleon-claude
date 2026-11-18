@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createElement as h } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { ARM_OF, CODE_NAMES, codeOf } from '../../../src/engine/codes';
+import { UNIT_STATS } from '../../../src/engine/units';
 import { FIGURE_BANDS, SLOTS, type Formation } from '../../../src/art/nap/slots';
 import { ART_KEYS, ART_NATIONS, type ArtKey } from '../../../src/art/nap/keys';
 import { ArmGlyph } from '../../../src/art/nap/badge';
@@ -10,7 +11,7 @@ import FigureGallery from '../../../src/dev/FigureGallery';
 import { balanced, count, placed, svg, token } from './helpers';
 
 const BAD = /NaN|undefined|Infinity/;
-const GUARDS = ['FR/YG', 'FR/OG', 'FR/GHC', 'FR/GA', 'BR/GG', 'BR/GHC'];
+const GUARDS = ['FR/YG', 'FR/OG', 'FR/GHC', 'FR/GLC', 'FR/GA', 'BR/GG', 'BR/GHC'];
 const badge = (m: string) => (m.indexOf('<g data-badge') < 0 ? '' : balanced(m, m.indexOf('<g data-badge')));
 /** The figure groups of a token by data-slot value. */
 function slotGroups(m: string): Record<string, string> {
@@ -181,6 +182,20 @@ describe('FigureGallery', () => {
 });
 
 describe('five-block badges', () => {
+  it('the code text ends at least 1 unit before the first pip, for every key at its row\'s strength and at 5 blocks', () => {
+    const short: string[] = [];
+    for (const k of ART_KEYS) for (const max of new Set([UNIT_STATS[k].blocks, 4, 5])) {
+      const b = badge(token(k, { blocks: max, maxBlocks: max }));
+      const t = /<text x="([-\d.]+)"[^>]*? textLength="([\d.]+)"/.exec(b);
+      expect(t, k).not.toBeNull();
+      const end = Number(t![1]) + Number(t![2]);
+      const first = Math.min(...[...b.matchAll(/data-pip="(?:on|off)" cx="([-\d.]+)"[^>]*? r="([\d.]+)"/g)].map((m) => Number(m[1]) - Number(m[2])));
+      if (first - end < 1) short.push(`${k} at ${max}: gap ${(first - end).toFixed(2)}`);
+    }
+    expect(short).toEqual([]);
+  });
+
+
   it('the leftmost pip clears the code text', () => {
     for (const key of ['BR/LT', 'BR/GG'] as const) {
       const m = token(key, { blocks: 5, maxBlocks: 5 });

@@ -5,8 +5,9 @@ import { ARTILLERY_SPECS } from './artillery';
 import { CAVALRY_SPECS } from './cavalry';
 import { ALLIED_INFANTRY_SPECS } from './infantry-allies';
 import { FR_INFANTRY_SPECS } from './infantry-fr';
+import { SP_INFANTRY_SPECS } from './infantry-sp';
 
-export { ALLIED_INFANTRY_SPECS, ARTILLERY_SPECS, CAVALRY_SPECS, FR_INFANTRY_SPECS };
+export { ALLIED_INFANTRY_SPECS, ARTILLERY_SPECS, CAVALRY_SPECS, FR_INFANTRY_SPECS, SP_INFANTRY_SPECS };
 export { LEADER_SPECS } from './leaders';
 
-export const FIGURE_SPECS: Record<ArtKey, FigureSpec> = { ...FR_INFANTRY_SPECS, ...ALLIED_INFANTRY_SPECS, ...CAVALRY_SPECS, ...ARTILLERY_SPECS };
+export const FIGURE_SPECS: Record<ArtKey, FigureSpec> = { ...FR_INFANTRY_SPECS, ...ALLIED_INFANTRY_SPECS, ...SP_INFANTRY_SPECS, ...CAVALRY_SPECS, ...ARTILLERY_SPECS };

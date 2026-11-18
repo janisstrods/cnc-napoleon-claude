@@ -132,10 +132,26 @@ const Czapka: HeadgearRenderer = ({ head }) => {
   );
 };
 
+// The fur colpack (busby) of the Guard chasseurs: a fur cylinder, lower than a bearskin and rounded at the crown, with a cloth
+// bag (`turban`) falling from the crown down the back and a plume standing at the back of the crown. `body` is the fur.
+const Colpack: HeadgearRenderer = ({ head }) => {
+  const fur = head.body ?? FUR_BROWN;
+  return (
+    <g data-head="colpack">
+      {head.plume ? <Tuft x={-0.9} y={-8.6} h={head.plume.tall ? 5.2 : 4} colour={head.plume.colour} tip={head.plume.tip} /> : null}
+      <Shape d="M-3.1 -0.7 L-3.4 -7.2 Q-2.6 -9 0.2 -9.1 Q3 -9 3.6 -7.2 L3.1 -1 Z" f={fur} />
+      <Paint d="M-3.1 -0.7 L-3.4 -7.2 Q-2.6 -9 -1 -9.1 L-1 -0.8 Z" f={darken(fur, 0.5)} o={0.6} mx={0} />
+      <Hi d="M1.2 -8 L1.4 -6.6 M2.6 -7 L2.8 -5.6 M1.6 -4.4 L1.8 -3" c={lighten(fur, 0.35)} w={0.45} o={0.8} mx={1} />
+      {head.turban ? <Shape d="M0.6 -8.9 Q-3.2 -9.6 -4.5 -6.6 L-4.2 -4.4 Q-3.4 -5.2 -3 -6.8 Q-1.6 -8 0.6 -7.9 Z" f={head.turban} sw={0.5} /> : null}
+    </g>
+  );
+};
+
 export const HORSE_HEADGEAR: Record<HorseHeadgear, HeadgearRenderer> = {
   tarleton: Tarleton,
   dragoonHelmet: DragoonHelmet,
   cuirassierHelmet: CuirassierHelmet,
   crestedHelmet: CrestedHelmet,
   czapka: Czapka,
+  colpack: Colpack,
 };

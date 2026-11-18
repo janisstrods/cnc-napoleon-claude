@@ -21,9 +21,9 @@ describe('leaders', () => {
     }
   });
 
-  it('the four alone tokens differ, and so do the four attached tokens', () => {
-    expect(new Set(ART_NATIONS.map((n) => leader(n, false))).size).toBe(4);
-    expect(new Set(ART_NATIONS.map((n) => leader(n, true))).size).toBe(4);
+  it('the alone tokens of the art nations differ, and so do the attached tokens', () => {
+    expect(new Set(ART_NATIONS.map((n) => leader(n, false))).size).toBe(ART_NATIONS.length);
+    expect(new Set(ART_NATIONS.map((n) => leader(n, true))).size).toBe(ART_NATIONS.length);
   });
 
   it('every colour of a flag appears in the alone token; the kinds are as decided', () => {

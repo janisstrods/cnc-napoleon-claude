@@ -15,6 +15,9 @@ const BLUE_GREY = '#6e7e88'; // the British and Portuguese carriage
 const BLUE_GREY_LIGHT = '#8397a4'; // the horse-artillery carriage, lighter
 const GREY_GREEN = '#5a6a50'; // the Dutch carriage (hedged: sources differ on its colour)
 const FUR_HAIR = '#171412';
+const SP_BLUE = '#1e2a52'; // the Spanish gunners' dark blue
+const SP_COCKADE = '#961820'; // the Spanish red cockade, a quarter darker than the scarlet (calmer at board scale)
+const SP_CARRIAGE = '#7a6038'; // the Spanish carriage: natural wood oiled dark (a hedge: sources differ, some show it painted)
 
 const FOUR = ['gun', 'rammer', 'linstock', 'ammo'] as const;
 
@@ -60,5 +63,11 @@ export const ARTILLERY_SPECS: Record<ArtilleryKey, GunSpec> = {
   'AL/FA': gun(
     { coat: CLOTH.dutchBlue, cut: 'tails', facings: CLOTH.black, trousers: CLOTH.dutchBlue, belts: CLOTH.black },
     { kind: 'shako', plate: 'brass', pompoms: [CLOTH.orange] }, GREY_GREEN, FOUR,
+  ),
+  // Spanish artillery: dark blue coat with scarlet collar, cuffs and lapels, blue breeches, and the black bicorne of 1808 with
+  // the red cockade.
+  'SP/FA': gun(
+    { coat: SP_BLUE, cut: 'tails', facings: CLOTH.scarlet, lapels: CLOTH.scarlet, trousers: SP_BLUE, belts: CLOTH.white },
+    { kind: 'bicorne', cords: CLOTH.yellow, pompoms: [SP_COCKADE] }, SP_CARRIAGE, FOUR,
   ),
 };

@@ -1,6 +1,8 @@
 // Dev gallery for the Napoleonic miniatures.
 //   #/gallery/figures                      every section: Infantry, Cavalry, Artillery, Leaders
-//   #/gallery/figures/<filter>             infantry | cavalry | artillery | leaders, or a comma list of keys (FR-LN,BR-LN)
+//   #/gallery/figures/<filter>             infantry | cavalry | artillery | leaders | spanish, or a comma list of keys (FR-LN,BR-LN)
+//                                          (spanish: the Expansion #1 rows, i.e. the Spanish army, the Swiss, the Guard light
+//                                          cavalry, and the Spanish general)
 //   #/gallery/figures/single/<KEY>         one key's four figures (or four gun pieces) at x6, e.g. single/FR-LN
 //   #/gallery/figures/board                two facing lines of hexes at board scale, with an attached leader per side
 //   #/gallery/figures/bands                measures every figure's ink profile (FIGURE_BANDS) and prints it as JSON in
@@ -20,6 +22,7 @@ import { artNationOf } from '../art/nap/keys';
 import { NATION_LOOKS } from '../art/nap/nations';
 import { ICON_BOX, type BandKey } from '../art/nap/slots';
 import { FIGURE_SPECS } from '../art/nap/specs';
+import { UNIT_STATS } from '../engine/units';
 
 const BOARD = 0.75;
 const LARGE = 2.5;
@@ -34,9 +37,9 @@ const DARKEST = (() => {
   return solid.reduce((a, b) => (lum(b) < lum(a) ? b : a));
 })();
 
-/** Blocks at full strength: artillery has 3 in play, everything else 4. */
-const maxOf = (k: ArtKey) => (ARM_OF[codeOf(k)] === 'artillery' ? 3 : 4);
-type Filter = { keys: ArtKey[]; leaders: boolean; sections: ('infantry' | 'cavalry' | 'artillery')[] };
+/** Blocks at full strength: the row's (artillery 3, most others 4, the Spanish light infantry and the Swiss 5). */
+const maxOf = (k: ArtKey) => UNIT_STATS[k].blocks;
+type Filter = { keys: ArtKey[]; leaders: boolean | readonly ArtNation[]; sections: ('infantry' | 'cavalry' | 'artillery')[] };
 
 function parse(route: string): { mode: 'board' } | { mode: 'bands' } | { mode: 'single'; key: ArtKey | null } | ({ mode: 'list' } & Filter) {
   const rest = route.replace(/^#?\/?gallery\/figures\/?/, '');
@@ -49,6 +52,7 @@ function parse(route: string): { mode: 'board' } | { mode: 'bands' } | { mode: '
   const all: Filter = { keys: [...ART_KEYS], leaders: true, sections: ['infantry', 'cavalry', 'artillery'] };
   if (rest === '') return { mode: 'list', ...all };
   if (rest === 'leaders') return { mode: 'list', keys: [], leaders: true, sections: [] };
+  if (rest === 'spanish') return { mode: 'list', keys: ART_KEYS.filter((k) => UNIT_STATS[k].expansion === 'exp1'), leaders: ['SP'], sections: ['infantry', 'cavalry', 'artillery'] };
   if (rest === 'infantry' || rest === 'cavalry' || rest === 'artillery') return { mode: 'list', keys: [...ART_KEYS], leaders: false, sections: [rest] };
   const keys = rest.split(',').map((s) => s.replace('-', '/')).filter(isArtKey);
   return { mode: 'list', keys, leaders: false, sections: ['infantry', 'cavalry', 'artillery'] };
@@ -112,9 +116,9 @@ function KeySection({ title, keys }: { title: string; keys: ArtKey[] }) {
   );
 }
 
-const LEADER_NAMES: Record<ArtNation, string> = { FR: 'Kellermann', BR: 'Prince of Orange', PT: 'Beresford', AL: 'Brunswick' };
+const LEADER_NAMES: Record<ArtNation, string> = { FR: 'Kellermann', BR: 'Prince of Orange', PT: 'Beresford', AL: 'Brunswick', SP: 'Castaños' };
 
-function LeaderSection() {
+function LeaderSection({ nations = ART_NATIONS }: { nations?: readonly ArtNation[] }) {
   // each nation: the general alone on his base, then attached to a line battalion (the medallion on the badge's left end)
   const pair = (bg: string, n: ArtNation, facing: 'left' | 'right') => [
     { fill: bg, node: <NapLeaderToken nation={n} facing={facing} attached={false} name={LEADER_NAMES[n]} showName /> },
@@ -128,7 +132,7 @@ function LeaderSection() {
       ),
     },
   ];
-  const cells = (bg: string) => ART_NATIONS.flatMap((n, k) => pair(bg, n, k % 2 ? 'left' : 'right'));
+  const cells = (bg: string) => nations.flatMap((n, k) => pair(bg, n, k % 2 ? 'left' : 'right'));
   return (
     <section>
       <Heading>Leaders</Heading>
@@ -138,7 +142,7 @@ function LeaderSection() {
       <Strip scale={BOARD} cells={cells(DARKEST)} />
       <SubHead>large (x2.5)</SubHead>
       <div style={{ ...wrap, gap: 16 }}>
-        {ART_NATIONS.map((n) => (
+        {nations.map((n) => (
           <figure key={n} style={{ margin: 0 }}>
             <Strip scale={LARGE} cells={pair(GRASS, n, 'right')} />
             <figcaption style={{ fontSize: 13, textAlign: 'center' }}>{`${NATION_NAMES[n]} leader`}</figcaption>
@@ -177,30 +181,35 @@ function Single({ k }: { k: ArtKey | null }) {
 
 const LINE_RIGHT: ArtKey[] = ['FR/LN', 'FR/LT', 'FR/GR', 'FR/CU', 'FR/FA', 'FR/OG'];
 const LINE_LEFT: ArtKey[] = ['BR/LN', 'BR/RI', 'PT/LN', 'AL/LT', 'BR/HC', 'PT/FA'];
+// the Spanish war: a French line with the Swiss and the Guard light cavalry, facing a Spanish line
+const LINE_FR_EXP1: ArtKey[] = ['FR/SWI', 'FR/LN', 'FR/GLC', 'FR/HC', 'FR/LNC', 'FR/FA'];
+const LINE_SP: ArtKey[] = ['SP/LN', 'SP/LT', 'SP/GR', 'SP/SWI', 'SP/ML', 'SP/FA', 'SP/LC', 'SP/HC', 'SP/CU'];
 
 function Board() {
   const rows: { keys: ArtKey[]; facing: 'left' | 'right'; nation: ArtNation }[] = [
     { keys: LINE_RIGHT, facing: 'right', nation: 'FR' },
     { keys: LINE_LEFT, facing: 'left', nation: 'BR' },
+    { keys: LINE_FR_EXP1, facing: 'right', nation: 'FR' },
+    { keys: LINE_SP, facing: 'left', nation: 'SP' },
   ];
-  const w = 7 * HEX_W + 8;
-  const h = ROW_H + 2 * HEX_R + 8;
+  const w = (Math.max(...rows.map((r) => r.keys.length)) + 1) * HEX_W + 8;
+  const h = (rows.length - 1) * ROW_H + 2 * HEX_R + 8;
   return (
     <div style={page}>
       <Heading>Board lines (x0.75)</Heading>
       <svg width={w * BOARD} height={h * BOARD} viewBox={`0 0 ${w} ${h}`}>
         {rows.map((r, row) => r.keys.map((k, c) => {
-          const x = 4 + HEX_W / 2 + c * HEX_W + (row ? HEX_W / 2 : 0);
+          const x = 4 + HEX_W / 2 + c * HEX_W + (row % 2 ? HEX_W / 2 : 0);
           const y = 4 + HEX_R + row * ROW_H;
           return (
-            <Hex key={k} x={x} y={y} fill={(c + row) % 3 === 2 ? DARKEST : GRASS}>
+            <Hex key={`${row}-${k}`} x={x} y={y} fill={(c + row) % 3 === 2 ? DARKEST : GRASS}>
               <NapUnitToken unitKey={k} blocks={c % 2 ? maxOf(k) - 1 : maxOf(k)} maxBlocks={maxOf(k)} facing={r.facing} />
               {c === 0 ? <g transform={`translate(${NAP_LEADER_ATTACH_OFFSET.x} ${NAP_LEADER_ATTACH_OFFSET.y})`}><NapLeaderToken nation={nationOf(k) as ArtNation} facing={r.facing} attached /></g> : null}
             </Hex>
           );
         }))}
       </svg>
-      <div style={{ fontSize: 13, marginTop: 8 }}>French lines face right; British, Portuguese and Allied units face left.</div>
+      <div style={{ fontSize: 13, marginTop: 8 }}>French lines face right; British, Portuguese, Allied and Spanish units face left.</div>
     </div>
   );
 }
@@ -287,7 +296,7 @@ export default function FigureGallery({ route }: { route: string }) {
       {r.sections.includes('infantry') ? <KeySection title="Infantry" keys={arm('infantry')} /> : null}
       {r.sections.includes('cavalry') ? <KeySection title="Cavalry" keys={arm('cavalry')} /> : null}
       {r.sections.includes('artillery') ? <KeySection title="Artillery" keys={arm('artillery')} /> : null}
-      {r.leaders ? <LeaderSection /> : null}
+      {r.leaders === true ? <LeaderSection /> : r.leaders ? <LeaderSection nations={r.leaders} /> : null}
     </div>
   );
 }

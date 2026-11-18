@@ -1,5 +1,5 @@
-// Unit tokens. Keys with Napoleonic art (src/art/nap) are drawn by NapUnitToken; the code below is the placeholder that
-// remains for the rest (SP): a base plate in the nation's colour, one primitive silhouette per remaining block, and the arm
+// Unit tokens. Keys with Napoleonic art (src/art/nap) are drawn by NapUnitToken (every unit row has art); the code below is the
+// placeholder for any other UnitKey (a nation/code pair that is not a row): a base plate in the nation's colour, one primitive silhouette per remaining block, and the arm
 // badge. The token is centred on (0,0) of a pointy-top hex of radius 50; an attached leader's medallion sits on the left end
 // of the badge (LEADER_ATTACH_OFFSET).
 import { memo } from 'react';

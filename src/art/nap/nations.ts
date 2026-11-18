@@ -16,12 +16,17 @@ export const BASE_TOP = '#6e6a3c';
 
 const side = (edge: string, banner: string): SideColours => ({ edge, edgeShade: darken(edge, 0.34), edgeLight: lighten(edge, 0.3), banner });
 
-// Blue blocks for France, red for Britain, brown for Portugal; the Allies stand on the Portuguese brown (the scenario
+// Blue blocks for France, red for Britain, brown for Portugal, yellow for Spain; the Allies stand on the Portuguese brown (the scenario
 // booklet's instruction for 014-015).
 const FR_SIDE = side('#2c4f9e', '#3f73d8');
 const BR_SIDE = side('#b02a2a', '#d8453d');
 // A true brown, as the booklet says; as dark as the ground colours (banks, mud, dirt) allow while still clearing dE 20.
 const PT_SIDE = side('#58300e', '#c08a4a');
+// Spanish yellow, the placeholder art's value (src/art/palettes.ts), so banners and bases agree. Like the PT brown it is
+// checked against every ground colour: its nearest are the reeds and the sunlit leaves, at dE 33, well clear of 20; a deeper
+// gold would close on the ochre grass and the sand, a paler one on the field and the road. A Swiss unit stands on its row's
+// nation colour (SP/SWI on this yellow, FR/SWI on the French blue).
+const SP_SIDE = side('#d9b21c', '#e8c84a');
 
 const SKIN = ['#e0b48c', '#d4a077', '#c98f66', '#e6c09a'] as const;
 const HAIR = ['#3a2616', '#5a3a1e', '#1f1710', '#7a5a30', '#4a3020'] as const;
@@ -31,6 +36,7 @@ export const NATION_LOOKS: Record<ArtNation, NationLook> = {
   BR: { side: BR_SIDE, skin: SKIN, hair: HAIR },
   PT: { side: PT_SIDE, skin: SKIN, hair: HAIR },
   AL: { side: PT_SIDE, skin: SKIN, hair: HAIR },
+  SP: { side: SP_SIDE, skin: SKIN, hair: HAIR },
 };
 
 export const HORSE_COATS: Record<HorseCoatName, { coat: string; shade: string; mane: string }> = {

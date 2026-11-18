@@ -4,22 +4,24 @@ import { ART_KEYS, ART_NATIONS, isArtKey } from '../../../src/art/nap/keys';
 import { FIGURE_SPECS, LEADER_SPECS } from '../../../src/art/nap/specs';
 
 describe('the art keys', () => {
-  it('are survey §2.1 plus FR/LNC, nothing else', () => {
+  it('are survey §2.1 plus FR/LNC and the Expansion #1 rows, nothing else', () => {
     expect([...ART_KEYS].sort()).toEqual([
       'AL/FA', 'AL/LC', 'AL/LN', 'AL/LT', 'AL/ML', 'BR/FA', 'BR/GG', 'BR/GHC', 'BR/GR', 'BR/HA', 'BR/HC', 'BR/LC', 'BR/LN', 'BR/LT', 'BR/RI',
       'FR/CU', 'FR/FA', 'FR/GA', 'FR/GHC', 'FR/GR', 'FR/HA', 'FR/HC', 'FR/LC', 'FR/LN', 'FR/LNC', 'FR/LT', 'FR/ML', 'FR/OG', 'FR/YG',
+      'FR/GLC', 'FR/SWI',
       'PT/FA', 'PT/HC', 'PT/LC', 'PT/LN', 'PT/LT', 'PT/ML',
-    ]);
-    expect(new Set(ART_KEYS).size).toBe(35);
+      'SP/CU', 'SP/FA', 'SP/GR', 'SP/HC', 'SP/LC', 'SP/LN', 'SP/LT', 'SP/ML', 'SP/SWI',
+    ].sort());
+    expect(new Set(ART_KEYS).size).toBe(46);
   });
 
   it('are all unit keys', () => {
     for (const k of ART_KEYS) expect(isUnitKey(k)).toBe(true);
   });
 
-  it('name the four art nations', () => {
-    expect([...ART_NATIONS]).toEqual(['FR', 'BR', 'PT', 'AL']);
-    expect(isArtKey('SP/LN')).toBe(false);
+  it('name the five art nations', () => {
+    expect([...ART_NATIONS]).toEqual(['FR', 'BR', 'PT', 'AL', 'SP']);
+    expect(isArtKey('SP/LN')).toBe(true);
     expect(isArtKey('FR/XX')).toBe(false);
     expect(isArtKey('FR/LN')).toBe(true);
   });
@@ -30,6 +32,6 @@ describe('the art keys', () => {
   });
 
   it('have a leader spec per art nation', () => {
-    expect(Object.keys(LEADER_SPECS).sort()).toEqual(['AL', 'BR', 'FR', 'PT']);
+    expect(Object.keys(LEADER_SPECS).sort()).toEqual(['AL', 'BR', 'FR', 'PT', 'SP']);
   });
 });
