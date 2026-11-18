@@ -8,7 +8,7 @@ import { gamePrompt } from '../../src/ui/game/prompts';
 import type { UiSel } from '../../src/ui/game/uiModel';
 import { SeededOpponent, runToHuman, useFakeClock } from './controller-helpers';
 
-const SEL: UiSel = { selCard: null, hoverCard: null, orderSel: [], selPiece: null, hoverHex: null };
+const SEL: UiSel = { selCard: null, hoverCard: null, orderSel: [], selPiece: null, hoverHex: null, assign: null };
 
 /** The labels of the prompt bar's buttons for the controller's current view. */
 function buttons(c: GameController): string[] {

@@ -12,6 +12,7 @@ import { HoverTip, LogPanel } from './panels';
 import { gamePrompt } from './prompts';
 import { bannerCounts, objectiveSummary, objectiveTipLines } from './objectiveText';
 import { boardMarks, selectionDeps, type UiSel } from './uiModel';
+import { assignClick, assignClickRefusal, currentAssign, type ElanOrRally } from './assign';
 import { leaderTraitLines, unitSummary } from './unitText';
 import { TerrainTipBlock } from './TerrainTipBlock';
 import { terrainTip } from './terrainTips';
@@ -21,7 +22,7 @@ import { isMuted, setMuted } from '../sound';
 import { opponentPersonality } from './makeOpponent';
 import './game.css';
 
-const EMPTY_SEL: UiSel = { selCard: null, hoverCard: null, orderSel: [], selPiece: null, hoverHex: null };
+const EMPTY_SEL: UiSel = { selCard: null, hoverCard: null, orderSel: [], selPiece: null, hoverHex: null, assign: null };
 
 const DIFF_LABEL = { recruit: 'Recruit', tribune: 'Tribune', consul: 'Consul' } as const;
 
@@ -40,6 +41,7 @@ export function GameScreen({ controller, onExit, onRematch }: {
   const [ui, setUi] = useState<UiSel>(EMPTY_SEL);
   const [showRules, setShowRules] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
+  const [assignNote, setAssignNote] = useState<string | null>(null);
   const [mutedState, setMutedState] = useState(isMuted());
 
   useEffect(() => {
@@ -52,7 +54,7 @@ export function GameScreen({ controller, onExit, onRematch }: {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target;
       if (t instanceof HTMLSelectElement || t instanceof HTMLInputElement) return;
-      if (document.querySelector('.kit-modal, .assign-float')) return; // dialogs own the keyboard
+      if (document.querySelector('.kit-modal')) return; // dialogs own the keyboard
       if (e.key === 'Enter') {
         if (e.repeat || t instanceof HTMLButtonElement) return;
         if (performance.now() - shownAt.current < 400) return; // swallow double-taps into a fresh decision
@@ -72,6 +74,7 @@ export function GameScreen({ controller, onExit, onRematch }: {
   // reset local selection whenever a new decision arrives
   useEffect(() => {
     shownAt.current = performance.now();
+    setAssignNote(null);
     setUi((u) => ({ ...EMPTY_SEL, hoverHex: u.hoverHex }));
     if (d?.kind === 'move' && d.side === human) {
       const movers = movablePieces(s);
@@ -167,6 +170,14 @@ export function GameScreen({ controller, onExit, onRematch }: {
         if (i >= 0) answer({ kind: 'choose', index: i });
         return;
       }
+      case 'elan':
+      case 'rally': {
+        // the armed die takes the clicked unit, or the leader standing with it when the unit is no option of that die
+        const cur = currentAssign(s, d, ui.assign);
+        const id = [u?.id, l?.id].find((x): x is string => !!x && assignClick(s, d, cur, x) !== cur.ids) ?? u?.id ?? l?.id;
+        if (id) clickAssign(d, id);
+        return;
+      }
       case 'combinedArms':
         // a click on one of the listed guns chooses it alone; "No artillery" is a button
         if (u && d.options.includes(u.id)) answer({ kind: 'select', ids: [u.id] });
@@ -188,7 +199,19 @@ export function GameScreen({ controller, onExit, onRematch }: {
       setUi({ ...ui, selPiece: id });
       return true;
     }
+    if (d.kind === 'elan' || d.kind === 'rally') {
+      clickAssign(d, id);
+      return true;
+    }
     return false;
+  };
+
+  /** A click on piece `id` for the armed Élan / Rally die: filled when legal, else the validator's reason is shown. */
+  const clickAssign = (d: ElanOrRally, id: string) => {
+    const cur = currentAssign(s, d, ui.assign);
+    const ids = assignClick(s, d, cur, id);
+    setAssignNote(ids === cur.ids ? assignClickRefusal(s, d, cur, id) : null);
+    if (ids !== cur.ids) setUi({ ...ui, assign: { die: cur.die, ids } });
   };
 
   const toggleOrder = (id: string) => {
@@ -204,7 +227,7 @@ export function GameScreen({ controller, onExit, onRematch }: {
   const onHexHoverS = useCallback((h: HexId | null) => setUi((u) => (u.hoverHex === h ? u : { ...u, hoverHex: h })), []);
 
   // ------------------------------------------------------------------ prompt
-  const prompt = gamePrompt({ controller, view, s, human, ai, ui, setUi, answer, onExit });
+  const prompt = gamePrompt({ controller, view, s, human, ai, ui, setUi, answer, onExit, assignNote });
 
   // ------------------------------------------------------------------ hover tooltip
   const hoverInfo = useMemo(() => {
@@ -315,13 +338,17 @@ export function GameScreen({ controller, onExit, onRematch }: {
             <BannerTrack count={meBanners.total} held={meBanners.held} target={s.bannersToWin} nation={them.nation} label="Banners won" detail={objectiveSummary(s, human)} />
             <div className="deck-row">Deck {s.deck.length} · Discards {s.discard.length}</div>
           </Panel>
-          <div className="dice-slot">
-            {view.dice ? (
-              <DiceTray key={view.dice.id} faces={view.dice.faces} scoring={view.dice.rolling ? undefined : view.dice.scoring} rolling={view.dice.rolling} title={view.dice.title} subtitle={view.dice.subtitle} dieSize={32} />
-            ) : (
-              <div className="dice-empty">Battle dice will appear here</div>
-            )}
-          </div>
+          {prompt?.panel}
+          {/* the Élan / Rally panel shows the same dice, so the tray makes room for the log while it is open */}
+          {!prompt?.panel && (
+            <div className="dice-slot">
+              {view.dice ? (
+                <DiceTray key={view.dice.id} faces={view.dice.faces} scoring={view.dice.rolling ? undefined : view.dice.scoring} rolling={view.dice.rolling} title={view.dice.title} subtitle={view.dice.subtitle} dieSize={32} />
+              ) : (
+                <div className="dice-empty">Battle dice will appear here</div>
+              )}
+            </div>
+          )}
           <LogPanel log={view.log} human={human} />
         </aside>
       </div>
@@ -362,6 +389,7 @@ export function GameScreen({ controller, onExit, onRematch }: {
                 {prompt.text && <div className="prompt-sub" title={prompt.text}>{prompt.text}</div>}
                 {view.error && <div className="prompt-err">{view.error}</div>}
               </div>
+              {prompt.extra}
               <div className="prompt-buttons">{prompt.buttons}</div>
             </div>
           )}

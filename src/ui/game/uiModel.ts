@@ -7,6 +7,7 @@ import {
 } from '../../engine';
 import type { Highlight } from './Board';
 import { promptSpec } from './promptSpec';
+import { assignOptions, currentAssign } from './assign';
 
 export interface UiSel {
   selCard: number | null;
@@ -14,11 +15,13 @@ export interface UiSel {
   orderSel: string[];
   selPiece: string | null;
   hoverHex: HexId | null;
+  /** Élan / Rally: the armed die and the piece (or null) given to each die; null until the player touches it. */
+  assign: { die: number | null; ids: (string | null)[] } | null;
 }
 
 /** Every field of a selection but the hovered hex (the compiler checks that none is missing). */
 const SEL_FIELDS: Record<Exclude<keyof UiSel, 'hoverHex'>, true> = {
-  selCard: true, hoverCard: true, orderSel: true, selPiece: true,
+  selCard: true, hoverCard: true, orderSel: true, selPiece: true, assign: true,
 };
 const SEL_KEYS = Object.keys(SEL_FIELDS) as (keyof typeof SEL_FIELDS)[];
 
@@ -174,6 +177,24 @@ export function boardMarks(s: GameState, d: Decision | null, ui: Omit<UiSel, 'ho
       if (d.kind === 'defend') {
         const ah = pieceHex(s, d.attacker) ?? -1;
         if (ah >= 0) highlights.set(ah, 'targetClose');
+      }
+      break;
+    }
+    case 'elan':
+    case 'rally': {
+      // the armed die's options, and the pieces the dice are on now
+      const cur = currentAssign(s, d, ui.assign);
+      if (cur.die !== null) for (const o of assignOptions(s, d, cur.die)) markPiece(o.id, 'option');
+      for (const id of cur.ids) if (id !== null) markPiece(id, 'selected');
+      break;
+    }
+    case 'shortSupplyTarget': {
+      // any unit of either side may be lifted: every one carries the badge
+      for (const id of d.options) {
+        const h = pieceHex(s, id) ?? -1;
+        if (h < 0) continue;
+        highlights.set(h, 'option');
+        badges.set(h, 'Supply');
       }
       break;
     }

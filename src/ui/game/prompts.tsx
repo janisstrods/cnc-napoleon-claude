@@ -8,7 +8,9 @@ import {
   movablePieces, orderLimit, pieceHex, pieceMoves, unitById, validateOrders,
   type Answer, type Decision, type DieFace, type GameState, type SectionName, type Side, type UndoStep,
 } from '../../engine';
-import { Button } from '../kit';
+import { Button, CardView } from '../kit';
+import { AssignPanel } from './AssignPanel';
+import { assignError, currentAssign, type ElanOrRally } from './assign';
 import type { GameController, ViewState } from './controller';
 import { AUTO_ACTION, DECISION_TITLES, promptSpec, unitLabel } from './promptSpec';
 import { attackDice, expectedHits, type UiSel } from './uiModel';
@@ -20,6 +22,10 @@ export interface Prompt {
   buttons: JSX.Element[];
   tone?: string;
   dice?: DieFace[];
+  /** Shown in the prompt bar between the text and the buttons (the Scout's two cards). */
+  extra?: JSX.Element;
+  /** Shown beside the board (the Élan / Rally dice). */
+  panel?: JSX.Element;
 }
 
 /** What the prompts read from the game screen and act on. */
@@ -34,6 +40,8 @@ export interface PromptCtx {
   setUi: Dispatch<SetStateAction<UiSel>>;
   answer: (a: Answer) => void;
   onExit: () => void;
+  /** Why the last click on the board was refused (the Élan / Rally chooser). */
+  assignNote?: string | null;
 }
 
 type D<K extends Decision['kind']> = Extract<Decision, { kind: K }>;
@@ -93,9 +101,51 @@ function decisionPrompt(c: PromptCtx, d: Decision): Prompt {
       return retreatPrompt(c, d);
     case 'leaderRetreat':
       return leaderRetreatPrompt(c, d);
+    case 'elan':
+    case 'rally':
+      return assignPrompt(c, d);
+    case 'scoutKeep':
+      return scoutPrompt(c, d);
+    case 'shortSupplyTarget': {
+      // a click on any unit of the board chooses it; the general's button is the only other answer
+      const p = genericPrompt(c, d);
+      return { ...p, buttons: p.buttons.filter((b) => b.key === 'auto') };
+    }
     default:
       return genericPrompt(c, d);
   }
+}
+
+/** Élan and Rally: the dice panel beside the board; Confirm answers what it shows (disabled only while it is illegal). */
+function assignPrompt(c: PromptCtx, d: ElanOrRally): Prompt {
+  const { s, ui } = c;
+  const spec = promptSpec(s, d);
+  const cur = currentAssign(s, d, ui.assign);
+  const err = assignError(s, d, cur.ids);
+  return {
+    title: spec.title,
+    text: err ?? 'Pick a die, then click a piece on the board or choose one from the list.',
+    tone: err ? 'warn' : undefined,
+    buttons: [btn('Confirm', () => c.answer({ kind: 'assign', ids: cur.ids }), { disabled: !!err, key: 'confirm' }), autoButton(c)],
+    panel: <AssignPanel s={s} d={d} ui={ui} setUi={c.setUi} note={c.assignNote ?? null} text={spec.text} />,
+  };
+}
+
+/** Scout: the two cards drawn, large; a click keeps one. Only the owner's prompt is ever built (`gamePrompt` returns null otherwise). */
+function scoutPrompt(c: PromptCtx, d: D<'scoutKeep'>): Prompt {
+  const spec = promptSpec(c.s, d);
+  return {
+    title: spec.title,
+    text: spec.text,
+    buttons: [autoButton(c)],
+    extra: (
+      <div className="scout-cards">
+        {d.cards.map((card, i) => (
+          <CardView key={card} kind={cardKind(card)} size="md" onClick={() => c.answer({ kind: 'choose', index: i })} />
+        ))}
+      </div>
+    ),
+  };
 }
 
 /** Any decision without a chooser of its own: one button per action of its spec (the first is the primary one). */

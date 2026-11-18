@@ -90,9 +90,9 @@ describe('a prompt for every decision', () => {
     expect(promptSpec(s, SAMPLES.find((x) => x.kind === 'combinedArms')!).actions.map((a) => a.key)).not.toContain('all');
   });
 
-  it('Élan and Rally offer only the general until Plan 4; Scout names its two cards', () => {
-    expect(promptSpec(s, elan).actions.map((a) => a.key)).toEqual(['auto']);
-    expect(promptSpec(s, rally).actions.map((a) => a.key)).toEqual(['auto']);
+  it('Élan and Rally offer the suggested assignment, then the general; Scout names its two cards', () => {
+    expect(promptSpec(s, elan).actions.map((a) => a.key)).toEqual(['suggested', 'auto']);
+    expect(promptSpec(s, rally).actions.map((a) => a.key)).toEqual(['suggested', 'auto']);
     expect(promptSpec(s, scout).actions.map((a) => a.label).slice(0, 2)).toEqual(
       [CARD_DEFS[cardKind(scout.cards[0])].title, CARD_DEFS[cardKind(scout.cards[1])].title],
     );
