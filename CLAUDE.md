@@ -163,4 +163,6 @@ load; see each file header for flags):
 
 ## Golden fixtures
 
-- No fixtures are recorded now (Plan 2A deleted the Ancients ones). `tests/golden/golden.test.ts` checks that two random-play runs of `000` with the same seed produce identical event streams; `tests/golden/record.ts` and `scripts/golden-record.ts` stay for recording again with the new engine.
+- `tests/golden/fixtures.json` records 38 games: a random-play game for every battle (`rnd-<id>-<seed>`: `000` seed 11, `001`–`015` seeds 11–25, `101`–`118` seeds 111–128) and four AI-vs-AI games at budget scale 0.05 (`ai-005-31`, `ai-010-32`, `ai-101-33`, `ai-116-34`). Each holds the hash of every engine event plus the final state digest (which includes `special`), the answer count and the winner. `tests/golden/save-fixture.json` is a battle 116 save (seed 17, the first 60 random answers) with its `rngCalls` and state hash. `golden.test.ts` replays the random games and rebuilds the save; `golden-ai.slow.test.ts` replays the AI games.
+- Re-record with `npx vite-node scripts/golden-record.ts > tests/golden/fixtures.json` and `npx vite-node scripts/golden-record.ts -- --save > tests/golden/save-fixture.json`.
+- Re-record only after a deliberate engine or AI change, and say so in the commit message. A golden test failing otherwise is a regression: fix the code, not the fixture.

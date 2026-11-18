@@ -3,7 +3,11 @@
 import { GameDriver, createGame, type Answer, type Decision, type GameEvent, type Side } from '../../src/engine';
 import { scenarioById } from '../../src/scenarios';
 import { DIFFICULTIES, chooseAnswer, isLegal, newMemory, personalityFor, type AiMemory, type AiOptions } from '../../src/ai';
-import { must } from '../rules/helpers';
+
+// Local copy of tests/rules/helpers `must`: that module imports vitest, which would stop scripts/golden-record.ts (vite-node) from loading this file.
+function must(d: GameDriver, a: Answer): void {
+  if (!d.answer(a)) throw new Error(`answer ${JSON.stringify(a)} rejected: ${d.lastError} (pending ${JSON.stringify(d.pending)})`);
+}
 
 export interface SoakOpts {
   /** The game's seed; the AIs are seeded from it (plus `aiSeed`). */
