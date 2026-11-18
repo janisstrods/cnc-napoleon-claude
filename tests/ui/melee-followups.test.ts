@@ -27,7 +27,7 @@ describe('decision titles', () => {
     const ret = (reason: 'retreat' | 'retireReform'): Decision => ({ kind: 'retreat', side: 'bottom', unit: 'u1', options: [], reason });
     expect(decisionTitle(ret('retireReform'))).toBe('Retire and Reform');
     expect(decisionTitle(ret('retreat'))).toBe('Retreat');
-    const def = (bonus: boolean): Decision => ({ kind: 'defend', side: 'bottom', attacker: 'u1', target: 'u2', options: ['stand'], bonus });
+    const def = (bonus: boolean): Decision => ({ kind: 'defend', side: 'bottom', attacker: 'u1', target: 'u2', options: ['stand'], bonus, artillery: [] });
     expect(decisionTitle(def(true))).toBe('Under attack! (bonus melee)');
     expect(decisionTitle(def(false))).toBe('Under attack!');
     // every other kind, and the spec, use the table
