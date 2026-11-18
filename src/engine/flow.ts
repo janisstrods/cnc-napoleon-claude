@@ -8,6 +8,7 @@ import { turnStartObjectives } from './objectives';
 import { battlePhase, cardStep, movePhase } from './phases';
 import { other } from './query';
 import { shuffle } from './rng';
+import { settleHand } from './scenarioRules';
 import { newTurn } from './setup';
 import type { Gen } from './decisions';
 import { SIDES, type FlowCtx, type GameState } from './types';
@@ -65,6 +66,7 @@ function* battleToEnd(s: GameState, ctx: FlowCtx): Gen {
   yield* battlePhase(s, ctx);
   if (s.winner) return;
   yield* drawPhase(s, ctx);
+  for (const o of SIDES) settleHand(s, ctx, o);   // 106: a card owed from a banner gained while none was held (S46)
   s.lastCard[s.active] = t.effective;
   s.special.turnsDone[s.active]++;
   t.phase = 'done';
