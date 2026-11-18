@@ -1,6 +1,7 @@
 // Scenario side rules (RR §14, §15) that change the core rules, read from `scenario.sideRules`.
+import { randInt } from './rng';
 import { terrainAt } from './terrain';
-import type { GameState, Side, SideRuleDef, Unit } from './types';
+import type { FlowCtx, GameState, Side, SideRuleDef, Unit } from './types';
 
 /** Extra flags a unit may ignore by a scenario rule: the sum of `flagIgnoreOn` rules of its side for the terrain it stands on (006, R84). */
 export function sideRuleFlagIgnores(s: GameState, u: Unit): number {
@@ -65,4 +66,37 @@ export function handShrinkRule(s: GameState, side: Side): SideRuleOf<'handShrink
 /** The `breakOnLosses` rule of `side`, if any (S30). */
 export function breakRule(s: GameState, side: Side): SideRuleOf<'breakOnLosses'> | undefined {
   return ruleOf(s, 'breakOnLosses', side);
+}
+
+/** Take one random held card of `side` to the discard, face up (S33, S46). False when no card is held. */
+function takeRandomCard(s: GameState, ctx: FlowCtx, side: Side): boolean {
+  const hand = s.players[side].hand;
+  if (hand.length === 0) return false;
+  const card = hand.splice(randInt(s, hand.length), 1)[0];
+  s.discard.push(card);
+  ctx.emit({ t: 'discarded', side, card });
+  return true;
+}
+
+/**
+ * The enemy of `loser` gained `n` permanent banners: while a `handShrink` rule of `loser` has its hand size above the floor,
+ * the size falls by 1 and one random held card is discarded (S33). With no card held the card is taken after the next draw
+ * (`settleHand`, S46).
+ */
+export function shrinkHand(s: GameState, ctx: FlowCtx, loser: Side, n: number): void {
+  const r = handShrinkRule(s, loser);
+  if (!r) return;
+  for (let i = 0; i < n && s.special.handSize[loser] > r.floor; i++) {
+    s.special.handSize[loser]--;
+    takeRandomCard(s, ctx, loser);
+  }
+}
+
+/** After a side's draw: cards held and on the track above the hand size are taken at random (the deferred S46 take). */
+export function settleHand(s: GameState, ctx: FlowCtx, side: Side): void {
+  if (!handShrinkRule(s, side)) return;
+  const p = s.players[side];
+  while (p.hand.length + p.squareTrack.filter((c) => c !== null).length > s.special.handSize[side]) {
+    if (!takeRandomCard(s, ctx, side)) break;
+  }
 }

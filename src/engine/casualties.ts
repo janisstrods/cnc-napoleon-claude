@@ -1,5 +1,6 @@
 // Losses and the event helpers the flow shares (RR §3.1, §9.5, §13.2).
 import { scoreKill, scoreLeaderKill, updateHeld } from './objectives';
+import { breakRule } from './scenarioRules';
 import type { DieFace, FlowCtx, GameState, Leader, RollPurpose, Side, Unit } from './types';
 
 export function log(ctx: FlowCtx, text: string, side?: Side): void {
@@ -36,6 +37,26 @@ export function removeUnit(s: GameState, ctx: FlowCtx, u: Unit, reason: string):
   // updateHeld (objectives.ts) is then a no-op, kept there for its other callers.
   updateHeld(s, ctx);
   scoreKill(s, ctx, u);
+  if (!s.winner) breakAfterLoss(s, ctx, u.side);   // a victory reached by this elimination is decided first (R64)
+}
+
+/**
+ * A `breakOnLosses` rule of `side` (S30): once `losses` of its start-of-battle units of those rows are gone, every one still on
+ * the board is removed at once. No banner, no leader check (an attached leader stays as a lone leader); a square releases.
+ */
+export function breakAfterLoss(s: GameState, ctx: FlowCtx, side: Side): void {
+  const r = breakRule(s, side);
+  if (!r) return;
+  const left = s.units.filter((x) => x.side === side && r.keys.includes(x.key));
+  if (left.length === 0 || r.start - left.length < r.losses) return;
+  for (const u of left) {
+    releaseSquare(s, ctx, u);
+    s.units = s.units.filter((x) => x.id !== u.id);
+    delete s.turn.ordered[u.id];
+    ctx.emit({ t: 'removed', id: u.id, reason: 'broken' });
+    log(ctx, `${u.id} leaves the field (broken).`, side);
+  }
+  updateHeld(s, ctx);
 }
 
 /** Remove `n` blocks (hits beyond the blocks are lost). Returns true when the unit is eliminated (and removed). */
