@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { GameDriver, OFF_BOARD, bannerTotal, exitPiece, forceDice, pieceMoves, type GameEvent, type GameState } from '../../src/engine';
 import type { ObjectiveSetup } from '../../src/engine';
+import { removeUnit } from '../../src/engine/casualties';
 import { H, attack, build, endTurn, ev, leaderId, miss, must, n, passTurn, play, toBattle, turn, endMoves } from './helpers';
 
 const heldEv = (es: GameEvent[], side: 'top' | 'bottom') => es.filter((e) => e.t === 'held' && e.side === side);
@@ -54,6 +55,47 @@ describe('tempAny (S35)', () => {
     const lost = heldEv(ev(d), 'top');
     expect(lost).toHaveLength(1);
     expect(lost[0]).toMatchObject({ total: 0 });
+  });
+});
+
+describe('tempAny holders (S35)', () => {
+  const group = [[4, 5], [4, 6]] as [number, number][];
+  const obj: ObjectiveSetup = { kind: 'tempAny', side: 'top', hexes: group };
+  const inGroup = (h: number) => group.some(([r, c]) => H(r, c) === h);
+  const farB = { side: 'bottom' as const, key: 'BR/LN' as const, at: [8, 8] as [number, number] };
+
+  it('tempAny: holders are refreshed at every own turn start while held; one held event in all (S35)', () => {
+    const s = build({ objectives: [obj], first: 'top', units: [{ side: 'top', key: 'FR/LN', at: [4, 5] }, { side: 'top', key: 'FR/LN', at: [5, 6] }, farB] });
+    const d = new GameDriver(s);
+    const all: GameEvent[] = [];
+    turn(d, 'attackC', ['u2']);                                   // turn start 1: u1 holds it
+    expect(d.state.special.objState[0].holders).toEqual(['u1']);
+    step(d, 'u2', (h) => inGroup(h) && h !== H(4, 5));            // u2 enters mid-turn: no holder yet
+    expect(d.state.special.objState[0].holders).toEqual(['u1']);
+    endMoves(d);
+    all.push(...ev(d));
+    endTurn(d);
+    passTurn(d);                                                  // bottom's turn, then top's turn start 2
+    expect(d.state.special.objState[0].holders?.slice().sort()).toEqual(['u1', 'u2']);
+    turn(d, 'attackC', ['u1']);
+    step(d, 'u1', (h) => !inGroup(h));                            // the first holder leaves; the second still holds it
+    expect(bannerTotal(d.state, 'top')).toBe(1);
+    expect(d.state.special.objState[0].holders).toEqual(['u2']);
+    all.push(...ev(d));
+    expect(heldEv(all, 'top').filter((e) => e.t === 'held' && !String(e.reason).endsWith('(lost)'))).toHaveLength(1);
+    expect(heldEv(all, 'top').filter((e) => e.t === 'held' && String(e.reason).endsWith('(lost)'))).toHaveLength(0);
+  });
+
+  it('tempAny: a holder that left the group is no holder when it stands on a group hex again (M1)', () => {
+    const s = build({ objectives: [obj], first: 'top', units: [{ side: 'top', key: 'FR/LN', at: [4, 5] }, { side: 'top', key: 'FR/LN', at: [4, 6] }, farB] });
+    const d = new GameDriver(s);
+    turn(d, 'attackC', ['u1']);
+    expect(d.state.special.objState[0].holders?.slice().sort()).toEqual(['u1', 'u2']);
+    step(d, 'u1', (h) => !inGroup(h));
+    expect(d.state.special.objState[0].holders).toEqual(['u2']);
+    d.state.units.find((x) => x.id === 'u1')!.hex = H(4, 5);       // back on a group hex later in the turn
+    endMoves(d);
+    expect(d.state.special.objState[0].holders).toEqual(['u2']);
   });
 });
 
@@ -157,17 +199,32 @@ describe('exitEdge (S31)', () => {
     expect(d.state.leaders).toHaveLength(0);
     expect(d.state.special.objState[0].count).toBe(0);
     expect(d.state.players.top.banners).toBe(0);
-    // a unit forced to retreat from the edge row stays on the board (or loses blocks), never exits
+    // a unit on the edge row driven back by flags loses blocks; it never retreats off the board
     const r = build({
-      objectives: [{ ...edge, free: 0 }], first: 'bottom',
-      units: [{ side: 'top', key: 'FR/LN', at: [8, 6], blocks: 4 }, { side: 'bottom', key: 'BR/LN', at: [7, 6] }],
+      objectives: [{ kind: 'exitEdge', side: 'top', row: 0, free: 0 }], first: 'bottom',
+      units: [{ side: 'top', key: 'FR/LN', at: [0, 6], blocks: 4 }, { side: 'bottom', key: 'BR/LN', at: [1, 6] }],
     });
     const rd = toBattle(r, 'attackC', ['u2']);
-    forceDice([miss('BR/LN', 'FR/LN'), miss('BR/LN', 'FR/LN'), miss('BR/LN', 'FR/LN'), 'flag', 'flag', 'flag', 'flag', ...n('flag', 20)]);
-    attack(rd, 'u2', H(8, 6));
-    expect(r.special.objState[0].count).toBe(0);
-    expect(r.players.top.banners).toBe(0);
-    expect(rd.state.units.find((x) => x.id === 'u1')?.hex).not.toBe(OFF_BOARD);
+    ev(rd);
+    forceDice(n('flag', 30));
+    attack(rd, 'u2', H(0, 6));
+    const res = ev(rd);
+    expect(res.some((e) => e.t === 'damage' && e.id === 'u1' && e.reason.includes('retreat'))).toBe(true);   // no room to retreat: blocks lost (or the unit)
+    expect(res.some((e) => e.t === 'removed' && e.reason === 'exit')).toBe(false);
+    expect(rd.state.special.objState[0].count).toBe(0);
+    expect(rd.state.players.top.banners).toBe(0);
+  });
+
+  it('exitEdge: a unit with an attached leader exits as one unit; the leader is not counted (M3)', () => {
+    const s = build({
+      objectives: [{ ...edge, free: 0 }], first: 'top',
+      units: [{ side: 'top', key: 'FR/LN', at: [8, 6] }, { side: 'bottom', key: 'BR/LN', at: [0, 0] }], leaders: [{ side: 'top', at: [8, 6] }],
+    });
+    const d = play(s, 'attackC', ['u1']);
+    must(d, { kind: 'move', piece: 'u1', to: OFF_BOARD });
+    expect(d.state.leaders).toHaveLength(0);
+    expect(d.state.special.objState[0].count).toBe(1);
+    expect(d.state.players.top.banners).toBe(1);
   });
 
   it('exitEdge: stepping off costs a hex; a unit stopped on the baseline by terrain cannot exit (S31)', () => {
@@ -213,7 +270,32 @@ describe('suddenDeath (S32)', () => {
     expect(es[es.length - 1].t).toBe('victory');
   });
 
-  it('suddenDeath: a banner win in an earlier event stands (S32)', () => {
+  it('suddenDeath: the win comes at the third key unit lost, not before; the objective side\'s own units and other rows do not count (S32)', () => {
+    const s = build({
+      objectives: [sd], first: 'bottom',
+      units: [
+        { side: 'bottom', key: 'BR/FA', at: [8, 0] }, { side: 'bottom', key: 'BR/FA', at: [8, 1] }, { side: 'bottom', key: 'BR/FA', at: [8, 2] },
+        { side: 'bottom', key: 'BR/LN', at: [8, 3] }, { side: 'top', key: 'FR/FA', at: [0, 0] }, { side: 'top', key: 'BR/FA', at: [0, 1] },
+      ],
+    });
+    const ctx = { emit: (e: GameEvent) => { events.push(e); } };
+    const events: GameEvent[] = [];
+    const lose = (id: string) => removeUnit(s, ctx, s.units.find((x) => x.id === id)!, 'test');
+    lose('u4');                               // another row of the enemy: no count
+    lose('u6');                               // the objective side's own gun (same key): no count
+    expect(s.special.objState[0].count).toBe(0);
+    lose('u1');
+    expect(s.winner).toBeNull();
+    lose('u2');
+    expect(s.winner).toBeNull();
+    expect(s.special.objState[0].count).toBe(2);
+    lose('u3');
+    expect(s.winner).toBe('top');
+    expect(s.winReason).toBe('The guns are gone.');
+    expect(events.filter((e) => e.t === 'victory')).toHaveLength(1);
+  });
+
+  it('suddenDeath: a banner win in the same event stands (S32, R64)', () => {
     const s = build({
       banners: 1, objectives: [sd], first: 'top',
       units: [{ side: 'bottom', key: 'BR/FA', at: [4, 6], blocks: 1 }, { side: 'top', key: 'FR/LN', at: [5, 6] }],

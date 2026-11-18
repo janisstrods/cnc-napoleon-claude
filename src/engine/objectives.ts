@@ -41,7 +41,11 @@ export function turnStartObjectives(s: GameState, ctx: FlowCtx, side: Side): voi
   s.scenario.objectives.forEach((o, i) => {
     if (o.side !== side || !isHeldKind(o)) return;
     const st = s.special.objState[i];
-    if (!st || st.held) return;
+    if (!st) return;
+    if (st.held) {
+      if (o.kind === 'tempAny') st.holders = unitsAmong(s, side, hexesOf(o));   // kept: the units there now replace the old holders (S35)
+      return;
+    }
     if (o.kind === 'tempAny') {
       const holders = unitsAmong(s, side, hexesOf(o));   // only the units standing there now are holders (S35)
       if (holders.length === 0) return;
