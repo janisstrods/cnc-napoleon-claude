@@ -3,12 +3,12 @@
 Condensed from the GMT *Rules of Play, 4th Edition* (the edition the engine follows, R68), the National Unit Reference
 Cards and the 2nd-edition scenario booklet, with Richard Borg's FAQ rulings where they settle a point. This file is
 the authoritative spec for the engine, its tests and the AI: every rules test is written from this file alone. Rules
-questions are decided in `design/rulings.md`. A statement that rests on our own interpretation carries an **[Interp]**
+questions are decided in `design/rulings.md` (Expansion #1: `design/exp1-rulings.md`, rows S1…). A statement that rests on our own interpretation carries an **[Interp]**
 mark with the id of the deciding row (for example **[Interp R15]**); other statements cite the settling row as (R<n>)
 where one exists. Where this file and a ruling disagree, the ruling wins and this file is corrected.
 
-§1–§13 describe the base game (battles 001–015). §14 holds the base battles' special rules. §15 onward is reserved for
-Expansion #1.
+§1–§13 describe the base game (battles 001–015). §14 holds the base battles' special rules. §15 holds the Expansion #1
+rules and §16 the special rules of its battles 101–118.
 
 **Notation.** `b` = the unit's current blocks. ⌈x⌉ rounds up, ⌊x⌋ rounds down. "r2" = range 2 (hexes counted including
 the target's hex but not the battling unit's). I / C / A = infantry / cavalry / artillery. Unit keys are written
@@ -61,7 +61,7 @@ symbol hits it (§3). Blocks never split or merge. A leader is one block and is 
 Leaders of every nation (`FR/LDR`, `BR/LDR`, `PT/LDR`, `AL/LDR`) all use §2.7.
 
 French lancers (`FR/LNC`) and Guard light cavalry (`FR/GLC`) are not in the base box and no base battle uses them
-(R7); they have no rows here.
+(R7); their rows, with the Spanish and Swiss rows, are in §15.1 (S13).
 
 ### 2.2 France (FR) — moving fire rounds up
 
@@ -1049,7 +1049,561 @@ size; the Tactician numbers are ignored (R86). Every battle also scores the ordi
   * never in a battle back, and never for a unit that used First Strike (§9.7).
 * Sand quarry at (2,6) (§4, R71); a BR/RI starts on it.
 
-## 15. Expansion #1 (reserved)
+## 15. Expansion #1 rules
 
-§15 onward is reserved for Expansion #1 (*The Spanish Army*, nation code `SP`). This section is intentionally empty in
-the base-game reference.
+Expansion #1 (*The Spanish Army*, battles 101–118) adds the Spanish nation (`SP`), Swiss infantry for both sides, French
+lancers and Guard light cavalry, Guerrilla Action, new terrain tiles, and new objective and side rules. Its rulings are
+the S rows of `design/exp1-rulings.md`: a statement settled by a row cites it as (S<n>); one resting on an `[Interp]`
+row carries **[Interp S<n>]**. Every rule of §1–§14 and every R ruling applies to the expansion unless this section
+changes it; S40 lists the changes.
+
+**Sides.** In every battle 101–118 the **top** army is the Allied side (Spanish, or British with Spanish and Portuguese
+units) and the **bottom** army is the French. The engine knows only top and bottom: a rule that falls on one side names
+that side in the scenario data (§15.8) and never goes by nation or army name. The side that holds Guerrilla counters is
+**the guerrilla side** and the other **its opponent**.
+
+### 15.1 Spanish, Swiss and new French unit rows
+
+Notation as §2. "M" columns are the values after the unit **moved** this turn (§15.2); moving fire and moving melee
+never go below 0, and a 0 is a "–" cell (§15.2). Spanish and both Swiss rows round moving fire **down** (R5, S14).
+
+| Key | Unit | Blocks | Move | Range | Fire, standing | Fire, moved | Melee, standing | Melee, moved | Retreat / flag | Flags ignored | Sabre hits | Notes |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `SP/LN` | Line infantry | 4 | 0–1 & battle | 2 | b | ⌊b/2⌋−1 | b | b−1 | **2** | 0 | yes | S1. |
+| `SP/LT` | Light infantry | 5 | 0–1 & battle, or 2 & no battle | 2 | b | ⌊b/2⌋ (no −1) | b | b−1 | **2** | 0 | yes | Light: may battle the turn it enters a forest (R42) (S2). |
+| `SP/GR` | Grenadier | 4 | 0–1 & battle | 2 | b | ⌊b/2⌋ | b+1 | b+1 | **2** | 1 | yes | No moving melee penalty; battle back and First Strike b+1; no extra fire die (S3). |
+| `SP/ML` | Militia | 4 | 0–1 & battle | 2 | b | ⌊b/2⌋−1 | b | b−1 | **3** | 0 | **no** | Sabres still kill a lone leader; in a Combined Arms roll it leads, the artillery's sabres do not score either (R17) (S4). |
+| `SP/SWI` | Swiss infantry | 5 | 0–1 & battle | 2 | b **[Interp S11]** | ⌊b/2⌋ | b | b | 1 | 0 | yes | May form square (S11). |
+| `SP/LC` | Light cavalry | 3 | 0–3 & battle | — | — | — | b | b | **2** | 0 | yes | S5. |
+| `SP/HC` | Heavy cavalry | 3 | 0–2 & battle | — | — | — | b+1 | b+1 | **2** | 0 | yes | Heavy: moves 3 under Cavalry Charge (R60) (S5). |
+| `SP/CU` | Cuirassier | 3 | 0–2 & battle | — | — | — | b+1 | b+1 | **2** | 1 | yes | Ignores 1 hit in each infantry ranged attack against it (as `CU`, §2.2); a lancer attacking it never re-rolls flags (§15.4) (S5). |
+| `SP/FA` | Foot artillery | 3 | 1 & no battle, or 0 & battle | 5 | §2.6 FA | cannot battle | §2.6 FA (r1) | cannot battle | 1 | 0 | yes | Identical to the base foot artillery (S6). |
+| `FR/SWI` | Swiss infantry | 5 | 0–1 & battle | 2 | b **[Interp S11]** | ⌊b/2⌋ | b | b | 1 | 0 | yes | Not `FR/LN`: never the French line +1 melee die (S11). Battle 101's break rule: §16.1. |
+| `FR/LNC` | Light lancers | 4 | 0–3 & battle | — | — | — | b | b | 1 | 0 | yes | Flag re-roll (§15.4) (S12). |
+| `FR/GLC` | Guard light cavalry | 4 | 0–3 & battle | — | — | — | b | b | 1 | **2** | yes | Guard cavalry: +2 under Cavalry Charge (R60) (S13). |
+
+* **Classes (§2.1).** Infantry: `SP/LN`, `SP/LT`, `SP/GR`, `SP/ML`, `SP/SWI`, `FR/SWI`. Light-infantry movement:
+  `SP/LT`. Grenadier (Force March): `SP/GR`. Cavalry: `SP/LC`, `SP/HC`, `SP/CU`, `FR/LNC`, `FR/GLC`. Heavy cavalry:
+  `SP/HC`, `SP/CU`. Guard cavalry (+2 on Cavalry Charge): `FR/GLC`. Artillery with foot artillery movement: `SP/FA`. No
+  sabre hits against units: `SP/ML`. No new row is Guard infantry or Guard artillery.
+* Every cavalry unit, whatever its retreat distance, Retire and Reforms exactly 2 hexes (S5, R34).
+* `SP/LDR` is an ordinary leader (§2.7, S6). The two Swiss leaders of 101 are an `SP/LDR` and an `FR/LDR` (S11). Any
+  friendly leader attaches to any friendly unit, whatever its nation (S27).
+* `FR/GA` is unchanged (§2.2, S13). §2.1's note that `FR/LNC` and `FR/GLC` are unused holds only for the base game.
+* `FR/LN`'s +1 melee die applies against every Spanish and Swiss infantry unit, squares included (R2, S14).
+* Every unit of 101–118 starts at the block count of its row; no battle sets another strength (S41).
+
+### 15.2 Moving penalties and 0-dice cells
+
+**Moved** (S8). A unit has moved when it changed hex during its own Movement phase this turn, by 1 or 2 hexes and under
+any card (Force March and Bayonet Charge included, R73). It has not moved if it stayed put, only came out of square,
+was rallied, or was placed by Short Supply; taking ground or breaking through after a melee changes nothing.
+
+* The moved values apply to the unit's fire, its melee and its share of a Combined Arms roll on that turn (S8).
+* Battle back and First Strike, always on the enemy's turn, use the standing values (S8).
+* A Spanish or Swiss unit rolling at an escaping leader (§3.3) uses its standing melee dice **[Interp S8]**; a lancer
+  never re-rolls there (§15.4).
+
+**Base dice by blocks** (the §15.1 formulas worked out; "S" standing, "M" moved; before card additions, the `FR/LN`
+die, caps and terrain, §3.2).
+
+| Unit | 5 | 4 | 3 | 2 | 1 |
+|---|---|---|---|---|---|
+| Fire: `SP/LN`, `SP/ML` — S | | 4 | 3 | 2 | 1 |
+| Fire: `SP/LN`, `SP/ML` — M | | 1 | 0 | 0 | 0 |
+| Fire: `SP/LT` — S | 5 | 4 | 3 | 2 | 1 |
+| Fire: `SP/LT` — M | 2 | 2 | 1 | 1 | 0 |
+| Fire: `SP/GR` — S | | 4 | 3 | 2 | 1 |
+| Fire: `SP/GR` — M | | 2 | 1 | 1 | 0 |
+| Fire: `SP/SWI`, `FR/SWI` — S | 5 | 4 | 3 | 2 | 1 |
+| Fire: `SP/SWI`, `FR/SWI` — M | 2 | 2 | 1 | 1 | 0 |
+| Melee: `SP/LN`, `SP/ML` — S | | 4 | 3 | 2 | 1 |
+| Melee: `SP/LN`, `SP/ML` — M | | 3 | 2 | 1 | 0 |
+| Melee: `SP/LT` — S | 5 | 4 | 3 | 2 | 1 |
+| Melee: `SP/LT` — M | 4 | 3 | 2 | 1 | 0 |
+| Melee: `SP/GR` — S or M | | 5 | 4 | 3 | 2 |
+| Melee: `SP/SWI`, `FR/SWI` — S or M | 5 | 4 | 3 | 2 | 1 |
+| Melee: `SP/LC` — S or M | | | 3 | 2 | 1 |
+| Melee: `SP/HC`, `SP/CU` — S or M | | | 4 | 3 | 2 |
+| Melee: `FR/LNC`, `FR/GLC` — S or M | | 4 | 3 | 2 | 1 |
+
+A light unit (`SP/LT`) that moved 2 hexes cannot battle at all (§7.1), except where Bayonet Charge or Force March lets it (§12).
+
+**A 0 fire cell** (S7, R15). A moved `SP/LN` or `SP/ML` with 1–3 blocks, or a moved `SP/LT`, `SP/GR` or Swiss unit with
+1 block, cannot fire, and no card (Élan, Leadership, Fire and Hold) creates the shot, exactly as §3.2's zero base dice.
+
+**A 0 melee cell** **[Interp S7]**. A moved `SP/LN`, `SP/LT` or `SP/ML` with 1 block has 0 base melee dice; this is a
+value, not a ban. Its dice are worked out by §3.2 from that 0 (card additions, cap, terrain, floor at 0, never below
+0), and it may declare a melee when that total plus any Combined Arms artillery dice is at least 1 (§3.2, R15). So:
+
+* ordered by Leadership with its leader attached (+1), it may melee an enemy unit on open ground (1 die), but not one in
+  a forest (1 − 1 = 0) unless an artillery unit joins;
+* ordered by Probe (no card die), it may melee only by leading a Combined Arms attack, rolling no dice of its own while
+  the artillery rolls (R41);
+* in either case it still cannot fire (the 0 fire cell).
+
+### 15.3 Retreats of 2 and 3 hexes
+
+| Per-flag distance | Rows |
+|---|---|
+| 1 | `SP/FA`, `SP/SWI`, `FR/SWI`, `FR/LNC`, `FR/GLC` |
+| 2 | `SP/LN`, `SP/LT`, `SP/GR`, `SP/LC`, `SP/HC`, `SP/CU` |
+| 3 | `SP/ML` |
+
+* Every flag not ignored moves the unit its full per-flag distance; total = accepted flags × distance. Ignoring a flag
+  cancels its whole distance (S9).
+* The path follows §10.1 unchanged: each step to a retreat neighbour; no step into a hex with any other unit or an
+  enemy leader, into impassable terrain (an impassable river hex included), or off the board. If any legal path
+  completes the distance the owner must take one; otherwise the longest possible, and the unit loses **1 block per
+  hex short** (R74). A Spanish unit blocked at once therefore loses 2 blocks per accepted flag (`SP/ML` 3). Examples:
+  an `SP/LN` on its own baseline with 1 accepted flag loses 2 blocks; an `SP/LN` with 2 accepted flags (4 hexes) whose
+  only legal path ends after 1 hex moves that hex and loses 3.
+* A retreat ending on a lone friendly leader is complete; the hexes left are cancelled, not lost (R74).
+* **In square** the unit never moves, so it loses its whole per-flag distance in blocks per accepted flag: 2 for
+  Spanish infantry, 3 for `SP/ML`, 1 for Swiss (S9, R33).
+* **Bounce flags** against Spanish cavalry: 2 hexes per bounce flag, 1 block per hex not completed (S9, R30); bounce
+  flags are never ignored (§10.3).
+* Retire and Reform stays exactly 2 hexes (S5); a lone leader still retreats 1–3 hexes (R25); an attached leader
+  retreats with his unit, and failed-retreat losses trigger the leader check as §10.1.
+* A unit eliminated by a failed retreat is eliminated for every rule (the enemy's banner, §16.1's Swiss break,
+  §16.5's sudden death).
+
+### 15.4 Lancers and Guard light cavalry
+
+**`FR/LNC` flag re-roll** (S12):
+
+1. When an ordered lancer melees (an initial melee or a bonus melee), after its roll it re-rolls, once, every die that
+   shows a flag, the artillery dice of a Combined Arms roll it leads included.
+2. On the re-rolled dice, symbols matching the target and sabres score as in §3.1. Flags rolled on the re-roll are
+   **added** to the flags of the first roll, which still count. A re-rolled die is never re-rolled again. The re-roll is
+   logged as a second roll marked as a re-roll.
+3. It applies against a square (to the lancer's single die, and any artillery dice with it) and against a lone leader,
+   where a re-rolled sabre kills him **[Interp S12]**.
+4. It never applies when the target is a cuirassier (`SP/CU`, `FR/CU`), in a battle back, or in a leader-escape roll. A
+   defending lancer re-rolls only in its own First Strike roll (and not against a cuirassier).
+
+**`FR/GLC`** (S13): 4 blocks, moves 0–3 and battles, melee b, ignores 2 flags, retreats 1 hex per flag, may Retire and
+Reform, and rolls +2 under Cavalry Charge as Guard cavalry (R60).
+
+### 15.5 Guerrilla Action
+
+Only a battle whose data has a `guerrilla` side rule (§15.8) uses it: 101–113, 115, 117 and 118, never 114 or 116
+(there Scout works normally and no counters exist) (S15).
+
+**Counters** (S15, S16, S20):
+
+* There are **6** counters. The guerrilla side starts holding the rule's `counters` (§16: 1 or 0); the others form the
+  pool. Held + pool = 6 at all times; the opponent never holds any. Held counters are public and kept until spent.
+* Counters belong to the side, not to a nation: they may be spent against any card the opponent plays, whatever it
+  orders; any Scout the guerrilla side plays may gain one, whichever unit it orders; no minimum of Spanish units
+  applies, and the rule stays in force after every Spanish unit is gone **[Interp S16]**.
+
+**Spending a counter** (S17, S18, S45):
+
+1. On every turn of the opponent, right after its Command card is played (turn-start banners already taken, §5.2) and
+   before its Order phase, the guerrilla side is asked once whether to spend a counter, but only while it holds at
+   least one **[Interp S45]**. The question names the card's effective kind (for a Counter-Attack, the card it copies).
+   It is never asked on the guerrilla side's own turn, and never about a First Strike the opponent plays reactively.
+2. Every card qualifies, Section or Tactic: Counter-Attack, Short Supply, Élan, Rally, and a First Strike played as the
+   turn card included (S17).
+3. **No:** nothing happens. **Yes:** the counter goes to the pool at once, and the opponent rolls **1** die. Nothing
+   adds dice to that roll or changes its result (S18).
+   * **Sabre:** the action fails; the card is carried out normally.
+   * **Any other face:** the action succeeds; the card is cancelled (below). The spent counter is in the pool either
+     way **[Interp S18]**.
+4. At most one attempt per opponent turn (S17). The die is a random step, so undo cannot go back past it (as for every
+   roll).
+
+**A cancelled card** (S19, S21):
+
+* It is discarded as the card the opponent played that turn: no unit or leader is ordered, nothing moves, no battle
+  happens. Then the opponent draws **one** card in its Draw phase and the turn ends.
+* A cancelled **Scout** gives that one card, not the two-and-keep-one draw. A cancelled **Élan** still reshuffles the
+  discard pile into the deck before the draw (R53, §12.4). A cancelled **Rally** rolls no dice and returns no block. A
+  cancelled **Short Supply** places no unit. A cancelled **Counter-Attack** is cancelled as the card it copied.
+* It remains the card that turn's player played: a Counter-Attack on the next turn copies it in full (mirrored if a
+  Section card, R56), as if it had not been cancelled, an Élan copy reshuffling again (S21).
+* A cancelled turn has no melee, so no First Strike can be played in it (S21). Turn-start banners taken before the card
+  stand (S17).
+* A cancelled Cavalry Charge does not start Stewart's Folly at 115; one that stood does (§16.15, S37).
+
+**Gaining a counter** (S20, S45):
+
+* In the guerrilla side's Draw phase after it played a Scout (a Counter-Attack copying a Scout included), after any
+  First Strike replacements of the opponent are drawn (R51) and before any of its own cards is drawn, it is asked
+  whether to take a counter, only while the pool holds at least one **[Interp S45]**. **Yes:** it takes 1 counter from
+  the pool and draws **1** card. **No:** the normal Scout draw (2, keep 1, §12.4).
+* With an empty pool (6 held) it is not asked and draws normally. Six counters are the only limit on holding
+  **[Interp S20]**. The question comes even when the Scout ordered nothing (§12.4).
+
+**Other cards** (S21): the guerrilla side's own First Strike is never affected by counters; an opponent's
+Counter-Attack is itself a card that may be cancelled.
+
+### 15.6 Terrain: Walled Farm, 2- and 4-sided redoubts, river tiles and per-battle water
+
+* **Walled Farm** (terrain `walledFarm`): a Town hex in every respect (§4.1–§4.2, R42–R44): stop on entry, no battle the
+  turn it is entered, the Town reductions, Cavalry Charge's dice lost, no square, blocks line of sight, counts as a town
+  for objectives. It gives **no** flag-ignore **[Interp S22]**. No battle 101–118 uses it.
+* **2-sided and 4-sided redoubts** are `fieldworks` with 2 or 4 `sides` (3 in the base game), flat (`on: 'plain'`) or
+  on a hill (`on: 'hill'`). Every Field Works rule applies unchanged with the listed works hexsides (§4.1–§4.4, R23,
+  R26, R46, R70, R79): reductions, flag-ignore for infantry and artillery and the square ban apply only to an attack
+  across a works hexside; the hill versions follow §4.3 (S23). In the battles: 105's 4-sided redoubt, 109's two flat
+  3-sided works and 118's three hill works (§16); the 2-sided tiles are unused.
+* **River tiles.** River bends, river ends (stream sources) and Y junctions are River hexes **[Interp S24]**; a bridge
+  on a straight or bend river hex is a Bridge (R48); the ford tiles of 115 are fordable river hexes that do not stop
+  movement (below).
+* **Per-battle water** (S24). The battle's `rivers` rule applies to every River hex; a River hex may carry its own
+  `river` rule, which replaces the battle's rule for that hex (§15.8; only 104 uses it).
+
+| Rule | Battles |
+|---|---|
+| `fordable` (§4.1: stop on entry, fordable-river reductions) | 101, 102, 103, 110, 115, 117; 104's Shallow Stream (per hex) |
+| `impassable` (crossed only at a bridge hex, where one exists) | 104 (River Trueba), 106, 107, 113, 114, 116, 118 |
+| `brook` (as 005, R47, R83) | 109 |
+| no river | 105, 108, 111, 112 |
+
+* **115 fords** (S24, S42): every Albuera River hex is fordable and stops movement, except the four ford tile hexes
+  (5,0), (5,1), (5,3) and (6,4), which keep the fordable-river battle effects but do not stop movement and do not bar
+  taking ground or breakthrough (as 013's ford, §14.13) **[Interp S24]**. Bridge (5,9).
+* **109 Portina Brook** is exactly 005's brook: it stops movement, has no battle reductions, allows squares, does not
+  block line of sight, and a unit that entered it this turn cannot take ground or break through (S25).
+* **108 Abbey of Santa Fe** is a Town hex with no extra effect (S26).
+
+### 15.7 Mixed armies, the square track, first player
+
+* **Mixed armies** (109, 114, 115, 116, 118; the Swiss at 101): each side is one player with one hand, one Command, one
+  deck and one banner count. Every unit and leader of a side is friendly to every other, whatever its nation: any
+  leader may attach to any friendly unit and gives his flag-ignore, support and escape cover across nations. The
+  commander's name has no rules effect. A battle rule naming "the British player" or "the Spanish player" means that
+  side and all its units (S27, R81). Block colours and the nation a leader is drawn in are presentation only.
+* **Square track** (S28) **[Interp S28]**: each side has one track of 4 spaces, shared by all its nations' infantry
+  (Spanish, British, Portuguese, Swiss). R26–R33 apply unchanged (§9.5); 106 adds its cap (§16.6).
+* **First player** (S29): the bottom (French) side moves first in every battle except 106 and 108 (top side first) and
+  116 (Move First by revealed cards, §15.8). The second number beside each commander on the maps (Tactician cards) is
+  ignored (R86). Banner targets are the page values (§16).
+
+### 15.8 Objective types and side rules added (data definitions)
+
+Each record is part of the scenario data, as §13.4. Fields are listed per type; a field with a default may be omitted.
+"Refused" gives the start of the message with which setup rejects bad data (each message ends with the battle id).
+
+**`tempAny`** — temporary group held by any unit, turn start (115). A single-hex objective stays `tempHex` (§13.4; 113).
+
+| Field | Meaning |
+|---|---|
+| `side` | The side that can gain it (115: bottom). |
+| `hexes` | At least 2 hexes (115: the two Albuera hexes). |
+| `timing` | `turnStart`. |
+| `banners` | Default 1: one banner for the whole group, never one per hex. |
+| Gain | At the start of `side`'s turn, if a unit of `side` stands on any hex of `hexes`, the banner is gained (or kept), and the units of `side` then on those hexes become its holders (`holders`), replacing any earlier holders (S35). |
+| Lose | The instant no holder stands on a hex of `hexes`, on either turn (moved off, retreated, eliminated). A holder that moves from one hex of the group to another stays a holder. A unit of `side` that enters a hex during a turn becomes a holder only at the next start of `side`'s turn, so it does not keep the banner **[Interp S35]**. |
+| Refused | `tempAny objective needs at least 2 hexes`. |
+
+**`majority`** — group majority banner, turn start (114, 117).
+
+| Field | Meaning |
+|---|---|
+| `side` | The side that can gain it. A group that both sides contest is **two records** with the same `hexes`, one per side. |
+| `hexes` | At least 2 hexes: the group. |
+| `banners` | Default 1. |
+| `startHeld` | Default false. True if `side` holds the banner at setup (114: top; 117: top, all three groups). Setup refuses it unless `side` then has a majority. |
+| Count | A side's count is the number of hexes of the group holding one of its units (lone leaders never count, R65). |
+| Gain | At the start of `side`'s **own** turn, if its count is greater than the enemy's (1 against 0 is enough), it gains the banner. |
+| Lose | The instant its count is no longer greater than the enemy's, on either player's turn: one of its units leaves the group (move, retreat, Retire and Reform, taking ground, breakthrough, Short Supply) or is eliminated, or an enemy unit enters a group hex to tie or pass it. It is regained only at a later start of `side`'s turn with a majority (S36). |
+| Note | The two records of a group are never held together: a holder loses the instant the enemy ties it, and the enemy gains only with a greater count at its own turn start. The banner is temporary: it counts toward victory only while held (§13.1), and a turn-start gain that reaches the target wins at once (R64). |
+| Refused | `majority objective needs at least 2 hexes`; `majority objective starts held by ${side} without a majority`. |
+
+**`exitEdge`** — exits off a board edge (102).
+
+| Field | Meaning |
+|---|---|
+| `side` | The side whose units may exit (102: top). |
+| `row` | 0 or 8: the edge (102: 0, the top army's baseline). |
+| `free` | Default 0. Exits that score nothing before banners start (102: 3). |
+| `banners` | Default 1. Permanent banners for each unit exited after the first `free`. |
+| Gain | An ordered unit of `side` on a hex of `row` may step off the board during its normal move; the step costs 1 hex of its allowance, so a unit that moves 1 must start on `row`, and a unit whose move was already stopped (terrain, joining a leader) cannot step off. It is removed, not eliminated: the enemy gains nothing. The first `free` exited units score nothing; each later one gives `side` `banners` permanent banners (S31) **[Interp S31]**. |
+| Leaders | A leader may exit the same way, alone or with the unit he is attached to. He scores nothing, is not counted among `free`, and can no longer be killed. |
+| Only ordered movement | Retreats, Retire and Reform, taking ground, breakthrough and Short Supply never carry a unit off (R67). A leader retreating off his own baseline is §11.3, unchanged. |
+| Refused | `exitEdge row must be 0 or 8`. |
+
+**`suddenDeath`** — instant win on losses of a named enemy row (105).
+
+| Field | Meaning |
+|---|---|
+| `side` | The side that wins (105: bottom). |
+| `keys` | Enemy unit rows counted (105: `SP/FA`). |
+| `need` | Resolved at setup: the number of enemy units of `keys` on the board then (105: 3). |
+| Win | `side` wins the instant the `need`-th enemy unit of `keys` is eliminated (by hits or a failed retreat, on either turn, in an attack, battle back or First Strike), checked with the banner check after every elimination (R64). A win reached in an earlier event stands; an event that both completes the count and brings `side` to its banner target is a win for `side` either way (S32). |
+| `text` | The reason shown for that win. |
+| Refused | `suddenDeath: no enemy unit of ${keys}`. |
+
+**`guerrilla`** side rule (§15.5).
+
+| Field | Meaning |
+|---|---|
+| `side` | The guerrilla side (top in every battle that has the rule). |
+| `counters` | Counters held at the start, 0–6 (§16: 0 or 1); the pool is 6 − held. |
+| Refused | `guerrilla counters must be 0..6`; `two guerrilla rules`. |
+
+**`breakOnLosses`** side rule (101).
+
+| Field | Meaning |
+|---|---|
+| `side` | The side whose units break (101: bottom). |
+| `keys` | The rows that break (101: `FR/SWI`). |
+| `losses` | The number of eliminations that breaks them (101: 2). |
+| `start` | Resolved at setup: the units of `side` with a key in `keys` (101: 4). |
+| Effect | The instant the `losses`-th such unit is eliminated (by hits or a failed retreat, on either turn), every remaining unit of `side` with those keys is **removed** from the board at once. The eliminations score the enemy their normal banners; the removals score nothing, cause no leader casualty check and count as an elimination for no other rule. A removed unit in square returns its card to the hand and its counter to the track (R33). A leader attached to a removed unit stays in the hex as a lone leader **[Interp S30]**. Victory is checked after the eliminating event (R64). |
+| In a combat | A removed unit takes no further part: any step still pending by or against it (its battle, battle back, retreat, Combined Arms share, or an ordered battle later that turn) does not happen; the combat that caused the elimination finishes normally. |
+| Refused | `breakOnLosses: unknown unit key`. |
+
+**`handShrink`** side rule (106).
+
+| Field | Meaning |
+|---|---|
+| `side` | The side whose hand shrinks (106: top). |
+| `floor` | The lowest hand size, 1 to the hand size (106: 3). |
+| Hand size H | Cards held plus cards on the side's square track; starts at the side's `cards`. |
+| Effect | Each time the enemy gains a **permanent** banner while H > `floor`, H falls by 1 and one card is taken at once, uniformly at random (seeded RNG), from the cards `side` holds (never a square-track card, never the card played this turn) and goes face up to the discard pile. Two banners from one event cost two cards while H > `floor`. Temporary banners do not count **[Interp S33]** **[Interp S46]**. |
+| No card to take | If `side` holds no card at that moment, H still falls and the card is taken the same way right after that side's next draw **[Interp S46]**. |
+| Draw | The normal draws then keep the hand at H. Command (Assault, Élan, Rally) is the cards held (R28); holding 2 or fewer only stops new squares (R26 a). |
+| Refused | `handShrink floor must be 1..cards`. |
+
+**`squareCap`** side rule (106).
+
+| Field | Meaning |
+|---|---|
+| `side` | The side capped (106: top). |
+| `units` | The most units that may ever form square in the battle (106: 2). |
+| Effect | A unit of `side` may form square only if it has formed square before in this battle (or started in square), or fewer than `units` different units of `side` have done so. Every other R26 limit still applies (S34) **[Interp S34]**. |
+
+**`cavalryChargeFolly`** side rule (115).
+
+| Field | Meaning |
+|---|---|
+| `side` | The side barred (115: top). |
+| Active | On the enemy's turn, from the moment its card's effective kind is Cavalry Charge (a Counter-Attack copying Cavalry Charge included) until that turn ends, unless a Guerrilla counter cancelled the card. A counter whose die rolled a sabre leaves it active. |
+| Effect | While active, no unit of `side` may form square and `side` may not play First Strike (S37) **[Interp S37]**. |
+
+**`moveFirst`** scenario field (116): `moveFirst: 'reveal'`; `first` then names the tie side (116: top). Refused:
+`moveFirst must be 'reveal'`. **[Interp S38]**, **[Interp S43]**, **[Interp S44]**.
+
+1. After the hands are dealt and before the first turn, each side secretly picks one card from its hand. The top side is
+   asked first, then the bottom side (S44).
+2. Counter-Attack, Élan, First Strike, Leadership and Rally may not be picked. A side holding no other card is not asked:
+   it picks nothing (S43).
+3. Both picks are revealed together. Neither the AI nor the screen may read or show a side's pick to the other side
+   before the reveal, and undo cannot take back a pick once revealed (S44).
+4. **Values** (S38): Scout 1, Probe 2, Attack 3, Recon in Force 3, Coordinated Advance 4, Flank Attack 4, Forward 6,
+   Assault = the picker's Command at the reveal; Bayonet Charge, Bombard, Cavalry Charge, Fire and Hold and La Grande
+   Manoeuvre 4; Short Supply 1; Force March and Give Them the Cold Steel above every numbered card. A side that picked
+   nothing counts above every card, Force March and Give Them the Cold Steel included (S43).
+5. The lower value moves first; any tie (two equal values, or both sides picking nothing) goes to the `first` side.
+6. Each side that picked must play its picked card on its first turn, where it is discarded as played. Until then the
+   second player's card stays face up beside its hand: it counts as held for Command and for the two-card square limit
+   (R26 a, R28), but the random square draw (R27) cannot take it. A side that picked nothing plays any card on its first
+   turn. Cards not picked stay in hand; First Strike may be played from them reactively.
+
+**Terrain entries** (§15.6):
+
+| Field | Meaning |
+|---|---|
+| `t: 'walledFarm'` | A Walled Farm hex (a Town, name "Walled farm"). |
+| `river` | On a River hex only: `impassable`, `fordable`, `fordableNoStop` or `brook`, replacing the battle's `rivers` rule for that hex; a `crossing` there works under this rule (104: the four Shallow Stream hexes, `fordable`). Refused: `unknown river rule ${x} at (r,c)`; `river override on a non-river hex at (r,c)`. |
+
+## 16. Expansion #1 battle special rules
+
+Each battle's rules, as data a scenario file carries, in the style of §14. Setups come from the verified
+transcriptions `design/data/1NN.json` (notes and verification logs beside them); hexes are (r, c) in the §1 grid. The
+**top** army is the Allied side and the **bottom** army the French (§15). Every unit starts at its row's block count
+(S41). Every battle also scores the ordinary banners of §13.2.
+
+**Fields used below** (as §14, with §15.8's additions).
+* `hand`: cards dealt to top / bottom; `first`: the side that takes the first turn; `banners`: the target for both
+  sides.
+* `objectives`: §13.4 and §15.8 records.
+* `rivers`: the battle's water rule (§15.6); a hex's own `river` rule is named where used.
+* `sideRules`: §15.8 side rules, naming their side. `guerrilla n` = a `guerrilla` rule for the top side with `counters`
+  n.
+
+| Battle | hand (top / bottom) | first | banners | objectives | rivers | other |
+|---|---|---|---|---|---|---|
+| 101 | 5 / 5 | bottom | 7 | — | fordable | guerrilla 0; Swiss; `breakOnLosses` (bottom) |
+| 102 | 4 / 5 | bottom | 6 | `exitEdge` (top, row 0, free 3) | fordable | guerrilla 0 |
+| 103 | 5 / 6 | bottom | 6 | — | fordable | guerrilla 1 |
+| 104 | 5 / 5 | bottom | 7 | — | impassable; Shallow Stream `fordable` per hex | guerrilla 1 |
+| 105 | 4 / 6 | bottom | 7 | `suddenDeath` (bottom, `SP/FA`) | — (no river) | guerrilla 1; 4-sided redoubt; `FR/GLC`, `FR/GA` |
+| 106 | 6 / 5 | top | 6 | — | impassable | guerrilla 1; `handShrink`, `squareCap` (top) |
+| 107 | 5 / 5 | bottom | 6 | — | impassable | guerrilla 1 |
+| 108 | 5 / 5 | top | 6 | — | — (no river) | guerrilla 1; abbey (Town) |
+| 109 | 5 / 5 | bottom | 6 | — | brook | guerrilla 1; two flat redoubts; SP and BR |
+| 110 | 6 / 6 | bottom | 8 | — | fordable | guerrilla 1 |
+| 111 | 5 / 6 | bottom | 7 | — | — (no river) | guerrilla 1; cavalry only; `SP/CU` |
+| 112 | 4 / 5 | bottom | 6 | — | — (no river) | guerrilla 0; `FR/LNC` |
+| 113 | 4 / 5 | bottom | 6 | `tempHex` (bottom, bridge) | impassable | guerrilla 0 |
+| 114 | 6 / 5 | bottom | 7 | 2 × `majority` (top held at start) | impassable | no guerrilla; BR, SP, PT |
+| 115 | 5 / 5 | bottom | 8 | `tempAny` (bottom, 1 banner) | fordable, 4 ford tiles no stop | guerrilla 0; `cavalryChargeFolly` (top); `FR/LNC`; BR, SP, PT |
+| 116 | 5 / 4 | `moveFirst` (tie: top) | 9 | — | impassable | no guerrilla; BR, PT, SP |
+| 117 | 5 / 5 | bottom | 8 | 6 × `majority` (top holds all three groups) | fordable | guerrilla 1 |
+| 118 | 5 / 6 | bottom | 6 | — | impassable | guerrilla 1; three hill redoubts; SP and BR |
+
+### 16.1 101 Bailén
+
+* `sideRules`: `guerrilla` top, `counters` 0 (S15). `breakOnLosses`, `side` bottom, `keys` [`FR/SWI`], `losses` 2,
+  `start` 4: the four `FR/SWI` at (6,2), (6,3), (6,4), (6,5). The instant the second is eliminated, the others are
+  removed at once and score the Spanish nothing; a leader on a removed unit stays as a lone leader; victory is checked
+  after the second elimination (S30) **[Interp S30]**. The Spanish Swiss have no such rule.
+* Swiss: `SP/SWI` at (2,2) and (2,3), `FR/SWI` as above, all 5 blocks (§15.1, S11) **[Interp S11]**. The Swiss leaders
+  are Reding (`SP/LDR`, with the `SP/SWI` at (2,3)) and Schramm (`FR/LDR`, with the `FR/SWI` at (6,4)), ordinary leaders
+  of their side (S11, S27).
+* `rivers`: fordable: the whole Rumblar, (3,1) (stream source), (4,1), (5,0), (6,1), (7,0), (8,0) (junction), (8,1)
+  (S24) **[Interp S24]**.
+
+### 16.2 102 Zornoza
+
+* `hand` 4 / 5.
+* `objectives`: `exitEdge`, `side` top, `row` 0, `free` 3, `banners` 1: an ordered Allied unit on row 0 may step off the
+  top edge as part of its move (1 hex of movement); the first three exits score nothing, each later one 1 permanent
+  banner; leaders may exit for nothing and are not counted; only ordered movement exits (S31) **[Interp S31]**. The two
+  printed exit signs mark the ends of the edge and are not objective hexes.
+* `rivers`: fordable (the whole river); bridge (3,3).
+* `sideRules`: `guerrilla` top, `counters` 0.
+
+### 16.3 103 Gamonal
+
+* `rivers`: fordable (the Pico, (0,2) to (8,2)).
+* `sideRules`: `guerrilla` top, `counters` 1.
+* Towns: Vellimar (2,12), (3,11); El Palacio (4,0). The `SP/HC` at (1,3), drawn with 4 blocks, starts with 3 (S41).
+* No other rule (S39).
+
+### 16.4 104 Espinosa de los Monteros
+
+* `rivers`: impassable: the River Trueba, (0,1), (0,2), (0,3), (0,4), (1,0), (2,0), no bridge.
+* Per-hex `river` `fordable` on the Shallow Stream: (5,10) (stream source), (6,11), (7,11), (8,12) (S24)
+  **[Interp S24]**.
+* `sideRules`: `guerrilla` top, `counters` 1.
+* Towns: Espinosa (0,6), (0,7); Quintana (6,6), (6,7). No other rule (S39).
+
+### 16.5 105 Somosierra
+
+* `hand` 4 / 6.
+* `objectives`: `suddenDeath`, `side` bottom, `keys` [`SP/FA`], `need` 3: the `SP/FA` at (1,6), (3,5) and (5,3). The
+  French win the instant the third is eliminated, by hits or a failed retreat, on either turn (S32).
+* Field Works (4-sided redoubt) on plain at (5,3), works hexsides E, SE, SW, W (open NE and NW); an `SP/FA` starts on it
+  (S23).
+* French Guard: `FR/GLC` at (8,5) and (8,6), `FR/GA` at (8,3) (S13). The `SP/LN` at (3,0) and the `FR/LN` at (7,6)
+  start with 4 blocks (S41).
+* `sideRules`: `guerrilla` top, `counters` 1.
+
+### 16.6 106 Medellín
+
+* `hand` 6 / 5. `first` top (S29).
+* `rivers`: impassable except at the bridge (8,9): the Guadiana (6,0), (6,1), (7,1), (7,2), (8,3) and the Hortiga
+  (4,12), (5,11), (6,11), (7,10), (7,9), (8,9).
+* `sideRules`: `guerrilla` top, `counters` 1. `handShrink`, `side` top, `floor` 3: H starts at 6; each permanent banner
+  the French gain while H > 3 takes one random card from the Allied cards held (not the square track, not the card
+  played this turn) face up to the discard pile (S33, S46) **[Interp S33]** **[Interp S46]**. `squareCap`, `side` top,
+  `units` 2: at most two different Allied units ever form square; either may form square again (S34)
+  **[Interp S34]**.
+* Town: Mengabril (2,12).
+
+### 16.7 107 Alcañiz
+
+* `rivers`: impassable except at the bridge (0,6): the Guadalope, (0,5), (0,6), (0,7), (0,8).
+* `sideRules`: `guerrilla` top, `counters` 1. No other rule (S39).
+
+### 16.8 108 María
+
+* `first` top (S29).
+* The Abbey of Santa Fe at (8,0) is a Town hex with no extra effect (S26).
+* `sideRules`: `guerrilla` top, `counters` 1.
+
+### 16.9 109 Talavera (Spanish Flank)
+
+* Mixed army: Spanish and British units are one side (S27); the commander shown as Cuesta (Wellesley) has no effect.
+* `rivers`: brook: the Portina Brook (0,9), (0,10), (1,10), (2,11), (3,11), exactly as 005's brook (S25).
+* Field Works (Pajar de Vergara) on plain: (2,9) works hexsides W, SW, SE with an `SP/FA`; (2,10) SW, SE, E with a
+  `BR/FA` (S23, S25) **[Interp S25]**.
+* Town: Talavera (0,2), (0,3), (1,3).
+* `sideRules`: `guerrilla` top, `counters` 1 (the Allied side, S16) **[Interp S16]**.
+
+### 16.10 110 Tamames
+
+* `hand` 6 / 6.
+* `rivers`: fordable (the Stream, (6,5), (7,4), (7,3), (8,3), its source included) **[Interp S24]**.
+* Town: Tamames (5,5), (5,6), (6,6).
+* The `SP/LN` at (3,4), drawn with 5 blocks, starts with 4 (S41).
+* `sideRules`: `guerrilla` top, `counters` 1. No other rule (S39).
+
+### 16.11 111 Ocaña (Cavalry Action)
+
+* Cavalry and horse artillery only: no squares and no Retire and Reform arise (S39). `SP/CU` at (0,9) (S5).
+* `sideRules`: `guerrilla` top, `counters` 1.
+
+### 16.12 112 Ocaña
+
+* `hand` 4 / 5.
+* `FR/LNC` at (7,0) (S12).
+* Town: Ocaña (1,8), (2,8), (2,9).
+* `sideRules`: `guerrilla` top, `counters` 0. No other rule (S39).
+
+### 16.13 113 Alba de Tormes
+
+* `hand` 4 / 5.
+* `objectives`: `tempHex`, `side` bottom, `timing` turnStart, `banners` 1, `hex` (0,6): the bridge hex. Gained at the
+  start of the French turn with a French unit on it; lost the instant that unit leaves or is eliminated (§13.3, S35).
+* `rivers`: impassable except at the bridge (0,6): the Tormes, (0,0), (0,1), (1,1), (1,2), (1,3), (0,4), (0,5), (0,6),
+  (0,7), (0,8), (0,9).
+* `sideRules`: `guerrilla` top, `counters` 0.
+
+### 16.14 114 Barrosa
+
+* `hand` 6 / 5.
+* Mixed army: British, Spanish and Portuguese units are one side (S27).
+* `objectives`: two `majority` records over the Barrosa Ridge, `hexes` (2,3), (3,1), (3,2), (3,3), (4,2), (4,3), (4,4),
+  (5,2), (5,3), (5,4), (6,3), `banners` 1 each: one for top with `startHeld` true (the `SP/LN` at (3,1), (3,2), (3,3)
+  hold 3 hexes against 0), one for bottom (S36).
+* `rivers`: impassable, no bridge: (0,11), (1,11), (2,12), (3,11), (4,12).
+* Town: Barrosa (4,0). The 5-block `BR/LN` of the map starts with 4 (S41).
+* No `guerrilla` rule: Scout works normally (S15).
+
+### 16.15 115 Albuera
+
+* Mixed army: British, Spanish and Portuguese units are one side (S27).
+* `objectives`: `tempAny`, `side` bottom, `timing` turnStart, `banners` 1, `hexes` (4,9), (4,10): the Albuera hexes; one
+  banner for either (S35) **[Interp S35]**. A `BR/LT` starts on (4,9).
+* `rivers`: fordable; the ford tile hexes (5,0), (5,1), (5,3), (6,4) do not stop movement; bridge (5,9). The other river
+  hexes: (5,2), (5,5), (5,6), (5,7), (5,8), (5,10), (4,11), (3,11), (6,5) (S24, S42) **[Interp S24]**.
+* `sideRules`: `guerrilla` top, `counters` 0 (the page's "British player" is the Allied side, S16) **[Interp S16]**.
+  `cavalryChargeFolly`, `side` top: Stewart's Folly (S37) **[Interp S37]**.
+* `FR/LNC` at (6,0) (S12).
+
+### 16.16 116 Vitoria
+
+* `hand` 5 / 4. `moveFirst` `'reveal'`, `first` top (the tie side): the §15.8 procedure (S38, S43, S44)
+  **[Interp S38]** **[Interp S43]** **[Interp S44]**. Assault counts 5 for the top side and 4 for the bottom at the
+  reveal.
+* Mixed army: British, Portuguese and Spanish units are one side (S27).
+* `rivers`: impassable except at the bridges (1,7) and (1,10): the Zadorra, (0,6), (1,6), (1,7), (1,8), (1,9), (1,10),
+  (2,11), (3,11), (4,12), (5,11), (6,12).
+* Towns: Villodas (0,7), Tres Puentes (0,12), Arinez (6,7).
+* No `guerrilla` rule: Scout works normally (S15).
+
+### 16.17 117 San Marcial
+
+* `objectives`: six `majority` records, two per group (one per side), `banners` 1 each; the three top records have
+  `startHeld` true (S36):
+  * left: (1,1), (2,1), (2,2), (3,0), (3,2), (4,0);
+  * centre: (1,6), (1,7), (2,4), (2,5), (2,6), (2,8), (3,6);
+  * right: (1,10), (2,11), (3,9), (3,10), (3,11), (4,12).
+* `rivers`: fordable (the Bidassoa).
+* `sideRules`: `guerrilla` top, `counters` 1.
+
+### 16.18 118 Ordal Cross
+
+* `hand` 5 / 6.
+* Mixed army: Spanish and British units are one side (S27).
+* Field Works on a hill at (3,4) (a `BR/FA` on it), (4,9) (an `SP/LN`) and (5,3) (a `BR/LN`), works hexsides SW, SE, E on
+  all three (S23).
+* `rivers`: impassable except at the bridge (8,10): (7,10), (7,11), (8,10).
+* `sideRules`: `guerrilla` top, `counters` 1. No other rule (S39).
