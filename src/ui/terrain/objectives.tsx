@@ -3,7 +3,7 @@
 // (raised while the side holds it), a temporary group (`tempGroup`) a dashed outline round the hex set (filled in the
 // holder's colour while held), and an exit hexes arrows on their outer board edge (a gold medallion where leaders score
 // too). Kill-weight objectives (`killWeight`) have no place on the board. Expansion #1 adds `tempAny` (drawn as a
-// temporary group), `majority` (a dotted outline round the group, tinted and lightly filled in the holder's colour; the two
+// temporary group), `majority` (a dotted outline round the group in the holder's colour, unfilled so it never reads as terrain; the two
 // records of a contested group draw one outline), `exitEdge` (a band along the outer hexsides of its row with one arrow off
 // the board) and `suddenDeath` (nothing on the board: its text is in the panel). Everything is placed in screen space from
 // the hexes, so the markers turn with a flipped board; the arrows themselves stay upright.
@@ -249,7 +249,6 @@ export function ObjectiveMarkers({ objectives, objState, flipped, nations }: Obj
     areas.push(
       <g key={`m${key}`} className={side ? `majority held-${side}` : 'majority'} fill="none" strokeLinejoin="round">
         <title>{text}</title>
-        {c && <path d={d} fill={c.edge} opacity={0.1} />}
         <path d={d} stroke={INK} strokeWidth={5.4} strokeLinecap="round" strokeDasharray="0.1 7" opacity={0.55} />
         <path d={d} stroke={c ? c.edge : PAPER} strokeWidth={3.6} strokeLinecap="round" strokeDasharray="0.1 7" />
       </g>,
