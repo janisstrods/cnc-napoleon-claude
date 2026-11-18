@@ -11,8 +11,9 @@
 import { distance, other, statsOf, unitById, type Decision, type DefendChoice, type GameState, type HexId, type MeleeCtx, type Unit } from '../engine';
 // `defendOptions` lives in the engine's reactions module, which its index barrel does not re-export (as with `flagIgnores`).
 import { defendOptions } from '../engine/reactions';
-import { occOf, type Occ } from './board';
-import { branchesOf, type EstCtx, type Outcome } from './estimate';
+import type { Occ } from './board';
+import { branchesOf, makeEstCtx, type EstCtx, type Outcome } from './estimate';
+import { withAssumedHands } from './view';
 import { CARD_VALUE, unitValue, type Weights } from './values';
 
 /** One reaction the model expects, its probability and its outcome (from the attacker's side). */
@@ -55,11 +56,6 @@ export function firstStrikeCost(W: Weights): number {
   return CARD_VALUE + W.firstStrikeReserve;
 }
 
-/** The position of `s` with the hands (and square tracks) of the assumed clone `hands`: what an engine option query reads. */
-function withHands(s: GameState, hands: GameState): GameState {
-  return { ...s, players: hands.players };
-}
-
 /** The first option with the largest `score` (the engine lists 'stand' first, so a tie stands). */
 function argmax(options: readonly DefendChoice[], score: (c: DefendChoice) => number): DefendChoice {
   let best = options[0] ?? 'stand';
@@ -80,8 +76,10 @@ function argmax(options: readonly DefendChoice[], score: (c: DefendChoice) => nu
  *   square, over `defendOptions(s, m)`;
  * - an opponent defender inside a simulation (`ec.determinised`): the worst for the attacker over the options of the
  *   sampled clone itself;
- * - otherwise the worst for the attacker over the options with the assumed hands `ec.oppHands`, holding a First Strike
- *   (weight `pFS`) or not. Without `oppHands` (a context not built by `makeEstCtx`) the opponent is taken to stand.
+ * - otherwise the worst for the attacker over the options asked on the position with the assumed hands `ec.oppHands`
+ *   (`withAssumedHands`), holding a First Strike (weight `pFS`) or not. Those hands are assumed once at the root decision
+ *   and reused for every estimate of the turn being planned, also on positions after the AI's own moves (the opponent's
+ *   hand does not change during our turn).
  */
 export function reactionsFor(s: GameState, m: MeleeCtx, ec: EstCtx, defender: Unit, branch: (c: DefendChoice) => Outcome): Reaction[] {
   const one = (c: DefendChoice): Reaction[] => [{ choice: c, p: 1, o: branch(c) }];
@@ -91,11 +89,12 @@ export function reactionsFor(s: GameState, m: MeleeCtx, ec: EstCtx, defender: Un
   }
   if (ec.determinised) return one(worst(defendOptions(s, m)));
   const h = ec.oppHands;
-  if (!h) return one('stand');
+  // EstCtx makes this a type error; a context cast past it must not quietly assume the opponent stands
+  if (!h) throw new Error('reactionsFor: an opponent defender outside a simulation needs oppHands (build the context with makeEstCtx)');
   const out: Reaction[] = [];
   for (const [hands, p] of [[h.holdsFS, h.pFS], [h.noFS, 1 - h.pFS]] as const) {
     if (p <= 0) continue;
-    const c = worst(defendOptions(withHands(s, hands), m));
+    const c = worst(defendOptions(withAssumedHands(s, hands), m));
     const known = out.find((r) => r.choice === c);
     if (known) known.p += p;
     else out.push({ choice: c, p, o: branch(c) });
@@ -123,7 +122,8 @@ export function defendValue(s: GameState, d: Extract<Decision, { kind: 'defend' 
   const role = d.bonus ? 'bonus' : 'attack';
   const moved = s.turn.ordered[d.attacker]?.moved ?? 0;
   const m: MeleeCtx = { attacker: d.attacker, target: d.target, targetHex: defender.hex, role, artillery: [], reaction: null, declaredMoved: moved };
-  const ec: EstCtx = { occ: occOf(s), W, viewer: d.side, moved, role, determinised: false };
+  // the defender's own context (its side is the viewer, so the attacker's reactions in a bonus prospect are its own units')
+  const ec: EstCtx = { ...makeEstCtx(s, d.side, W), moved, role };
   const branch = branchesOf(s, attacker, defender, m, ec);
   for (const c of d.options) out[c] = -branch(c).ev;
   return out;

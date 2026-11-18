@@ -5,7 +5,7 @@ import {
 } from '../../src/engine';
 import { occOf } from '../../src/ai/board';
 import { NEUTRAL_W } from '../../src/ai/values';
-import { flagOutcome, fireEstimate, leaderCheckP, loneLeaderEstimate, meleeEstimate, type EstCtx, type Outcome } from '../../src/ai/estimate';
+import { flagOutcome, fireEstimate, leaderCheckP, loneLeaderEstimate, makeEstCtx, meleeEstimate, type EstCtx, type Outcome } from '../../src/ai/estimate';
 import { H, attack, build, n, toBattle, type Pos } from '../rules/helpers';
 import { engineTrials, type Trials } from './helpers';
 import { failOnAiErrors } from './no-ai-errors';
@@ -17,7 +17,7 @@ const kit = (units: Units, extra: Pos = {}) => (seed: number): GameDriver => {
   void seed;
   return toBattle(build({ first: 'top', ...extra, units }), 'attackC', ['u1']);
 };
-const ctxOf = (s: GameState): EstCtx => ({ occ: occOf(s), W: NEUTRAL_W, viewer: s.active, moved: 0, role: 'attack', determinised: false });
+const ctxOf = (s: GameState): EstCtx => makeEstCtx(s, s.active, NEUTRAL_W);
 const unit = (s: GameState, id: string): Unit => unitById(s, id)!;
 
 const TRIALS = 4000;

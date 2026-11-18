@@ -18,23 +18,31 @@ import { bestGuns, firstStrikeCost, reactionsFor, squareCost } from './reactions
 import { assumeOppHand, oppHoldsP } from './view';
 import { LEADER_VALUE, bannersWorth, unitValue, type Weights } from './values';
 
-/** What an estimate needs besides the state: the occupancy table, weights, whose view, the attacker's movement and role. */
-export interface EstCtx {
+/**
+ * The opponent's hand assumed with and without a First Strike (blind clones from `assumeOppHand`) and P(it holds one): the
+ * only hands with which the engine's defend options are asked for an opponent defender outside a simulation (M-8).
+ */
+export interface OppHands {
+  holdsFS: GameState;
+  noFS: GameState;
+  pFS: number;
+}
+
+interface EstBase {
   occ: Occ;
   W: Weights;
   viewer: Side;
   /** Hexes the attacker moved this turn (the engine's `DiceCtx.moved`). */
   moved: number;
   role: StrikeRole;
-  /** True inside a simulation on a `determinize`d clone: the opponent's sampled hand is read, not weighted by odds. */
-  determinised: boolean;
-  /**
-   * The opponent's hand assumed with and without a First Strike (blind clones from `assumeOppHand`) and P(it holds one):
-   * the only states on which the engine's defend options are asked for an opponent defender outside a simulation (M-8).
-   * Built once per root decision by `makeEstCtx`.
-   */
-  oppHands?: { holdsFS: GameState; noFS: GameState; pFS: number };
 }
+
+/**
+ * What an estimate needs besides the state: the occupancy table, weights, whose view, the attacker's movement and role, and
+ * how the opponent's hand is known. Either `determinised` (inside a simulation on a `determinize`d clone: the sampled hand
+ * is read) or carrying `oppHands`, built once per root decision by `makeEstCtx`; a context with neither is a type error.
+ */
+export type EstCtx = EstBase & ({ determinised: true; oppHands?: undefined } | { determinised: false; oppHands: OppHands });
 
 /** The estimate context of one root decision for `me`: the occupancy table and the assumed opponent hands, built once. */
 export function makeEstCtx(s: GameState, me: Side, W: Weights): EstCtx {
@@ -280,6 +288,9 @@ const NO_ADVANCE: Advance = { allowed: false, bonus: false, value: 0 };
  * hex, counted when it clears `W.bonusThreshold` (the AI's own bar for taking one).
  */
 // approximates RR §9.7, §9.8 (engine: afterMelee and meleeAttack's afterAndBonus)
+// Known gap: impetuous cavalry (R82, RR §14.15, the `impetuousCavalry` side rule) must advance and must take the extra hex
+// toward the enemy baseline, so for those units the "optional, never negative" floor is wrong; modelling the forced move's
+// exposure is carried to Task 5 (evaluation) and Task 6b (moves).
 export function takeGround(s: GameState, attacker: Unit, hex: HexId, ec: EstCtx): Advance {
   const st = statsOf(s, attacker);
   const op = s.turn.ordered[attacker.id];
@@ -394,7 +405,8 @@ export function branchesOf(s: GameState, attacker: Unit, defender: Unit, m: Mele
     else if (c === 'formSquare') {
       const sq: Unit = { ...defender, square: 1 };
       const fought = combat(s, rc, attacker, sq, m, true, advance);
-      o = { ...fought, ev: fought.ev + squareCost(s, defender, rc.occ) };
+      // a square destroyed in this melee returns its card at once (removeUnit releases it): the cost is paid only if it survives
+      o = { ...fought, ev: fought.ev + squareCost(s, defender, rc.occ) * (1 - fought.pElim) };
     } else {
       const stood = combat(s, rc, attacker, defender, m, squareFirstApplies(s, m), advance);
       // First Strike (Task 4b fills its sequence): until then the card is spent and strikes nothing

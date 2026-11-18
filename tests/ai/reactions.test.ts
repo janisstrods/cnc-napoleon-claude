@@ -6,6 +6,7 @@ import {
   CARD_LIST, distance, forceDice, meleeDice, neighbours, rearHexes, unitById,
   type Decision, type DefendChoice, type GameDriver, type GameEvent, type GameState, type HexId, type MeleeCtx, type Unit,
 } from '../../src/engine';
+import * as engineReactions from '../../src/engine/reactions';
 import { defendOptions } from '../../src/engine/reactions';
 import * as view from '../../src/ai/view';
 import { occOf } from '../../src/ai/board';
@@ -28,6 +29,7 @@ const bot = (key: Units[number]['key'], at: [number, number], extra: object = {}
 const kit = (units: Units, extra: Pos = {}, prep?: (s: GameState) => void) => (seed: number): GameDriver => {
   void seed;
   const d = toBattle(build({ first: 'top', ...extra, units }), 'attackC', ['u1']);
+  while (d.pending?.kind === 'leaveSquare') must(d, { kind: 'yesno', yes: false }); // an ordered square stays formed
   prep?.(d.state);
   return d;
 };
@@ -157,6 +159,17 @@ describe('squares', () => {
     expect(-v.stand).toBeGreaterThan(cost); // standing's expected loss exceeds the square's whole cost
   });
 
+  it('a square that is destroyed returns its card at once: the cost is scaled by the chance it survives', () => {
+    const units = (sq?: number): Units => [top('FR/HC', [3, 6]), bot('BR/LN', [4, 6], { blocks: 1, ...(sq ? { square: sq } : {}) })];
+    const s1 = kit(units(), { bottomCards: 4 })(1).state;
+    const s2 = kit(units(1), { bottomCards: 4 })(1).state;
+    const formed = meleeBranch(s1, unit(s1, 'u1'), unit(s1, 'u2'), mOf(s1, 'u1', H(4, 6)), 'formSquare', ctx(s1));
+    const already = meleeBranch(s2, unit(s2, 'u1'), unit(s2, 'u2'), mOf(s2, 'u1', H(4, 6)), 'stand', ctx(s2));
+    expect(formed.pElim).toBeGreaterThan(0.2);
+    expect(formed.pElim).toBeCloseTo(already.pElim, 12);
+    expect(formed.ev - already.ev).toBeCloseTo(squareCost(s1, unit(s1, 'u2'), occOf(s1)) * (1 - formed.pElim), 10);
+  });
+
   it('the square cost is temporary: lower when the cavalry threat will pass soon than with enemy cavalry massed nearby', () => {
     const base: Units = [top('FR/HC', [3, 6]), bot('BR/LN', [4, 6])];
     const massed: Units = [...base, top('FR/HC', [2, 4]), top('FR/LC', [2, 8]), top('FR/HC', [3, 3])];
@@ -223,6 +236,7 @@ describe('take ground and breakthrough', () => {
       { label: 'line takes ground', units: [top('FR/LN', [3, 6]), bot('BR/LN', [4, 6], { blocks: 2 })], allowed: true, bonus: false },
       { label: 'a gun never advances', units: [top('FR/FA', [3, 6]), bot('BR/LN', [4, 6], { blocks: 1 })], allowed: false, bonus: false },
       { label: 'not after entering a stop hex', units: [top('FR/LN', [3, 6]), bot('BR/LN', [4, 6], { blocks: 2 })], prep: (s) => void (s.turn.ordered.u1.stopEntered = true), allowed: false, bonus: false },
+      { label: 'an infantry unit in square never advances', units: [top('FR/LN', [3, 6], { square: 1 }), bot('BR/LN', [4, 6], { blocks: 1 })], allowed: false, bonus: false },
       { label: 'cavalry breaks through to a bonus melee', units: [top('FR/HC', [3, 6]), bot('BR/LN', [4, 6], { blocks: 2 }), bot('BR/LN', [4, 7])], extra: { bottomCards: 2 }, allowed: true, bonus: true },
       { label: 'heavy cavalry in a forest: no bonus melee', units: [top('FR/HC', [3, 6]), bot('BR/LN', [4, 6], { blocks: 2 }), bot('BR/LN', [4, 7])], extra: { bottomCards: 2, ...forest }, allowed: true, bonus: false },
     ];
@@ -287,6 +301,48 @@ describe('the assumed opponent hands', () => {
     s.deck = [...s.deck.filter((c) => !fresh.includes(c)), ...old];
     p.hand = fresh;
     expect(results()).toEqual(before);
+  });
+
+  it('engine defend options for an opponent defender are asked only on the assumed hands, never on the real ones (M-8)', () => {
+    // an infantry defender (square-eligible) and an R&R-eligible cavalry defender; the bottom player's real hand holds a
+    // First Strike, so the live state would offer it
+    const s = kit([top('FR/HC', [3, 6]), bot('BR/LN', [4, 6]), bot('BR/LC', [4, 8], { blocks: 1 }), top('FR/LN', [3, 8])], { bottomCards: 4 })(1).state;
+    const p = s.players.bottom;
+    const fs = s.deck.findIndex((c) => CARD_LIST[c] === 'firstStrike');
+    [p.hand[0], s.deck[fs]] = [s.deck[fs], p.hand[0]];
+    expect(defendOptions(s, mOf(s, 'u4', H(4, 8)))).toEqual(['stand', 'retireReform', 'firstStrike']);
+    const ec = makeEstCtx(s, 'top', NEUTRAL_W);
+    expect(ec.oppHands!.pFS).toBeGreaterThan(0);
+    expect(ec.oppHands!.pFS).toBeLessThan(1);
+    const spy = vi.spyOn(engineReactions, 'defendOptions');
+    try {
+      meleeEstimate(s, unit(s, 'u1'), H(4, 6), ec);
+      meleeEstimate(s, unit(s, 'u4'), H(4, 8), ec);
+      reactionOutcomes(s, mOf(s, 'u4', H(4, 8)), ec);
+      const asked = spy.mock.calls.filter(([st, m]) => unitById(st, m.target)?.side === 'bottom');
+      expect(asked.length).toBeGreaterThanOrEqual(4);
+      for (const [st] of asked) {
+        expect(st.players).not.toBe(s.players);
+        expect(st.deck).not.toBe(s.deck);
+      }
+      const targets = new Set(asked.map(([, m]) => m.target));
+      expect(targets).toEqual(new Set(['u2', 'u3']));
+      // both assumed hands are asked, for each defender
+      for (const id of ['u2', 'u3']) {
+        const mine = asked.filter(([, m]) => m.target === id).map(([st]) => st.players);
+        expect(mine).toContain(ec.oppHands!.holdsFS.players);
+        expect(mine).toContain(ec.oppHands!.noFS.players);
+      }
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('a context that is neither determinised nor built with the assumed hands is refused, not silently "stand"', () => {
+    const s = kit([top('FR/HC', [3, 6]), bot('BR/LN', [4, 6])], { bottomCards: 4 })(1).state;
+    // @ts-expect-error: a non-determinised context must carry oppHands (EstCtx is a union)
+    const bad: EstCtx = { occ: occOf(s), W: NEUTRAL_W, viewer: 'top', moved: 0, role: 'attack', determinised: false };
+    expect(() => meleeEstimate(s, unit(s, 'u1'), H(4, 6), bad)).toThrow(/oppHands/);
   });
 
   it('the interface is frozen: bestGuns returns no guns until Task 4b, and First Strike is never the cheaper defence', () => {

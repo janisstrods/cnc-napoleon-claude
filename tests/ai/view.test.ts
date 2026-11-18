@@ -4,7 +4,7 @@ import { CARD_LIST, cardKind, createGame, GameDriver, randomAnswer, type CardKin
 import { scenarioById } from '../../src/scenarios';
 import { Rng } from '../../src/ai/rand';
 import {
-  assumeOppHand, blindClone, determinize, driverOn, handSize, myHand, myTrack, oppHoldsP, sampledOppHolds, trackFilled, unseenCards, unseenOf,
+  assumeOppHand, blindClone, determinize, driverOn, withAssumedHands, handSize, myHand, myTrack, oppHoldsP, sampledOppHolds, trackFilled, unseenCards, unseenOf,
 } from '../../src/ai/view';
 import { build } from '../rules/helpers';
 import { failOnAiErrors } from './no-ai-errors';
@@ -216,6 +216,20 @@ describe('sampledOppHolds', () => {
 });
 
 describe('the blind-clone guards', () => {
+  it('withAssumedHands keeps the position and takes every hidden field from the assumed clone; it refuses a real state', () => {
+    const s = withSquares();
+    const a = assumeOppHand(s, ME, 'firstStrike', true);
+    const v = withAssumedHands(s, a);
+    expect(v.players).toBe(a.players);
+    expect(v.deck).toBe(a.deck);
+    expect(v.rng).toBe(a.rng);
+    expect(v.rngCalls).toBe(a.rngCalls);
+    expect(v.units).toBe(s.units);
+    expect(v.turn).toBe(s.turn);
+    expect(() => withAssumedHands(s, s)).toThrow();
+    expect(() => withAssumedHands(s, structuredClone(a))).toThrow();
+  });
+
   it('determinize and driverOn refuse a state that blindClone did not make', () => {
     const s = withSquares();
     expect(() => determinize(s, ME, new Rng(1))).toThrow();
