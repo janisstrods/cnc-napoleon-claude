@@ -756,11 +756,7 @@ export function aiPacing(d: Decision): { indicator: boolean; minMs: number } {
   return { indicator: true, minMs: d.kind === 'playCard' ? 700 : d.kind === 'move' || d.kind === 'battle' ? 260 : 150 };
 }
 
-/**
- * Dev shortcut `#/play/<scenario>/<top|bottom>/<captain|colonel|marshal>[/<seed>][?cards=k1,k2]`: the session it starts
- * (any scenario id: 000 for now), or null when the hash is not such a
- * route or names no known battle.
- */
+/** The animation speed a new game starts at: the player's stored choice wins; else 4 under reduced motion, 1 otherwise. */
 export function initialSpeed(stored: string | null, reducedMotion: boolean): number {
   return Number(stored) || (reducedMotion ? 4 : 1);
 }
@@ -773,6 +769,11 @@ function prefersReducedMotion(): boolean {
   }
 }
 
+/**
+ * Dev shortcut `#/play/<scenario>/<top|bottom>/<captain|colonel|marshal>[/<seed>][?cards=k1,k2]`: the session it starts
+ * (any scenario id: 000 for now), or null when the hash is not such a
+ * route or names no known battle.
+ */
 export function devRouteConfig(hash: string): SessionConfig | null {
   const m = hash.match(/^#\/play\/(\d{3})\/(top|bottom)\/(captain|colonel|marshal)(?:\/(\d+))?(?:\?.*)?$/);
   if (!m || !SCENARIOS.some((x) => x.id === m[1])) return null;

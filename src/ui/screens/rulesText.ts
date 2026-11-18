@@ -7,7 +7,8 @@ import { EXPANSIONS, SQUARE_MIN_HAND, SQUARE_TRACK, UNIT_KEYS, UNIT_STATS, type 
 /** The Rifles' firing range, read from the table (a musket rule; narrowing, not a cast). */
 function rifleRange(): number {
   const fire = UNIT_STATS['BR/RI'].fire;
-  return fire.kind === 'musket' ? fire.range : 0;
+  if (fire.kind !== 'musket') throw new Error('the Rifles are no longer a musket row: rewrite their rules text');
+  return fire.range;
 }
 
 export type RulesTab = 'basics' | 'units' | 'combat' | 'squares' | 'terrain' | 'cards' | Expansion;

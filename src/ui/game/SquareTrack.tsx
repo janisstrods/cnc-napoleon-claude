@@ -13,7 +13,7 @@ export function SquareTrack({ side, owner, s }: { side: Side; owner: boolean; s:
         const held = card !== null && card !== undefined;
         const title = held && owner ? `Square ${i + 1}: ${CARD_DEFS[cardKind(card)].title}` : held ? `Square ${i + 1}: a card face down` : `Square ${i + 1}: free`;
         return (
-          <div key={i} className={`sq-slot ${held ? 'is-held' : ''} ${owner ? 'is-owner' : ''}`} title={title} tabIndex={held && owner ? 0 : undefined}>
+          <div key={i} className={`sq-slot ${held ? 'is-held' : ''} ${owner ? 'is-owner' : ''}`} title={title} role="img" aria-label={title} tabIndex={held && owner ? 0 : undefined}>
             <span className="sq-num">{i + 1}</span>
             {held && (owner
               ? <CardView kind={cardKind(card)} size="sm" className="sq-card" />

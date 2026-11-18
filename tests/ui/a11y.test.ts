@@ -9,10 +9,13 @@ import rulesTextSrc from '../../src/ui/screens/rulesText.ts?raw';
 import { answerError, shortSupplyTargets, type Answer, type Decision, type GameEvent, type GameState } from '../../src/engine';
 import { ObjectiveMarkers } from '../../src/ui/terrain/objectives';
 import { DiceTray, DieView, FACE_LABEL } from '../../src/ui/kit/Dice';
-import { focusWrap } from '../../src/ui/kit/controls';
+import { dialogTab, focusWrap, type DialogItem } from '../../src/ui/kit/controls';
+import controlsSrc from '../../src/ui/kit/controls.tsx?raw';
+import gameScreenSrc from '../../src/ui/game/GameScreen.tsx?raw';
+import { SquareTrack } from '../../src/ui/game/SquareTrack';
 import { theme } from '../../src/ui/kit/theme';
 import { LogPanel } from '../../src/ui/game/panels';
-import { PromptBar, gamePrompt } from '../../src/ui/game/prompts';
+import { PromptBar, focusPromptTarget, gamePrompt } from '../../src/ui/game/prompts';
 import { devRouteConfig, initialSpeed, type GameController, type ViewState } from '../../src/ui/game/controller';
 import { boardMarks, escapeSelection, gunDice, wantsPromptFocus, type UiSel } from '../../src/ui/game/uiModel';
 import { RULES_TEXT } from '../../src/ui/screens/rulesText';
@@ -273,7 +276,7 @@ describe('text and routes (carries 6 to 8)', () => {
   });
   it('the rifle range is read by narrowing, not by a cast', () => {
     expect(rulesTextSrc).not.toMatch(/as \{ range: number \}/);
-    expect(rulesTextSrc).toContain("kind === 'musket'");
+    expect(rulesTextSrc).toContain("kind !== 'musket'");
   });
   it('the dev route is anchored at its end', () => {
     expect(devRouteConfig('#/play/000/top/colonel')).not.toBeNull();
@@ -283,5 +286,122 @@ describe('text and routes (carries 6 to 8)', () => {
     expect(devRouteConfig('#/play/000/top/colonelx')).toBeNull();
     expect(devRouteConfig('#/play/000/top/colonel/12x')).toBeNull();
     expect(devRouteConfig('#/play/000/top/colonel/1/2')).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------------------------- fix round 1
+
+const fakeItem = (name: string, attrs: Record<string, string> = {}): DialogItem & { name: string; focused: number; attrs: Record<string, string> } => {
+  const it = { name, focused: 0, attrs: { ...attrs }, focus() { it.focused++; }, hasAttribute: (k: string) => k in it.attrs, setAttribute: (k: string, v: string) => { it.attrs[k] = v; } };
+  return it;
+};
+
+describe('dialog Tab (review 1)', () => {
+  const close = fakeItem('close', { tabindex: '0' });
+  const body = fakeItem('body');
+  const ok = fakeItem('ok', { tabindex: '0' });
+  const root = { querySelectorAll: (sel: string) => (sel === '*' ? [close, body, ok] : [close, ...(body.hasAttribute('tabindex') ? [body] : []), ok]) };
+  const key = (shiftKey: boolean) => { const e = { shiftKey, prevented: 0, preventDefault() { e.prevented++; } }; return e; };
+  it('a scroll container joins the tab cycle, so the keyboard can scroll it', () => {
+    const e = key(false);
+    dialogTab(e, root, close, (el) => el === body);
+    expect(body.attrs.tabindex).toBe('0');
+    expect(e.prevented).toBe(0); // from the first control it moves on natively, to the body
+  });
+  it('focus wraps only where it would leave the dialog', () => {
+    const last = key(false);
+    dialogTab(last, root, ok, (el) => el === body);
+    expect(last.prevented).toBe(1);
+    expect(close.focused).toBe(1);
+    const first = key(true);
+    dialogTab(first, root, close, (el) => el === body);
+    expect(first.prevented).toBe(1);
+    expect(ok.focused).toBe(1);
+    const mid = key(false);
+    dialogTab(mid, root, body, (el) => el === body);
+    expect(mid.prevented).toBe(0);
+  });
+  it('the Modal runs that handler on Tab, and focuses a data-autofocus control first', () => {
+    expect(controlsSrc).toMatch(/e\.key === 'Tab' && box\.current\) dialogTab\(e, box\.current, document\.activeElement\)/);
+    expect(controlsSrc).toContain("querySelector<HTMLElement>('[data-autofocus]')");
+    expect(gameScreenSrc).toMatch(/data-autofocus[^\n]*Keep fighting/);
+  });
+});
+
+describe('where a new decision puts the focus (review 1)', () => {
+  const rootWith = (present: Record<string, string>) => {
+    const log: string[] = [];
+    return { log, querySelector: (sel: string) => { const k = Object.keys(present).find((x) => sel.includes(x)); return k ? { focus: () => log.push(present[k]) } : null; } };
+  };
+  it('primary, else the chooser list, else the first ordinary button, else the bar', () => {
+    expect(focusPromptTarget(rootWith({ 'kit-btn--primary': 'p', 'prompt-pick': 'l', ':not(:disabled):not([data-nofocus])': 'b', 'prompt-bar': 'bar' }))).toBe('primary');
+    expect(focusPromptTarget(rootWith({ 'prompt-pick': 'l', 'kit-btn:not': 'b', 'prompt-bar': 'bar' }))).toBe('pick');
+    expect(focusPromptTarget(rootWith({ 'kit-btn:not': 'b', 'prompt-bar': 'bar' }))).toBe('button');
+    expect(focusPromptTarget(rootWith({ 'prompt-bar': 'bar' }))).toBe('bar');
+    expect(focusPromptTarget(rootWith({}))).toBeNull();
+  });
+  it('never the general\'s or Undo button: both carry data-nofocus, and every query skips it', () => {
+    const d: Decision = { kind: 'playCard', side: 'bottom' };
+    const s = build({ units: [bot('BR/LN', [6, 6]), top('FR/LN', [2, 6])] });
+    const p = gamePrompt({ ...ctx(s, d), view: { pending: d, over: null, fatal: false, generalThinking: false, undo: 'move', display: s } as unknown as ViewState })!;
+    const html = markup(p.buttons);
+    expect((html.match(/data-nofocus="true"/g) ?? []).length).toBe(2);
+    const src = focusPromptTarget.toString();
+    expect(src.match(/\[data-nofocus\]/g)?.length).toBeGreaterThanOrEqual(2);
+  });
+  it('the game screen calls it, and Escape goes through escapeSelection', () => {
+    expect(gameScreenSrc).toContain('focusPromptTarget(document)');
+    expect(gameScreenSrc).toContain('escapeSelection(s, d, human, u)');
+    expect(gameScreenSrc).not.toContain('die: null');
+  });
+});
+
+describe('names and live regions (review 1)', () => {
+  it('only the prompt text is a live region, not the bar with its buttons', () => {
+    const prompt = { title: 'Movement', text: 'Select a piece.', buttons: [createElement('button', { key: 'x' }, 'End')], hint: 'hint' };
+    const bar = renderToStaticMarkup(createElement(PromptBar, { prompt, error: null }));
+    expect(bar).toMatch(/^<div class="prompt-bar[^"]*" tabindex="-1">/);
+    const live = /<div class="prompt-text" role="status" aria-live="polite">(.*?)<\/div><\/div>/.exec(bar)!;
+    expect(live[1]).toContain('Movement');
+    expect(live[1]).not.toContain('End');
+    expect(live[1]).not.toContain('hint');
+  });
+  it('an exit marker carries its text', () => {
+    const html = renderToStaticMarkup(createElement('svg', null, createElement(ObjectiveMarkers, {
+      objectives: [{ kind: 'exit', side: 'bottom', hex: H(0, 3), banners: 1, leadersScore: false, retreatOff: false, text: 'Leave by the north road' }],
+      objState: [{ held: false, count: 0 }], flipped: false, nations: { top: 'FR', bottom: 'BR' },
+    })));
+    expect(html).toContain('<title>Leave by the north road</title>');
+  });
+  it('the owner square slots are named images', () => {
+    const s = build({ units: [bot('BR/LN', [6, 6]), top('FR/LN', [2, 6])] });
+    s.players.bottom.squareTrack = [s.players.bottom.hand[0], null, null, null];
+    const html = renderToStaticMarkup(createElement(SquareTrack, { side: 'bottom', owner: true, s }));
+    expect((html.match(/role="img" aria-label="Square \d/g) ?? []).length).toBe(4);
+  });
+  it('the Combined Arms own-dice badge is the dice the combat event reports', () => {
+    const P2: Pos = { units: [bot('BR/LN', [5, 6]), top('FR/LN', [4, 6]), bot('BR/FA', [4, 5])] };
+    const dr = toBattle(build(P2), 'attackC', ['u1', 'u3']);
+    must(dr, { kind: 'attack', unit: 'u1', target: H(4, 6) });
+    const d = dr.pending as Extract<Decision, { kind: 'combinedArms' }>;
+    const badge = boardMarks(dr.state, d, { ...SEL, gunSel: ['u3'] }, 'bottom').badges.get(H(4, 6));
+    forceDice(n('artillery', 60));
+    ev(dr);
+    must(dr, { kind: 'select', ids: ['u3'] });
+    if (dr.pending?.kind === 'defend') must(dr, { kind: 'defend', choice: 'stand' });
+    const c = ev(dr).filter((e): e is Extract<GameEvent, { t: 'combat' }> => e.t === 'combat').find((e) => e.purpose === 'melee')!;
+    const guns = c.artillery!.reduce((x, g) => x + g.dice, 0);
+    expect(badge).toBe(`${c.dice} + ${guns} = ${c.dice + guns} dice`);
+  });
+  it('the rifle range throws rather than answering 0 if the row stops being a musket', () => {
+    expect(rulesTextSrc).toMatch(/kind !== 'musket'\) throw new Error/);
+  });
+  it('Cinzel is gone from the whole UI and index.html', async () => {
+    const fs = await import(FS);
+    const walk = (dir: URL): string[] => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e: { name: string; isDirectory(): boolean }) =>
+      e.isDirectory() ? walk(new URL(`${e.name}/`, dir)) : [fs.readFileSync(new URL(e.name, dir), 'utf8')]);
+    const files: string[] = [...walk(new URL('../../src/ui/', import.meta.url)), await readText('../../index.html')];
+    expect(files.length).toBeGreaterThan(50);
+    expect(files.filter((f) => /cinzel/i.test(f))).toEqual([]);
   });
 });

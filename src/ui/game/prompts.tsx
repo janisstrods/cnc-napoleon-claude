@@ -56,10 +56,10 @@ function pct(x: number) {
   return `${Math.round(x * 100)}%`;
 }
 
-function btn(label: string, onClick: () => void, opts: { variant?: 'primary' | 'secondary' | 'ghost'; disabled?: boolean; key?: string; title?: string; hover?: { enter: () => void; leave: () => void } } = {}) {
+function btn(label: string, onClick: () => void, opts: { variant?: 'primary' | 'secondary' | 'ghost'; disabled?: boolean; key?: string; title?: string; noFocus?: boolean; hover?: { enter: () => void; leave: () => void } } = {}) {
   return (
     <Button
-      key={opts.key ?? label} variant={opts.variant ?? 'primary'} disabled={opts.disabled} onClick={onClick} title={opts.title}
+      key={opts.key ?? label} variant={opts.variant ?? 'primary'} disabled={opts.disabled} onClick={onClick} title={opts.title} data-nofocus={opts.noFocus ? 'true' : undefined}
       onMouseEnter={opts.hover?.enter} onFocus={opts.hover?.enter} onMouseLeave={opts.hover?.leave} onBlur={opts.hover?.leave}
     >
       {label}
@@ -69,7 +69,7 @@ function btn(label: string, onClick: () => void, opts: { variant?: 'primary' | '
 
 /** The general's button: the computer's own policy answers for the human. */
 function autoButton(c: PromptCtx): JSX.Element {
-  return btn(AUTO_ACTION.label, () => void c.controller.autoAnswer(), { variant: 'ghost', key: 'auto', title: 'The computer plays this decision for you' });
+  return btn(AUTO_ACTION.label, () => void c.controller.autoAnswer(), { variant: 'ghost', key: 'auto', noFocus: true, title: 'The computer plays this decision for you' });
 }
 
 /** The prompt bar's content: null once the battle is over, and while the computer decides something that shows nothing. */
@@ -162,24 +162,50 @@ export function ChoicePicker(p: { label: string; choices: PickerChoice[]; onChoo
   );
 }
 
-/** The prompt bar: a polite live region (it exists while there is no prompt, so the next one is announced). */
+/** Where a new decision puts the keyboard focus (what `focusPromptTarget` tried first to last). */
+export type PromptFocus = 'primary' | 'pick' | 'button' | 'bar';
+
+/**
+ * A new human decision of the keyboard player takes the focus: the primary button, else a chooser's list, else the first
+ * enabled button that is not the general's or Undo (data-nofocus: an Enter must not hand the decision over or take a move
+ * back), else the bar itself. Returns what took it.
+ */
+export function focusPromptTarget(root: { querySelector(selector: string): { focus(o?: { preventScroll: boolean }): void } | null }): PromptFocus | null {
+  const chain: [PromptFocus, string][] = [
+    ['primary', '.prompt-buttons .kit-btn--primary:not(:disabled):not([data-nofocus])'],
+    ['pick', '.prompt-pick select'],
+    ['button', '.prompt-buttons .kit-btn:not(:disabled):not([data-nofocus])'],
+    ['bar', '.prompt-bar'],
+  ];
+  for (const [name, sel] of chain) {
+    const el = root.querySelector(sel);
+    if (el) { el.focus({ preventScroll: true }); return name; }
+  }
+  return null;
+}
+
+/**
+ * The prompt bar. Its text (title, line, error) is a polite live region that exists while there is no prompt too, so
+ * the next prompt is announced; the buttons and the hint are not announced. The bar takes focus (tabindex -1) when it holds no button to focus.
+ */
 export function PromptBar({ prompt, error }: { prompt: Prompt | null; error: string | null }) {
-  if (!prompt) return <div className="prompt-bar prompt-bar--idle" role="status" aria-live="polite" />;
   return (
-    <div className={`prompt-bar ${prompt.tone ? `tone-${prompt.tone}` : ''}`} role="status" aria-live="polite">
-      {prompt.dice && (
+    <div className={prompt ? `prompt-bar ${prompt.tone ? `tone-${prompt.tone}` : ''}` : 'prompt-bar prompt-bar--idle'} tabIndex={-1}>
+      <div className="prompt-main">
+        <div className="prompt-text" role="status" aria-live="polite">
+          {prompt && <div className="prompt-title">{prompt.title}</div>}
+          {prompt?.text && <div className="prompt-sub" title={prompt.text}>{prompt.text}</div>}
+          {error && <div className="prompt-err">{error}</div>}
+        </div>
+        {prompt?.hint && <div className={`prompt-hint ${prompt.compactHint ? 'prompt-hint--compact' : ''}`}>{prompt.hint}</div>}
+      </div>
+      {prompt?.dice && (
         <div className="prompt-dice" aria-hidden>
           {prompt.dice.map((f, i) => <DieView key={i} face={f} size={30} />)}
         </div>
       )}
-      <div className="prompt-text">
-        <div className="prompt-title">{prompt.title}</div>
-        {prompt.text && <div className="prompt-sub" title={prompt.text}>{prompt.text}</div>}
-        {prompt.hint && <div className={`prompt-hint ${prompt.compactHint ? 'prompt-hint--compact' : ''}`}>{prompt.hint}</div>}
-        {error && <div className="prompt-err">{error}</div>}
-      </div>
-      {prompt.extra}
-      <div className="prompt-buttons">{prompt.buttons}</div>
+      {prompt?.extra}
+      {prompt && <div className="prompt-buttons">{prompt.buttons}</div>}
     </div>
   );
 }
@@ -277,7 +303,7 @@ const UNDO_LABEL: Record<UndoStep, { label: string; title: string }> = {
 /** The undo button, when something may be taken back: a move, or the card played until a unit moves. */
 function undoButton(c: PromptCtx): JSX.Element | null {
   const step = c.view.undo;
-  return step ? btn(UNDO_LABEL[step].label, () => c.controller.undo(), { variant: 'ghost', key: 'undo', title: UNDO_LABEL[step].title }) : null;
+  return step ? btn(UNDO_LABEL[step].label, () => c.controller.undo(), { variant: 'ghost', key: 'undo', noFocus: true, title: UNDO_LABEL[step].title }) : null;
 }
 
 function playCardPrompt(c: PromptCtx): Prompt {

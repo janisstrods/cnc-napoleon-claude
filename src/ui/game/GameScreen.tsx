@@ -9,7 +9,7 @@ import { BattleResult } from './BattleResult';
 import { Board } from './Board';
 import type { GameController } from './controller';
 import { HoverTip, LogPanel } from './panels';
-import { PromptBar, gamePrompt } from './prompts';
+import { PromptBar, focusPromptTarget, gamePrompt } from './prompts';
 import { bannerCounts, objectiveSummary, objectiveTipLines } from './objectiveText';
 import { boardMarks, escapeSelection, leaderRetreatChoices, retreatChoices, selectionDeps, toggleGun, wantsPromptFocus, type UiSel } from './uiModel';
 import { assignClick, assignClickRefusal, assignOptions, currentAssign, nextDie, type ElanOrRally } from './assign';
@@ -102,9 +102,7 @@ export function GameScreen({ controller, onExit, onRematch }: {
     if (!wantsPromptFocus(d, human, overBoard.current) || document.querySelector('.kit-modal')) return;
     const a = document.activeElement;
     if (a instanceof HTMLSelectElement || a instanceof HTMLInputElement) return;
-    // the primary button, else the list of a chooser (never the general's button: an Enter must not hand the decision over)
-    const target = document.querySelector<HTMLElement>('.prompt-buttons .kit-btn--primary:not(:disabled)') ?? document.querySelector<HTMLElement>('.prompt-pick select');
-    target?.focus({ preventScroll: true });
+    focusPromptTarget(document);
   }, [d, human]);
 
   const answer = (a: Answer) => controller.answer(a);
@@ -444,7 +442,7 @@ export function GameScreen({ controller, onExit, onRematch }: {
         <p className="modal-p">Your battle is saved automatically — you can continue it from the main menu.</p>
         <div className="modal-buttons">
           <Button onClick={onExit}>Return to menu</Button>
-          <Button variant="secondary" onClick={() => setConfirmExit(false)}>Keep fighting</Button>
+          <Button variant="secondary" data-autofocus onClick={() => setConfirmExit(false)}>Keep fighting</Button>
         </div>
       </Modal>
 

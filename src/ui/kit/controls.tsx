@@ -50,6 +50,30 @@ export function focusWrap(index: number, count: number, shift: boolean): number 
   return shift ? (index + count - 1) % count : (index + 1) % count;
 }
 
+/** What the dialog's keyboard handling needs of an element (a DOM element, or a stand-in in a test). */
+export interface DialogItem { focus(): void; hasAttribute(name: string): boolean; setAttribute(name: string, value: string): void }
+export interface DialogRoot { querySelectorAll(selector: string): ArrayLike<DialogItem> }
+
+/** A scroll container with more to read than shows: it must be in the tab cycle, or the keyboard cannot scroll it. */
+export function isScrollable(el: unknown): boolean {
+  const e = el as HTMLElement;
+  return typeof getComputedStyle === 'function' && e.scrollHeight > e.clientHeight + 1 && /(auto|scroll)/.test(getComputedStyle(e).overflowY);
+}
+
+/**
+ * Tab inside a dialog: scroll containers join the tab cycle (tabindex 0), and focus wraps only where it would leave the
+ * dialog (past the last control, before the first, or from outside it).
+ */
+export function dialogTab(e: { shiftKey: boolean; preventDefault(): void }, root: DialogRoot, active: unknown, scrollable: (el: DialogItem) => boolean = isScrollable): void {
+  for (const el of Array.from(root.querySelectorAll('*'))) if (!el.hasAttribute('tabindex') && scrollable(el)) el.setAttribute('tabindex', '0');
+  const items = Array.from(root.querySelectorAll(FOCUSABLE));
+  const i = items.indexOf(active as DialogItem);
+  if (items.length && (i < 0 || (e.shiftKey ? i === 0 : i === items.length - 1))) {
+    e.preventDefault();
+    items[focusWrap(i, items.length, e.shiftKey)].focus();
+  }
+}
+
 /** A centred parchment dialog over a dimmed table. Escape / backdrop click call onClose; focus moves in, stays in, and returns. */
 export function Modal(p: { open: boolean; title?: string; children: ReactNode; onClose?: () => void; width?: number | string }) {
   const { open, onClose } = p;
@@ -59,7 +83,8 @@ export function Modal(p: { open: boolean; title?: string; children: ReactNode; o
     if (!open) return;
     const before = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const el = box.current;
-    const first = el?.querySelector<HTMLElement>('.kit-btn--primary:not(:disabled)') ?? el?.querySelector<HTMLElement>(FOCUSABLE);
+    // a control marked data-autofocus (the safe choice) wins over the primary button
+    const first = el?.querySelector<HTMLElement>('[data-autofocus]') ?? el?.querySelector<HTMLElement>('.kit-btn--primary:not(:disabled)') ?? el?.querySelector<HTMLElement>(FOCUSABLE);
     first?.focus({ preventScroll: true });
     return () => { if (before && document.contains(before)) before.focus({ preventScroll: true }); };
   }, [open]);
@@ -67,14 +92,7 @@ export function Modal(p: { open: boolean; title?: string; children: ReactNode; o
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose?.();
-      if (e.key === 'Tab' && box.current) {
-        const items = [...box.current.querySelectorAll<HTMLElement>(FOCUSABLE)];
-        const i = items.indexOf(document.activeElement as HTMLElement);
-        if (items.length && (i < 0 || (e.shiftKey ? i === 0 : i === items.length - 1))) {
-          e.preventDefault();
-          items[focusWrap(i, items.length, e.shiftKey)].focus();
-        }
-      }
+      if (e.key === 'Tab' && box.current) dialogTab(e, box.current, document.activeElement);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
