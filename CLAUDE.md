@@ -4,10 +4,9 @@ Browser game: TypeScript + Vite + React, pure rules engine in `src/engine`, AI i
 
 ## Status
 
-- **The engine is the Napoleonics skeleton (Plan 2B T1c); rules land task by task.** This project was started from the Commands & Colors: Ancients edition (v1.6.2); its identity has changed (`ccn-` storage keys, `window.__ccn`, title, version 0.1.0).
+- **The engine is the Napoleonics base game (RR §1–§14), complete (Plan 2B).** The AI is a seeded random stub until Plan 5, and the UI shows generic prompts (a "Let the general decide" button) for decisions it has no chooser for until Plan 4. This project was started from the Commands & Colors: Ancients edition (v1.6.2); its identity has changed (`ccn-` storage keys, `window.__ccn`, title, version 0.1.0).
 - Ancients content (battles, texts, histories, golden fixtures, art and terrain hash pins, scenario-bound tests) was removed in Plan 2A.
 - Battles 001–015 are generated from `design/data` (Plan 3B) and playable; `000` stays the hidden drill (the picker and random battle skip `hidden` battles).
-- Plan 2 replaces the engine.
 - `design/ancients/` holds the Ancients design docs for reference.
 - The roadmap is in `design/superpowers/plans/2026-11-17-plan-1-foundations.md`.
 - Every localStorage key starts with `ccn-` and is built with `storageKey(name)` from `src/ui/storage.ts`, never a string literal.
@@ -18,8 +17,8 @@ Browser game: TypeScript + Vite + React, pure rules engine in `src/engine`, AI i
 |---|---|
 | `npm install` | Install dependencies |
 | `npm run dev` | Dev server on http://localhost:5173 (launch config `dev`) |
-| `npm test` | All Vitest tests (engine, rules, scenarios, art, terrain, UI, AI, golden games; 797 tests, ~6 s) |
-| `npm run typecheck` | `tsc --noEmit -p .` |
+| `npm test` | All Vitest tests (engine, rules, scenarios, art, terrain, UI, AI, golden games; 1208 tests, ~9 s) |
+| `npm run typecheck` | `tsc --noEmit -p .` and `tsc --noEmit -p tsconfig.scripts.json` (adds `@types/node`; checks `scripts/` too) |
 | `npm run build` | Type-check, then build the static site into `docs/` |
 
 Slow opt-in AI matches: `npx vite-node scripts/ai-match.ts -- --a tribune --b recruit --games 2` (see the file header for flags).
@@ -52,22 +51,34 @@ Slow opt-in AI matches: `npx vite-node scripts/ai-match.ts -- --a tribune --b re
 - `src/engine/codes.ts`: the Napoleonics vocabulary (nations, arms, unit codes, `UnitKey` = `Nation/UnitCode`, `isUnitKey`); imports nothing.
 - `scripts/scenarios/convert.ts` (the converter; it refuses unsupported features until Plan 7), `scripts/scenarios/meta-base.ts` (the meta table), `tests/scenarios/{generated,base,battles-soak,battle-rules,texts}.test.ts` and `manifest.ts`.
 - `src/scenarios/catalogue.ts`: `CATALOGUE` of every battle (base 001–015, Expansion #1 101–118) with name, date and box, transcribed or not; histories are checked against it.
-- One table per kind of thing: `UNIT_STATS` (`src/engine/units.ts`), `ELITES` (`elites.ts`), `TERRAIN_STATS` (`terrain.ts`)
-  and `EXPANSIONS` (`expansions.ts`). A new unit type, elite or terrain is a row there, and the compiler then asks for its
+- One table per kind of thing: `UNIT_STATS` (`src/engine/units.ts`), `TERRAIN_STATS` and `WORKS` (`terrain.ts`), `CARD_DEFS`
+  (`cards.ts`) and `EXPANSIONS` (`expansions.ts`). A new unit type or terrain is a row there, and the compiler then asks for its
   art (see the art notes below). A new expansion is an `EXPANSIONS` row plus its battle files; briefing texts of every battle are one table in `src/scenarios/texts.ts`.
 - Art: the Napoleonic miniatures are in `src/art/nap/`. Data is in `keys.ts` (`ART_KEYS`), `nations.ts` and `specs/`; the drawing code never tests nations or codes. A new unit key needs an `ART_KEYS` entry, a spec, and a decision in `tests/art/nap/wiring.test.ts` (art, or `PLACEHOLDER_OK` with a reason). The public tokens (`src/art/token.tsx`, `leader.tsx`, `icon.tsx`) delegate to it for art keys and art nations; the placeholder art remains for keys without art (SP). The hash pin is `tests/art/nap/looks.test.ts`: after a deliberate art change, re-pin with the hash it prints and say so in the commit. An attached leader sits at `NAP_LEADER_ATTACH_OFFSET` (the left end of the badge).
 - Battle rules are data: the scenario JSON → `ScenarioSetup` (`src/engine/setup.ts`) → `GameState.scenario` (readonly,
   shared by `cloneState`). Play state lives in `GameState.special` (copied). A rule that falls on one side names it in the
   data; it never goes by army name.
-- Turn engine, bottom layer first (each module imports only earlier ones): `options.ts` (pure queries of the turn's
-  options and the move/battle validators), `decisions.ts` (`ask`, `answerError`, the one answer check the AI also uses),
-  `casualties.ts`, `attacks.ts`, `phases.ts`, `flow.ts`.
+- Engine modules, bottom layer first (each imports only earlier ones; type-only imports exempt): `codes, types, hex, rng,
+  expansions, units, terrain, query, cards, setup, scenarioRules, banners, objectives, dice, sight, retreat, movement,
+  orders, tacticRules, options, decisions, combinedArms, casualties, leaders, resolve, squares, reactions, afterMelee,
+  fire, melee, tactics, phases, flow`; then `legal`, `driver`, `text`, `index`. `statsOf(state, unit)` is the unit's row
+  with the scenario's `unitOverrides` applied. Rules that act at a point in a battle are hook modules called from
+  `melee`/`resolve`/`phases`: `reactions` (Retire and Reform, First Strike), `squares`, `leaders`, `combinedArms`,
+  `afterMelee` (take ground, breakthrough, bonus melee) and `tactics` (Élan, Rally, Short Supply). `decisions.ts` holds `ask`
+  and `answerError`, the one answer check the AI and UI also use. The flow is generators yielding one of 18 `Decision`
+  kinds (`playCard, orders, leaveSquare, move, battle, combinedArms, defend, ignoreFlags, retreat, leaderRetreat, advance,
+  breakthroughExtra, bonusMelee, elan, rally, scoutKeep, shortSupplyTarget, shortSupplyHex`); `GameDriver` runs them
+  (replay, undo, events). The engine never branches on a nation or army name (`tests/engine/no-nation-names.test.ts`).
+- Scenario format (`ScenarioSetup`, `src/engine/setup.ts`): `terrain` entries (a `river` hex may carry a `crossing`; `fieldworks`
+  has `on` for the base terrain and `sides` for the works hexsides), `rivers` (one rule per battle), `square` on a unit at setup,
+  `objectives` of kinds `tempHex` / `tempGroup` / `exit` / `killWeight`, `sideRules`, and `unitOverrides` (rows changed for one key).
 - The AI calls the engine's rules, passing its `Occ` board index as a `PieceIndex` (`src/engine/query.ts`) rather than
   copying them. Deliberate approximations in `src/ai/board.ts` say so in a comment.
 - The player's record (Triumphs: medals per battle, side and opponent level) is `src/ui/record.ts`, in localStorage
   `ccn-record-v1`; the controller records a battle once when it ends. Medal art and the dialog: `src/ui/screens/Medal.tsx`,
   `Triumphs.tsx`.
-- Test kits: `tests/rules/helpers.ts` (`build`/`setupOf` pass `ScenarioSetup` fields through), `tests/ai/helpers.ts`,
+- Test kits: `tests/rules/helpers.ts` (`build`/`setupOf` pass `ScenarioSetup` fields through; the top army is French and the
+  bottom British; `duel`, `attackOn` and `miss` set up a melee, `attack` answers the decisions that follow a declaration), `tests/ai/helpers.ts`,
   `tests/scenarios/helpers.ts`, `tests/support/rng.ts`, `tests/support/storage.ts` (a localStorage stub). Scripts share `scripts/lib.ts`. Long AI tests go in
   `*.slow.test.ts` files, which a sequencer in `vite.config.ts` starts first.
 
@@ -86,9 +97,10 @@ Slow opt-in AI matches: `npx vite-node scripts/ai-match.ts -- --a tribune --b re
 - `design/ccn-rules-research.md`: background rules research and the comparison with Ancients.
 - `design/ancients/`: the Ancients design docs, kept as reference only (not rules for this game).
 - `design/superpowers/` holds the design specs and implementation plans.
-- Until Plan 2B the engine is still the Ancients one: its battle objectives are data (`objectives` in the scenario JSON)
-  handled by `src/engine/objectives.ts`, `held.ts` and `banners.ts`; victory counts `bannerTotal` (permanent + held).
-  Terrain may change during play only through `setTerrain` (copy-on-write; `cloneState` shares the arrays).
+- Every `tests/rules` file starts with a header line `// Rules: RR §a, §b.c (design/rules-reference.md)` naming the RR sections it
+  tests, and `tests/engine/rr-coverage.test.ts` checks that every section is cited by some header (a bare `§n` covers only §1 and §14).
+- Battle objectives are data (`objectives` in the scenario JSON), handled by `objectives.ts` and `banners.ts`; victory counts `bannerTotal`
+  (permanent + held). The board never changes in play (`cloneState` shares `terrain` and `works`).
 
 ## Battle histories
 

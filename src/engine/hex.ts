@@ -27,7 +27,7 @@ export const ALL_HEXES: HexId[] = (() => {
 const EVEN_DIRS: [number, number][] = [[0, 1], [-1, 0], [-1, -1], [0, -1], [1, -1], [1, 0]];
 const ODD_DIRS: [number, number][] = [[0, 1], [-1, 1], [-1, 0], [0, -1], [1, 0], [1, 1]];
 
-/** Direction names by index (the order of the offsets above; rampart edges and masks use these indices). */
+/** Direction names by index (the order of the offsets above; Field Works hexside masks use these indices). */
 export const HEX_DIRS: readonly HexDir[] = ['E', 'NE', 'NW', 'W', 'SW', 'SE'];
 
 const NEIGHBOURS: HexId[][] = [];
@@ -136,16 +136,6 @@ export function sidesCrossed(target: HexId, other: HexId): number[] {
   const lo = Math.floor(t);
   if (Math.abs(t - lo - 0.5) < 1e-9) return [lo % 6, (lo + 1) % 6];
   return [Math.round(t) % 6];
-}
-
-/** Line of sight given a predicate telling whether an intermediate hex blocks. */
-export function hasLineOfSight(a: HexId, b: HexId, blocks: (h: HexId) => boolean): boolean {
-  if (distance(a, b) <= 1) return true;
-  const [plus, minus] = lineBetween(a, b);
-  const plusBlocked = plus.some((h) => h === OFF_BOARD || blocks(h));
-  if (!plusBlocked) return true;
-  const minusBlocked = minus.some((h) => h === OFF_BOARD || blocks(h));
-  return !minusBlocked;
 }
 
 /** Half-column index 0..24 used for sections. */

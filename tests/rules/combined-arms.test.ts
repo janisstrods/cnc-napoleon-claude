@@ -282,4 +282,18 @@ describe('Combined Arms (§9.6)', () => {
     expect(d.pending?.kind).not.toBe('ignoreFlags');
     expect(ev(d).find((e) => e.t === 'flags')).toMatchObject({ bounce: true, flags: 1, ignored: 0 });
   });
+
+  it("a square with 0 dice of its own (the hill) brings a gun: no square's die in the roll, so the flags are ordinary (R30)", () => {
+    const s = build({ terrain: [{ t: 'hill', at: [4, 6] }], units: [bot('BR/LN', [5, 6], { square: 1 }), top('FR/HC', [4, 6]), bot('BR/FA', [6, 5])] });
+    const d = toBattle(s, 'attackC', ['u1', 'u3']);
+    ev(d);
+    forceDice(['flag', 'flag', 'flag', ...PAD]);
+    must(d, { kind: 'attack', unit: 'u1', target: H(4, 6) });
+    expect(d.pending).toMatchObject({ kind: 'combinedArms', required: true, options: ['u3'] });
+    must(d, { kind: 'select', ids: ['u3'] });
+    if (d.pending?.kind === 'defend') must(d, { kind: 'defend', choice: 'stand' });
+    const es = ev(d);
+    expect(combats(es).find((e) => e.purpose === 'melee')).toMatchObject({ dice: 0, artillery: [{ id: 'u3', dice: expect.any(Number) }] });
+    expect(es.find((e) => e.t === 'flags')).toMatchObject({ id: 'u2', bounce: false });
+  });
 });
