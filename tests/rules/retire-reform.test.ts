@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { retireReformOptions } from '../../src/engine';
 import type { DefendChoice, DieFace, GameDriver, RetreatOption, RowKey } from '../../src/engine';
-import { H, attack, attackOn, build, ev, forceDice, leaderId, must, n, rolls, toBattle, u, type Pos } from './helpers';
+import { H, attack, attackOn, build, ev, forceDice, must, n, rolls, toBattle, u, type Pos } from './helpers';
 
 const top = (key: RowKey, at: [number, number], extra: object = {}) => ({ side: 'top' as const, key, at, ...extra });
 const topLdr = (at: [number, number]) => ({ side: 'top' as const, at });
@@ -37,12 +37,15 @@ describe('Retire and Reform (§9.4)', () => {
     forceDice(n('infantry', 20));
     must(d, { kind: 'attack', unit: 'u1', target: H(4, 6) });
     expect(d.pending?.kind).not.toBe('defend');
-    // a battle back: a top FR/LN defends against bottom cavalry, then battles back; the bottom cavalry is never asked
+    // a battle back: a top FR/LN stands against bottom cavalry and battles back; the bottom cavalry is never asked
     const s2 = build({ units: [{ side: 'bottom', key: 'BR/HC', at: [5, 6] }, top('FR/LN', [4, 6])] });
     const d2 = toBattle(s2, 'attackC', ['u1']);
-    forceDice(n('infantry', 20));
-    attack(d2, 'u1', H(4, 6));
+    ev(d2);
+    forceDice(n('artillery', 40));
+    must(d2, { kind: 'attack', unit: 'u1', target: H(4, 6) });
+    if (d2.pending?.kind === 'combinedArms') must(d2, { kind: 'select', ids: [] });
     expect(d2.pending?.kind).not.toBe('defend');
+    expect(ev(d2).some((e) => e.t === 'combat' && e.purpose === 'battleBack')).toBe(true);
   });
 
   it('the path is exactly 2 own-side steps; units, enemy leaders, impassable hexes and the edge block it; stop terrain does not ([Interp R34])', () => {
@@ -51,6 +54,9 @@ describe('Retire and Reform (§9.4)', () => {
     expect(ends(hc([4, 6])).sort()).toEqual([H(2, 5), H(2, 6), H(2, 6), H(2, 7)].sort());
     // both rear hexes held by units: not offered
     expect(rrOptions({ units: [top('FR/HC', [4, 6]), top('FR/LN', [3, 5]), top('FR/LN', [3, 6])] })).toEqual([]);
+    const blocked = attackOn('BR/LN', 'FR/HC', { units: [top('FR/LN', [3, 5]), top('FR/LN', [3, 6])] });
+    if (blocked.pending?.kind === 'ignoreFlags') must(blocked, { kind: 'ignoreFlags', count: 0 });
+    expect(options(blocked)).not.toContain('retireReform');
     // an enemy leader blocks one hex
     const withEnemyLdr = rrOptions({ units: [top('FR/HC', [4, 6])], leaders: [{ side: 'bottom', at: [3, 5] }] });
     expect(withEnemyLdr.every((o) => o.path[0] !== H(3, 5))).toBe(true);
@@ -103,7 +109,10 @@ describe('Retire and Reform (§9.4)', () => {
     const es = ev(d);
     expect(rolls(es, 'leaderCheck')).toHaveLength(1);
     expect(rolls(es, 'leaderCheck')[0]).toHaveLength(2);
-    expect(leaderId(d.state, 0)).toBeTruthy();
+    must(d, { kind: 'choose', index: 0 });
+    expect(d.state.leaders).toHaveLength(1);
+    expect(d.state.leaders[0].hex).toBe(u(d, 'u2')!.hex);
+    expect(u(d, 'u2')!.hex).not.toBe(H(4, 6));
   });
 
   it('no hit: no leader check, and an eliminated cavalry vacates the hex (R34)', () => {
@@ -123,6 +132,38 @@ describe('Retire and Reform (§9.4)', () => {
     must(d, { kind: 'yesno', yes: true });
     expect(u(d, 'u1')!.hex).toBe(H(4, 6));
     expect(ev(d).some((e) => e.t === 'advance')).toBe(true);
+  });
+
+  it('retires onto a lone friendly leader through the driver: attach (R34)', () => {
+    const d = charge({ leaders: [topLdr([3, 5])] }, ['cavalry', 'infantry', 'infantry', 'infantry']);
+    must(d, { kind: 'defend', choice: 'retireReform' });
+    const o = (d.pending as { options: RetreatOption[] }).options;
+    must(d, { kind: 'choose', index: o.findIndex((x) => x.attach !== null) });
+    const es = ev(d);
+    expect(es.some((e) => e.t === 'attach' && e.unit === 'u2')).toBe(true);
+    expect(u(d, 'u2')!.hex).toBe(H(3, 5));
+    expect(d.state.leaders[0].hex).toBe(H(3, 5));
+  });
+
+  it('records the retire end in turn.retreatEnds while the turn is open (R58)', () => {
+    const s = build({ units: [{ side: 'bottom', key: 'BR/LN', at: [5, 6] }, top('FR/HC', [4, 6]), { side: 'bottom', key: 'BR/LN', at: [5, 7] }, top('FR/LN', [4, 7])] });
+    const d = toBattle(s, 'attackC', ['u1', 'u3']);
+    ev(d);
+    forceDice([...n('infantry', 40)]);
+    must(d, { kind: 'attack', unit: 'u1', target: H(4, 6) });
+    must(d, { kind: 'defend', choice: 'retireReform' });
+    must(d, { kind: 'choose', index: 0 });
+    expect(d.state.turn.retreatEnds).toEqual([u(d, 'u2')!.hex]);
+  });
+
+  it('a Cuirassier takes the hit: no ignore (R34)', () => {
+    const s = build({ units: [{ side: 'bottom', key: 'BR/LN', at: [5, 6] }, top('FR/CU', [4, 6])] });
+    const e = toBattle(s, 'attackC', ['u1']);
+    ev(e);
+    forceDice([...n('cavalry', 1), ...n('infantry', 40)]);
+    must(e, { kind: 'attack', unit: 'u1', target: H(4, 6) });
+    must(e, { kind: 'defend', choice: 'retireReform' });
+    expect(u(e, 'u2')!.blocks).toBe(u(e, 'u2')!.maxBlocks - 1);
   });
 
   it('a square ordered to attack cavalry: the cavalry may still retire (R34)', () => {

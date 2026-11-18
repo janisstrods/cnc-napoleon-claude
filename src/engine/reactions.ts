@@ -16,7 +16,7 @@ export function defendOptions(s: GameState, m: MeleeCtx): DefendChoice[] {
   const options: DefendChoice[] = ['stand'];
   const target = unitById(s, m.target);
   const attacker = unitById(s, m.attacker);
-  if (!target || !attacker || m.role === undefined) return options;
+  if (!target || !attacker) return options;
   if (statsOf(s, target).arm === 'cavalry' && statsOf(s, attacker).arm === 'infantry' && retireReformOptions(s, target).length > 0) {
     options.push('retireReform');
   }
