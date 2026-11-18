@@ -29,7 +29,7 @@ export type DeepReadonly<T> = T extends readonly (infer E)[]
 
 export type DieFace = 'infantry' | 'cavalry' | 'artillery' | 'flag' | 'sabre';
 export const TERRAIN_TYPES = ['plain', 'hill', 'forest', 'rugged', 'town', 'windmill', 'fortress', 'river', 'ford',
-  'fordNoStop', 'brook', 'bridge', 'sandQuarry', 'void'] as const;
+  'fordNoStop', 'brook', 'bridge', 'sandQuarry', 'walledFarm', 'void'] as const;
 export type TerrainType = (typeof TERRAIN_TYPES)[number];
 export type UnitTag = 'light' | 'grenadier' | 'guard' | 'heavy' | 'horseArtillery';
 export type SquareSlot = 1 | 2 | 3 | 4;
@@ -99,25 +99,49 @@ export interface TurnState {
   firstStrikes: Record<Side, number>;      // First Strikes played reactively this turn
   reshuffle: boolean; scout: boolean;      // Draw-phase effects of the card (or of the card copied)
   retreatEnds: HexId[];                    // end hexes of retreats by units of the non-active side this turn (Fire and Hold, R58)
+  guerrilla: 'none' | 'stood' | 'cancelled'; // Guerrilla Action against this turn's card (RR §15.5): none tried, the card stood, or cancelled
 }
 
 export type ObjectiveDef = DeepReadonly<
   | { kind: 'tempHex'; side: Side; hex: HexId; timing: 'turnStart'; banners: number; text: string }
   | { kind: 'tempGroup'; side: Side; hexes: HexId[]; timing: 'turnStart'; banners: number; text: string }
   | { kind: 'exit'; side: Side; hex: HexId; banners: number; leadersScore: boolean; retreatOff: boolean; text: string }
-  | { kind: 'killWeight'; side: Side; enemyArm: Arm; first: number; later: number }>;
+  | { kind: 'killWeight'; side: Side; enemyArm: Arm; first: number; later: number }
+  // Expansion #1 (RR §15.8): any one hex of the group held at turn start; a group majority for `side` (a contested group is
+  // two records with the same hexes, one per side; `startHeld`: `side` holds it at setup); exits off a whole baseline (`free`
+  // exits score nothing); a sudden-death win when `need` enemy units of `keys` (all of them at setup) are eliminated
+  | { kind: 'tempAny'; side: Side; hexes: HexId[]; timing: 'turnStart'; banners: number; text: string }
+  | { kind: 'majority'; side: Side; hexes: HexId[]; banners: number; startHeld: boolean; text: string }
+  | { kind: 'exitEdge'; side: Side; row: 0 | 8; free: number; banners: number; text: string }
+  | { kind: 'suddenDeath'; side: Side; keys: RowKey[]; need: number; text: string }>;
 export type ObjectiveOf<K extends ObjectiveDef['kind']> = Extract<ObjectiveDef, { kind: K }>;
-export interface ObjectiveState { held: boolean; count: number }   // held: temp objectives; count: kills (killWeight)
+export interface ObjectiveState {
+  held: boolean; count: number;   // held: temp objectives; count: kills (killWeight)
+  holders?: string[];             // units holding a turn-start objective (Expansion #1 kinds; absent until set)
+}
 export type SideRuleDef = DeepReadonly<
   | { kind: 'flagIgnoreOn'; side: Side; terrain: TerrainType; flags: number }        // 006 fortress (RR §14.6)
-  | { kind: 'impetuousCavalry'; side: Side; keys: RowKey[] }>;                       // 015 (RR §14.15)
+  | { kind: 'impetuousCavalry'; side: Side; keys: RowKey[] }                         // 015 (RR §14.15)
+  // Expansion #1 (RR §15.5, §15.8)
+  | { kind: 'guerrilla'; side: Side; counters: number }                              // the guerrilla side and its starting counters
+  | { kind: 'breakOnLosses'; side: Side; keys: RowKey[]; losses: number; start: number } // after `losses` of them, the rest leave; start: count at setup
+  | { kind: 'handShrink'; side: Side; floor: number }                                // each banner lost shrinks the hand down to `floor`
+  | { kind: 'squareCap'; side: Side; units: number }                                 // at most `units` different units ever form square
+  | { kind: 'cavalryChargeFolly'; side: Side }>;                                     // `side` may not square or First Strike on an enemy Cavalry Charge turn
 export interface ScenarioConfigData {
   objectives: ObjectiveDef[]; sideRules: SideRuleDef[];
   unitStats: Partial<Record<RowKey, UnitStats>>;   // rows changed by unitOverrides, resolved at setup
   leadersAtStart: Record<Side, number>;
+  moveFirst: boolean;                              // the first player is decided by revealed cards (RR §15.8)
 }
 export type ScenarioConfig = DeepReadonly<ScenarioConfigData>;
-export interface SpecialState { objState: ObjectiveState[]; turnsDone: Record<Side, number>; leadersEliminated: Record<Side, number> }
+export interface SpecialState {
+  objState: ObjectiveState[]; turnsDone: Record<Side, number>; leadersEliminated: Record<Side, number>;
+  squared: Record<Side, string[]>;                 // ids of the units that ever formed square (in order)
+  handSize: Record<Side, number>;                  // the hand size now (cards held plus the square track); starts at the scenario's
+  /** Move First by revealed cards (RR §15.8): the secret picks, then the cards each side must play on its first turn. */
+  moveFirst: { done: boolean; picks: Record<Side, number | null>; committed: Record<Side, number | null> } | null;
+}
 
 export interface GameState {
   scenarioId: string;
@@ -160,10 +184,13 @@ export type Decision =
   | { kind: 'rally'; side: Side; faces: DieFace[] }
   | { kind: 'scoutKeep'; side: Side; cards: [number, number] }
   | { kind: 'shortSupplyTarget'; side: Side; options: string[] }
-  | { kind: 'shortSupplyHex'; side: Side; unit: string; options: HexId[] };
+  | { kind: 'shortSupplyHex'; side: Side; unit: string; options: HexId[] }
+  // spend a counter against the card (`spend`: card is the enemy card) or take one instead of a Scout draw (`scout`: card null)
+  | { kind: 'guerrilla'; side: Side; mode: 'spend' | 'scout'; card: CardKind | null; held: number; pool: number }
+  | { kind: 'moveFirst'; side: Side; options: number[] };   // the secret opening card: answer playCard with one of options
 
 export type Answer =
-  | { kind: 'playCard'; card: number }
+  | { kind: 'playCard'; card: number }                       // playCard, moveFirst
   | { kind: 'orders'; pieces: string[]; single?: boolean }   // single: La Grande Manoeuvre's "1 unit, normal rules"
   | { kind: 'move'; piece: string; to: HexId }               // to = OFF_BOARD: step off by an exit objective
   | { kind: 'endMove' }
@@ -173,19 +200,19 @@ export type Answer =
   | { kind: 'defend'; choice: DefendChoice }
   | { kind: 'ignoreFlags'; count: number }
   | { kind: 'choose'; index: number }                        // retreat, leaderRetreat, scoutKeep (card kept), shortSupplyTarget
-  | { kind: 'yesno'; yes: boolean }                          // leaveSquare, advance
+  | { kind: 'yesno'; yes: boolean }                          // leaveSquare, advance, guerrilla
   | { kind: 'hex'; hex: HexId | null }                       // breakthroughExtra, bonusMelee (null = decline), shortSupplyHex
   | { kind: 'assign'; ids: (string | null)[] };              // elan, rally: one entry per die
 
 export type RollPurpose = 'fire' | 'melee' | 'battleBack' | 'firstStrike' | 'bonus' | 'squareFirst' | 'retireReform'
-  | 'leaderCheck' | 'escape' | 'elan' | 'rally';
+  | 'leaderCheck' | 'escape' | 'elan' | 'rally' | 'guerrilla';
 export type GameEvent =
   | { t: 'turnStart'; side: Side; turn: number }
   | { t: 'cardPlayed'; side: Side; card: number; kind: CardKind; effective: CardKind | null }
   | { t: 'ordered'; side: Side; ids: string[] }
   | { t: 'move'; id: string; path: HexId[] }   // path includes the start hex; last = OFF_BOARD when it exited
   | { t: 'combat'; purpose: RollPurpose; attacker: string; target: string; dice: number; artillery?: { id: string; dice: number }[] }
-  | { t: 'roll'; purpose: RollPurpose; faces: DieFace[]; scoring: boolean[]; by: string | null; against: string | null; from?: string[] }
+  | { t: 'roll'; purpose: RollPurpose; faces: DieFace[]; scoring: boolean[]; by: string | null; against: string | null; from?: string[]; reroll?: true }
   | { t: 'damage'; id: string; amount: number; left: number; reason: string }
   | { t: 'eliminated'; id: string }
   | { t: 'removed'; id: string; reason: string }      // left the board by an exit: no banner to the enemy
@@ -203,7 +230,9 @@ export type GameEvent =
   | { t: 'draw'; side: Side } | { t: 'scoutDrew'; side: Side } | { t: 'discarded'; side: Side; card: number }
   | { t: 'reshuffle' }
   | { t: 'log'; text: string; side?: Side }
-  | { t: 'victory'; winner: Side | 'draw'; reason: string };
+  | { t: 'victory'; winner: Side | 'draw'; reason: string }
+  | { t: 'guerrilla'; side: Side; what: 'stood' | 'cancelled' | 'gained'; held: number; pool: number }
+  | { t: 'moveFirst'; picks: Record<Side, number | null>; values: Record<Side, number>; first: Side };
 
 /** Emitter passed through engine generators. */
 export interface FlowCtx {

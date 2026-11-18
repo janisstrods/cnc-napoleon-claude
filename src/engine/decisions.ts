@@ -66,5 +66,9 @@ export function answerError(s: GameState, d: Decision, a: Answer | null | undefi
       return choosesOneOf(a, d.options.length) ? null : 'Choose a unit.';
     case 'shortSupplyHex':
       return a.kind === 'hex' && a.hex !== null && d.options.includes(a.hex) ? null : 'Choose a hex.';
+    case 'guerrilla':
+      return a.kind === 'yesno' ? null : 'Answer yes or no.';
+    case 'moveFirst':
+      return a.kind === 'playCard' && d.options.includes(a.card) ? null : 'Choose one of the cards offered.';
   }
 }

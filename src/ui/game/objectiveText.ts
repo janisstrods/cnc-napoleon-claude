@@ -26,6 +26,7 @@ function objectiveLines(s: GameState, o: ObjectiveDef, i: number, h: HexId): str
     case 'exit':
       return o.hex === h ? [`${bare(o.text)}: ${aOrAn(army(o.side))} unit here may leave the battlefield — ${plural(o.banners, 'banner')}`] : [];
     case 'killWeight':
+    case 'tempAny': case 'majority': case 'exitEdge': case 'suddenDeath':   // Expansion #1 kinds: worded by Plan 7C Task 16
       return [];
   }
 }

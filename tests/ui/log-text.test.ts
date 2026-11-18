@@ -52,6 +52,8 @@ const SAMPLES: Record<GameEvent['t'], GameEvent> = {
   reshuffle: { t: 'reshuffle' },
   log: { t: 'log', text: 'Something happened.' },
   victory: { t: 'victory', winner: 'bottom', reason: 'six banners' },
+  guerrilla: { t: 'guerrilla', side: 'bottom', what: 'cancelled', held: 0, pool: 6 },
+  moveFirst: { t: 'moveFirst', picks: { top: 0, bottom: null }, values: { top: 1, bottom: 99 }, first: 'top' },
 };
 const KILL = 'Each enemy unit or leader eliminated: 1 banner';
 const line = (e: GameEvent, human: 'top' | 'bottom' = HUMAN) => eventLog(e, s, s, human);

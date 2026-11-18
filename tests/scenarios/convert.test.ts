@@ -80,7 +80,7 @@ describe('convertBattle', () => {
   it('no Spanish battle has an unsupported unit type; synthetic unsupported features are named (Task 11 restores the positive conversions)', () => {
     const spanish = Object.keys(RAW).filter((id) => id.startsWith('1'));
     expect(spanish.flatMap((id) => unsupportedFeatures(RAW[id])).some((f) => f.startsWith('unit type'))).toBe(false);   // every Spanish row exists since Plan 7C Task 3
-    expect(unsupportedFeatures(synth({ terrain: [{ r: 1, c: 1, t: 'walledFarm' }] }))).toContain('terrain walledFarm ×1');
+    expect(unsupportedFeatures(synth({ terrain: [{ r: 1, c: 1, t: 'marsh' }] }))).toContain('terrain marsh ×1');   // walledFarm is supported (Plan 7C Task 2)
     expect(unsupportedFeatures(synth({ guerrilla: [] }))).toContain('field guerrilla');
     expect(unsupportedFeatures(synth({ units: [{ r: 1, c: 1, side: 'bottom', key: 'BR/YG' as never }] }))).toContain('unit type BR/YG ×1');
     expect(unsupportedFeatures(synth({ terrain: [{ r: 1, c: 1, t: 'hill', redoubt: true } as never] }))).toContain('terrain key redoubt ×1');
