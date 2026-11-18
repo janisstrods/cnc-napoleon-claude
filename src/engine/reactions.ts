@@ -1,4 +1,6 @@
-// The defender's reaction to a melee (RR §9.2, §9.4, §9.5, §12.3). Skeleton: the defender only stands (→ T8, T9, T12c).
+// The defender's reaction to a melee (RR §9.2, §9.4, §9.5, §12.3): stand, Retire and Reform, form square, or play First Strike
+// (one choice per melee, R77); the resolution of each lives here (Retire and Reform, First Strike) or in squares.ts (the square).
+import { cardKind } from './cards';
 import { emitRoll } from './casualties';
 import { ask, type Gen } from './decisions';
 import { artilleryShares } from './combinedArms';
@@ -9,11 +11,15 @@ import { retireReformOptions } from './retreat';
 import { rollDice } from './rng';
 import { unitById } from './query';
 import { applyOutcome } from './resolve';
-import { canFormSquare } from './squares';
+import { canFormSquare, squareFirstApplies } from './squares';
 import { statsOf } from './units';
 import type { DefendChoice, FlowCtx, GameState, HexId, MeleeCtx, RollPurpose } from './types';
 
-/** The defender's choices: Retire and Reform for cavalry attacked by infantry (a square included) when it has a path (R34). */
+/**
+ * The defender's choices (one per melee, R77): Retire and Reform for cavalry attacked by infantry (a square included) when it
+ * has a path (R34); form square for infantry attacked by cavalry (R26); First Strike when its owner holds the card and the
+ * melee is an attack or a bonus melee, never a battle back and never against a square that already fights first (R29, R63).
+ */
 export function defendOptions(s: GameState, m: MeleeCtx): DefendChoice[] {
   const options: DefendChoice[] = ['stand'];
   const target = unitById(s, m.target);
@@ -23,6 +29,8 @@ export function defendOptions(s: GameState, m: MeleeCtx): DefendChoice[] {
     options.push('retireReform');
   }
   if (canFormSquare(s, target, attacker, m)) options.push('formSquare');
+  if ((m.role === 'attack' || m.role === 'bonus') && !squareFirstApplies(s, m)
+    && s.players[target.side].hand.some((c) => cardKind(c) === 'firstStrike')) options.push('firstStrike');
   return options;
 }
 
@@ -81,7 +89,26 @@ export function* resolveRetireReform(s: GameState, ctx: FlowCtx, m: MeleeCtx): G
   return from;
 }
 
-// eslint-disable-next-line require-yield
-export function* firstStrikeRoll(_s: GameState, _ctx: FlowCtx, _m: MeleeCtx): Gen<'continue' | 'stop'> {
+/**
+ * First Strike (RR §12.3, R63): the card goes from the defender's hand to the discard (never `lastCard`, R56) and the defender
+ * rolls its normal dice (terrain, no cards) at the melee unit. 'stop' when the attacker is eliminated or left its hex (its
+ * dice and every joining gun's are lost); else 'continue', and the caller recounts the attacker's dice and skips the battle back.
+ */
+export function* firstStrikeRoll(s: GameState, ctx: FlowCtx, m: MeleeCtx): Gen<'continue' | 'stop'> {
+  const def = unitById(s, m.target)!;
+  const atk = unitById(s, m.attacker)!;
+  const hand = s.players[def.side].hand;
+  const card = hand.splice(hand.findIndex((c) => cardKind(c) === 'firstStrike'), 1)[0];
+  s.discard.push(card);
+  s.turn.firstStrikes[def.side]++;
+  ctx.emit({ t: 'cardPlayed', side: def.side, card, kind: 'firstStrike', effective: null });
+  const from = atk.hex;
+  const dice = meleeDice(s, def, atk, { role: 'firstStrike', moved: 0 });
+  ctx.emit({ t: 'combat', purpose: 'firstStrike', attacker: def.id, target: atk.id, dice });
+  const faces = rollDice(s, dice);
+  const sc = scoreRoll(faces, 'melee', statsOf(s, def), statsOf(s, atk).arm);
+  emitRoll(ctx, 'firstStrike', faces, sc.scoring, def.id, atk.id);
+  const applied = yield* applyOutcome(s, ctx, atk, { hits: sc.hits, flags: sc.flags, bounce: false }, def, 'first strike');
+  if (s.winner || applied.eliminated || applied.left || !unitById(s, m.attacker) || atk.hex !== from) return 'stop';
   return 'continue';
 }
