@@ -1,6 +1,6 @@
 // Whole games through chooseAnswer: the drill battle at each level, and the Expansion kinds (Guerrilla in 103, Move First in 116), with
 // every answer legal and no fallback. Budget: 8 s.
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { GameDriver, createGame, type Decision } from '../../src/engine';
 import { scenarioById } from '../../src/scenarios';
 import { DIFFICULTIES, chooseAnswer, newMemory } from '../../src/ai';
@@ -9,6 +9,9 @@ import { failOnAiErrors } from './no-ai-errors';
 import { aiOptions, playBattle } from './soak';
 
 failOnAiErrors();
+
+// a machine 15-20x slower than the dev machine must not time a soak out (the default is 120 s)
+vi.setConfig({ testTimeout: 300_000 });
 
 describe('whole games', () => {
   for (const [level, diff] of DIFFICULTIES.entries()) {

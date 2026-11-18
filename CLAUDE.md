@@ -25,18 +25,18 @@ Slow opt-in AI matches: `npx vite-node scripts/ai-match.ts -- --a colonel --b ca
 
 ## Publishing (GitHub Pages)
 
-- Repo: https://github.com/janisstrods/cnc-napoleonics. Live site (once released): https://strods.work/cnc-napoleonics/.
-- Pages stays off and `docs/` is git-ignored until the first release (Plan 8 removes the ignore line). Once on, Pages serves **`main` branch, `/docs` folder**. `docs/` is generated build output: never hand-edit it, and never put notes there (design notes live in `design/`).
-- To publish a change (after the first release): `npm run build`, then commit the source changes **together with the regenerated `docs/`**, then `git push`. Pages updates about a minute later.
+- Repo: https://github.com/janisstrods/cnc-napoleon-claude. Live site: https://strods.work/cnc-napoleon-claude/.
+- `docs/` is committed from v1.0.0 on, and Pages serves **`main` branch, `/docs` folder** (the legacy build, switched on with `gh api`). `docs/` is generated build output: never hand-edit it, and never put notes there (design notes live in `design/`).
+- To publish a change: `npm run build`, then commit the source changes **together with the regenerated `docs/`**, then `git push`. Pages updates about a minute later.
 - Every publish is a release. Before building, add it at the top of `RELEASES` in `src/version.ts` and set the same number
   in `package.json` (and the root of `package-lock.json`). The main menu shows it in the lower-right corner, with the build time.
-  Each release takes the name of a battle of this game (Napoleonic battles) that fits what it brings, never reused. The `Unreleased` placeholder in `RELEASES` stands until the first release. Pick it yourself (the user
+  Each release takes the name of a battle of this game (Napoleonic battles) that fits what it brings, never reused (v1.0.0 is "Talavera"). Pick it yourself (the user
   likes a fitting, playful choice) and tell the user; there is no need to ask first.
 - `docs/.nojekyll` comes from `public/.nojekyll`; keep it.
-- `vite.config.ts` uses `base: './'` and routes are hash-based (`#/...`) so the site works under `/cnc-napoleonics/`. Do not introduce absolute asset paths (`/assets/...`).
-- To check the built site under the sub-path locally: run `npm run build`, then start the `pages-preview` launch config (http://localhost:4173/cnc-napoleonics/).
+- `vite.config.ts` uses `base: './'` and routes are hash-based (`#/...`) so the site works under `/cnc-napoleon-claude/`. Do not introduce absolute asset paths (`/assets/...`).
+- To check the built site under the sub-path locally: run `npm run build`, then start the `pages-preview` launch config (http://localhost:4173/cnc-napoleon-claude/).
 - **No GitHub Actions:** the push token lacks the `workflow` scope, so a push that adds `.github/workflows/*` is rejected.
-- **Pushing:** use HTTPS with the macOS keychain credential. The `gh` CLI and SSH keys are not set up.
+- **Pushing:** use HTTPS with the macOS keychain credential. `gh` is logged in (still no Actions).
 
 ## Development shortcuts
 

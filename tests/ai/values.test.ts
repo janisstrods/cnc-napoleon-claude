@@ -51,7 +51,7 @@ describe('values', () => {
     const v = weightsFor(personalityById('veteran'));
     expect(v.riskSelf).toBeCloseTo(0.55 + 0.6 * 0.55);
     expect(NEUTRAL_W).toEqual(v);
-    expect(PERSONALITIES.length).toBe(15);
+    expect(PERSONALITIES.length).toBe(32);
   });
 
   it('cavalry and guns are worth their dice: structural floors from the review', () => {

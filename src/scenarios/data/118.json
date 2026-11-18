@@ -3,7 +3,6 @@
   "name": "Ordal Cross",
   "year": "1813",
   "expansion": "exp1",
-  "hidden": true,
   "top": {"army":"Anglo-Spanish","nation":"BR","commander":"Adam","cards":5},
   "bottom": {"army":"French","nation":"FR","commander":"Suchet","cards":6},
   "first": "bottom",

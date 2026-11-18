@@ -3,7 +3,6 @@
   "name": "San Marcial",
   "year": "1813",
   "expansion": "exp1",
-  "hidden": true,
   "top": {"army":"Spanish","nation":"SP","commander":"Freire","cards":5},
   "bottom": {"army":"French","nation":"FR","commander":"Soult","cards":5},
   "first": "bottom",

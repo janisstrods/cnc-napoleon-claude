@@ -39,6 +39,13 @@ export function RulesReference({ scenario }: { scenario?: ScenarioInfo } = {}) {
   );
 }
 
+/** The Expansion #1 unit cards under each block of the tab: the Spanish rows, the Swiss rows, then the French lancers and Guard. */
+const EXP1_GROUPS: Readonly<Record<string, readonly RowKey[]>> = {
+  'Spanish units': ['SP/LN', 'SP/LT', 'SP/GR', 'SP/ML', 'SP/LC', 'SP/HC', 'SP/CU', 'SP/FA'],
+  'Swiss infantry': ['SP/SWI', 'FR/SWI'],
+  'Lancers and Guard light cavalry': ['FR/LNC', 'FR/GLC'],
+};
+
 /** What each tab adds after the text of a block, by the block's heading: tables read from the engine. */
 function extras(tab: RulesTab, b: RulesBlock): JSX.Element | null {
   switch (tab) {
@@ -53,6 +60,10 @@ function extras(tab: RulesTab, b: RulesBlock): JSX.Element | null {
       return b.heading === 'Forming a square' ? <ol className="rules-conditions" type="a">{SQUARE_CONDITIONS.map((c) => <li key={c}>{c}</li>)}</ol> : null;
     case 'terrain':
       return b.heading === 'Reading the table' ? <Terrain /> : null;
+    case 'exp1': {
+      const keys = EXP1_GROUPS[b.heading];
+      return keys ? <UnitCards keys={keys.filter((k) => UNIT_STATS[k].expansion === 'exp1')} /> : null;
+    }
     case 'cards':
       return b.heading === 'Section cards' ? <Cards group="section" /> : b.heading === 'Tactic cards' ? <Cards group="tactic" /> : null;
     default:
@@ -155,6 +166,7 @@ function terrainText(t: TerrainType): string {
   if (st.noMeleeInto) parts.push('No melee into it.');
   if (!st.squareAllowed && !st.impassable) parts.push('No square.');
   if (st.cancelsCavalryCharge) parts.push('Cavalry lose the dice of a Cavalry Charge card battling into or out of it.');
+  if (t === 'walledFarm') parts.push('Counts as a town for every rule, objectives included; it gives no flag-ignore.');
   if (t === 'bridge') parts.push('Carries units across a river with no movement or battle effect.');
   if (t === 'brook') parts.push('Only some battles use it; its special rules say how.');
   parts.push(st.hill ? 'Blocks line of sight in between, except across the top of one connected hill (see below).' : st.blocksSight ? 'Blocks line of sight.' : 'Does not block line of sight.');

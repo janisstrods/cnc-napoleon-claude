@@ -3,7 +3,6 @@
   "name": "Ocaña",
   "year": "1809",
   "expansion": "exp1",
-  "hidden": true,
   "top": {"army":"Spanish","nation":"SP","commander":"Areizaga","cards":4},
   "bottom": {"army":"French","nation":"FR","commander":"Soult","cards":5},
   "first": "bottom",
