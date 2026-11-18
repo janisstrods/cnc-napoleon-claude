@@ -11,6 +11,7 @@ import { blockColors, type SideColors } from '../../art';
 import { colOf, hexId, onBoard, rowOf } from '../../engine/hex';
 import type { Nation } from '../../engine/codes';
 import { COLS, ROWS, type HexId, type ObjectiveDef, type ObjectiveState, type Side } from '../../engine/types';
+import { majorityMarkerText, objectiveMarkerText } from '../game/objectiveText';
 import { HEX_R, hexCenter, hexCenterId } from '../geometry';
 import { corner, DIRS, edgeCorners, fmt, hexOutline, neighborRC, polyPath, screenDir, type Pt } from './hexmath';
 
@@ -219,7 +220,7 @@ export function ObjectiveMarkers({ objectives, objState, flipped, nations }: Obj
         break;
       }
       case 'exit':
-        arrows.push(<ExitArrow key={`e${i}`} h={o.hex} flipped={flipped} c={colors(nations, o.side)} leaders={o.leadersScore} text={o.text} />);
+        arrows.push(<ExitArrow key={`e${i}`} h={o.hex} flipped={flipped} c={colors(nations, o.side)} leaders={o.leadersScore} text={objectiveMarkerText(o)} />);
         break;
       case 'majority': {
         // one outline per hex set: a contested group is one record per side over the same hexes
@@ -230,7 +231,7 @@ export function ObjectiveMarkers({ objectives, objState, flipped, nations }: Obj
         break;
       }
       case 'exitEdge':
-        arrows.push(<ExitEdge key={`x${i}`} row={o.row} flipped={flipped} c={colors(nations, o.side)} text={o.text} />);
+        arrows.push(<ExitEdge key={`x${i}`} row={o.row} flipped={flipped} c={colors(nations, o.side)} text={objectiveMarkerText(o)} />);
         break;
       case 'killWeight':
       case 'suddenDeath':
@@ -244,8 +245,8 @@ export function ObjectiveMarkers({ objectives, objState, flipped, nations }: Obj
     const side = holder === undefined ? null : objectives[holder].side;
     const c = side ? colors(nations, side) : null;
     const d = areaOutline(defs[0].hexes, flipped);
-    // the held record's text; while nobody holds the group, every record's text
-    const text = holder === undefined ? [...new Set(defs.map((o) => o.text))].join('\n') : defs[idx.indexOf(holder)].text;
+    // the held record's text; while nobody holds the group, a neutral line (each side's own text would be false)
+    const text = majorityMarkerText(defs, holder === undefined ? undefined : idx.indexOf(holder));
     areas.push(
       <g key={`m${key}`} className={side ? `majority held-${side}` : 'majority'} fill="none" strokeLinejoin="round">
         <title>{text}</title>

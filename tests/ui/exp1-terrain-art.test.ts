@@ -167,7 +167,7 @@ describe('Spanish objective markers', () => {
       const html = markers(EXIT, st(false), flipped);
       const g = group(html, 'exit-edge');
       expect(g, `flipped=${flipped}`).toBeTruthy();
-      expect(g).toContain('<title>Spanish {unit} leaves by the Spanish baseline.</title>');
+      expect(g).toContain('<title>Spanish unit leaves by the Spanish baseline.</title>');
       const band = g!.match(/<path d="([^"]+)"/)![1];
       const pts = coords(band);
       const yRow = hexCenter(0, 0, flipped).y;
