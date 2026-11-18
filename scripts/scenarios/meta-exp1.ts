@@ -1,11 +1,11 @@
 // Rules data of the 18 Spanish battles of Expansion #1 (RR §16.1–§16.18; armies and commanders from the plan's Decisions table).
 // Top is the Allied side (nation SP or BR) and holds the guerrilla rule where in effect; bottom is the French (FR).
 // Every map objective hex of design/data must be claimed here (the converter checks).
-// The files are hidden from the picker until the Expansion #1 screens are ready (Plan 7C Task 17 flips EXP1_HIDDEN).
+// The battles are visible in the picker since Plan 7C Task 17 (EXP1_HIDDEN = false).
 import type { Nation } from '../../src/engine/codes';
 import type { BattleMeta } from './convert';
 
-export const EXP1_HIDDEN = true;
+export const EXP1_HIDDEN = false;
 
 type Obj = NonNullable<BattleMeta['objectives']>[number];
 type Rule = NonNullable<BattleMeta['sideRules']>[number];

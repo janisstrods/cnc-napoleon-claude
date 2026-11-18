@@ -1,6 +1,6 @@
 // Generic screens and controller plumbing on the Napoleonic contract: picker tabs (from EXPANSIONS), save and restore,
 // controller notices and toasts, the dev route.
-// The mocked scenario list adds 990, a visible copy of 000 in the exp1 box (000 is hidden), so the picker has a battle to show.
+// The mocked scenario list adds 990, a visible copy of 000 in the exp1 box (000 is hidden), after the Spanish battles 101–118.
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -33,7 +33,7 @@ describe('battle picker tabs', () => {
   it('two tabs, in box order, from EXPANSIONS; a battle is in exactly one tab; the hidden drill is in none', () => {
     expect(PICKER_TABS.map((t) => [t.id, t.label])).toEqual([['base', 'The Peninsula & Waterloo'], ['exp1', 'The Spanish Army']]);
     expect(ids(battlesOf(SCENARIOS, 'base'))).toEqual(Array.from({ length: 15 }, (_, i) => String(i + 1).padStart(3, '0')));
-    expect(ids(battlesOf(SCENARIOS, 'exp1'))).toEqual(['990']); // no real exp1 battle: 990 is the mocked stand-in
+    expect(ids(battlesOf(SCENARIOS, 'exp1'))).toEqual([...Array.from({ length: 18 }, (_, i) => String(101 + i)), '990']); // 101–118, then the mocked stand-in 990
     for (const s of SCENARIOS.filter((x) => !x.hidden)) expect(PICKER_TABS.filter((t) => battlesOf(SCENARIOS, t.id).includes(s)), s.id).toHaveLength(1);
   });
 

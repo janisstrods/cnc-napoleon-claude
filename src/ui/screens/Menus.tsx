@@ -267,7 +267,7 @@ function ScenarioSelectBody(p: ScenarioSelectProps & { fallback: ScenarioInfo })
   }, [record]);
   const [persona, setPersona] = useState<string>('');
   const enemy = sel.setup[side === 'top' ? 'bottom' : 'top'];
-  const historical = personalityFor(enemy.commander, enemy.army);
+  const historical = personalityFor(enemy.commander, enemy.army, enemy.nation);
   const armies = { top: sel.setup.top, bottom: sel.setup.bottom };
   const cardsText = (sd: Side) => `${armies[sd].cards} cards`;
   const start = () => {
@@ -331,7 +331,7 @@ function ScenarioSelectBody(p: ScenarioSelectProps & { fallback: ScenarioInfo })
             <p className="brief-blurb">{sel.blurb}</p>
             <div className="brief-facts">
               <span>{sel.setup.banners} banners to win</span>
-              <span>{armies[sel.setup.first].army} move first</span>
+              <span>{sel.setup.moveFirst ? 'Opening cards decide who moves first' : `${armies[sel.setup.first].army} move first`}</span>
               <span>{armies.top.army}: {cardsText('top')} · {armies.bottom.army}: {cardsText('bottom')}</span>
             </div>
             {sel.specialText.length > 0 && (

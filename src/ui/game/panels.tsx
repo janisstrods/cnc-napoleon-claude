@@ -1,6 +1,6 @@
 // Panels of the game screen around the board: the hover tooltip's frame and the battle log.
 import { memo, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
-import { CARD_DEFS, cardKind, guerrillaHeld, guerrillaPool, guerrillaSide, handShrinkRule, type Decision, type GameState, type Side } from '../../engine';
+import { CARD_DEFS, cardKind, guerrillaHeld, guerrillaPool, guerrillaSide, type Decision, type GameState, type Side } from '../../engine';
 import { CardView, Icon, Panel } from '../kit';
 import type { LogLine } from './controller';
 import { handChoices, type UiSel } from './uiModel';
@@ -78,13 +78,6 @@ export function GuerrillaCounters({ s, side }: { s: GameState; side: Side }) {
       <span className="gc-text">{text}</span>
     </div>
   );
-}
-
-/** "Hand size 5 (falls with each banner lost, to 3)" for a side whose hand shrinks; nothing for any other. */
-export function HandSizeLine({ s, side }: { s: GameState; side: Side }) {
-  const r = handShrinkRule(s, side);
-  if (!r) return null;
-  return <div className="army-cmd army-hand hand-size-line">{`Hand size ${s.special.handSize[side]} (falls with each banner lost, to ${r.floor})`}</div>;
 }
 
 /**

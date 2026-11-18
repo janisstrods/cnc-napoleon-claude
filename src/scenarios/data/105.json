@@ -3,7 +3,6 @@
   "name": "Somosierra",
   "year": "1808",
   "expansion": "exp1",
-  "hidden": true,
   "top": {"army":"Spanish","nation":"SP","commander":"San Juan","cards":4},
   "bottom": {"army":"French","nation":"FR","commander":"Napoleon","cards":6},
   "first": "bottom",
