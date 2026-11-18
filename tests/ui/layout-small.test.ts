@@ -73,18 +73,39 @@ describe('the game screen at small sizes', () => {
 
   it('the prompt bar has a steady height and scrolls a long prompt inside itself', () => {
     const bar = rule('.prompt-bar');
-    expect(bar).toMatch(/(?:^|[;\s])height:\s*calc\(var\(--strip-h\) - \d+px\)/);
+    expect(bar).toMatch(/min-height:\s*calc\(var\(--strip-h\) - \d+px\)/);
+    expect(bar).not.toMatch(/(?:^|[;\s])height:/);
     expect(bar).toMatch(/flex-direction:\s*column/);
     expect(rule('.prompt-body')).toMatch(/overflow-y:\s*auto/);
-    expect(rule('.prompt-body')).toMatch(/min-height:\s*0/);
+    expect(rule('.prompt-body')).toMatch(/min-height:\s*(5\d|[6-9]\d)px/); // two lines of text at least, whatever the buttons take
+    expect(rule('.prompt-body')).toMatch(/max-height:/);
     // the buttons never scroll away and never shrink
     expect(rule('.prompt-buttons')).toMatch(/flex:\s*none/);
     expect(rule('.prompt-buttons')).not.toMatch(/overflow/);
   });
 
   it('the Scout prompt rises above the strip rather than hide its two whole cards', () => {
-    expect(rule('.prompt-bar--rise')).toMatch(/height:\s*auto/);
     expect(rule('.prompt-bar--rise .prompt-body')).toMatch(/overflow-y:\s*visible/);
+    expect(rule('.prompt-bar--rise .prompt-body')).toMatch(/max-height:\s*none/);
+  });
+
+  it('the Scout and Combined Arms prompts set `rise`: deleting it hides their cards, toggles and dice line', async () => {
+    const src = await readFile(new URL('../../src/ui/game/prompts.tsx', import.meta.url), 'utf8');
+    for (const fn of ['scoutPrompt', 'combinedArmsPrompt']) {
+      const start = src.indexOf(`function ${fn}(`);
+      const end = src.indexOf('\n}\n', start);
+      expect(start, fn).toBeGreaterThan(0);
+      expect(src.slice(start, end), fn).toMatch(/\brise:\s*true\b/);
+    }
+  });
+
+  it('the selected card\'s lift on small screens stays inside the strip', () => {
+    const small = media('(max-height: 820px), (max-width: 1280px)');
+    const lift = Number(/\.hand-slot\.is-selected\s*\{[^}]*translateY\(-(\d+)px\)/.exec(small)?.[1]);
+    const h = Number(/--strip-h:\s*(\d+)px/.exec(small)?.[1]);
+    expect(lift).toBeGreaterThan(0);
+    expect(lift).toBeLessThanOrEqual(8);
+    expect(149 + lift).toBeLessThanOrEqual(h);
   });
 
   it('the buttons sit outside the scrolling body, for a prompt with and without extras', () => {

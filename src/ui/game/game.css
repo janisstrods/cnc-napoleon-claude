@@ -230,8 +230,8 @@ body {
 .prompt-bar {
   flex: 1 1 0;
   min-width: 340px;
-  /* a steady height (the strip's, less its padding): the text scrolls inside the body, the buttons stay below it */
-  height: calc(var(--strip-h) - 6px);
+  /* a steady height at least (the strip's, less its padding); a bar whose buttons wrap grows upward over the board, never the board or the strip */
+  min-height: calc(var(--strip-h) - 6px);
   box-sizing: border-box;
   align-self: flex-end;
   display: flex;
@@ -245,8 +245,10 @@ body {
   z-index: 4;
 }
 .prompt-body {
-  flex: 1 1 auto;
-  min-height: 0;
+  /* the text keeps two lines at least; it scrolls beyond what the steady bar leaves it, the buttons below never do */
+  flex: 0 1 auto;
+  min-height: 52px;
+  max-height: max(52px, calc(var(--strip-h) - 68px));
   display: flex;
   flex-wrap: wrap;
   align-content: flex-start;
@@ -262,8 +264,7 @@ body {
     linear-gradient(rgba(59, 49, 39, 0), rgba(59, 49, 39, .28)) bottom / 100% 6px no-repeat scroll;
 }
 /* the Scout's two whole cards: the bar rises over the board's bottom edge instead of hiding them or moving the board */
-.prompt-bar--rise { height: auto; min-height: calc(var(--strip-h) - 6px); }
-.prompt-bar--rise .prompt-body { overflow-y: visible; background: none; }
+.prompt-bar--rise .prompt-body { max-height: none; overflow-y: visible; background: none; }
 .prompt-bar.tone-danger { border-color: var(--kit-crimson); box-shadow: inset 0 0 0 3px var(--kit-leather), inset 0 0 0 4px rgba(163, 38, 42, .6), 0 0 0 2px rgba(163, 38, 42, .18), var(--kit-shadow-soft); }
 .prompt-bar.tone-warn .prompt-sub { color: var(--kit-crimson); }
 .prompt-main { flex: 1 1 200px; min-width: 150px; }

@@ -32,7 +32,7 @@ export interface Prompt {
   note?: string;
   /** Shown beside the board (the Élan / Rally dice). */
   panel?: JSX.Element;
-  /** The bar rises above the strip for this prompt (the Scout's two whole cards need more than the steady bar's height). */
+  /** The bar rises above the strip for this prompt (the Scout's two whole cards, the Combined Arms gun toggles and dice line need more than the steady bar's height). */
   rise?: boolean;
 }
 
@@ -282,7 +282,7 @@ function combinedArmsPrompt(c: PromptCtx, d: D<'combinedArms'>): Prompt {
     );
   });
   return {
-    title: spec.title, text: spec.text, buttons,
+    title: spec.title, text: spec.text, buttons, rise: true,
     hint: combinedArmsTotalText(combinedArmsDice(c.s, d, ids, role)), compactHint: true,
     extra: <div className="gun-toggles" role="group" aria-label="Guns joining the attack">{toggles}</div>,
   };
