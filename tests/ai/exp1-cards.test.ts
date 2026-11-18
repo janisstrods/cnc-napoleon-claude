@@ -1,19 +1,21 @@
 // The AI's sense for the Spanish expansion's card rules (Plan 7C Task 19): Guerrilla counters (RR §15.5, S15–S21, S45) and
 // Vitoria's opening card (RR §15.8, §16.16, S38, S43, S44), and the view's redaction of an unrevealed pick.
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 import {
-  CARD_LIST, GameDriver, answerError, cardKind, createGame, forceDice, moveFirstOptions, moveFirstValue, other, randomAnswer,
+  CARD_LIST, GameDriver, answerError, cardKind, cloneState, createGame, forceDice, moveFirstOptions, moveFirstValue, other, randomAnswer,
   type CardKind, type Decision, type GameState, type Side,
 } from '../../src/engine';
 import { scenarioById } from '../../src/scenarios';
 import { chooseAnswer, newMemory } from '../../src/ai';
 import {
-  COUNTER_VALUE, counterValue, guerrillaScoutTake, guerrillaSpend, handFloorPenalty, moveFirstPick, opponentTurnValue, scoutKeepGain,
+  COUNTER_VALUE, counterValue, guerrillaScoutTake, guerrillaSpend, handFloorPenalty, moveFirstPick, opponentTurnValue, rallyGain, scoutKeepGain,
 } from '../../src/ai/cardsense';
+import * as ordering from '../../src/ai/ordering';
+import { ELAN_SHARE } from '../../src/ai/values';
 import { pickCard, policyFor, type PolicyCtx } from '../../src/ai/policies';
 import { Rng } from '../../src/ai/rand';
 import { NEUTRAL_W, weightsFor } from '../../src/ai/values';
-import { blindClone, determinize } from '../../src/ai/view';
+import { blindClone, determinize, oppHoldsP, originToken } from '../../src/ai/view';
 import { build, endMoves, giveCard, must, noFirstStrike, type Pos } from '../rules/helpers';
 import { aiOptions } from './soak';
 import { failOnAiErrors } from './no-ai-errors';
@@ -107,12 +109,10 @@ describe('Guerrilla: spending a counter (RR §15.5, S17–S19)', () => {
 });
 
 describe('Guerrilla: the spend question inside a simulation', () => {
-  it('every sample of a decision values the card alike, and the value is worked out once (S17)', async () => {
+  it('every sample of a decision values the card alike, and the value is worked out once (S17)', () => {
     const a = driver(guerrillaPos(2));
     playKind(a, 'attackC');
     const root = a.state;
-    const ordering = await import('../../src/ai/ordering');
-    const { vi } = await import('vitest');
     const spy = vi.spyOn(ordering, 'quickCardScore');
     const vals: number[] = [];
     for (let r = 1; r <= 5; r++) {
@@ -347,5 +347,202 @@ describe('every answer for both kinds passes answerError (real battles)', () => 
     }
     expect(counts.guerrilla).toBeGreaterThan(0);
     expect(counts.moveFirst).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Review round 1
+
+/** Re-deal what `me` cannot see (the opponent's hand, its filled track slots and the deck) on a copy of `s`, sizes and slots kept. */
+function redeal(s: GameState, me: Side, rnd: Rng): GameState {
+  const c = cloneState(s);
+  const p = c.players[other(me)];
+  const slots = p.squareTrack.map((x, i) => (x === null ? -1 : i)).filter((i) => i >= 0);
+  const pool = [...p.hand, ...slots.map((i) => p.squareTrack[i]!), ...c.deck];
+  rnd.shuffle(pool);
+  p.hand = pool.slice(0, p.hand.length);
+  slots.forEach((slot, i) => { p.squareTrack[slot] = pool[p.hand.length + i]; });
+  c.deck = pool.slice(p.hand.length + slots.length);
+  return c;
+}
+
+describe('review round 1: hidden information, the memo and the spend point', () => {
+  it('real 103 and 117: the spend value and answer are the same with the opponent\'s hand, track and deck re-dealt', () => {
+    let checked = 0;
+    let differs = 0;
+    for (const id of ['103', '117']) {
+      for (let seed = 1; seed <= 3; seed++) {
+        const d = new GameDriver(createGame(scenarioById(id).setup, seed));
+        const rnd = new Rng(seed * 13 + Number(id));
+        for (let i = 0; i < 2500 && d.pending && !d.over; i++) {
+          const dec = d.pending;
+          if (dec.kind === 'guerrilla' && dec.mode === 'spend' && dec.card) {
+            const o = aiOptions(id, dec.side, { seed, budgetScale: 0.05 });
+            const v = opponentTurnValue(d.state, dec.side, dec.card, W);
+            const a = chooseAnswer(d.state, dec, o, newMemory()).answer;
+            for (let k = 0; k < 3; k++) {
+              const r = redeal(d.state, dec.side, rnd);
+              if (JSON.stringify(r.players[other(dec.side)].hand) !== JSON.stringify(d.state.players[other(dec.side)].hand)) differs++;
+              expect(opponentTurnValue(r, dec.side, dec.card, W), `${id}/${seed} value`).toBe(v);
+              expect(chooseAnswer(r, dec, o, newMemory()).answer, `${id}/${seed} answer`).toEqual(a);
+            }
+            checked++;
+          }
+          must(d, randomAnswer(d.state, dec, () => rnd.next()));
+        }
+      }
+    }
+    expect(checked).toBeGreaterThan(10);
+    expect(differs).toBeGreaterThan(checked);
+  });
+
+  it('the memo tells positions apart: the same root after a change gets the value a fresh root computes', () => {
+    const value = (s: GameState, r: number): number => {
+      const c = blindClone(s, 'top');
+      determinize(c, 'top', new Rng(r));
+      return opponentTurnValue(c, 'bottom', 'attackC', W);
+    };
+    const changes: ((s: GameState) => void)[] = [
+      (s) => { s.units.find((u) => u.id === 'u4')!.blocks = 3; },             // a British unit's blocks
+      (s) => { s.units.find((u) => u.id === 'u2')!.hex = s.units.find((u) => u.id === 'u7')!.hex - 1; }, // a French unit moved
+      (s) => { s.players.top.banners = 3; },                                  // the banner count
+      (s) => { s.turn.command = s.turn.command - 1; },                        // the turn's Command
+    ];
+    for (const change of changes) {
+      const a = driver(guerrillaPos(2));
+      playKind(a, 'attackC');
+      const before = value(a.state, 1);
+      change(a.state);
+      const after = value(a.state, 2);
+      const b = driver(guerrillaPos(2));
+      playKind(b, 'attackC');
+      change(b.state);
+      expect(after).toBe(value(b.state, 3));
+      void before;
+    }
+    // at least the blocks change moves the value (so the comparison above can see a stale memo)
+    const a = driver(guerrillaPos(2));
+    playKind(a, 'attackC');
+    const v0 = value(a.state, 1);
+    changes[0](a.state);
+    expect(value(a.state, 1)).not.toBe(v0);
+  });
+
+  it('a whole 103 game: answers on the live state equal answers on a fresh copy of it (no memo carried over)', () => {
+    const id = '103';
+    const d = new GameDriver(createGame(scenarioById(id).setup, 5));
+    const mems = { top: newMemory(), bottom: newMemory() };
+    let n = 0;
+    while (d.pending && !d.over && d.state.turn.number <= 12) {
+      const dec = d.pending;
+      const o = aiOptions(id, dec.side, { seed: 5, budgetScale: 0.05 });
+      const copyMem = structuredClone(mems[dec.side]);
+      const fresh = chooseAnswer(cloneState(d.state), dec, o, copyMem).answer;
+      const live = chooseAnswer(d.state, dec, o, mems[dec.side]).answer;
+      expect(live, `decision ${n} ${dec.kind}`).toEqual(fresh);
+      must(d, live);
+      n++;
+    }
+    expect(n).toBeGreaterThan(40);
+  });
+
+  it('the spend value is asked only at the spend point (the card played, nothing ordered yet)', () => {
+    const a = driver(guerrillaPos(2));
+    playKind(a, 'attackC');
+    expect(() => opponentTurnValue(a.state, 'bottom', 'attackC', W)).not.toThrow();
+    // not the guerrilla side's question: the active side asking about its own card
+    expect(() => opponentTurnValue(a.state, 'top', 'attackC', W)).toThrow(/spend point/);
+    must(a, { kind: 'yesno', yes: false });
+    // after the orders
+    must(a, { kind: 'orders', pieces: ['u1'] });
+    const later = cloneState(a.state);
+    expect(Object.keys(later.turn.ordered)).toEqual(['u1']);
+    expect(() => opponentTurnValue(later, 'bottom', 'attackC', W)).toThrow(/spend point/);
+    // and inside a simulation the same guard holds
+    const c = blindClone(later, 'top');
+    determinize(c, 'top', new Rng(1));
+    expect(() => opponentTurnValue(c, 'bottom', 'attackC', W)).toThrow(/spend point/);
+    // before any card
+    const fresh = build(guerrillaPos(2));
+    expect(() => opponentTurnValue(fresh, 'bottom', 'attackC', W)).toThrow(/spend point/);
+  });
+
+  it('originToken is an opaque token per root, never the state', () => {
+    const a = build(guerrillaPos(2));
+    const b = build(guerrillaPos(2));
+    const ca = blindClone(a, 'top');
+    const cca = blindClone(ca, 'bottom');
+    const tok = originToken(ca);
+    expect(tok).not.toBe(a);
+    expect(Object.keys(tok)).toEqual([]);
+    expect('units' in tok || 'players' in tok).toBe(false);
+    expect(Object.isFrozen(tok)).toBe(true);
+    expectTypeOf(tok).not.toMatchTypeOf<GameState>();
+    expect(originToken(cca)).toBe(tok);
+    expect(originToken(a)).toBe(tok);
+    expect(originToken(blindClone(b, 'top'))).not.toBe(tok);
+  });
+});
+
+describe('review round 1: the spend rule\'s numbers (S18)', () => {
+  /** The spend question after Attack Centre, with `quickCardScore` stubbed to `v` (held 2: the counter is worth 0.3). */
+  const spendWith = (v: number): boolean => {
+    const a = driver(guerrillaPos(2));
+    playKind(a, 'attackC');
+    const spy = vi.spyOn(ordering, 'quickCardScore').mockReturnValue(v);
+    try {
+      return guerrillaSpend(a.state, 'bottom', 'attackC', W);
+    } finally {
+      spy.mockRestore();
+    }
+  };
+
+  it('spends exactly when 5/6 of the card\'s value reaches the counter\'s (>=, and a cancel chance of 5/6)', () => {
+    // 5/6 × 0.36 is 0.3 exactly in floating point: the threshold itself spends
+    expect((5 / 6) * 0.36).toBe(COUNTER_VALUE);
+    expect(spendWith(0.36)).toBe(true);
+    // 0.35 reaches 0.3 only without the 5/6
+    expect(spendWith(0.35)).toBe(false);
+    expect(spendWith(0.5)).toBe(true);
+    expect(spendWith(0.2)).toBe(false);
+  });
+
+  it('a Rally or an Élan is valued with the turn\'s Command (the played card counted)', () => {
+    // Rally: worn French units, a hand of five (Command 5 once the card is played)
+    const r = driver({ ...guerrillaPos(2), units: [top('FR/LN', [4, 5], 1), top('FR/LN', [4, 6], 1), top('FR/HC', [4, 7], 1), bot('BR/LN', [6, 6])] });
+    playKind(r, 'rally');
+    expect(r.pending).toMatchObject({ kind: 'guerrilla', mode: 'spend', card: 'rally' });
+    const cmd = r.state.turn.command;
+    expect(cmd).toBe(5);
+    const rc = blindClone(r.state, 'bottom');
+    const rv = opponentTurnValue(r.state, 'bottom', 'rally', W);
+    expect(rv).toBeCloseTo(rallyGain(rc, 'top', cmd), 12);
+    expect(rv).not.toBeCloseTo(rallyGain(rc, 'top', cmd - 1), 6);
+    // Élan: the best round(0.6 × Command) benefits
+    const e = driver(guerrillaPos(2));
+    playKind(e, 'elan');
+    expect(e.pending).toMatchObject({ kind: 'guerrilla', mode: 'spend', card: 'elan' });
+    const ec = blindClone(e.state, 'bottom');
+    const ben = [...ordering.pieceBenefits(ec, 'top', 'elan', W).values()].sort((x, y) => y - x);
+    const top3 = (k: number): number => ben.slice(0, Math.max(1, Math.round(ELAN_SHARE * k))).reduce((s, x) => s + Math.max(0, x), 0);
+    const ev = opponentTurnValue(e.state, 'bottom', 'elan', W);
+    expect(ev).toBeCloseTo(top3(e.state.turn.command), 9);
+    expect(ev).not.toBeCloseTo(top3(e.state.turn.command - 1), 6);
+  });
+});
+
+describe('review round 1: the revealed opening card in P(First Strike) (S38)', () => {
+  it('a known non-First-Strike card in the opponent\'s hand lowers the chance it holds one', () => {
+    const d = new GameDriver(createGame(scenarioById('116').setup, 3));
+    while (d.pending?.kind === 'moveFirst') must(d, { kind: 'playCard', card: d.pending.options[0] });
+    const s = d.state;
+    for (const me of ['top', 'bottom'] as Side[]) {
+      const opp = other(me);
+      if (s.special.moveFirst!.committed[opp] === null) continue;
+      const p = oppHoldsP(s, me, 'firstStrike');
+      const unbound = cloneState(s);
+      unbound.special.moveFirst!.committed[opp] = null;
+      expect(p).toBeLessThan(oppHoldsP(unbound, me, 'firstStrike'));
+    }
   });
 });

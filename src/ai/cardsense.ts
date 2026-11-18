@@ -18,7 +18,7 @@ import { occOf, type Occ } from './board';
 import { bannerValue, makeEstCtx } from './estimate';
 import { reachOf } from './evaluate';
 import { pieceBenefits, quickCardScore } from './ordering';
-import { blindClone, handSize, isDeterminised, myHand, myTrack, oppHoldsP, originOf, trackFilled, unseenCards } from './view';
+import { blindClone, handSize, isDeterminised, myHand, myTrack, oppHoldsP, originToken, trackFilled, unseenCards, type OriginToken } from './view';
 import { CARD_VALUE, ELAN_SHARE, rowValue, unitValue, type Weights } from './values';
 
 /** The Command a card played from `me`'s hand now would have (R28): the hand, including that card; track cards excluded. */
@@ -337,7 +337,8 @@ export function handFloorPenalty(s: GameState, me: Side, drop = 0): number {
   threatened.sort((x, y) => y - x);
   const saved = SQUARE_SAVES * threatened.slice(0, FLOOR_UNITS).reduce((a, v) => a + v, 0);
   // approximates RR §16.15, S37 (engine: follyActive): under Stewart's Folly no square forms against an enemy Cavalry Charge,
-  // so a short hand costs nothing on such a turn; the chance the enemy holds one stands in for the chance it plays it
+  // so a short hand costs nothing on such a turn; the chance the enemy holds one stands in for the chance it plays it (a
+  // Counter-Attack copying our Cavalry Charge, which also starts the Folly, is left out)
   return follyRule(s, me) ? saved * (1 - oppHoldsP(s, me, 'cavalryCharge')) : saved;
 }
 
@@ -373,12 +374,18 @@ export function counterValue(s: GameState, me: Side): number {
  *
  * Inside a simulation (a determinised clone) the blind clone is taken from the card player's side instead: its own hand is
  * kept (in the planner's samples that is the planning AI's real hand, never a hidden one) and the guerrilla side's sampled
- * hand is re-dealt, so the value is the same in every sample of the decision and is worked out once (`turnMemo`).
+ * hand is re-dealt, so the value is the same in every sample of the decision and is worked out once (`turnMemo`). Only at the
+ * spend point (`atSpendPoint`): elsewhere it throws in development.
  */
 export function opponentTurnValue(s: GameState, me: Side, card: CardKind, W: Weights): number {
-  if (!isDeterminised(s)) return turnValue(blindClone(s, me), other(me), card, W);
   const opp = other(me);
-  const root = originOf(s);
+  if (!atSpendPoint(s, me)) {
+    // the value (and the memo's key) assume the card step just played: a call elsewhere is a bug, loud in development
+    if (import.meta.env.DEV) throw new Error(`opponentTurnValue: not at the spend point (turn ${s.turn.number}, ${s.turn.phase}, active ${s.active}, asked for ${me})`);
+    return turnValue(blindClone(s, me), opp, card, W);
+  }
+  if (!isDeterminised(s)) return turnValue(blindClone(s, me), opp, card, W);
+  const root = originToken(s);
   let byW = turnMemo.get(root);
   if (!byW) turnMemo.set(root, (byW = new WeakMap()));
   let memo = byW.get(W);
@@ -389,8 +396,17 @@ export function opponentTurnValue(s: GameState, me: Side, card: CardKind, W: Wei
   return v;
 }
 
-/** `opponentTurnValue`s already worked out in the simulations of one decision, keyed by its root state and the weights. */
-const turnMemo = new WeakMap<GameState, WeakMap<Weights, Map<string, number>>>();
+/** `opponentTurnValue`s already worked out in the simulations of one decision, keyed by its root's token and the weights. */
+const turnMemo = new WeakMap<OriginToken, WeakMap<Weights, Map<string, number>>>();
+
+/**
+ * The spend point (RR §15.5, S17): `me`'s opponent has just played its turn card and nothing is ordered yet, no counter tried.
+ * The only position at which the guerrilla side is asked to spend.
+ */
+function atSpendPoint(s: GameState, me: Side): boolean {
+  const t = s.turn;
+  return s.active === other(me) && t.card !== null && t.phase === 'orders' && Object.keys(t.ordered).length === 0 && t.guerrilla === 'none';
+}
 
 /**
  * Everything a blind clone seen from `side` is made of: the turn, the pieces, banners, last cards, hand sizes, the play state (`special`,

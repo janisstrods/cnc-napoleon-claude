@@ -15,15 +15,22 @@ const blind = new WeakSet<GameState>();
 /** Clones that `determinize` produced (the only ones on which the sampled opponent hand may be read). */
 const determinised = new WeakSet<GameState>();
 
-/** The state each AI clone was first made from (a clone of a clone keeps it): every simulation of one decision shares it. */
-const origin = new WeakMap<GameState, GameState>();
+/** An opaque token naming the state a clone was first made from: the same for every clone of one root, and never the state. */
+export interface OriginToken {
+  readonly __origin: never;
+}
+
+/** The token of each state cloned from (a root) and of each clone (its root's token, so a clone of a clone keeps it). */
+const tokens = new WeakMap<GameState, OriginToken>();
 
 /**
- * The state the AI clone `s` was first made from (`s` itself for any other state): a key for work shared by the simulations
- * of one decision. Never read or drive it; only compare it.
+ * The opaque token of the state the AI clone `s` was first made from (for any other state, its own token, made on first use): a
+ * key for work shared by the simulations of one decision. It carries nothing of the state.
  */
-export function originOf(s: GameState): GameState {
-  return origin.get(s) ?? s;
+export function originToken(s: GameState): OriginToken {
+  let t = tokens.get(s);
+  if (!t) tokens.set(s, (t = Object.freeze({}) as OriginToken));
+  return t;
 }
 
 /** My own hand. */
@@ -71,11 +78,22 @@ export function unseenOf(s: GameState, me: Side, kind: CardKind): number {
   return n;
 }
 
-/** P(the opponent holds at least one `kind`): a hand of `handSize` cards drawn from the unseen pool without replacement. */
+/**
+ * P(the opponent holds at least one `kind`): a hand of `handSize` cards drawn from the unseen pool without replacement (less a
+ * revealed opening card it must still play, which is known to be in the hand).
+ */
 export function oppHoldsP(s: GameState, me: Side, kind: CardKind): number {
-  const pool = unseenCards(s, me).length;
+  const unseen = unseenCards(s, me);
+  let pool = unseen.length;
   const k = unseenOf(s, me, kind);
-  const n = handSize(s, other(me));
+  let n = handSize(s, other(me));
+  // a revealed opening card the opponent must still play is a known card of its hand (RR §15.8, S38): the rest are drawn
+  const known = openingCardOf(s, other(me));
+  if (known !== null && n > 0 && unseen.includes(known)) {
+    if (cardKind(known) === kind) return 1;
+    pool--;
+    n--;
+  }
   if (k === 0 || n === 0) return 0;
   let none = 1; // C(pool-k, n) / C(pool, n)
   for (let i = 0; i < n; i++) {
@@ -143,7 +161,7 @@ export function blindClone(s: GameState, me: Side): GameState {
   c.rng = 1;
   c.rngCalls = 0;
   blind.add(c);
-  origin.set(c, originOf(s));
+  tokens.set(c, originToken(s));
   return c;
 }
 
