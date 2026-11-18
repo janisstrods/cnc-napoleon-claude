@@ -7,7 +7,7 @@ import {
 } from '../../src/engine';
 import { scenarioById } from '../../src/scenarios';
 import { GameController, newSessionConfig } from '../../src/ui/game/controller';
-import { DECISION_TITLES, promptSpec } from '../../src/ui/game/promptSpec';
+import { DECISION_TITLES, decisionTitle, promptSpec } from '../../src/ui/game/promptSpec';
 import { SeededOpponent, useFakeClock } from './controller-helpers';
 
 const s: GameState = createGame(scenarioById('000').setup, 1);
@@ -45,7 +45,7 @@ describe('a prompt for every decision', () => {
     expect(Object.keys(DECISION_TITLES)).toHaveLength(18);
     for (const d of SAMPLES) {
       const p = promptSpec(s, d);
-      expect(p.title, d.kind).toBe(DECISION_TITLES[d.kind]);
+      expect(p.title, d.kind).toBe(decisionTitle(d));
       expect(p.title.length, d.kind).toBeGreaterThan(0);
       expect(p.actions.at(-1), d.kind).toEqual({ key: 'auto', label: 'Let the general decide', answer: 'auto' });
     }

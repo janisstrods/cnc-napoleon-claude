@@ -4,7 +4,7 @@
 // flags) keep their board clicks and highlights, with the spec's title.
 import type { Dispatch, SetStateAction } from 'react';
 import {
-  CARD_DEFS, OFF_BOARD, UNIT_STATS, battleReady, battleTargets, cardKind, effectiveCard, eligiblePieces, isLeaderId, leaderById,
+  CARD_DEFS, OFF_BOARD, UNIT_STATS, attachedLeader, battleReady, battleTargets, cardKind, effectiveCard, eligiblePieces, isLeaderId, leaderById,
   movablePieces, orderLimit, pieceHex, pieceMoves, unitById, validateOrders,
   type Answer, type Decision, type DieFace, type GameState, type SectionName, type Side, type UndoStep,
 } from '../../engine';
@@ -12,8 +12,8 @@ import { Button, CardView } from '../kit';
 import { AssignPanel } from './AssignPanel';
 import { assignError, currentAssign, type ElanOrRally } from './assign';
 import type { GameController, ViewState } from './controller';
-import { AUTO_ACTION, DECISION_TITLES, promptSpec, unitLabel } from './promptSpec';
-import { attackDice, expectedHits, type UiSel } from './uiModel';
+import { AUTO_ACTION, DECISION_TITLES, decisionTitle, promptSpec, unitLabel } from './promptSpec';
+import { attackDice, expectedHits, leaderRetreatChoices, retreatChoices, type UiSel } from './uiModel';
 
 /** What the prompt bar shows. `tone`: 'warn' or 'danger' colouring; `dice`: dice drawn before the text. */
 export interface Prompt {
@@ -78,7 +78,7 @@ export function gamePrompt(c: PromptCtx): Prompt | null {
     return { title: s.active === human ? 'Resolving…' : `${s.players[ai].army} turn`, text: '', buttons: [] };
   }
   if (d.side !== human) return null;
-  if (view.generalThinking) return { title: DECISION_TITLES[d.kind], text: 'Your general is deciding…', buttons: [] };
+  if (view.generalThinking) return { title: decisionTitle(d), text: 'Your general is deciding…', buttons: [] };
   const p = decisionPrompt(c, d);
   // no undo once a Scout's two cards are on show: it would put them back on the deck, known
   const undo = d.kind === 'scoutKeep' ? null : undoButton(c);
@@ -225,6 +225,12 @@ function movePrompt(c: PromptCtx): Prompt {
     text = `${name}: green = may battle after moving, amber = no battle after moving.${
       moves.some((m) => m.hex === OFF_BOARD) ? ` This ${isLeaderId(sel) ? 'leader' : 'unit'} can exit the battlefield.` : ''}`;
   }
+  // RR §6.2: a leader leaves his unit only by moving first
+  const detach = movers.some((id) => {
+    const u = unitById(s, id);
+    return !!u && !!s.turn.ordered[id] && !!attachedLeader(s, u);
+  });
+  if (detach) text += ' To detach a leader, move him before his unit.';
   const buttons = [btn('End movement', () => c.answer({ kind: 'endMove' }), { variant: 'secondary' })];
   if (sel && pieceMoves(s, sel).some((m) => m.hex === OFF_BOARD)) {
     buttons.unshift(btn('Exit the battlefield', () => c.answer({ kind: 'move', piece: sel, to: OFF_BOARD }), { variant: 'secondary' }));
@@ -256,7 +262,7 @@ function battlePrompt(c: PromptCtx): Prompt {
 }
 
 function ignoreFlagsPrompt(c: PromptCtx, d: D<'ignoreFlags'>): Prompt {
-  const u = unitById(c.s, d.unit);
+  const spec = promptSpec(c.s, d);
   const buttons: JSX.Element[] = [];
   for (let k = d.max; k >= 0; k--) {
     const left = d.flags - k;
@@ -264,43 +270,52 @@ function ignoreFlagsPrompt(c: PromptCtx, d: D<'ignoreFlags'>): Prompt {
     buttons.push(btn(label, () => c.answer({ kind: 'ignoreFlags', count: k }), { variant: k === d.max ? 'primary' : 'secondary', key: `f${k}` }));
   }
   buttons.push(autoButton(c));
-  return {
-    title: `${d.flags} flag${d.flags > 1 ? 's' : ''} against your ${u ? UNIT_STATS[u.key].name : 'unit'}`,
-    text: `This unit may ignore up to ${d.max}. Each flag you accept forces it to fall back.`,
-    buttons,
-  };
+  return { title: spec.title, text: spec.text, buttons };
 }
+
+/** At most this many end hexes get a button as well as a board click; more are chosen on the board alone. */
+const MAX_CHOICE_BUTTONS = 6;
 
 function retreatPrompt(c: PromptCtx, d: D<'retreat'>): Prompt {
   const { s } = c;
-  const uh = pieceHex(s, d.unit) ?? -1;
-  const lbl = (o: D<'retreat'>['options'][number], i: number) =>
-    o.end === uh
-      ? `Stay (lose ${o.losses})`
-      : `Option ${i + 1}: ${o.path.length} hex${o.path.length > 1 ? 'es' : ''}${o.losses ? `, lose ${o.losses}` : ''}${o.attach ? ', join leader' : ''}`;
-  const blocked = d.options[0]?.losses ? ` The way is blocked: ${d.options[0].losses} block(s) will be lost.` : '';
-  const buttons = d.options.length <= 4
-    ? d.options.map((o, i) => (
-      <Button key={`o${i}`} variant="ghost" onClick={() => c.answer({ kind: 'choose', index: i })} onMouseEnter={() => c.setUi((u) => ({ ...u, hoverHex: o.end }))}>
-        {lbl(o, i)}
+  const spec = promptSpec(s, d);
+  const choices = retreatChoices(s, d);
+  const blocked = d.options[0]?.losses ? ` The way is blocked: ${d.options[0].losses} block${d.options[0].losses === 1 ? '' : 's'} will be lost.` : '';
+  const buttons = choices.length <= MAX_CHOICE_BUTTONS
+    ? choices.map((o) => (
+      <Button key={`o${o.index}`} variant="ghost" onClick={() => c.answer({ kind: 'choose', index: o.index })} onMouseEnter={() => c.setUi((u) => ({ ...u, hoverHex: o.end }))}>
+        {o.label}
       </Button>
     ))
     : [];
   buttons.push(autoButton(c));
+  const unit = unitById(s, d.unit);
   return {
-    title: d.reason === 'retireReform' ? 'Retire and Reform' : DECISION_TITLES.retreat,
-    text: `Click a purple hex to choose where your ${unitById(s, d.unit) ? UNIT_STATS[unitById(s, d.unit)!.key].name : 'unit'} ends up.${blocked}`,
+    title: spec.title,
+    text: `Click a purple hex to choose where your ${unit ? UNIT_STATS[unit.key].name : 'unit'} ends up.${blocked}`,
     buttons,
   };
 }
 
 function leaderRetreatPrompt(c: PromptCtx, d: D<'leaderRetreat'>): Prompt {
-  const l = leaderById(c.s, d.leader);
-  const buttons: JSX.Element[] = [];
-  d.options.forEach((o, i) => {
-    if (o.offBoard) buttons.push(btn('Leave the battlefield', () => c.answer({ kind: 'choose', index: i }), { variant: 'secondary', key: `off${i}` }));
-    else if (o.eliminated) buttons.push(btn('Fall with his unit', () => c.answer({ kind: 'choose', index: i }), { variant: 'secondary', key: `dead${i}` }));
-  });
+  const { s } = c;
+  const spec = promptSpec(s, d);
+  const l = leaderById(s, d.leader);
+  const choices = leaderRetreatChoices(s, d);
+  const buttons: JSX.Element[] = choices.map((o) => (
+    <Button
+      key={`${o.kind}${o.index}`} variant={o.kind === 'hex' && !o.escapes ? 'ghost' : 'secondary'}
+      onClick={() => c.answer({ kind: 'choose', index: o.index })}
+      onMouseEnter={() => c.setUi((u) => ({ ...u, hoverHex: o.end }))}
+    >
+      {o.label}
+    </Button>
+  ));
   buttons.push(autoButton(c));
-  return { title: `${l?.name || 'Your leader'} must retreat`, text: 'Click a purple hex (joining a friendly unit is safest).', buttons };
+  const risky = choices.some((o) => o.kind === 'hex' && o.escapes > 0);
+  return {
+    title: spec.title,
+    text: `${l?.name || 'Your leader'} must retreat. Click a hex (joining a friendly unit is safest).${risky ? ' An amber hex means passing enemy units: each may strike at him as he slips by.' : ''}`,
+    buttons,
+  };
 }

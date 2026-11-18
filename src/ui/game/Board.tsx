@@ -211,7 +211,7 @@ export function Board(p: BoardProps) {
           const { x, y } = hexCenterId(h, flipped);
           return (
             <g key={h} transform={`translate(${x}, ${y - HEX_R * 0.62})`} className="badge">
-              <rect x={-24} y={-11} width={48} height={20} rx={10} />
+              <rect x={-Math.max(24, text.length * 3.4 + 8)} y={-11} width={Math.max(48, text.length * 6.8 + 16)} height={20} rx={10} />
               <text y={4} textAnchor="middle">{text}</text>
             </g>
           );

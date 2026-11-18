@@ -199,7 +199,7 @@ body {
 .dice-panel-die.is-done .dice-panel-text { color: #bfe3b0; }
 .dice-panel-die.is-lost { opacity: .6; }
 .dice-panel-die .kit-die { flex: none; }
-.dice-panel-text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.dice-panel-text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
 .dice-panel-wait { max-width: 300px; font-size: 13px; line-height: 1.2; color: rgba(240, 227, 194, .7); font-style: italic; }
 .prompt-dice { display: flex; gap: 5px; flex: none; }
 .order-show-dice { display: flex; gap: 14px; padding: 12px 18px; background: rgba(20, 12, 6, .7); border: 1px solid rgba(226, 189, 114, .55); border-radius: 12px; }
@@ -226,7 +226,7 @@ body {
 .prompt-bar.tone-warn .prompt-sub { color: #f2b56b; }
 .prompt-text { flex: 1 1 220px; min-width: 180px; }
 .prompt-title { font-family: var(--kit-font-title); font-size: 15px; color: var(--kit-bronze-light); letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.prompt-sub { font-size: 13.5px; color: rgba(240, 227, 194, .85); line-height: 1.2; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.prompt-sub { font-size: 13.5px; color: rgba(240, 227, 194, .85); line-height: 1.2; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
 .prompt-err { font-size: 13px; color: #ff9a80; margin-top: 2px; }
 .prompt-buttons { display: flex; gap: 6px; flex: 0 1 auto; flex-wrap: wrap; justify-content: flex-end; }
 .prompt-buttons .kit-btn { padding: 6px 12px; font-size: 13px; white-space: nowrap; }
