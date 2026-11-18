@@ -1,47 +1,70 @@
-// Rules: RR §5.3, §12 (design/rules-reference.md)
+// Rules: RR §1, §2, §5.3, §9.5, §12, §13.1 (design/rules-reference.md)
 import { describe, expect, it } from 'vitest';
-import { CARD_LIST, GameDriver, SIDES, createGame, forceDice, randomAnswer, type GameState } from '../../src/engine';
+import {
+  GameDriver, SIDES, bannerTotal, createGame, forceDice, randomAnswer,
+  type GameEvent, type GameState, type Side,
+} from '../../src/engine';
 import { scenarioById } from '../../src/scenarios';
-import { mulberry32 } from '../support/rng';
+import { lcg } from '../support/rng';
+import { violations } from './helpers';
 
-/** The violated invariants (empty = fine). */
-export function violations(s: GameState, atPlayCard: boolean): string[] {
+/** Event kinds that may carry a card id (the only two the UI may show). Every other event must carry none. */
+const CARD_EVENTS: ReadonlySet<GameEvent['t']> = new Set(['cardPlayed', 'discarded']);
+
+/** The victory invariant (6): the winner has the banners, and nobody else has them while the battle goes on. */
+function victoryViolations(s: GameState, pending: boolean): string[] {
   const out: string[] = [];
-  const uh = s.units.filter((u) => u.hex >= 0).map((u) => u.hex);
-  if (new Set(uh).size !== uh.length) out.push('two units in one hex');
-  const lh = s.leaders.filter((l) => l.hex >= 0).map((l) => l.hex);
-  if (new Set(lh).size !== lh.length) out.push('two leaders in one hex');
-  for (const u of s.units) if (u.blocks < 1 || u.blocks > u.maxBlocks) out.push(`unit ${u.id} has ${u.blocks}/${u.maxBlocks} blocks`);
-  const all = [...s.deck, ...s.discard, ...SIDES.flatMap((x) => [...s.players[x].hand, ...s.players[x].squareTrack.filter((c): c is number => c !== null)])];
-  if (s.turn.card !== null) all.push(s.turn.card);
-  const counts = new Map<number, number>();
-  for (const c of all) counts.set(c, (counts.get(c) ?? 0) + 1);
-  if (all.length !== CARD_LIST.length || counts.size !== CARD_LIST.length || [...counts.values()].some((k) => k !== 1)) out.push(`cards: ${all.length} held, ${counts.size} distinct`);
-  if (atPlayCard) {
-    for (const side of SIDES) {
-      const p = s.players[side];
-      if (p.hand.length + p.squareTrack.filter((c) => c !== null).length !== p.cards) out.push(`${side} holds ${p.hand.length} cards`);
+  if (s.winner) {
+    if (s.winner !== 'draw' && bannerTotal(s, s.winner) < s.bannersToWin) out.push(`${s.winner} won with ${bannerTotal(s, s.winner)} of ${s.bannersToWin} banners`);
+    if (pending) out.push('a decision is pending after the victory');
+  } else {
+    for (const side of SIDES) if (bannerTotal(s, side) >= s.bannersToWin) out.push(`${side} has ${bannerTotal(s, side)} banners but no winner`);
+  }
+  return out;
+}
+
+/** Card ids in events (7): any numeric card field outside `cardPlayed` and `discarded`. */
+function eventLeaks(es: GameEvent[]): string[] {
+  const out: string[] = [];
+  for (const e of es) {
+    if (CARD_EVENTS.has(e.t)) continue;
+    for (const [k, v] of Object.entries(e)) {
+      if (/card|hand|deck/i.test(k)) out.push(`${e.t}.${k} = ${JSON.stringify(v)}`);
     }
   }
   return out;
 }
 
 describe('rule invariants hold after every decision in random play', () => {
-  it('000, 10 seeds', () => {
-    forceDice([]);
-    for (let g = 0; g < 10; g++) {
+  for (let g = 0; g < 20; g++) {
+    const first: Side = g < 10 ? 'top' : 'bottom';
+    it(`000, seed ${g}, ${first} first`, () => {
+      forceDice([]);
       const seed = 7919 + g;
-      const d = new GameDriver(createGame(scenarioById('000').setup, seed));
-      const rnd = mulberry32(seed);
+      const d = new GameDriver(createGame({ ...scenarioById('000').setup, first }, seed));
+      const rnd = lcg(seed);
+      const banners: Record<Side, number> = { top: 0, bottom: 0 };
       let steps = 0;
+      expect(violations(d.state, d.pending?.kind === 'playCard')).toEqual([]);
       while (d.pending && steps < 4000) {
-        const a = randomAnswer(d.state, d.pending, rnd);
+        const dec = d.pending;
+        const a = randomAnswer(d.state, dec, rnd);
         if (!d.answer(a)) throw new Error(`rejected ${JSON.stringify(a)}: ${d.lastError}`);
-        const v = violations(d.state, d.pending?.kind === 'playCard');
-        if (v.length) throw new Error(`game ${g} step ${steps} after ${JSON.stringify(a)}: ${v.join('; ')}`);
+        const where = `game ${g} step ${steps} after ${JSON.stringify(a)}`;
+        const v = [
+          ...violations(d.state, d.pending?.kind === 'playCard'),
+          ...victoryViolations(d.state, d.pending !== null),
+          ...eventLeaks(d.drainEvents().map((q) => q.e)).map((x) => `event leaks a card: ${x}`),
+        ];
+        for (const side of SIDES) {
+          if (d.state.players[side].banners < banners[side]) v.push(`${side} permanent banners fell`);
+          banners[side] = d.state.players[side].banners;
+        }
+        if (v.length) throw new Error(`${where}: ${v.join('; ')}`);
         steps++;
       }
-      expect(d.state.winner).not.toBeNull();
-    }
-  });
+      expect(d.state.winner, `turn ${d.state.turn.number}`).not.toBeNull();
+      expect(d.pending).toBeNull();
+    });
+  }
 });

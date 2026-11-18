@@ -32,7 +32,6 @@ for (const job of mine) {
   const rnd = lcg(seed);
   let rejects = 0;
   playAiGame(d, { [job.aSide]: mk(job.aSide, A), [bSide]: mk(bSide, B) } as Record<Side, AiOptions>, {
-    maxTurn: 200,
     answer: (dec) => (dec.side !== job.aSide && randomB ? randomAnswer(d.state, dec, rnd) : undefined),
     planMs: (side, ms) => (side === job.aSide ? timeA : timeB).push(ms),
     rejected: (dec, ans) => {

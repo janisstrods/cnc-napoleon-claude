@@ -1,8 +1,8 @@
 // Rules: RR §9.4 (design/rules-reference.md)
 import { describe, expect, it } from 'vitest';
-import { retireReformOptions } from '../../src/engine';
-import type { DefendChoice, DieFace, GameDriver, RetreatOption, RowKey } from '../../src/engine';
-import { H, attack, attackOn, build, ev, forceDice, must, n, rolls, toBattle, u, type Pos } from './helpers';
+import { GameDriver, bannerTotal, retireReformOptions } from '../../src/engine';
+import type { DefendChoice, DieFace, RetreatOption, RowKey } from '../../src/engine';
+import { H, attack, attackOn, build, endMoves, ev, forceDice, must, n, noFirstStrike, passTurn, rolls, toBattle, turn, u, type Pos } from './helpers';
 
 const top = (key: RowKey, at: [number, number], extra: object = {}) => ({ side: 'top' as const, key, at, ...extra });
 const topLdr = (at: [number, number]) => ({ side: 'top' as const, at });
@@ -44,7 +44,8 @@ describe('Retire and Reform (§9.4)', () => {
     forceDice(n('artillery', 40));
     must(d2, { kind: 'attack', unit: 'u1', target: H(4, 6) });
     if (d2.pending?.kind === 'combinedArms') must(d2, { kind: 'select', ids: [] });
-    if (d2.pending?.kind === 'defend') must(d2, { kind: 'defend', choice: 'stand' });  // T9: infantry may form square against cavalry
+    expect(d2.pending).toMatchObject({ kind: 'defend', target: 'u2' });  // T9: infantry may form square against cavalry
+    must(d2, { kind: 'defend', choice: 'stand' });
     expect(d2.pending?.kind).not.toBe('defend');
     expect(ev(d2).some((e) => e.t === 'combat' && e.purpose === 'battleBack')).toBe(true);
   });
@@ -183,5 +184,27 @@ describe('Retire and Reform (§9.4)', () => {
     must(d, { kind: 'attack', unit: 'u1', target: H(4, 6) });
     if (d.pending?.kind === 'combinedArms') must(d, { kind: 'select', ids: [] });
     expect(d.pending).toMatchObject({ kind: 'defend', options: ['stand', 'retireReform'] });
+  });
+
+  it('a unit that retires off a temporary objective hex loses the objective at once (§13.3, R66)', () => {
+    const s = build({
+      first: 'top', objectives: [{ kind: 'tempHex', side: 'top', hex: [4, 6] }],
+      units: [top('FR/HC', [4, 6]), { side: 'bottom', key: 'BR/LN', at: [5, 6] }],
+    });
+    noFirstStrike(s);
+    const d = new GameDriver(s);
+    expect(bannerTotal(d.state, 'top')).toBe(1);   // held at the start of top's own turn
+    passTurn(d);
+    turn(d, 'attackC', ['u2']);
+    endMoves(d);
+    ev(d);
+    forceDice(n('artillery', 40));
+    must(d, { kind: 'attack', unit: 'u2', target: H(4, 6) });
+    if (d.pending?.kind === 'combinedArms') must(d, { kind: 'select', ids: [] });
+    must(d, { kind: 'defend', choice: 'retireReform' });
+    if (d.pending?.kind === 'retreat') must(d, { kind: 'choose', index: 0 });
+    expect(u(d, 'u1')!.hex).not.toBe(H(4, 6));
+    expect(bannerTotal(d.state, 'top')).toBe(0);
+    expect(ev(d).some((e) => e.t === 'held' && e.side === 'top' && e.total === 0)).toBe(true);
   });
 });

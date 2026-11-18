@@ -90,6 +90,13 @@ describe('a prompt for every decision', () => {
     expect(promptSpec(s, SAMPLES.find((x) => x.kind === 'combinedArms')!).actions.map((a) => a.key)).not.toContain('all');
   });
 
+  it('a required Combined Arms (no dice of its own) has no "none" action, and every action is legal', () => {
+    const d: Decision = { kind: 'combinedArms', side: 'bottom', unit: 'u7', target: hexId(2, 6), options: ['u10'], required: true };
+    const spec = promptSpec(s, d);
+    expect(spec.actions.map((a) => a.key)).toEqual(['u10', 'auto']);
+    for (const a of spec.actions) if (a.answer !== 'auto') expect(answerError(s, d, a.answer), a.key).toBeNull();
+  });
+
   it('Élan and Rally offer the suggested assignment, then the general; Scout names its two cards', () => {
     expect(promptSpec(s, elan).actions.map((a) => a.key)).toEqual(['suggested', 'auto']);
     expect(promptSpec(s, rally).actions.map((a) => a.key)).toEqual(['suggested', 'auto']);

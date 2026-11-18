@@ -3,7 +3,7 @@
 // so no test passes by an engine that assumes the British are on top.
 import { expect } from 'vitest';
 import {
-  ARMS, CARD_LIST, GameDriver, UNIT_STATS, createGame, forceDice, forcedDiceLeft, hexId,
+  ARMS, CARD_LIST, GameDriver, NUM_HEXES, SIDES, UNIT_STATS, createGame, passableFor, statsOf, forceDice, forcedDiceLeft, hexId,
   type Answer, type CardKind, type Decision, type DefendChoice, type DieFace, type GameEvent, type GameState, type RollPurpose,
   type RowKey, type ScenarioSetup, type Side, type TerrainSetup, type Unit, type UnitSetup, type LeaderSetup,
 } from '../../src/engine';
@@ -278,4 +278,52 @@ export function attackOn(atk: RowKey, def: RowKey, extra: Pos = {}): GameDriver 
   must(d, { kind: 'attack', unit: 'u1', target: H(4, 6) });
   if (d.pending?.kind === 'combinedArms') must(d, { kind: 'select', ids: [] });
   return d;
+}
+
+/** The violated structural invariants of a state (empty = fine; used by invariants.test and the battles soak). `atPlayCard`: a card decision is pending, so every hand is whole. */
+export function violations(s: GameState, atPlayCard: boolean): string[] {
+  const out: string[] = [];
+  // 1. each of the 70 cards exactly once
+  const all = [...s.deck, ...s.discard, ...SIDES.flatMap((x) => [...s.players[x].hand, ...s.players[x].squareTrack.filter((c): c is number => c !== null)])];
+  if (s.turn.card !== null) all.push(s.turn.card);
+  const counts = new Map<number, number>();
+  for (const c of all) counts.set(c, (counts.get(c) ?? 0) + 1);
+  if (all.length !== CARD_LIST.length || counts.size !== CARD_LIST.length || [...counts.values()].some((k) => k !== 1)) out.push(`cards: ${all.length} held, ${counts.size} distinct`);
+  // 2. hand plus filled track slots is the hand size at every card decision
+  if (atPlayCard) {
+    for (const side of SIDES) {
+      const p = s.players[side];
+      if (p.hand.length + p.squareTrack.filter((c) => c !== null).length !== p.cards) out.push(`${side} holds ${p.hand.length} cards`);
+    }
+  }
+  // 3. one unit and one leader per hex; no leader on an enemy; every piece on a board hex passable for it
+  const uh = s.units.filter((u) => u.hex >= 0).map((u) => u.hex);
+  if (new Set(uh).size !== uh.length) out.push('two units in one hex');
+  const lh = s.leaders.filter((l) => l.hex >= 0).map((l) => l.hex);
+  if (new Set(lh).size !== lh.length) out.push('two leaders in one hex');
+  for (const u of s.units) {
+    if (u.hex >= NUM_HEXES) out.push(`unit ${u.id} off the board table (${u.hex})`);
+    else if (u.hex >= 0 && !passableFor(s, u.hex, statsOf(s, u).arm)) out.push(`unit ${u.id} on an impassable hex ${u.hex}`);
+  }
+  for (const l of s.leaders) {
+    if (l.hex >= NUM_HEXES) out.push(`leader ${l.id} off the board table (${l.hex})`);
+    else if (l.hex >= 0) {
+      if (!passableFor(s, l.hex, null)) out.push(`leader ${l.id} on an impassable hex ${l.hex}`);
+      const on = s.units.find((u) => u.hex === l.hex);
+      if (on && on.side !== l.side) out.push(`leader ${l.id} stands on enemy unit ${on.id}`);
+    }
+  }
+  // 4. 1 ≤ blocks ≤ maxBlocks
+  for (const u of s.units) if (u.hex >= 0 && (u.blocks < 1 || u.blocks > u.maxBlocks)) out.push(`unit ${u.id} has ${u.blocks}/${u.maxBlocks} blocks`);
+  // 5. a square's counter and the track slot agree, slots are unique per side
+  for (const side of SIDES) {
+    const mine = s.units.filter((u) => u.hex >= 0 && u.side === side && u.square !== undefined);
+    const slots = mine.map((u) => u.square!);
+    if (new Set(slots).size !== slots.length) out.push(`${side} has two squares in one slot`);
+    for (const u of mine) if (s.players[side].squareTrack[u.square! - 1] === null) out.push(`square ${u.id} has no card on slot ${u.square}`);
+    s.players[side].squareTrack.forEach((c, i) => {
+      if (c !== null && !mine.some((u) => u.square === i + 1)) out.push(`${side} track slot ${i + 1} holds a card with no square`);
+    });
+  }
+  return out;
 }
