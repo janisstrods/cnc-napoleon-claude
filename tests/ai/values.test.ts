@@ -52,4 +52,17 @@ describe('values', () => {
     expect(NEUTRAL_W).toEqual(v);
     expect(PERSONALITIES.length).toBe(15);
   });
+
+  it('cavalry and guns are worth their dice: structural floors from the review', () => {
+    for (const k of UNIT_KEYS) {
+      const st = UNIT_STATS[k];
+      if (st.arm !== 'cavalry') continue;
+      const militia = (['FR', 'PT', 'AL'] as const).includes(k.slice(0, 2) as 'FR') ? full((k.slice(0, 2) + '/ML') as RowKey) : 0;
+      expect(full(k), `${k} above its nation's militia`).toBeGreaterThan(militia);
+    }
+    for (const n of ['FR', 'BR'] as const) expect(full(`${n}/GHC` as RowKey)).toBeGreaterThanOrEqual(full(`${n}/LN` as RowKey));
+    expect(full('FR/HC')).toBeGreaterThanOrEqual(0.85 * full('FR/LN'));
+    expect(full('FR/FA')).toBeGreaterThanOrEqual(0.75 * full('FR/LN'));
+    expect(full('BR/FA')).toBeGreaterThanOrEqual(0.75 * full('BR/LN'));
+  });
 });

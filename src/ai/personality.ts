@@ -1,5 +1,5 @@
 // Commander temperaments: plain data weights that tune the evaluation and the commentary voice. They come from the
-// commanders of the fifteen battles (and the Napoleon of the Waterloo-style scenario), not from the Ancients tables.
+// commanders of the fifteen battles (Napoleon commands at 015; the drill scenario 000 adds no one), not from the Ancients tables.
 import type { Nation } from '../engine';
 
 export type Voice = 'bold' | 'methodical' | 'reckless' | 'cunning' | 'stoic';

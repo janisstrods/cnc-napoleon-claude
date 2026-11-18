@@ -1,5 +1,5 @@
 // Valuation constants and personality-derived weights. One banner ~ 1.0 point.
-import { baseFireDice, statsOf, type GameState, type Unit, type UnitStats } from '../engine';
+import { UNIT_STATS, baseFireDice, statsOf, type GameState, type Unit, type UnitStats } from '../engine';
 import type { Personality } from './personality';
 
 export const WIN_SCORE = 100;
@@ -10,40 +10,51 @@ const WINNING_BANNER = 6;
 
 /** A full-strength French Line unit is worth this many banners of fighting power; every other row is scaled to it. */
 const LINE_WORTH = 0.7;
-/** Value of one hex of the best movement option, in dice. */
-const MOVE_DIE = 0.25;
+/** Value of one hex of the best movement option, in dice (a hex that forbids battle afterwards counts half). */
+const MOVE_DIE = 0.3;
 /** Value of one ignored flag, in dice. */
-const FLAG_DIE = 0.6;
+const FLAG_DIE = 0.8;
 /** Value of each extra hex a retreat flag costs beyond the first, in dice (militia flee three). */
-const RETREAT_DIE = 0.4;
+const RETREAT_DIE = 0.8;
 /** A unit that cannot score hits with sabres loses this much in melee, in dice. */
-const NO_SABRE_DIE = 0.3;
+const NO_SABRE_DIE = 0.6;
+/** A unit makes one battle a turn, fire or melee: the weaker of the two adds only this share. */
+const SECOND_ARM = 0.35;
+/** Cavalry melee is worth more than its dice: it breaks through and gets bonus melees. */
+const CAVALRY_SHOCK = 1.15;
+/** Cavalry and artillery are hard to hit by fire (one face in six), so each block lasts longer. */
+const SOFT_TARGET = 1.15;
+/** A gun's reach beyond distance 2, in dice per hex. */
+const GUN_REACH = 0.3;
+
+/** A live unit is always worth something, however poor its row. */
+const MIN_POWER = 0.5;
 
 /** The share of an unwounded unit's staying power that `blocks` blocks still carry: a worn unit dies to the next hit. */
 function staying(blocks: number): number {
   return blocks / (blocks + 2);
 }
 
-/** Dice of fighting power (unnormalised): fire, melee, movement and flag resistance, scaled by staying power. */
+/** Dice of fighting power (unnormalised): the better of fire and melee plus a share of the other, movement, flag resistance, staying power. */
 function rawPower(st: UnitStats, blocks: number): number {
   if (blocks <= 0) return 0;
   const range = st.fire.kind === 'none' ? 0 : st.fire.range;
+  // Fire needs a distance of 2 or more (distance 1 is melee); the mean runs over 2..range.
   let fire = 0;
-  for (let d = 1; d <= range; d++) fire += baseFireDice(st, blocks, d, 0);
-  if (range > 0) fire /= range;
+  for (let d = 2; d <= range; d++) fire += baseFireDice(st, blocks, d, 0);
+  if (range >= 2) fire /= range - 1;
+  if (st.fire.kind === 'artillery') fire += GUN_REACH * (range - 2);
   // Melee: one die per block plus the rule's plus (and half the plus against infantry, the likelier target), or the
   // artillery cell, which is the fire row at distance 1.
-  const melee = st.melee.kind === 'artillery' ? baseFireDice(st, blocks, 1, 0) : blocks + st.melee.plus + 0.5 * st.melee.vsInfantry;
-  const reach = st.move.reduce((m, o) => Math.max(m, o.max), 0);
+  let melee = st.melee.kind === 'artillery' ? baseFireDice(st, blocks, 1, 0) : blocks + st.melee.plus + 0.5 * st.melee.vsInfantry;
+  if (st.arm === 'cavalry') melee *= CAVALRY_SHOCK;
+  const reach = st.move.reduce((m, o) => Math.max(m, o.battle ? o.max : o.max / 2), 0);
   const grit = FLAG_DIE * st.flagIgnore - RETREAT_DIE * (st.retreat.first - 1) - (st.sabreHits ? 0 : NO_SABRE_DIE);
-  return Math.max(0, fire + melee + MOVE_DIE * reach + grit) * staying(blocks);
+  const power = Math.max(fire, melee) + SECOND_ARM * Math.min(fire, melee) + MOVE_DIE * reach + grit;
+  return Math.max(MIN_POWER, power) * staying(blocks) * (st.arm === 'infantry' ? 1 : SOFT_TARGET);
 }
 
-const NORM = LINE_WORTH / rawPower({
-  key: 'FR/LN', name: '', arm: 'infantry', tags: [], expansion: 'base', blocks: 4, move: [{ max: 1, battle: true }], battleAfterMoveMinBlocks: 1,
-  melee: { kind: 'blocks', plus: 0, vsInfantry: 1, movedPlus: 0 }, fire: { kind: 'musket', range: 2, standing: 0, moving: 0, round: 'up' },
-  retreat: { first: 1, then: 1 }, flagIgnore: 0, sabreHits: true, ignoresInfantryFireHits: 0,
-}, 4);
+const NORM = LINE_WORTH / rawPower(UNIT_STATS['FR/LN'], 4);
 
 /**
  * Fighting power of a unit of this row with `blocks` blocks, in banners. Fire is the mean of the engine's standing dice
@@ -71,10 +82,10 @@ export function bannerStep(k: number, T: number): number {
   return 1 + 0.9 * x * x;
 }
 
-/** Value of holding `b` banners out of T (the steps 1..b). */
+/** Value of holding `b` banners out of T: the steps below the winning one (a win is priced by WIN_SCORE). */
 export function bannerScore(b: number, T: number): number {
   let v = 0;
-  for (let k = 1; k <= b; k++) v += bannerStep(k, T);
+  for (let k = 1; k <= b && k < T; k++) v += bannerStep(k, T);
   return v;
 }
 

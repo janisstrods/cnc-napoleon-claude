@@ -37,7 +37,7 @@ describe('AiClient worker handling', () => {
       const { AiClient } = await import('../../src/ai/client');
       const sc = scenarioById('000');
       const d = new GameDriver(createGame(sc.setup, 8));
-      const c = new AiClient({ side: d.pending!.side, difficulty: 'recruit', personality: personalityById('fox'), seed: 1, budgetScale: 0.1 });
+      const c = new AiClient({ side: d.pending!.side, difficulty: 'recruit', personality: personalityById('veteran'), seed: 1, budgetScale: 0.1 });
       expect(c.usingWorker).toBe(true);
       for (let i = 0; i < 2; i++) {
         const p = c.decide(d.state, d.pending!);
@@ -81,7 +81,7 @@ describe('AiClient worker handling', () => {
       const { AiClient } = await import('../../src/ai/client');
       const sc = scenarioById('000');
       const d = new GameDriver(createGame(sc.setup, 8));
-      const c = new AiClient({ side: d.pending!.side, difficulty: 'recruit', personality: personalityById('fox'), seed: 1, budgetScale: 0.1 });
+      const c = new AiClient({ side: d.pending!.side, difficulty: 'recruit', personality: personalityById('veteran'), seed: 1, budgetScale: 0.1 });
       const p = c.decide(d.state, d.pending!);
       // the page freezes for 40 s; on resume the overdue timer fires late and grants a grace period
       vi.setSystemTime(Date.now() + 40000);
