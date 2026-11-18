@@ -1,4 +1,4 @@
-import { memo, useMemo, type KeyboardEvent } from 'react';
+import { memo, useMemo, type FocusEvent, type KeyboardEvent } from 'react';
 import { ALL_HEXES, leaderUnit, rowOf, colOf, type GameState, type HexId, type Leader, type Side, type Unit } from '../../engine';
 import { LEADER_ATTACH_OFFSET, LeaderToken, UnitToken } from '../../art';
 import { BoardArt, ObjectiveMarkers } from '../terrain';
@@ -34,6 +34,11 @@ export interface BoardProps {
   /** The keyboard cursor hex and what it says aloud; the board is one tab stop and `onBoardKeyDown` moves the cursor. */
   cursor?: HexId | null;
   cursorLabel?: string;
+  /** The keyboard drives the cursor, so it is drawn (a mouse click hides it). */
+  cursorShown?: boolean;
+  onBoardBlur?: () => void;
+  onBoardFocus?: (e: FocusEvent<SVGSVGElement>) => void;
+  onBoardPointerDown?: () => void;
   onBoardKeyDown?: (e: KeyboardEvent<SVGSVGElement>) => void;
 }
 
@@ -165,14 +170,17 @@ export function Board(p: BoardProps) {
   const comb = p.combat ? { a: hexCenterId(p.combat.from, flipped), b: hexCenterId(p.combat.to, flipped) } : null;
   return (
     <svg
-      className="board-svg"
+      className={`board-svg${p.cursorShown ? ' board-svg--kbd' : ''}`}
       viewBox={`0 0 ${BOARD_W} ${BOARD_H}`}
       preserveAspectRatio="xMidYMid meet"
       role="application"
       aria-label="Battlefield. Arrow keys move the cursor, Enter or Space acts on its hex, Shift+Enter on its leader, Escape clears the selection. P goes to the prompt buttons, B comes back to the board."
-      aria-activedescendant={p.cursor != null ? 'board-cursor' : undefined}
+      aria-activedescendant={p.cursor != null && p.cursorShown ? `board-cursor-${p.cursor}` : undefined}
       tabIndex={0}
       onKeyDown={p.onBoardKeyDown}
+      onFocus={p.onBoardFocus}
+      onBlur={p.onBoardBlur}
+      onPointerDown={p.onBoardPointerDown}
     >
       <defs>
         <marker id="arrowhead" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
@@ -275,7 +283,7 @@ export function Board(p: BoardProps) {
       {p.cursor != null && p.cursor >= 0 && (() => {
         const { x, y } = hexCenterId(p.cursor, flipped);
         return (
-          <g id="board-cursor" className="board-cursor" role="img" aria-label={p.cursorLabel ?? ''}>
+          <g id={`board-cursor-${p.cursor}`} className="board-cursor" role="img" aria-label={p.cursorLabel ?? ''}>
             <polygon points={hexPoints(x, y, HEX_R - 1)} className="board-cursor-halo" />
             <polygon points={hexPoints(x, y, HEX_R - 4)} className="board-cursor-ring" />
             <text x={x} y={y + HEX_R * 0.82} textAnchor="middle" className="board-cursor-coords">{rowOf(p.cursor)},{colOf(p.cursor)}</text>

@@ -444,7 +444,7 @@ describe('a new decision takes the focus only for the keyboard player (m2)', () 
     }
   });
   it('the game screen calls it with the pointer state, in place of its own inline guard', () => {
-    expect(gameScreenSrc).toContain('focusNewDecision(d, human, overBoard.current, document)');
+    expect(gameScreenSrc).toContain('focusNewDecision(d, human, inBoard ? false : overBoard.current, document)');
   });
 });
 

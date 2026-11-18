@@ -4,9 +4,14 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { COLS, ROWS, colOf, hexId, rowOf, type GameState, type HexId } from '../../src/engine';
 import type { Highlight } from '../../src/ui/game/Board';
-import { boardKeyAction, firstMarked, hexLabel, markedHexes, moveCursor, screenKey, type CursorKey } from '../../src/ui/game/boardKeys';
+import type { Decision } from '../../src/engine';
+import {
+  boardKeyAction, boardKeyStep, firstMarked, freshSelection, globalKeyAction, hexLabel, jumpTarget, markedHexes, moveCursor, nextRegion, screenKey,
+  type CursorKey, type KeyStepIn,
+} from '../../src/ui/game/boardKeys';
+import { hexClick, leaderClick } from '../../src/ui/game/hexClick';
 import { boardMarks, type UiSel } from '../../src/ui/game/uiModel';
-import { H, build, play, toBattle, type Pos } from '../rules/helpers';
+import { H, build, ev, leaderId, must, play, toBattle, type Pos } from '../rules/helpers';
 
 const SEL: UiSel = { selCard: null, hoverCard: null, orderSel: [], selPiece: null, hoverHex: null, hoverAction: null, assign: null, gunSel: [] };
 const src = (rel: string) => readFileSync(new URL(rel, import.meta.url), 'utf8');
@@ -114,17 +119,6 @@ describe('hexLabel', () => {
   });
 });
 
-/** Presses `keys` from `cursor` the way the board does: moves are screen keys, Enter reports the hex it would click. */
-function press(cursor: HexId, keys: { key: string; shift?: boolean }[], flipped: boolean): { cursor: HexId; clicks: HexId[] } {
-  const clicks: HexId[] = [];
-  for (const k of keys) {
-    const a = boardKeyAction(k.key, !!k.shift);
-    if (a?.kind === 'move') cursor = moveCursor(cursor, screenKey(a.key, flipped), ROWS, COLS);
-    else if (a?.kind === 'activate') clicks.push(cursor);
-  }
-  return { cursor, clicks };
-}
-
 /** The shortest run of arrow keys from `from` to `to` (a breadth-first walk), or null. */
 function keysTo(from: HexId, to: HexId, flipped: boolean): CursorKey[] | null {
   const seen = new Map<HexId, CursorKey[]>([[from, []]]);
@@ -141,76 +135,253 @@ function keysTo(from: HexId, to: HexId, flipped: boolean): CursorKey[] | null {
   return null;
 }
 
-describe('a keyboard-only turn', () => {
-  for (const flipped of [false, true]) {
-    it(`order, move and attack: every marked hex is reachable by arrows, and Enter acts on that hex (board ${flipped ? 'turned' : 'upright'})`, () => {
-      const human = flipped ? 'top' : 'bottom';
-      const st = build({ first: human, units: [
-        { side: human, key: 'FR/LN', at: [5, 6] }, { side: human, key: 'FR/LN', at: [5, 7] },
-        { side: human === 'top' ? 'bottom' : 'top', key: 'BR/LN', at: [4, 6] },
-      ] });
-      // 1. orders: the cursor lands on the first eligible hex, and arrows reach the other
-      const orders = { kind: 'orders', side: human, card: 'probeC' } as never;
-      const m1 = boardMarks(st, orders, SEL, human);
-      const marked = markedHexes(m1);
-      expect(marked.size).toBe(2);
-      const start = firstMarked(marked, flipped)!;
-      for (const target of marked.keys()) {
-        const keys = keysTo(start, target, flipped)!;
-        expect(keys).not.toBeNull();
-        const out = press(start, [...keys.map((key) => ({ key })), { key: 'Enter' }], flipped);
-        expect(out.cursor).toBe(target);
-        expect(out.clicks).toEqual([target]); // the same hex a click on it passes to the one click handler
-      }
-      // 2. the label at the cursor says it can be chosen
-      expect(hexLabel(st, start, marked)).toContain('selectable');
-    });
-  }
+const STEP: KeyStepIn = { cursor: H(4, 4), key: 'ArrowRight', shift: false, repeat: false, flipped: false, leaderAt: () => null, cursorShown: true };
 
-  it('a move then a battle: the marks of a selected piece are reachable too, with their labels', () => {
-    const pos: Pos = { first: 'top', units: [{ side: 'top', key: 'FR/LN', at: [2, 6] }, { side: 'bottom', key: 'BR/LN', at: [6, 5] }] };
-    const mv = play(build(pos), 'probeC', ['u1']);
-    const m = markedHexes(boardMarks(mv.state, mv.pending, { ...SEL, selPiece: 'u1' }, 'top'));
-    expect([...m.values()]).toContain('move');
-    for (const [h, kind] of m) {
-      if (kind === 'move') expect(hexLabel(mv.state, h, m)).toContain('move target');
-      expect(keysTo(firstMarked(m, true)!, h, true)).not.toBeNull();
-    }
-    const bt = toBattle(build({ first: 'top', units: [{ side: 'top', key: 'FR/LN', at: [2, 6] }, { side: 'bottom', key: 'BR/LN', at: [3, 6] }] }), 'probeC', ['u1']);
-    const bm = markedHexes(boardMarks(bt.state, bt.pending, { ...SEL, selPiece: 'u1' }, 'top'));
-    const target = [...bm].find(([, k]) => k === 'targetClose' || k === 'targetRanged');
-    expect(target).toBeDefined();
-    expect(hexLabel(bt.state, target![0], bm)).toContain('target');
+describe('boardKeyStep: what a key does on the board', () => {
+  it('an arrow moves the cursor, shows it, and the hover follows it', () => {
+    expect(boardKeyStep(STEP)).toEqual({ handled: true, cursor: H(4, 5), hover: H(4, 5), showCursor: true });
+  });
+  it('a turned board reads the arrows the other way', () => {
+    expect(boardKeyStep({ ...STEP, flipped: true }).cursor).toBe(H(4, 3));
+    expect(boardKeyStep({ ...STEP, flipped: true, key: 'ArrowUp' }).cursor).toBe(H(5, 4));
+  });
+  it('an arrow shows a cursor that was hidden by a mouse click, and moves it from where the click put it', () => {
+    expect(boardKeyStep({ ...STEP, cursorShown: false })).toMatchObject({ handled: true, cursor: H(4, 5), showCursor: true });
+  });
+  it('Enter and Space click the cursor hex, but only while the cursor is shown', () => {
+    expect(boardKeyStep({ ...STEP, key: 'Enter' })).toEqual({ handled: true, clickHex: H(4, 4) });
+    expect(boardKeyStep({ ...STEP, key: ' ' })).toEqual({ handled: true, clickHex: H(4, 4) });
+    // a mouse player's Enter is the global shortcut's (confirm the orders), not the hidden cursor's
+    expect(boardKeyStep({ ...STEP, key: 'Enter', cursorShown: false })).toEqual({ handled: false });
+    expect(boardKeyStep({ ...STEP, key: ' ', cursorShown: false })).toEqual({ handled: false });
+  });
+  it('a held key does not click again', () => {
+    expect(boardKeyStep({ ...STEP, key: 'Enter', repeat: true })).toEqual({ handled: true });
+  });
+  it('Shift+Enter clicks the leader on the hex, else the hex', () => {
+    expect(boardKeyStep({ ...STEP, key: 'Enter', shift: true, leaderAt: () => 'L1' })).toEqual({ handled: true, leaderId: 'L1' });
+    expect(boardKeyStep({ ...STEP, key: 'Enter', shift: true })).toEqual({ handled: true, clickHex: H(4, 4) });
+  });
+  it('other keys are not the board\'s', () => {
+    expect(boardKeyStep({ ...STEP, key: 'Escape' })).toEqual({ handled: false });
+    expect(boardKeyStep({ ...STEP, key: 'Tab' })).toEqual({ handled: false });
   });
 });
 
-describe('wiring: keys go through the one click handler', () => {
+describe('jumpTarget: where the cursor goes on a new decision', () => {
+  const pos: Pos = { first: 'bottom', units: [
+    { side: 'bottom', key: 'FR/LN', at: [5, 6] }, { side: 'bottom', key: 'FR/LN', at: [5, 7] }, { side: 'top', key: 'BR/LN', at: [3, 6] },
+  ] };
+  const orders = () => { const dr = play(build(pos), 'attackC'); return { s: dr.state, d: dr.pending! }; };
+  it('the first marked hex, for a keyboard player', () => {
+    const { s, d } = orders();
+    expect(d.kind).toBe('orders');
+    expect(jumpTarget(s, d, 'bottom', false, false, false)).toEqual({ cursor: H(5, 6), keepFocus: false });
+    expect(jumpTarget(s, d, 'bottom', false, false, true)).toEqual({ cursor: H(5, 7), keepFocus: false }); // turned: reading order from the other end
+  });
+  it('not while the pointer is over the board and the focus is elsewhere', () => {
+    const { s, d } = orders();
+    expect(jumpTarget(s, d, 'bottom', true, false, false)).toBeNull();
+  });
+  it('with the focus in the board it jumps and keeps the focus there, wherever the pointer rests', () => {
+    const { s, d } = orders();
+    expect(jumpTarget(s, d, 'bottom', true, true, false)).toEqual({ cursor: H(5, 6), keepFocus: true });
+    expect(jumpTarget(s, d, 'bottom', false, true, false)).toEqual({ cursor: H(5, 6), keepFocus: true });
+  });
+  it('never for the computer\'s decision, a card choice, or no decision', () => {
+    const { s, d } = orders();
+    expect(jumpTarget(s, d, 'top', false, true, false)).toBeNull();
+    expect(jumpTarget(s, { kind: 'playCard', side: 'bottom' }, 'bottom', false, true, false)).toBeNull();
+    expect(jumpTarget(s, null, 'bottom', false, true, false)).toBeNull();
+  });
+  it('the marks a decision starts with, not those of the selection before it', () => {
+    // two units can battle, so nothing is selected yet: the first attacker is marked, not the targets of a piece selected earlier
+    const bs = build({ first: 'bottom', units: [
+      { side: 'bottom', key: 'FR/LN', at: [4, 6] }, { side: 'bottom', key: 'FR/LN', at: [4, 7] }, { side: 'top', key: 'BR/LN', at: [3, 6] },
+    ] });
+    const dr = toBattle(bs, 'attackC', ['u1', 'u2']);
+    expect(dr.pending?.kind).toBe('battle');
+    expect(freshSelection(dr.state, dr.pending, 'bottom').selPiece).toBeNull();
+    expect(jumpTarget(dr.state, dr.pending, 'bottom', false, false, false)?.cursor).toBe(H(4, 6));
+  });
+  it('a lone mover is selected at once, so the jump goes to its first destination', () => {
+    const dr = play(build(pos), 'attackC', ['u1']);
+    expect(freshSelection(dr.state, dr.pending, 'bottom').selPiece).toBe('u1');
+    const j = jumpTarget(dr.state, dr.pending, 'bottom', false, false, false)!;
+    expect(j.cursor).toBeLessThan(H(5, 6));
+  });
+});
+
+describe('globalKeyAction: the letters are not for dialogs or fields (WCAG 2.1.4)', () => {
+  const k = (key: string, o: Partial<{ shift: boolean; ctrl: boolean; meta: boolean; alt: boolean }> = {}) => ({ key, shift: false, ctrl: false, meta: false, alt: false, ...o });
+  const here = { inGame: true, typing: false, modal: false };
+  it('B goes to the board, P to the prompt, F6 and Shift+F6 cycle', () => {
+    expect(globalKeyAction(k('b'), here)).toBe('board');
+    expect(globalKeyAction(k('B'), here)).toBe('board');
+    expect(globalKeyAction(k('p'), here)).toBe('prompt');
+    expect(globalKeyAction(k('F6'), here)).toBe('cycle');
+    expect(globalKeyAction(k('F6', { shift: true }), here)).toBe('cycleBack');
+  });
+  it('B and P work with a button focused', () => {
+    expect(globalKeyAction(k('b'), { ...here, typing: false })).toBe('board');
+  });
+  it('nothing in a dialog, in a field, outside the game screen, or with a modifier', () => {
+    for (const ctx of [{ ...here, modal: true }, { ...here, typing: true }, { ...here, inGame: false }]) {
+      expect(globalKeyAction(k('b'), ctx)).toBeNull();
+      expect(globalKeyAction(k('p'), ctx)).toBeNull();
+      expect(globalKeyAction(k('F6'), ctx)).toBeNull();
+    }
+    expect(globalKeyAction(k('b', { ctrl: true }), here)).toBeNull();
+    expect(globalKeyAction(k('p', { meta: true }), here)).toBeNull();
+    expect(globalKeyAction(k('b', { alt: true }), here)).toBeNull();
+    expect(globalKeyAction(k('x'), here)).toBeNull();
+  });
+  it('F6 goes board, prompt, hand, board; Shift+F6 the other way; from elsewhere to the board', () => {
+    expect(nextRegion('board', false)).toBe('prompt');
+    expect(nextRegion('prompt', false)).toBe('hand');
+    expect(nextRegion('hand', false)).toBe('board');
+    expect(nextRegion('board', true)).toBe('hand');
+    expect(nextRegion('hand', true)).toBe('prompt');
+    expect(nextRegion('other', false)).toBe('board');
+    expect(nextRegion('other', true)).toBe('board');
+  });
+});
+
+describe('hexLabel: the words of a mark', () => {
+  const s = build({ units: [{ side: 'bottom', key: 'FR/LN', at: [5, 6] }, { side: 'top', key: 'BR/LN', at: [3, 6] }], leaders: [{ side: 'bottom', at: [5, 6], name: 'Ney' }] });
+  it('a move with no battle after is not "move target" alone', () => {
+    const l = hexLabel(s, H(4, 4), new Map<HexId, Highlight>([[H(4, 4), 'moveNoBattle']]));
+    expect(l).toContain('move target (no battle after)');
+    expect(hexLabel(s, H(4, 4), new Map<HexId, Highlight>([[H(4, 4), 'moveMustBattle']]))).toContain('move target (must battle)');
+  });
+  it('a target says its dice, as the badge on the board does', () => {
+    const l = hexLabel(s, H(3, 6), new Map<HexId, Highlight>([[H(3, 6), 'targetClose']]), { badges: new Map([[H(3, 6), '4 dice']]) });
+    expect(l).toContain('target, melee, 4 dice');
+  });
+  it('a retreat hex says so, and the retreating unit is named', () => {
+    const d = { kind: 'retreat', side: 'bottom' } as unknown as Decision;
+    const marks = new Map<HexId, Highlight>([[H(4, 4), 'option'], [H(5, 6), 'focus']]);
+    expect(hexLabel(s, H(4, 4), marks, { decision: d })).toContain('retreat here');
+    expect(hexLabel(s, H(5, 6), marks, { decision: d })).toContain('retreating');
+    expect(hexLabel(s, H(4, 4), marks)).toContain('selectable'); // not a retreat decision
+  });
+  it('an attached leader has his own mark beside his unit\'s', () => {
+    const marks = new Map<HexId, Highlight>([[H(5, 6), 'eligible']]);
+    const l = hexLabel(s, H(5, 6), marks, { leaderMarks: new Map([[leaderId(s, 0), 'selected' as Highlight]]) });
+    expect(l).toMatch(/Line Infantry, 4 of 4 blocks, selectable, leader Ney \(attached\), selected/);
+    expect(hexLabel(s, H(5, 6), marks)).toMatch(/leader Ney \(attached\)$/);
+  });
+});
+
+describe('a keyboard-only turn through the UI model', () => {
+  for (const flipped of [false, true]) {
+    it(`order, move and attack by key events give the answers the clicks give (board ${flipped ? 'turned' : 'upright'})`, () => {
+      const human = flipped ? 'top' : 'bottom';
+      const foe = human === 'top' ? 'bottom' : 'top';
+      // the human's units stand at rows 4 and 5 of the board as seen from their side, the enemy one hex from the first
+      const row = (r: number) => (human === 'bottom' ? r : 8 - r);
+      const st = build({ first: human, units: [
+        { side: human, key: 'FR/LN', at: [row(4), 6] }, { side: human, key: 'FR/LN', at: [row(5), 7] }, { side: foe, key: 'BR/LN', at: [row(2), 6] },
+      ] });
+      const dr = play(st, 'attackC');
+      let ui = freshSelection(dr.state, dr.pending, human);
+      let cursor = 0;
+      const press = (key: string) => {
+        const step = boardKeyStep({ cursor, key, shift: false, repeat: false, flipped, leaderAt: () => null, cursorShown: true });
+        if (step.cursor !== undefined) cursor = step.cursor;
+        if (step.clickHex === undefined) return;
+        const r = hexClick(dr.state, dr.pending, ui, step.clickHex, human);
+        if (r.ui) ui = r.ui;
+        if (r.answer) { must(dr, r.answer); ui = freshSelection(dr.state, dr.pending, human); }
+      };
+      const goTo = (hex: HexId) => { for (const k of keysTo(cursor, hex, flipped)!) press(k); expect(cursor).toBe(hex); };
+      const jump = () => { cursor = jumpTarget(dr.state, dr.pending, human, false, false, flipped)!.cursor; };
+      // orders: the cursor lands on the first eligible hex; Enter orders the unit; the button confirms
+      expect(dr.pending?.kind).toBe('orders');
+      jump();
+      expect(ui.orderSel).toEqual([]);
+      press('Enter');
+      expect(ui.orderSel).toHaveLength(1);
+      must(dr, { kind: 'orders', pieces: ui.orderSel });
+      ui = freshSelection(dr.state, dr.pending, human);
+      // move: a lone mover is already selected; the cursor goes to its first destination and Enter moves it there
+      expect(dr.pending?.kind).toBe('move');
+      const piece = ui.selPiece!;
+      expect(piece).toBeTruthy();
+      jump();
+      const before = dr.state.units.find((x) => x.id === piece)!.hex;
+      press('Enter');
+      const after = dr.state.units.find((x) => x.id === piece)!.hex;
+      expect(after).not.toBe(before);
+      if (dr.pending?.kind === 'move') must(dr, { kind: 'endMove' });
+      // battle: select the attacker, walk to the enemy, Enter attacks
+      expect(dr.pending?.kind).toBe('battle');
+      {
+        jump();
+        if (!ui.selPiece) press('Enter');
+        const foeHex = dr.state.units.find((x) => x.side === foe)!.hex;
+        const mark = boardMarks(dr.state, dr.pending, ui, human).highlights.get(foeHex);
+        expect(['targetClose', 'targetRanged']).toContain(mark);
+        goTo(foeHex);
+        press('Enter');
+        expect(ev(dr).some((e) => e.t === 'combat')).toBe(true);
+      }
+    });
+  }
+
+  it('a click and the key are the same answer: the one hexClick', () => {
+    const st = build({ first: 'bottom', units: [{ side: 'bottom', key: 'FR/LN', at: [5, 6] }, { side: 'top', key: 'BR/LN', at: [3, 6] }] });
+    const dr = play(st, 'attackC');
+    const ui = freshSelection(dr.state, dr.pending, 'bottom');
+    const click = hexClick(dr.state, dr.pending, ui, H(5, 6), 'bottom');
+    const key = boardKeyStep({ ...STEP, cursor: H(5, 6), key: 'Enter' });
+    expect(hexClick(dr.state, dr.pending, ui, key.clickHex!, 'bottom')).toEqual(click);
+    expect(click.ui?.orderSel).toEqual(['u1']);
+    expect(leaderClick(dr.state, dr.pending, ui, 'nobody', 'bottom')).toEqual({ handled: false });
+  });
+});
+
+describe('wiring: the screen uses the pure steps', () => {
   const board = src('../../src/ui/game/Board.tsx');
   const screen = src('../../src/ui/game/GameScreen.tsx');
-  it('the board is one tab stop with a name, announcing the cursor hex', () => {
+  it('the board is one tab stop with a name; each cursor hex has its own id, and a live region repeats the sentence', () => {
     expect(board).toMatch(/role="application"/);
-    expect(board).toMatch(/aria-label=/);
     expect(board).toMatch(/tabIndex=\{0\}/);
-    expect(board).toContain('aria-activedescendant');
-    expect(board).toContain('board-cursor');
+    expect(board).toContain('board-cursor-${p.cursor}');
+    expect(board).not.toMatch(/aria-activedescendant=\{[^}]*'board-cursor'/);
+    expect(screen).toMatch(/aria-live="polite"[^]*?cursorLabel|cursorLabel[^]*?aria-live="polite"/);
   });
-  it('Enter and Space call the same onHexClick the hexes use; Shift+Enter the leader click', () => {
-    expect(screen).toContain('boardKeyAction(');
-    expect(screen).toMatch(/kind === 'activate'\)[^]*?handlers\.current\.onHexClick\(cursor\)/);
-    expect(screen).toMatch(/leaderAt\(s, cursor\)[^]*?handlers\.current\.onLeaderClick\(l\.id\)/);
+  it('the keys, the jump and the global letters come from the pure steps; clicks from hexClick', () => {
+    expect(screen).toContain('boardKeyStep(');
+    expect(screen).toContain('jumpTarget(');
+    expect(screen).toContain('globalKeyAction(');
+    expect(screen).toContain('hexClick(');
+    expect(screen).toContain('leaderClick(');
+    expect(screen).not.toContain('markedNow'); // no marks of a stale render
   });
-  it('the global Enter shortcut leaves the board to its own handler', () => {
-    expect(screen).toMatch(/closest\('\.board-svg'\)/);
+  it('a mouse click on the board moves the cursor there and hides it; Enter then falls to the global shortcut', () => {
+    expect(screen).toMatch(/const onHexPointer = [^]*?setCursor\(h\)[^]*?setKbd\(false\)/);
+    expect(screen).toMatch(/onHexClick=\{onHexPointer\}/);
+    expect(screen).toMatch(/t\.closest\('\.board-svg'\)[^]*?kbd/); // the global Enter skips the board only while the cursor is shown
   });
-  it('a new decision moves the cursor to the first marked hex, for keyboard players only', () => {
-    expect(screen).toContain('firstMarked(');
-    expect(screen).toMatch(/wantsPromptFocus\(d, human, overBoard\.current\)[^]*?firstMarked|firstMarked[^]*?wantsPromptFocus/);
+  it('the board shows the cursor only while the keyboard drives it', () => {
+    expect(board).toContain('cursorShown');
+    expect(src('../../src/ui/game/board-keys.css')).toContain('.board-svg--kbd');
+    expect(src('../../src/ui/game/board-keys.css')).not.toContain(':focus-visible .board-cursor');
+  });
+  it('the tooltip is anchored to the cursor hex while the keys drive it, and the hover clears when the board loses focus', () => {
+    expect(screen).toMatch(/anchor=\{/);
+    expect(screen).toMatch(/onBoardBlur = [^]*?hoverHex: null/);
+  });
+  it('the rules dialog documents the keys', () => {
+    const rules = src('../../src/ui/screens/rulesText.ts');
+    expect(rules).toMatch(/Keyboard[^]*?arrow keys[^]*?F6/i);
   });
   it('the focus ring lives in board-keys.css, from existing tokens', () => {
     const css = src('../../src/ui/game/board-keys.css');
     expect(css).toContain('.board-cursor');
     expect(css).toContain('var(--kit-gold)');
-    expect(css).not.toMatch(/#[0-9a-f]{3,6}\b/i); // tokens only
-    expect(screen + board).toContain("board-keys.css");
+    expect(css).not.toMatch(/#[0-9a-f]{3,6}\b/i);
+    expect(screen + board).toContain('board-keys.css');
   });
 });
