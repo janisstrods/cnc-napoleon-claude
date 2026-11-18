@@ -47,6 +47,7 @@ describe('Combined Arms board chooser', () => {
     expect(html).toContain('Attack with 1 gun');
     expect(html).toContain('All 2 guns');
     expect(p.text).toBe('British Line Infantry attacks French Line Infantry. Click guns to add or remove them, then attack.');
+    expect(p.rise).toBe(true); // the toggles and the dice line must not hide below the fold of the steady bar
     const clicked: unknown[] = [];
     const view = { pending: d, over: false, fatal: false, generalThinking: false, undo: null } as unknown as ViewState;
     const q = gamePrompt({ controller: {} as GameController, view, s, human: 'bottom', ai: 'top', ui: { ...SEL, gunSel: ['u3', 'uX'] }, setUi: () => {}, answer: (a) => clicked.push(a), onExit: () => {} })!;
