@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { UNIT_KEYS, UNIT_STATS, type Leader, type RowKey, type Unit } from '../../src/engine';
-import { leaderTraitLines, unitCardLines, unitName, unitSummary } from '../../src/ui/game/unitText';
+import { unitCardLines, unitName, unitSummary } from '../../src/ui/game/unitText';
 import { RulesReference, Units } from '../../src/ui/screens/RulesReference';
 
 const unit = (key: RowKey, extra: Partial<Unit> = {}): Unit =>
@@ -47,7 +47,6 @@ describe('unitSummary', () => {
       expect(notes, k).toMatch(/\.$/);
       expect(unitName(k), k).toBe(UNIT_STATS[k].name);
     }
-    expect(leaderTraitLines({ id: 'L1', side: 'top', name: 'Hill', hex: 0 } as Leader)).toEqual([]);
   });
 });
 

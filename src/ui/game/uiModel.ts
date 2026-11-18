@@ -2,7 +2,7 @@
 // content is in promptSpec.ts, the unit descriptions in unitText.ts, the objective tooltips in objectiveText.ts.
 import {
   ALL_HEXES, CARD_DEFS, OFF_BOARD, hexLabel, meleeDice, UNIT_STATS, statsOf, leaderAt, battleReady, battleTargets, effectiveCard, eligiblePieces, inSection,
-  leaderUnit, movablePieces, pieceById, pieceHex, pieceMoves, unitAt, unitById,
+  leaderUnit, movablePieces, pieceById, pieceHex, pieceMoves, retireReformOptions, unitAt, unitById,
   type Decision, type GameState, type HexId, type SectionName, type Side, type Unit,
 } from '../../engine';
 import type { Highlight } from './Board';
@@ -15,13 +15,15 @@ export interface UiSel {
   orderSel: string[];
   selPiece: string | null;
   hoverHex: HexId | null;
+  /** The key of the prompt button under the pointer or focused (`PromptAction.key`), or null. */
+  hoverAction: string | null;
   /** Élan / Rally: the armed die and the piece (or null) given to each die; null until the player touches it. */
   assign: { die: number | null; ids: (string | null)[] } | null;
 }
 
 /** Every field of a selection but the hovered hex (the compiler checks that none is missing). */
 const SEL_FIELDS: Record<Exclude<keyof UiSel, 'hoverHex'>, true> = {
-  selCard: true, hoverCard: true, orderSel: true, selPiece: true, assign: true,
+  selCard: true, hoverCard: true, orderSel: true, selPiece: true, hoverAction: true, assign: true,
 };
 const SEL_KEYS = Object.keys(SEL_FIELDS) as (keyof typeof SEL_FIELDS)[];
 
@@ -271,6 +273,13 @@ export function boardMarks(s: GameState, d: Decision | null, ui: Omit<UiSel, 'ho
       if (d.kind === 'defend') {
         const ah = pieceHex(s, d.attacker) ?? -1;
         if (ah >= 0) highlights.set(ah, 'targetClose');
+        // the pointer on Retire and Reform shows where the unit would go: the first path the engine lists
+        const defender = unitById(s, d.target);
+        const first = ui.hoverAction === 'retireReform' && defender ? retireReformOptions(s, defender)[0] : undefined;
+        if (first && th >= 0) {
+          highlights.set(first.end, 'option');
+          pathAt = () => [th, ...first.path];
+        }
       }
       break;
     }

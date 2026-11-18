@@ -424,3 +424,18 @@ body {
 .assign-die:focus-visible { outline: 2px solid var(--kit-gold); outline-offset: 2px; }
 .assign-panel .prompt-err { margin-top: 6px; }
 .scout-cards { display: flex; gap: 12px; flex: none; padding: 4px 0; }
+
+/* ---------- squares (Plan 4 Task 6) */
+.square-track { display: flex; align-items: center; justify-content: flex-end; gap: 3px; margin-top: 5px; }
+.sq-label { font-family: var(--kit-font-title); font-size: 11px; letter-spacing: .06em; color: rgba(240, 227, 194, .65); margin-right: 4px; }
+.sq-slot { position: relative; width: 24px; height: 34px; border: 1px dashed rgba(226, 189, 114, .4); border-radius: 3px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: rgba(0, 0, 0, .18); }
+.sq-slot.is-held { border-style: solid; border-color: rgba(226, 189, 114, .75); }
+.sq-num { position: absolute; top: 0; left: 2px; z-index: 2; font-family: var(--kit-font-title); font-size: 10px; line-height: 1.1; color: rgba(240, 227, 194, .85); text-shadow: 0 0 2px #000, 0 0 2px #000; }
+.sq-slot:not(.is-held) .sq-num { color: rgba(240, 227, 194, .45); text-shadow: none; }
+.sq-card.kit-card { font-size: 2.6px; pointer-events: none; }
+.square-counter circle { fill: #2a2318; stroke: #e2bd72; stroke-width: 2; }
+.square-counter text { fill: #f6e7b6; font-family: var(--kit-font-title); font-size: 14px; font-weight: 700; pointer-events: none; }
+.square-counter { pointer-events: none; }
+.prompt-hint { min-height: 3.6em; font-size: 12.5px; font-style: italic; color: #f2d79a; line-height: 1.2; margin-top: 2px; }
+.tip-square { color: #e2bd72; }
+.army-cmd.army-hand { white-space: normal; font-style: normal; font-size: 12.5px; }

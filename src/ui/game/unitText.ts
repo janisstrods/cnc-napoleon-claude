@@ -1,6 +1,6 @@
 // Unit and leader descriptions, generated from the unit table: the lines of the hover tooltip and the unit cards of the
 // rules reference.
-import { CODE_NAMES, UNIT_STATS, codeOf, type Leader, type RowKey, type Unit, type UnitStats } from '../../engine';
+import { CODE_NAMES, UNIT_STATS, codeOf, leaderUnit, type GameState, type Leader, type RowKey, type Unit, type UnitStats } from '../../engine';
 
 /** Capitalise the first letter. */
 function cap(x: string): string {
@@ -51,9 +51,11 @@ export function unitSummary(u: Unit): string[] {
   return lines;
 }
 
-/** Tooltip lines for a leader (the base game's leaders have no traits). */
-export function leaderTraitLines(_l: Leader): string[] {
-  return [];
+/** Tooltip lines for a leader: what he does with a unit, or alone on the board. */
+export function leaderLines(s: GameState, l: Leader): string[] {
+  return leaderUnit(s, l)
+    ? ['Attached: the unit may ignore 1 flag; +1 die only with Leadership.']
+    : ['Alone: cannot be fired at; a melee against him needs a sabre.'];
 }
 
 /** Rules-reference card of a unit row: [stats line, notes line]. */

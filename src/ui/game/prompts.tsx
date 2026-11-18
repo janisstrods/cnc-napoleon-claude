@@ -21,6 +21,8 @@ export interface Prompt {
   text: string;
   buttons: JSX.Element[];
   tone?: string;
+  /** A line under the text: what the choice under the pointer does. */
+  hint?: string;
   dice?: DieFace[];
   /** Shown in the prompt bar between the text and the buttons (the Scout's two cards). */
   extra?: JSX.Element;
@@ -52,9 +54,12 @@ function pct(x: number) {
   return `${Math.round(x * 100)}%`;
 }
 
-function btn(label: string, onClick: () => void, opts: { variant?: 'primary' | 'secondary' | 'ghost'; disabled?: boolean; key?: string; title?: string } = {}) {
+function btn(label: string, onClick: () => void, opts: { variant?: 'primary' | 'secondary' | 'ghost'; disabled?: boolean; key?: string; title?: string; hover?: { enter: () => void; leave: () => void } } = {}) {
   return (
-    <Button key={opts.key ?? label} variant={opts.variant ?? 'primary'} disabled={opts.disabled} onClick={onClick} title={opts.title}>
+    <Button
+      key={opts.key ?? label} variant={opts.variant ?? 'primary'} disabled={opts.disabled} onClick={onClick} title={opts.title}
+      onMouseEnter={opts.hover?.enter} onFocus={opts.hover?.enter} onMouseLeave={opts.hover?.leave} onBlur={opts.hover?.leave}
+    >
       {label}
     </Button>
   );
@@ -148,15 +153,25 @@ function scoutPrompt(c: PromptCtx, d: D<'scoutKeep'>): Prompt {
   };
 }
 
+/** The hint line while no choice is under the pointer. */
+export const HINT_IDLE = 'Point at a choice to see what it does.';
+
 /** Any decision without a chooser of its own: one button per action of its spec (the first is the primary one). */
 function genericPrompt(c: PromptCtx, d: Decision): Prompt {
   const spec = promptSpec(c.s, d);
   const buttons = spec.actions.map((a, i) => {
     if (a.answer === 'auto') return autoButton(c);
     const answer = a.answer;
-    return btn(a.label, () => c.answer(answer), { variant: i === 0 ? 'primary' : 'secondary', key: a.key });
+    // the pointer or focus on a button tells the board (a path preview) and the prompt (its hint) which choice is under it
+    const hover = {
+      enter: () => c.setUi((u) => (u.hoverAction === a.key ? u : { ...u, hoverAction: a.key })),
+      leave: () => c.setUi((u) => (u.hoverAction === a.key ? { ...u, hoverAction: null } : u)),
+    };
+    return btn(a.label, () => c.answer(answer), { variant: i === 0 ? 'primary' : 'secondary', key: a.key, title: a.hint, hover: a.hint ? hover : undefined });
   });
-  return { title: spec.title, text: spec.text, buttons, tone: d.kind === 'defend' ? 'danger' : undefined };
+  // a prompt with hints keeps its line while none is hovered, so the bar does not change height under the pointer
+  const hint = spec.actions.some((a) => a.hint) ? spec.actions.find((a) => a.key === c.ui.hoverAction)?.hint ?? HINT_IDLE : undefined;
+  return { title: spec.title, text: spec.text, buttons, tone: d.kind === 'defend' ? 'danger' : undefined, hint };
 }
 
 const UNDO_LABEL: Record<UndoStep, { label: string; title: string }> = {
@@ -293,7 +308,7 @@ function retreatPrompt(c: PromptCtx, d: D<'retreat'>): Prompt {
   const unit = unitById(s, d.unit);
   return {
     title: spec.title,
-    text: `Click a purple hex to choose where your ${unit ? UNIT_STATS[unit.key].name : 'unit'} ends up.${blocked}`,
+    text: d.reason === 'retireReform' ? spec.text : `Click a purple hex to choose where your ${unit ? UNIT_STATS[unit.key].name : 'unit'} ends up.${blocked}`,
     buttons,
   };
 }
