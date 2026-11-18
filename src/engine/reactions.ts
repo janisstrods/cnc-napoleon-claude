@@ -1,7 +1,8 @@
 // The defender's reaction to a melee (RR §9.2, §9.4, §9.5, §12.3). Skeleton: the defender only stands (→ T8, T9, T12c).
 import { emitRoll } from './casualties';
 import { ask, type Gen } from './decisions';
-import { meleeDice, scoreRoll } from './dice';
+import { artilleryShares } from './combinedArms';
+import { meleeDice, scoreRoll, type Scored } from './dice';
 import { relocate } from './movement';
 import { updateHeld } from './objectives';
 import { retireReformOptions } from './retreat';
@@ -10,7 +11,7 @@ import { unitById } from './query';
 import { applyOutcome } from './resolve';
 import { canFormSquare } from './squares';
 import { statsOf } from './units';
-import type { DefendChoice, FlowCtx, GameState, HexId, MeleeCtx } from './types';
+import type { DefendChoice, FlowCtx, GameState, HexId, MeleeCtx, RollPurpose } from './types';
 
 /** The defender's choices: Retire and Reform for cavalry attacked by infantry (a square included) when it has a path (R34). */
 export function defendOptions(s: GameState, m: MeleeCtx): DefendChoice[] {
@@ -35,6 +36,24 @@ export function* defenderReaction(s: GameState, ctx: FlowCtx, m: MeleeCtx): Gen<
 }
 
 /**
+ * The attacking side's one roll of a melee (RR §9.6, R41): the melee unit's dice (counted now, for its current blocks) and
+ * each joining gun's dice, rolled together as one `combat` event and one `roll` with `from[]`. Sabres score by the melee
+ * unit's row; `retireReform` scores cavalry symbols only (R40). `from[]` lists the melee unit first, then the guns in
+ * `m.artillery` order; `faces` are matching consecutive chunks of the melee unit's and each gun's dice. Returns the melee unit's own dice too.
+ */
+export function attackerStrike(s: GameState, ctx: FlowCtx, m: MeleeCtx, purpose: RollPurpose, kind: 'melee' | 'retireReform'): Scored & { own: number } {
+  const attacker = unitById(s, m.attacker)!;
+  const target = unitById(s, m.target)!;
+  const own = meleeDice(s, attacker, target, { role: m.role, moved: s.turn.ordered[m.attacker]?.moved ?? 0, declared: true });
+  const shares = artilleryShares(s, m);
+  ctx.emit({ t: 'combat', purpose, attacker: m.attacker, target: m.target, dice: own, ...(shares.length ? { artillery: shares } : {}) });
+  const faces = rollDice(s, shares.reduce((sum, g) => sum + g.dice, own));
+  const sc = scoreRoll(faces, kind, statsOf(s, attacker), kind === 'retireReform' ? 'cavalry' : statsOf(s, target).arm);
+  emitRoll(ctx, purpose, faces, sc.scoring, m.attacker, m.target, shares.length ? [m.attacker, ...shares.map((g) => g.id)] : undefined);
+  return { ...sc, own };
+}
+
+/**
  * Retire and Reform (RR §9.4, R34): the attacker rolls all its dice, only cavalry symbols hit (no flags, no Cuirassier
  * ignore); a hit triggers the leader check; a surviving cavalry unit then retires 2 hexes and does not battle back.
  * Returns the cavalry's old hex (vacated either way), or null if it could not move.
@@ -43,12 +62,7 @@ export function* resolveRetireReform(s: GameState, ctx: FlowCtx, m: MeleeCtx): G
   const attacker = unitById(s, m.attacker)!;
   const target = unitById(s, m.target)!;
   const from = target.hex;
-  const op = s.turn.ordered[m.attacker];
-  const dice = meleeDice(s, attacker, target, { role: m.role, moved: op?.moved ?? 0, declared: true });
-  ctx.emit({ t: 'combat', purpose: 'retireReform', attacker: m.attacker, target: m.target, dice });
-  const faces = rollDice(s, dice);
-  const sc = scoreRoll(faces, 'retireReform', statsOf(s, attacker), 'cavalry');
-  emitRoll(ctx, 'retireReform', faces, sc.scoring, m.attacker, m.target);
+  const sc = attackerStrike(s, ctx, m, 'retireReform', 'retireReform');
   const applied = yield* applyOutcome(s, ctx, target, { hits: sc.hits, flags: 0, bounce: false }, attacker, 'retire and reform');
   if (s.winner) return null;
   if (applied.eliminated) return from;

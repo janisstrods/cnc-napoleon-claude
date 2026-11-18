@@ -79,11 +79,11 @@ export function promptSpec(s: GameState, d: Decision): PromptSpec {
       );
       break;
     case 'combinedArms': {
-      text = `${unitLabel(s, d.unit)} attacks: artillery may join the melee. Choose a gun, or none.`;
+      text = `${unitLabel(s, d.unit)} attacks: artillery may join the melee. ${d.required ? 'It has no dice of its own: choose a gun.' : 'Choose a gun, or none.'}`;
       hexes = hexesOf(s, d.options);
       for (const id of d.options) actions.push({ key: id, label: unitHexLabel(s, id), answer: { kind: 'select', ids: [id] } });
       if (d.options.length > 1) actions.push({ key: 'all', label: `Combine all ${d.options.length} guns`, answer: { kind: 'select', ids: [...d.options] } });
-      actions.push({ key: 'none', label: 'No artillery', answer: { kind: 'select', ids: [] } });
+      if (!d.required) actions.push({ key: 'none', label: 'No artillery', answer: { kind: 'select', ids: [] } });
       break;
     }
     case 'defend':

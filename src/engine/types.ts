@@ -148,7 +148,7 @@ export type Decision =
   | { kind: 'leaveSquare'; side: Side; unit: string }
   | { kind: 'move'; side: Side }
   | { kind: 'battle'; side: Side }
-  | { kind: 'combinedArms'; side: Side; unit: string; target: HexId; options: string[] }
+  | { kind: 'combinedArms'; side: Side; unit: string; target: HexId; options: string[]; required: boolean }
   | { kind: 'defend'; side: Side; attacker: string; target: string; options: DefendChoice[]; bonus: boolean }
   | { kind: 'ignoreFlags'; side: Side; unit: string; flags: number; max: number }
   | { kind: 'retreat'; side: Side; unit: string; options: RetreatOption[]; reason: 'retreat' | 'retireReform' }
