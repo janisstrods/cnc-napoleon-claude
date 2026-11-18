@@ -1,5 +1,5 @@
 // Rules: RR §15.5, §15.7, §15.8 (design/rules-reference.md)
-// RR §15/§16 (pending Task 1): written from design/exp1-rulings.md (S15–S21, S28, S30–S38, S43–S46) and the Task 2 brief.
+// RR §15/§16 (design/rules-reference.md): written from design/exp1-rulings.md (S15–S21, S28, S30–S38, S43–S46) and the Task 2 brief.
 // The Expansion #1 contract: the new objective kinds, side rules, decisions and setup state. No flow asks the new
 // decisions yet; these tests pin the data, the pure queries, the setup checks and the answer checks.
 import { describe, expect, it } from 'vitest';
@@ -10,7 +10,7 @@ import {
 } from '../../src/engine';
 import { scenarioFromJson, type ScenarioJson } from '../../src/scenarios';
 import { lcg } from '../support/rng';
-import { build, setupOf, type Pos } from './helpers';
+import { build, setupOf, violations, type Pos } from './helpers';
 
 const quiet: FlowCtx = { emit: () => {} };
 const throwsWith = (p: Pos, prefix: string): void => {
@@ -85,7 +85,7 @@ describe('Expansion #1 setup (RR §15.5, §15.8)', () => {
     const s = build({
       units: [
         { side: 'top', key: 'FR/LN', at: [1, 2] }, { side: 'top', key: 'FR/LN', at: [1, 4] }, { side: 'top', key: 'FR/LT', at: [1, 6] },
-        { side: 'bottom', key: 'BR/LN', at: [7, 2] },
+        { side: 'bottom', key: 'BR/LN', at: [7, 2] }, { side: 'bottom', key: 'FR/LN', at: [7, 4] },   // an enemy unit of the key never counts
       ],
       sideRules: [{ kind: 'breakOnLosses', side: 'top', keys: ['FR/LN'], losses: 2 }],
     });
@@ -101,12 +101,14 @@ describe('Expansion #1 setup (RR §15.5, §15.8)', () => {
         { kind: 'exitEdge', side: 'bottom', row: 0, free: 3 },
         { kind: 'exitEdge', side: 'top', row: 8 },
         { kind: 'tempAny', side: 'top', hexes: [[4, 2], [4, 3]] },
+        { kind: 'tempAny', side: 'bottom', hexes: [[4, 6], [4, 7]], timing: 'turnStart' },
       ],
       sideRules: [{ kind: 'handShrink', side: 'bottom', floor: 3 }, { kind: 'squareCap', side: 'bottom', units: 2 }, { kind: 'cavalryChargeFolly', side: 'bottom' }],
     });
     expect(ok.scenario.objectives[0]).toMatchObject({ kind: 'exitEdge', side: 'bottom', row: 0, free: 3, banners: 1 });
     expect(ok.scenario.objectives[1]).toMatchObject({ kind: 'exitEdge', row: 8, free: 0, banners: 1 });
     expect(ok.scenario.objectives[2]).toMatchObject({ kind: 'tempAny', timing: 'turnStart', banners: 1 });
+    expect(ok.scenario.objectives[3]).toMatchObject({ kind: 'tempAny', side: 'bottom', timing: 'turnStart' });
     expect(handShrinkRule(ok, 'bottom')).toEqual({ kind: 'handShrink', side: 'bottom', floor: 3 });
     expect(handShrinkRule(ok, 'top')).toBeUndefined();
 
@@ -143,6 +145,15 @@ describe('Expansion #1 setup (RR §15.5, §15.8)', () => {
     expect(s.special.squared).toEqual({ top: [], bottom: ['u2'] });
     expect(newTurn(1).guerrilla).toBe('none');
     expect(s.turn.guerrilla).toBe('none');
+  });
+
+  it('the hand-size invariant reads special.handSize (a shrinking hand, S33)', () => {
+    const s = build({});
+    expect(violations(s, true)).toEqual([]);
+    s.special.handSize.bottom = 4;
+    expect(violations(s, true)).toEqual(['bottom holds 5 cards']);
+    s.discard.push(s.players.bottom.hand.pop()!);
+    expect(violations(s, true)).toEqual([]);
   });
 });
 
@@ -291,6 +302,8 @@ describe('the two new decisions (RR §15.5, S38, S45)', () => {
     expect(seen).toContain(JSON.stringify({ kind: 'yesno', yes: false }));
     expect(seen).toContain(JSON.stringify({ kind: 'playCard', card: hand[0] }));
     expect(seen).toContain(JSON.stringify({ kind: 'playCard', card: hand[1] }));
+    // a side with no eligible card is never asked (S43): a moveFirst without options is a flow error
+    expect(() => randomAnswer(s, { kind: 'moveFirst', side: 'bottom', options: [] }, rnd)).toThrow(/moveFirst with no options/);
   });
 });
 

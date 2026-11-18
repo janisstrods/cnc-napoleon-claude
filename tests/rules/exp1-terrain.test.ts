@@ -1,5 +1,5 @@
 // Rules: RR §15.6 (design/rules-reference.md)
-// RR §15/§16 (pending Task 1): written from design/exp1-rulings.md (S22–S24, S42) and the Task 2 brief.
+// RR §15/§16 (design/rules-reference.md): written from design/exp1-rulings.md (S22–S24, S42) and the Task 2 brief.
 // Expansion #1 terrain: the Walled Farm row, 2- and 4-sided redoubts as Field Works, and per-hex river rules.
 import { describe, expect, it } from 'vitest';
 import {

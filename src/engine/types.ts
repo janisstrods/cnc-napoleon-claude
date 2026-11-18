@@ -107,9 +107,9 @@ export type ObjectiveDef = DeepReadonly<
   | { kind: 'tempGroup'; side: Side; hexes: HexId[]; timing: 'turnStart'; banners: number; text: string }
   | { kind: 'exit'; side: Side; hex: HexId; banners: number; leadersScore: boolean; retreatOff: boolean; text: string }
   | { kind: 'killWeight'; side: Side; enemyArm: Arm; first: number; later: number }
-  // Expansion #1 (RR §15.8): any one hex of the group held at turn start; a group majority (either side may hold it, `side`
-  // starts holding it when `startHeld`); exits off a whole baseline (`free` exits score nothing); a sudden-death win when
-  // `need` enemy units of `keys` (all of them at setup) are eliminated
+  // Expansion #1 (RR §15.8): any one hex of the group held at turn start; a group majority for `side` (a contested group is
+  // two records with the same hexes, one per side; `startHeld`: `side` holds it at setup); exits off a whole baseline (`free`
+  // exits score nothing); a sudden-death win when `need` enemy units of `keys` (all of them at setup) are eliminated
   | { kind: 'tempAny'; side: Side; hexes: HexId[]; timing: 'turnStart'; banners: number; text: string }
   | { kind: 'majority'; side: Side; hexes: HexId[]; banners: number; startHeld: boolean; text: string }
   | { kind: 'exitEdge'; side: Side; row: 0 | 8; free: number; banners: number; text: string }

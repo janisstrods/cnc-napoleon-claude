@@ -23,7 +23,7 @@ export type ObjectiveSetup =
   | { kind: 'tempGroup'; side: Side; hexes: [number, number][]; timing?: 'turnStart'; banners: number; text?: string }
   | { kind: 'exit'; side: Side; hex: [number, number]; banners?: number; leadersScore?: boolean; retreatOff?: boolean; text?: string }
   | { kind: 'killWeight'; side: Side; enemyArm: Arm; first: number; later: number }
-  | { kind: 'tempAny'; side: Side; hexes: [number, number][]; banners?: number; text?: string }
+  | { kind: 'tempAny'; side: Side; hexes: [number, number][]; timing?: 'turnStart'; banners?: number; text?: string }
   | { kind: 'majority'; side: Side; hexes: [number, number][]; banners?: number; startHeld?: boolean; text?: string }
   | { kind: 'exitEdge'; side: Side; row: 0 | 8; free?: number; banners?: number; text?: string }
   | { kind: 'suddenDeath'; side: Side; keys: RowKey[]; text?: string };
