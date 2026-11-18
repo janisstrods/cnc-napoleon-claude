@@ -3,7 +3,7 @@
 // the last button is always "Let the general decide". The bespoke choosers of the game screen (card, orders, move, battle,
 // retreat, leader retreat, flags) add their board interaction on top of the title and that button.
 import {
-  CARD_DEFS, UNIT_STATS, cardKind, hexLabel, pieceHex, statsOf, stopsOnEntry, unitById,
+  CARD_DEFS, UNIT_STATS, cardKind, hexLabel, pieceHex, statsOf, stopsOnEntry, unitAt, unitById,
   type Answer, type Decision, type DefendChoice, type GameState, type HexId,
 } from '../../engine';
 import { suggestAssign } from './assign';
@@ -87,6 +87,12 @@ export function unitLabel(s: GameState, id: string): string {
   return u ? `${s.players[u.side].army} ${UNIT_STATS[u.key].name}` : 'unit';
 }
 
+/** " French Line Infantry" for the unit in `hex` (preceded by a space), or "" when no unit stands there. */
+function targetName(s: GameState, hex: HexId): string {
+  const t = unitAt(s, hex);
+  return t ? ` ${unitLabel(s, t.id)}` : '';
+}
+
 /** "British Foot Artillery (r3 c4)": the unit and its hex, so identical guns differ. */
 function unitHexLabel(s: GameState, id: string): string {
   const h = pieceHex(s, id);
@@ -123,7 +129,7 @@ export function promptSpec(s: GameState, d: Decision): PromptSpec {
       );
       break;
     case 'combinedArms': {
-      text = `${unitLabel(s, d.unit)} attacks: artillery may join the melee. ${d.required ? 'It has no dice of its own: choose a gun.' : 'Choose a gun, or none.'}`;
+      text = `${unitLabel(s, d.unit)} attacks${targetName(s, d.target)}. Click guns to add or remove them, then attack.${d.required ? ' It has no dice of its own: at least one gun must join.' : ''}`;
       hexes = hexesOf(s, d.options);
       for (const id of d.options) actions.push({ key: id, label: unitHexLabel(s, id), answer: { kind: 'select', ids: [id] } });
       if (d.options.length > 1) actions.push({ key: 'all', label: `Combine all ${d.options.length} guns`, answer: { kind: 'select', ids: [...d.options] } });

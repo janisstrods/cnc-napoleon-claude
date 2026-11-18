@@ -7,7 +7,7 @@ import { scenarioById } from '../../src/scenarios';
 import { boardMarks, boardUi, selectionDeps, type UiSel } from '../../src/ui/game/uiModel';
 import { H, build, play, toBattle, type Pos } from '../rules/helpers';
 
-const SEL: UiSel = { selCard: null, hoverCard: null, orderSel: [], selPiece: null, hoverHex: null, hoverAction: null, assign: null };
+const SEL: UiSel = { selCard: null, hoverCard: null, orderSel: [], selPiece: null, hoverHex: null, hoverAction: null, assign: null, gunSel: [] };
 
 /**
  * `boardMarks` against `boardUi` with no hex and then every hex hovered: the same marks each time, and `pathAt` the same
@@ -66,7 +66,7 @@ describe('board marks and the hovered hex', () => {
   });
 
   it('the selection the marks depend on is every field but the hovered hex', () => {
-    const full: Required<UiSel> = { selCard: 1, hoverCard: 2, orderSel: ['u1'], selPiece: 'u1', hoverHex: 3, hoverAction: 'stand', assign: { die: 0, ids: ['u1'] } };
+    const full: Required<UiSel> = { selCard: 1, hoverCard: 2, orderSel: ['u1'], selPiece: 'u1', hoverHex: 3, hoverAction: 'stand', assign: { die: 0, ids: ['u1'] }, gunSel: ['u3'] };
     expect(selectionDeps({ ...full, hoverHex: 9 })).toEqual(selectionDeps(full));
     for (const k of Object.keys(full) as (keyof UiSel)[]) {
       if (k !== 'hoverHex') expect(selectionDeps({ ...full, [k]: null }), k).not.toEqual(selectionDeps(full));

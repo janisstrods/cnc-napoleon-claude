@@ -10,7 +10,7 @@ import { gamePrompt } from '../../src/ui/game/prompts';
 import { boardMarks, type UiSel } from '../../src/ui/game/uiModel';
 import { build, H, leaderId } from '../rules/helpers';
 
-const SEL: UiSel = { selCard: null, hoverCard: null, orderSel: [], selPiece: null, hoverHex: null, hoverAction: null, assign: null };
+const SEL: UiSel = { selCard: null, hoverCard: null, orderSel: [], selPiece: null, hoverHex: null, hoverAction: null, assign: null, gunSel: [] };
 const ids = (xs: { id: string }[]) => xs.map((x) => x.id);
 const elan = (s: GameState, faces: DieFace[]): ElanOrRally => ({ kind: 'elan', side: 'bottom', faces });
 const rally = (faces: DieFace[]): ElanOrRally => ({ kind: 'rally', side: 'bottom', faces });

@@ -4,7 +4,7 @@
 // flags) keep their board clicks and highlights, with the spec's title.
 import type { Dispatch, SetStateAction } from 'react';
 import {
-  CARD_DEFS, OFF_BOARD, UNIT_STATS, attachedLeader, battleReady, battleTargets, cardKind, effectiveCard, eligiblePieces, isLeaderId, leaderById,
+  answerError, CARD_DEFS, OFF_BOARD, UNIT_STATS, attachedLeader, battleReady, battleTargets, cardKind, effectiveCard, eligiblePieces, isLeaderId, leaderById,
   movablePieces, orderLimit, pieceHex, pieceMoves, unitById, validateOrders,
   type Answer, type Decision, type DieFace, type GameState, type SectionName, type Side, type UndoStep,
 } from '../../engine';
@@ -13,7 +13,7 @@ import { AssignPanel } from './AssignPanel';
 import { assignError, currentAssign, type ElanOrRally } from './assign';
 import type { GameController, ViewState } from './controller';
 import { AUTO_ACTION, DECISION_TITLES, decisionTitle, promptSpec, unitLabel } from './promptSpec';
-import { attackDice, expectedHits, leaderRetreatChoices, retreatChoices, type UiSel } from './uiModel';
+import { attackDice, chosenGuns, expectedHits, leaderRetreatChoices, retreatChoices, type UiSel } from './uiModel';
 
 /** What the prompt bar shows. `tone`: 'warn' or 'danger' colouring; `dice`: dice drawn before the text. */
 export interface Prompt {
@@ -112,6 +112,8 @@ function decisionPrompt(c: PromptCtx, d: Decision): Prompt {
       return assignPrompt(c, d);
     case 'scoutKeep':
       return scoutPrompt(c, d);
+    case 'combinedArms':
+      return combinedArmsPrompt(c, d);
     case 'shortSupplyTarget': {
       // a click on any unit of the board chooses it; the general's button is the only other answer
       const p = genericPrompt(c, d);
@@ -134,6 +136,23 @@ function assignPrompt(c: PromptCtx, d: ElanOrRally): Prompt {
     buttons: [btn('Confirm', () => c.answer({ kind: 'assign', ids: cur.ids }), { disabled: !!err, key: 'confirm' }), autoButton(c)],
     panel: <AssignPanel s={s} d={d} ui={ui} setUi={c.setUi} note={c.assignNote ?? null} text={spec.text} />,
   };
+}
+
+/**
+ * Combined Arms: guns are toggled on the board; the primary button attacks with the chosen ones (only ids among the options
+ * count), "All n guns" takes every candidate, and a melee unit with no dice of its own cannot attack without a gun.
+ */
+function combinedArmsPrompt(c: PromptCtx, d: D<'combinedArms'>): Prompt {
+  const spec = promptSpec(c.s, d);
+  const ids = chosenGuns(c.ui.gunSel, d.options);
+  const k = ids.length;
+  const answer: Answer = { kind: 'select', ids };
+  const blocked = answerError(c.s, d, answer);
+  const label = k === 0 ? (d.required ? 'Choose at least one gun' : 'Attack without artillery') : `Attack with ${k} gun${k === 1 ? '' : 's'}`;
+  const buttons = [btn(label, () => c.answer(answer), { disabled: !!blocked, variant: 'primary', key: 'attack' })];
+  if (d.options.length > 1) buttons.push(btn(`All ${d.options.length} guns`, () => c.answer({ kind: 'select', ids: [...d.options] }), { variant: 'secondary', key: 'all' }));
+  buttons.push(autoButton(c));
+  return { title: spec.title, text: spec.text, buttons };
 }
 
 /** Scout: the two cards drawn, large; a click keeps one. Only the owner's prompt is ever built (`gamePrompt` returns null otherwise). */

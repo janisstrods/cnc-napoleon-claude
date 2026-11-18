@@ -11,7 +11,7 @@ import { boardMarks, bonusBadges, leaderRetreatChoices, retreatChoices, type UiS
 import { H, build, leaderId, play, type Pos } from '../rules/helpers';
 import { SeededOpponent, runToHuman, useFakeClock } from './controller-helpers';
 
-const SEL: UiSel = { selCard: null, hoverCard: null, orderSel: [], selPiece: null, hoverHex: null, hoverAction: null, assign: null };
+const SEL: UiSel = { selCard: null, hoverCard: null, orderSel: [], selPiece: null, hoverHex: null, hoverAction: null, assign: null, gunSel: [] };
 const text = (b: JSX.Element[]) => b.map((x) => renderToStaticMarkup(x).replace(/<[^>]+>/g, ''));
 const ctx = (d: Decision, human: 'top' | 'bottom', st: GameState) => {
   const noop = () => {};
