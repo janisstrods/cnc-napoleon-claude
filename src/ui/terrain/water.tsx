@@ -17,6 +17,24 @@ interface Key {
   end?: boolean; // dead end of a river inside the board
 }
 
+const waterNeighbours = (ctx: PaintCtx, h: HexInfo): HexInfo[] =>
+  DIRS.map((d) => neighborRC(h.r, h.c, d)).map(([r, c]) => ctx.get(r, c)).filter((n): n is HexInfo => !!n && isWater(n.t));
+const atEdge = (ctx: PaintCtx, h: HexInfo) => DIRS.some((d) => !ctx.get(...neighborRC(h.r, h.c, d)));
+
+/**
+ * Two neighbouring water hexes on the board edge, neither a junction, that both join a third water hex which is one are the
+ * two mouths of a fork (101's river splits at (7,0) and leaves the board through (8,0) and (8,1)): each flows off the board
+ * on its own, so they are not linked to each other, which would close a loop round a triangle of bank.
+ */
+function forkMouth(ctx: PaintCtx, h: HexInfo, n: HexInfo): boolean {
+  if (!atEdge(ctx, h) || !atEdge(ctx, n)) return false;
+  const wh = waterNeighbours(ctx, h);
+  const wn = waterNeighbours(ctx, n);
+  if (wh.length !== 2 || wn.length !== 2) return false;
+  const ns = new Set(wn.map((x) => x.id));
+  return wh.some((j) => j.id !== n.id && ns.has(j.id) && waterNeighbours(ctx, j).length >= 3);
+}
+
 /**
  * Where the river leaves hex h: every neighbouring water hex, plus (for a river end) the
  * board edge it flows off - preferring the edge straight ahead - or an in-board dead end.
@@ -28,7 +46,7 @@ function portsOf(ctx: PaintCtx, h: HexInfo): Port[] {
     const [r, c] = neighborRC(h.r, h.c, d);
     const n = ctx.get(r, c);
     if (!n) off.push(d);
-    else if (isWater(n.t)) links.push({ d, kind: 'hex' });
+    else if (isWater(n.t) && !forkMouth(ctx, h, n)) links.push({ d, kind: 'hex' });
   }
   if (links.length >= 2) return links;
   if (links.length === 1) {
@@ -311,54 +329,60 @@ export function paintRivers(ctx: PaintCtx): JSX.Element | null {
   let stones = '';
   let stoneHi = '';
   let ripples = '';
+  // a ford on a junction hex (101's (7,0)) has a run per branch: their shallows are filled again over the light edges so
+  // no seam shows where they overlap, and the hex gets one crossing, not one per branch
+  let fordWaterJoin = '';
   for (const f of fords) {
-    for (const s of samples) {
-      for (const run of hexRun(s, f.id)) {
-        fordBank += ribbon(run, 3.5);
-        fordWater += ribbon(run, 0);
-        // the sample closest to the hex centre carries the crossing
-        let best = run[0];
-        for (const q of run) if (Math.hypot(q.p.x - f.x, q.p.y - f.y) < Math.hypot(best.p.x - f.x, best.p.y - f.y)) best = q;
-        const R = rng(1000 + f.id * 7);
-        const tng = { x: best.n.y, y: -best.n.x };
-        const w = best.hw;
-        // sand bar across the flow
-        const bar: Pt[] = [];
-        const nb = 10;
-        for (let k = 0; k < nb; k++) {
-          const a = (k / nb) * Math.PI * 2;
-          const along = Math.cos(a) * (w + 3);
-          const across = Math.sin(a) * (6.5 + R() * 1.5);
-          bar.push(add(best.p, add(mul(best.n, along), mul(tng, across))));
+    const runs = samples.flatMap((s) => hexRun(s, f.id));
+    let crossed = false;
+    for (const run of runs) {
+      fordBank += ribbon(run, 3.5);
+      fordWater += ribbon(run, 0);
+      if (runs.length > 1) fordWaterJoin += ribbon(run, 0);
+      if (crossed) continue;
+      crossed = true;
+      // the sample closest to the hex centre carries the crossing
+      let best = run[0];
+      for (const q of run) if (Math.hypot(q.p.x - f.x, q.p.y - f.y) < Math.hypot(best.p.x - f.x, best.p.y - f.y)) best = q;
+      const R = rng(1000 + f.id * 7);
+      const tng = { x: best.n.y, y: -best.n.x };
+      const w = best.hw;
+      // sand bar across the flow
+      const bar: Pt[] = [];
+      const nb = 10;
+      for (let k = 0; k < nb; k++) {
+        const a = (k / nb) * Math.PI * 2;
+        const along = Math.cos(a) * (w + 3);
+        const across = Math.sin(a) * (6.5 + R() * 1.5);
+        bar.push(add(best.p, add(mul(best.n, along), mul(tng, across))));
+      }
+      fordSand += polyPath(bar);
+      // stepping stones
+      const nst = 5;
+      for (let k = 0; k < nst; k++) {
+        const along = -w * 0.8 + (k / (nst - 1)) * w * 1.6;
+        const jig = (k % 2 === 0 ? 1.6 : -1.6) + (R() - 0.5) * 1.5;
+        const c = add(best.p, add(mul(best.n, along), mul(tng, jig)));
+        const rx = 3.1 + R() * 1.0;
+        const ry = 2.5 + R() * 0.8;
+        const st: Pt[] = [];
+        for (let m = 0; m < 7; m++) {
+          const a = (m / 7) * Math.PI * 2 + R() * 0.3;
+          st.push({ x: c.x + Math.cos(a) * rx * (0.85 + R() * 0.3), y: c.y + Math.sin(a) * ry * (0.85 + R() * 0.3) });
         }
-        fordSand += polyPath(bar);
-        // stepping stones
-        const nst = 5;
-        for (let k = 0; k < nst; k++) {
-          const along = -w * 0.8 + (k / (nst - 1)) * w * 1.6;
-          const jig = (k % 2 === 0 ? 1.6 : -1.6) + (R() - 0.5) * 1.5;
-          const c = add(best.p, add(mul(best.n, along), mul(tng, jig)));
-          const rx = 3.1 + R() * 1.0;
-          const ry = 2.5 + R() * 0.8;
-          const st: Pt[] = [];
-          for (let m = 0; m < 7; m++) {
-            const a = (m / 7) * Math.PI * 2 + R() * 0.3;
-            st.push({ x: c.x + Math.cos(a) * rx * (0.85 + R() * 0.3), y: c.y + Math.sin(a) * ry * (0.85 + R() * 0.3) });
-          }
-          stones += polyPath(st);
-          stoneHi += `M${fmt(c.x - rx * 0.45)},${fmt(c.y - ry * 0.35)}l${fmt(rx * 0.6)},${fmt(-ry * 0.2)}`;
-        }
-        // ripples up/downstream of the crossing
-        for (const dir of [-1, 1]) {
-          for (let k = 0; k < 2; k++) {
-            const off = (10 + k * 6) * dir;
-            const ctr = add(best.p, mul(tng, off));
-            const half = w * (0.55 - k * 0.15);
-            const a = add(ctr, mul(best.n, -half));
-            const b = add(ctr, mul(best.n, half));
-            const cc = add(ctr, mul(tng, 2.5 * dir));
-            ripples += `M${fmt(a.x)},${fmt(a.y)}Q${fmt(cc.x)},${fmt(cc.y)} ${fmt(b.x)},${fmt(b.y)}`;
-          }
+        stones += polyPath(st);
+        stoneHi += `M${fmt(c.x - rx * 0.45)},${fmt(c.y - ry * 0.35)}l${fmt(rx * 0.6)},${fmt(-ry * 0.2)}`;
+      }
+      // ripples up/downstream of the crossing
+      for (const dir of [-1, 1]) {
+        for (let k = 0; k < 2; k++) {
+          const off = (10 + k * 6) * dir;
+          const ctr = add(best.p, mul(tng, off));
+          const half = w * (0.55 - k * 0.15);
+          const a = add(ctr, mul(best.n, -half));
+          const b = add(ctr, mul(best.n, half));
+          const cc = add(ctr, mul(tng, 2.5 * dir));
+          ripples += `M${fmt(a.x)},${fmt(a.y)}Q${fmt(cc.x)},${fmt(cc.y)} ${fmt(b.x)},${fmt(b.y)}`;
         }
       }
     }
@@ -400,6 +424,7 @@ export function paintRivers(ctx: PaintCtx): JSX.Element | null {
           <path d={fordBank} fill={P.sandDark} />
           <path d={fordWater} fill={P.waterShallow} />
           <path d={fordWater} fill="none" stroke={P.waterShallowEdge} strokeWidth={2} opacity={0.8} />
+          {fordWaterJoin && <path d={fordWaterJoin} fill={P.waterShallow} />}
           <path d={fordSand} fill={P.sand} opacity={0.92} />
           <path d={ripples} fill="none" stroke="rgba(240,248,245,0.7)" strokeWidth={1.1} strokeLinecap="round" />
           <path d={stones} fill={P.stone} stroke={P.stoneDark} strokeWidth={0.9} />

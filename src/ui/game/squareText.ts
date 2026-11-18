@@ -10,7 +10,7 @@ export function trackCount(s: GameState, side: Side): number {
 export function commandText(s: GameState, side: Side): string {
   const p = s.players[side];
   const n = trackCount(s, side);
-  return `Hand ${p.hand.length} of ${p.cards}${n ? ` · ${n} on the square track` : ''}`;
+  return `Hand ${p.hand.length} of ${s.special.handSize[side]}${n ? ` · ${n} on the square track` : ''}`;
 }
 
 /** Tooltip lines of a unit in square; none for any other unit. */

@@ -15,6 +15,20 @@ export const GROUP_COLORS: Record<CardGroup, { main: string; light: string; dark
   tactic: { main: '#55235f', light: '#8a539c', dark: '#2d1035', label: 'Tactic' },
 };
 
+/** The colour token of each nation's side (army name, side chip, log mark): a key of `theme.color`. */
+export const NATION_COLOUR = {
+  FR: 'royal',
+  BR: 'crimson',
+  PT: 'portuguese',
+  AL: 'allied',
+  SP: 'spanishInk',
+} as const satisfies Record<Nation, string>;
+
+/** The CSS colour of a nation's side, as a `--kit-*` custom property. */
+export function nationInk(nation: Nation): string {
+  return `var(--kit-${NATION_COLOUR[nation].replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)})`;
+}
+
 /** Design tokens. The same values are exposed as CSS custom properties in theme.css (`--kit-*`). */
 export const theme = {
   font: {
@@ -35,7 +49,7 @@ export const theme = {
     ink: '#221c16',
     inkSoft: '#594a39',
     rule: '#3b3127',
-    /** your side: army name, side chip, log edge, a finished dice order */
+    /** a finished dice order (the sides are coloured by nation: `nationInk`) */
     green: '#2f5d2a',
     bronze: '#8a6f48',
     bronzeLight: '#b59c74',
@@ -44,6 +58,11 @@ export const theme = {
     crimson: '#a3262a',
     royal: '#1f3f8a',
     spanish: '#a67a12',
+    /** Spanish yellow deepened for text (the plain yellow is a 3:1 mark, not a text colour) */
+    spanishInk: '#735409',
+    /** Portugal and the Allies are brown, as on their pieces (art/palettes) */
+    portuguese: '#6b4018',
+    allied: '#5e3a17',
     purple: '#55235f',
     olive: '#6b6a2a',
     felt: '#ddd2b4',

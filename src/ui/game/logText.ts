@@ -2,7 +2,7 @@
 // a roll. Pure: it reads the states before and after the event and says what happened, nothing is hidden that the table
 // would not see (a card is named only when it has been shown).
 import {
-  CARD_DEFS, OFF_BOARD, UNIT_STATS, cardKind, pieceById,
+  CARD_DEFS, OFF_BOARD, UNIT_STATS, cardKind, other, pieceById,
   type DieFace, type GameEvent, type GameState, type Leader, type RollPurpose, type Side, type Unit,
 } from '../../engine';
 import type { LogLine } from './controller';
@@ -32,7 +32,11 @@ const VERB: Record<Exclude<RollPurpose, 'elan' | 'rally'>, string> = {
 };
 
 /** Title of a roll in the dice tray. */
-export function rollTitle(p: RollPurpose, by: string | null, against: string | null, s: GameState): string {
+export function rollTitle(p: RollPurpose, by: string | null, against: string | null, s: GameState, reroll = false): string {
+  return rollTitleOf(p, by, against, s) + (reroll ? ' — flags re-rolled' : '');
+}
+
+function rollTitleOf(p: RollPurpose, by: string | null, against: string | null, s: GameState): string {
   const a = by ? nameOf(by, s) : '';
   const t = against ? nameOf(against, s) : '';
   switch (p) {
@@ -59,7 +63,7 @@ export function rollSummary(p: RollPurpose, faces: DieFace[], scoring: boolean[]
     return parts.join(', ') || 'No dice';
   }
   if (p === 'escape') return faces.includes('sabre') ? 'The leader is hit!' : 'The leader is safe';
-  if (p === 'guerrilla') return faces.includes('sabre') ? 'A sabre: the card stands' : 'No sabre: the card is cancelled';
+  if (p === 'guerrilla') return faces.includes('sabre') ? 'Sabre: the card stands' : 'No sabre: the card is lost';
   if (p === 'leaderCheck') return `${plural(faces.filter((f) => f === 'sabre').length, 'sabre')} rolled`;
   const hits = scoring.filter(Boolean).length;
   const flags = faces.filter((f) => f === 'flag').length;
@@ -76,6 +80,11 @@ export function rollSummary(p: RollPurpose, faces: DieFace[], scoring: boolean[]
 export function eventLog(e: GameEvent, before: GameState, after: GameState, human: Side): Omit<LogLine, 'id'> | null {
   const army = (side: Side) => after.players[side].army;
   const who = (id: string) => nameOf(id, after, before);
+  // an objective's text carries the id of the unit that scored it (the engine fills in `{unit}`): say what the unit was
+  const named = (text: string) => text.replace(/[.\s]+$/, '').replace(/\b[uL]\d+\b/g, (id) => {
+    const p = find(id, after, before);
+    return !p ? 'unit' : 'key' in p ? UNIT_STATS[p.key].name : p.name || 'Leader';
+  });
   const sideOf = (id: string) => find(id, after, before)?.side;
   const hexes = (path: number[]) => Math.max(0, path.filter((h) => h >= 0).length - 1);
   const line = (text: string, kind: LogLine['kind'], side?: Side): Omit<LogLine, 'id'> => ({ text, kind, ...(side ? { side } : {}) });
@@ -121,7 +130,10 @@ export function eventLog(e: GameEvent, before: GameState, after: GameState, huma
       // a roll that no combat line announced says what it is for; the short arrow follows an attack's own line
       const alone = e.purpose === 'elan' || e.purpose === 'rally' || e.purpose === 'leaderCheck' || e.purpose === 'escape';
       const tail = (e.purpose === 'escape' ? summary.charAt(0).toLowerCase() + summary.slice(1) : summary).replace(/[.!]$/, '');
-      const text = alone ? `${rollTitle(e.purpose, e.by, e.against, before)}: ${tail}.` : `→ ${summary}.`;
+      // the lancers' second roll is one event for the whole attack: it cannot say which die came from whom
+      const again = e.reroll ? `re-rolled flags${e.from && e.from.length > 1 ? ' (with guns)' : ''}: ` : '';
+      const text = e.purpose === 'guerrilla' ? `${rollTitle(e.purpose, null, null, before)} — ${summary}.`
+        : alone ? `${rollTitle(e.purpose, e.by, e.against, before)}: ${tail}.` : `→ ${again}${summary}.`;
       return line(text, 'combat', by ? sideOf(by) : undefined);
     }
     case 'damage':
@@ -129,7 +141,7 @@ export function eventLog(e: GameEvent, before: GameState, after: GameState, huma
     case 'eliminated':
       return line(`${who(e.id)} is eliminated.`, 'result', sideOf(e.id));
     case 'removed':
-      return line(`${who(e.id)} removed from the field (${e.reason}).`, 'result', sideOf(e.id));
+      return line(e.reason === 'broken' ? `${who(e.id)} leaves the field.` : `${who(e.id)} removed from the field (${e.reason}).`, 'result', sideOf(e.id));
     case 'leaderKilled':
       return line(`${who(e.id)} is slain.`, 'result', sideOf(e.id));
     case 'leaderSafe':
@@ -153,32 +165,37 @@ export function eventLog(e: GameEvent, before: GameState, after: GameState, huma
     case 'shortSupply':
       return line(`${who(e.id)} is moved by Short Supply.`, 'result', sideOf(e.id));
     case 'banner':
-      return line(`The ${army(e.side)} army gains a Victory Banner (${e.total}/${after.bannersToWin}) — ${e.reason}.`, 'banner', e.side);
+      return line(`The ${army(e.side)} army gains a Victory Banner (${e.total}/${after.bannersToWin}) — ${named(e.reason)}.`, 'banner', e.side);
     case 'held':
-      return line(`The ${army(e.side)} army now holds ${plural(e.held, 'banner')} (${e.total}/${after.bannersToWin}) — ${e.reason}.`, 'banner', e.side);
+      return line(`The ${army(e.side)} army now holds ${plural(e.held, 'banner')} (${e.total}/${after.bannersToWin}) — ${named(e.reason)}.`, 'banner', e.side);
     case 'draw':
       return line(`The ${army(e.side)} army draws a card.`, 'info', e.side);
     case 'scoutDrew':
       return line(`The ${army(e.side)} army draws two cards and keeps one.`, 'info', e.side);
     case 'discarded':
       // a Scout's second card is discarded face up (RR §12.4): named for either side
-      return line(`The ${army(e.side)} army discards ${CARD_DEFS[cardKind(e.card)].title}.`, 'card', e.side);
+      // and so is a card taken from a shrinking hand (106)
+      return line(`The ${army(e.side)} army discards ${CARD_DEFS[cardKind(e.card)].title}, face up.`, 'card', e.side);
     case 'reshuffle':
       return line('The command deck is reshuffled.', 'info');
     case 'log':
       // the engine's own casualty notes repeat the worded `eliminated` / `leaderKilled` lines (with raw ids)
-      if (/ is (eliminated|killed) \(/.test(e.text)) return null;
+      if (/ is (eliminated|killed) \(/.test(e.text) || / leaves the field \(broken\)\.$/.test(e.text)) return null;
       return line(e.text, 'info', e.side);
     case 'victory':
-      return line(`Victory: ${e.winner === 'draw' ? 'Draw' : army(e.winner)} — ${e.reason}.`, 'victory');
+      return line(`Victory: ${e.winner === 'draw' ? 'Draw' : army(e.winner)} — ${named(e.reason)}.`, 'victory');
     case 'guerrilla': {
-      const counters = `${plural(e.held, 'counter')} held, ${e.pool} in the pool`;
-      if (e.what === 'gained') return line(`The ${army(e.side)} army takes a Guerrilla counter (${counters}).`, 'info', e.side);
-      return line(e.what === 'cancelled' ? `Guerrilla Action cancels the card (${counters}).` : `Guerrilla Action fails: the card stands (${counters}).`, 'result', e.side);
+      // `e.side` is the guerrilla side; the card at stake is its opponent's
+      if (e.what === 'gained') return line(`The ${army(e.side)} army gains a Guerrilla counter (${e.held} held).`, 'info', e.side);
+      return line(
+        e.what === 'cancelled' ? `Guerrillas cut the ${army(other(e.side))} orders: the card is lost.` : `The guerrillas strike, but the ${army(other(e.side))} card stands (sabre).`,
+        'result', e.side,
+      );
     }
     case 'moveFirst': {
       const pick = (side: Side) => (e.picks[side] === null ? 'no card' : `${CARD_DEFS[cardKind(e.picks[side])].title} (${e.values[side]})`);
-      return line(`Opening cards revealed: ${army('top')} ${pick('top')}, ${army('bottom')} ${pick('bottom')}. The ${army(e.first)} army moves first.`, 'card', e.first);
+      const pick2 = (side: Side) => `${army(side)} ${pick(side)}`;
+      return line(`Opening cards: ${pick2('top')} against ${pick2('bottom')}; the ${army(e.first)} army moves first.`, 'card', e.first);
     }
   }
 }

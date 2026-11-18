@@ -242,7 +242,7 @@ export class GameController {
     if (answers.length) this.addLog({ text: 'Battle resumed from your last save.', kind: 'info' });
     else {
       this.addLog({ text: `${sc.name} (${sc.year}).`, kind: 'turn' });
-      this.addLog({ text: `The ${this.driver.state.players[this.driver.state.first].army} army moves first.`, kind: 'info' });
+      if (!this.driver.state.special.moveFirst) this.addLog({ text: `The ${this.driver.state.players[this.driver.state.first].army} army moves first.`, kind: 'info' });
     }
     if (answers.length) this.driver.drainEvents();
     this.run();
@@ -645,7 +645,7 @@ export class GameController {
         break;
       }
       case 'roll': {
-        const title = rollTitle(e.purpose, e.by, e.against, after);
+        const title = rollTitle(e.purpose, e.by, e.against, after, e.reroll === true);
         const id = seq++;
         const sub = rollSummary(e.purpose, e.faces, e.scoring);
         sfx.dice(e.faces.length);

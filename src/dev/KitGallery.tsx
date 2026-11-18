@@ -330,10 +330,10 @@ export default function KitGallery() {
             <Button onClick={() => setModal(true)}>Open modal</Button>
           </div>
           <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginTop: 6 }}>
-            <SectionMiniMap sections={['left']} size={60} onDark />
-            <SectionMiniMap sections={['center']} size={60} onDark />
-            <SectionMiniMap sections={['left', 'right']} size={60} onDark />
-            <SectionMiniMap sections={['left', 'center', 'right']} counts={{ left: 1, center: 1, right: 1 }} size={90} onDark />
+            <SectionMiniMap sections={['left']} size={60} />
+            <SectionMiniMap sections={['center']} size={60} />
+            <SectionMiniMap sections={['left', 'right']} size={60} />
+            <SectionMiniMap sections={['left', 'center', 'right']} counts={{ left: 1, center: 1, right: 1 }} size={90} />
           </div>
         </div>
         <Panel title="Battle Log" style={{ width: 340 }}>
@@ -350,7 +350,7 @@ export default function KitGallery() {
           Select up to <b>3 units</b> in the <b>centre</b> section. Leaders may be ordered separately.
           <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
             <Button>Confirm</Button>
-            <Button variant="ghost" style={{ color: '#6a1512', boxShadow: 'inset 0 0 0 1px rgba(106,21,18,.4)' }}>
+            <Button variant="ghost" style={{ color: 'var(--kit-crimson)', boxShadow: 'inset 0 0 0 1px var(--kit-crimson)' }}>
               Clear
             </Button>
           </div>
@@ -361,7 +361,7 @@ export default function KitGallery() {
             <div className="kit-tooltip__title">French Line Infantry</div>
             4 blocks · melee by its blocks
             <br />
-            <i style={{ color: 'var(--kit-ink-soft)' }}>vs British Line Infantry: 1.3 expected hits</i>
+            <i style={{ color: 'var(--kit-parchment-dark)' }}>vs British Line Infantry: 1.3 expected hits</i>
           </Tooltip>
         </div>
       </div>
