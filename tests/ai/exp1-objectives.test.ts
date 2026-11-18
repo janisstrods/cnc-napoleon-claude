@@ -1,0 +1,277 @@
+// The AI and the Expansion #1 objectives and battle rules (Plan 7C Task 20; RR §15.8, §16): pulls towards tempAny, majority and
+// exitEdge objectives, the held-banner threat of a majority, and the banner value of an elimination under suddenDeath,
+// breakOnLosses and handShrink. Positions are the real battles' setups with a few units moved or removed.
+import { describe, expect, it } from 'vitest';
+import {
+  GameDriver, OFF_BOARD, cloneState, createGame, distance, rowOf, hexId, neighbours, sectionsOf, type Answer, type CardKind, type GameState, type HexId, type Side,
+} from '../../src/engine';
+import { scenarioById } from '../../src/scenarios';
+import { occOf } from '../../src/ai/board';
+import { evalTerms, objectiveHexes } from '../../src/ai/evaluate';
+import { bannerValue } from '../../src/ai/estimate';
+import { makeBudget } from '../../src/ai/budget';
+import { greedyMoveStep, type MoveCtx } from '../../src/ai/moves';
+import { pieceBenefits } from '../../src/ai/ordering';
+import { Rng } from '../../src/ai/rand';
+import { CARD_VALUE, NEUTRAL_W, bannerStep, bannerScore, unitValue } from '../../src/ai/values';
+import { giveCard, must, noFirstStrike } from '../rules/helpers';
+import { failOnAiErrors } from './no-ai-errors';
+
+failOnAiErrors();
+
+const W = NEUTRAL_W;
+const H = (r: number, c: number): HexId => hexId(r, c);
+
+/** Battle `id` at its setup (seed 1). */
+const real = (id: string): GameState => createGame(scenarioById(id).setup, 1);
+
+/** Keep only the units `ids` (and the leaders standing with them), each moved to its hex when one is given. */
+function keep(s: GameState, ids: Record<string, HexId | null>): GameState {
+  const was = new Map(s.units.map((u) => [u.id, u.hex]));
+  s.units = s.units.filter((u) => u.id in ids);
+  s.leaders = s.leaders.filter((l) => s.units.some((u) => was.get(u.id) === l.hex && u.side === l.side));
+  for (const u of s.units) {
+    const to = ids[u.id];
+    if (to === null || to === undefined) continue;
+    for (const l of s.leaders) if (l.hex === u.hex && l.side === u.side) l.hex = to;
+    u.hex = to;
+  }
+  return s;
+}
+
+/** `side`'s move decision with `id` ordered by the Attack card of its section. */
+function atMove(s: GameState, side: Side, id: string): GameDriver {
+  s.active = side;
+  noFirstStrike(s);
+  const u = s.units.find((x) => x.id === id)!;
+  const sec = sectionsOf(u.hex, side)[0];
+  const kind = (`attack${sec === 'left' ? 'L' : sec === 'center' ? 'C' : 'R'}`) as CardKind;
+  const card = giveCard(s, side, kind);
+  const d = new GameDriver(s);
+  must(d, { kind: 'playCard', card });
+  if (d.pending?.kind === 'orders') must(d, { kind: 'orders', pieces: [id] });
+  while (d.pending?.kind === 'leaveSquare') must(d, { kind: 'yesno', yes: false });
+  if (d.pending?.kind !== 'move') throw new Error(`no move decision: ${d.pending?.kind}`);
+  return d;
+}
+
+const mcOf = (s: GameState, me: Side): MoveCtx => ({ me, W, occ: occOf(s), style: 'base', rand: new Rng(7), budget: makeBudget(1_000_000, null, null) });
+
+/** Where `id` ends after the greedy move step (OFF_BOARD when it steps off). */
+function moveOf(s: GameState, me: Side, id: string): HexId {
+  const a: Answer = greedyMoveStep(s, mcOf(s, me));
+  return a.kind === 'move' && a.piece === id ? a.to : s.units.find((u) => u.id === id)!.hex;
+}
+
+const nearestEnemy = (s: GameState, side: Side, h: HexId): number =>
+  Math.min(99, ...s.units.filter((u) => u.side !== side).map((u) => distance(u.hex, h)));
+
+describe('the carry from Task 5: the evaluation sees the Expansion #1 objectives', () => {
+  it('117: the three Spanish banners held at the start count in the banners term; their hills are objective hexes', () => {
+    const s = real('117');
+    expect(s.special.objState.filter((x) => x.held)).toHaveLength(3);
+    const T = s.bannersToWin;
+    // each held group counts at the chance it is kept: well above two banner steps, at most three
+    const banners = evalTerms(s, 'top', W).banners;
+    expect(banners).toBeGreaterThan(0.8 * bannerScore(3, T));
+    expect(banners).toBeLessThanOrEqual(bannerScore(3, T) + 1e-9);
+    expect(evalTerms(s, 'bottom', W).banners).toBeCloseTo(-banners, 9);
+    const groups = s.scenario.objectives.flatMap((o) => (o.kind === 'majority' && o.side === 'top' ? o.hexes : []));
+    expect(groups).toHaveLength(19);
+    expect(new Set(objectiveHexes(s, 'top'))).toEqual(new Set(groups));
+  });
+
+  it('115: both Albuera hexes are French objective hexes; a held Albuera counts as a banner for the French', () => {
+    const s = real('115');
+    expect(new Set(objectiveHexes(s, 'bottom'))).toEqual(new Set([H(4, 9), H(4, 10)]));
+    const base = evalTerms(s, 'bottom', W).banners;
+    const held = real('115');
+    const fr = held.units.find((u) => u.id === 'u27')!;
+    fr.hex = H(4, 10);
+    held.special.objState[0] = { held: true, count: 0, holders: ['u27'] };
+    const diff = evalTerms(held, 'bottom', W).banners - base;
+    expect(diff).toBeGreaterThan(0.5 * bannerStep(1, held.bannersToWin));
+    expect(diff).toBeLessThanOrEqual(bannerStep(1, held.bannersToWin) + 1e-9);
+  });
+
+  it('102: the Spanish baseline becomes an objective once the three free exits are used', () => {
+    const s = real('102');
+    expect(objectiveHexes(s, 'top')).toEqual([]);
+    s.special.objState[0].count = 3;
+    const row0 = objectiveHexes(s, 'top');
+    expect(row0.length).toBeGreaterThanOrEqual(12);
+    expect(row0.every((h) => rowOf(h) === 0)).toBe(true);
+  });
+});
+
+describe('suddenDeath (105)', () => {
+  it('105: the French value the last Spanish gun as the win; the Spanish keep their last gun out of reach', () => {
+    const s = real('105');
+    const T = s.bannersToWin;
+    const gun = (x: GameState, id: string) => x.units.find((u) => u.id === id)!;
+    // three guns left: the first is an ordinary banner
+    expect(bannerValue(s, 'bottom', gun(s, 'u17'))).toBeCloseTo(bannerStep(1, T), 9);
+    // the last gun is the win
+    const last = real('105');
+    last.units = last.units.filter((u) => u.id !== 'u4' && u.id !== 'u11');
+    last.special.objState[0].count = 2;
+    expect(bannerValue(last, 'bottom', gun(last, 'u17'))).toBeGreaterThanOrEqual(bannerStep(T, T));
+    // another Spanish unit is still one banner
+    expect(bannerValue(last, 'bottom', gun(last, 'u8'))).toBeCloseTo(bannerStep(1, T), 9);
+
+    // the last gun, two hexes from French line infantry in the open, falls back out of their reach
+    const at = H(4, 6);
+    const make = (lastGun: boolean): GameState => {
+      const x = keep(real('105'), { u4: H(0, 0), u11: H(0, 12), u17: at, u8: H(1, 1), u21: H(6, 6), u22: H(6, 7), u31: H(8, 10) });
+      if (lastGun) {
+        x.units = x.units.filter((u) => u.id !== 'u4' && u.id !== 'u11');
+        x.special.objState[0].count = 2;
+      }
+      return atMove(x, 'top', 'u17').state;
+    };
+    const lastS = make(true);
+    expect(nearestEnemy(lastS, 'top', at)).toBe(2);
+    const to = moveOf(lastS, 'top', 'u17');
+    expect(nearestEnemy(lastS, 'top', to)).toBeGreaterThanOrEqual(3);
+    // with three guns left the same gun stands and fires
+    const first = make(false);
+    expect(moveOf(first, 'top', 'u17')).toBe(at);
+    // the threat to the last gun weighs more in the Spanish evaluation than the threat to the first
+    const drop = (x: GameState): number => evalTerms(cloneUnitTo(x, 'u17', to), 'top', W).riskMine - evalTerms(x, 'top', W).riskMine;
+    expect(drop(lastS)).toBeGreaterThan(1.4 * drop(first));
+  });
+});
+
+/** A copy of `s` with unit `id` on `hex`. */
+function cloneUnitTo(s: GameState, id: string, hex: HexId): GameState {
+  const c = cloneState(s);
+  c.units.find((u) => u.id === id)!.hex = hex;
+  return c;
+}
+
+describe('majority (114, 117)', () => {
+  const ridge = (s: GameState): HexId[] => {
+    const o = s.scenario.objectives[0];
+    if (o.kind !== 'majority') throw new Error('114: no majority');
+    return [...o.hexes];
+  };
+
+  it('114: a unit moves onto the ridge to break a tie; an empty ridge hex next to the enemy draws a defender', () => {
+    // a tie, one hex each: neither side holds the ridge; a French line next to it steps on
+    const tie = keep(real('114'), { u16: null, u1: null, u19: H(5, 4), u18: H(6, 2) });
+    tie.special.objState[0].held = false;
+    const s = atMove(tie, 'bottom', 'u18').state;
+    expect(ridge(s)).toContain(H(5, 4));
+    const to = moveOf(s, 'bottom', 'u18');
+    expect(ridge(s)).toContain(to);
+
+    // the British hold the ridge by one hex; a French line stands next to the empty (5,2): a British unit moves onto the ridge
+    const held = keep(real('114'), { u16: null, u15: H(4, 1), u1: null, u18: H(6, 2) });
+    expect(held.special.objState[0].held).toBe(true);
+    const h = atMove(held, 'top', 'u15').state;
+    expect(neighbours(H(6, 2))).toContain(H(5, 2));
+    const toH = moveOf(h, 'top', 'u15');
+    expect(ridge(h)).toContain(toH);
+    // the defender raises the chance the held banner is kept
+    expect(evalTerms(cloneUnitTo(h, 'u15', toH), 'top', W).banners).toBeGreaterThan(evalTerms(h, 'top', W).banners);
+  });
+
+  it('a held majority with a margin of one is worth less than with a margin of two when the enemy can enter', () => {
+    const one = keep(real('114'), { u16: null, u1: null, u18: H(6, 2) });
+    const two = keep(real('114'), { u16: null, u15: null, u1: null, u18: H(6, 2) });
+    expect(evalTerms(two, 'top', W).banners).toBeGreaterThan(evalTerms(one, 'top', W).banners);
+  });
+});
+
+describe('exitEdge (102)', () => {
+  it('102: a Spanish unit on the baseline exits once three have gone, not before unless in danger', () => {
+    const make = (exits: number, danger: boolean): GameState => {
+      const units: Record<string, HexId | null> = { u2: H(0, 6), u1: H(2, 2), u16: H(6, 10), u23: H(7, 5) };
+      if (danger) Object.assign(units, { u24: H(0, 5), u25: H(1, 5), u26: H(1, 6) });
+      const x = keep(real('102'), units);
+      x.special.objState[0].count = exits;
+      if (danger) x.units.find((u) => u.id === 'u2')!.blocks = 1;
+      return atMove(x, 'top', 'u2').state;
+    };
+    expect(moveOf(make(3, false), 'top', 'u2')).toBe(OFF_BOARD);
+    expect(moveOf(make(0, false), 'top', 'u2')).not.toBe(OFF_BOARD);
+    expect(moveOf(make(0, true), 'top', 'u2')).toBe(OFF_BOARD);
+    // once the free exits are used, a Spanish unit two rows off its baseline heads for it rather than for the French
+    const x = keep(real('102'), { u2: H(2, 6), u1: H(2, 2), u16: H(6, 10), u23: H(7, 5) });
+    x.special.objState[0].count = 3;
+    const s = atMove(x, 'top', 'u2').state;
+    const to = moveOf(s, 'top', 'u2');
+    expect(to === OFF_BOARD || rowOf(to) < 2).toBe(true);
+  });
+});
+
+describe('tempAny (115)', () => {
+  it('115: the French move onto Albuera before their turn ends to hold it next turn', () => {
+    // the British light infantry holds (4,9); a French line on the bridge takes the free Albuera hex (4,10)
+    const x = keep(real('115'), { u7: null, u27: H(5, 9), u11: null, u1: null });
+    const s = atMove(x, 'bottom', 'u27').state;
+    expect(moveOf(s, 'bottom', 'u27')).toBe(H(4, 10));
+    // with Albuera empty and the British off to the west, French light cavalry two hexes away rides onto it
+    const y = keep(real('115'), { u33: H(6, 9), u11: null, u13: null });
+    const t = atMove(y, 'bottom', 'u33').state;
+    expect([H(4, 9), H(4, 10)]).toContain(moveOf(t, 'bottom', 'u33'));
+  });
+});
+
+describe('breakOnLosses (101) and handShrink (106)', () => {
+  it('101: the second Swiss loss is worth more to the Spanish than the first', () => {
+    const s = real('101');
+    const swiss = (x: GameState, id: string) => x.units.find((u) => u.id === id)!;
+    const first = bannerValue(s, 'top', swiss(s, 'u17'));
+    expect(first).toBeCloseTo(bannerStep(1, s.bannersToWin), 9);
+    const after = real('101');
+    after.units = after.units.filter((u) => u.id !== 'u18');
+    after.players.top.banners = 1;
+    const second = bannerValue(after, 'top', swiss(after, 'u17'));
+    // the second loss removes the other two Swiss: their worth comes with it
+    const removed = unitValue(after, swiss(after, 'u19')) + unitValue(after, swiss(after, 'u20'));
+    expect(second - bannerStep(2, after.bannersToWin)).toBeCloseTo(removed, 9);
+    expect(second).toBeGreaterThan(first + 1);
+    // a French line is an ordinary banner either way; the Spanish Swiss have no such rule
+    expect(bannerValue(after, 'top', swiss(after, 'u22'))).toBeCloseTo(bannerStep(2, after.bannersToWin), 9);
+    expect(bannerValue(after, 'bottom', swiss(after, 'u8'))).toBeCloseTo(bannerStep(1, after.bannersToWin), 9);
+  });
+
+  it('106: a French banner costs the Allies one CARD_VALUE while their hand is above the floor', () => {
+    const s = real('106');
+    const ally = s.units.find((u) => u.side === 'top')!;
+    const T = s.bannersToWin;
+    expect(bannerValue(s, 'bottom', ally)).toBeCloseTo(bannerStep(1, T) + CARD_VALUE, 9);
+    s.special.handSize.top = 3;
+    expect(bannerValue(s, 'bottom', ally)).toBeCloseTo(bannerStep(1, T), 9);
+    // the evaluation counts the hand the rule has left: one card fewer is one CARD_VALUE less for the Allies
+    const full = real('106');
+    const shrunk = real('106');
+    shrunk.special.handSize.top = 5;
+    shrunk.discard.push(shrunk.players.top.hand.pop()!);
+    expect(evalTerms(full, 'top', W).banners - evalTerms(shrunk, 'top', W).banners).toBeCloseTo(CARD_VALUE, 9);
+  });
+});
+
+describe('ordering: what an order gains under the new objectives', () => {
+  it('102: stepping off the baseline is a reason to order a unit once the free exits are used, not before', () => {
+    const make = (exits: number): GameState => {
+      const x = keep(real('102'), { u2: H(0, 6), u1: H(2, 2), u16: H(6, 10), u23: H(7, 5) });
+      x.special.objState[0].count = exits;
+      return x;
+    };
+    const open = pieceBenefits(make(3), 'top', 'attackC', W).get('u2') ?? 0;
+    const shut = pieceBenefits(make(0), 'top', 'attackC', W).get('u2') ?? 0;
+    expect(open).toBeGreaterThanOrEqual(0.5);
+    expect(shut).toBeLessThan(open);
+  });
+
+  it('115: a French unit that can step onto Albuera gains more from an order than without the objective', () => {
+    const make = (objective: boolean): GameState => {
+      const x = keep(real('115'), { u33: H(6, 9), u11: null, u13: null });
+      if (!objective) x.scenario = { ...x.scenario, objectives: [] };
+      return x;
+    };
+    expect(pieceBenefits(make(true), 'bottom', 'attackR', W).get('u33') ?? 0).toBeGreaterThan(pieceBenefits(make(false), 'bottom', 'attackR', W).get('u33') ?? 0);
+  });
+});

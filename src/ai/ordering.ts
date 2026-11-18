@@ -7,8 +7,8 @@
 // permissions decide what an ordered piece can do. Each piece costs a bounded number of estimates (`KEPT`), so the work is
 // linear in the pieces.
 import {
-  CARD_DEFS, CARD_LIST, NO_MODS, SECTIONS, autoOrders, battleTargets, canFireAt, cardKind, distance, effectiveCard, eligiblePieces, fallbackActive,
-  fireDice, isLoneLeader, leaderMoves, leaderUnit, leadersOf, meleeDice, newOrderedPiece, orderLimit, other, sectionsOf, statsOf, unitMoves,
+  ALL_HEXES, CARD_DEFS, CARD_LIST, NO_MODS, SECTIONS, autoOrders, battleTargets, canFireAt, cardKind, distance, effectiveCard, eligiblePieces, fallbackActive,
+  fireDice, isLoneLeader, leaderMoves, leaderUnit, leadersOf, meleeDice, newOrderedPiece, orderLimit, other, rowOf, sectionsOf, statsOf, unitMoves,
   unitsOf, validateOrders, OFF_BOARD,
   type CardKind, type GameState, type HexId, type Leader, type OrderedPiece, type SectionName, type Side, type Unit,
 } from '../engine';
@@ -112,11 +112,28 @@ export function pieceBenefits(s: GameState, me: Side, kind: CardKind | null, W: 
     return d;
   };
   const wants: { hex: HexId; banners: number }[] = [];
-  for (const o of s.scenario.objectives) {
-    if (o.side !== me) continue;
+  /** Units of `side` on `hexes` (lone leaders never count, R65). */
+  const count = (side: Side, hexes: readonly HexId[]): number => hexes.filter((h) => occ.unit[h]?.side === side).length;
+  /** `exitEdge` objectives of `me`: whether its free exits are used (each later exit scores). */
+  const edges: { open: boolean }[] = [];
+  s.scenario.objectives.forEach((o, i) => {
+    if (o.side !== me) return;
     if (o.kind === 'tempHex' || o.kind === 'exit') wants.push({ hex: o.hex, banners: o.banners });
     else if (o.kind === 'tempGroup') for (const h of o.hexes) wants.push({ hex: h, banners: o.banners / o.hexes.length });
-  }
+    // any one hex of the group is enough
+    else if (o.kind === 'tempAny') for (const h of o.hexes) wants.push({ hex: h, banners: o.banners });
+    else if (o.kind === 'majority') {
+      // while its count does not pass the enemy's, the hexes it lacks share the banner by how many it needs
+      const m = count(me, o.hexes);
+      const e = count(other(me), o.hexes);
+      if (s.special.objState[i]?.held || m > e) return;
+      for (const h of o.hexes) if (occ.unit[h]?.side !== me) wants.push({ hex: h, banners: o.banners / (e - m + 1) });
+    } else if (o.kind === 'exitEdge') {
+      const open = (s.special.objState[i]?.count ?? 0) >= o.free;
+      edges.push({ open });
+      if (open) for (const h of ALL_HEXES) if (rowOf(h) === o.row) wants.push({ hex: h, banners: o.banners });
+    }
+  });
   const pull = (h: HexId): number => {
     let best = 99;
     let b = 0;
@@ -130,6 +147,12 @@ export function pieceBenefits(s: GameState, me: Side, kind: CardKind | null, W: 
     return best === 99 ? 0 : -OBJ_STEP * b * best;
   };
   const exits = s.scenario.objectives.some((o) => o.kind === 'exit' && o.side === me);
+  /**
+   * May stepping off the board pay for `u`: an exit objective, or a baseline exit once its free exits are used or while the unit
+   * is at risk (battered with the enemy close: stepping off is removal, the enemy scores nothing).
+   */
+  const exitPays = (u: Unit): boolean =>
+    exits || edges.some((e) => e.open || (u.blocks * 2 <= u.maxBlocks && nearest(u.hex) <= 2));
   const dash = (u: Unit): number => (statsOf(s, u).arm === 'cavalry' ? W.cavalryDash : 1);
   for (const u of unitsOf(s, me)) {
     if (!v.turn.ordered[u.id]) continue;
@@ -148,7 +171,7 @@ export function pieceBenefits(s: GameState, me: Side, kind: CardKind | null, W: 
     const pull0 = pull(u.hex);
     for (const t of moves) {
       if (t.hex === OFF_BOARD) {
-        if (exits) exit = EXIT_BENEFIT;
+        if (exitPays(u)) exit = EXIT_BENEFIT;
         continue;
       }
       const moved = t.path.length - 1;
