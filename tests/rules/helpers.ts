@@ -193,7 +193,9 @@ export function endTurn(d: GameDriver): void {
       case 'battle': must(d, { kind: 'endBattle' }); break;
       case 'orders': must(d, { kind: 'orders', pieces: [] }); break;
       case 'leaveSquare':
-      case 'advance': must(d, { kind: 'yesno', yes: false }); break;
+      case 'advance':
+      case 'guerrilla': must(d, { kind: 'yesno', yes: false }); break;
+      case 'moveFirst': must(d, { kind: 'playCard', card: p.options[0] }); break;
       case 'combinedArms': must(d, { kind: 'select', ids: [] }); break;
       case 'defend': must(d, { kind: 'defend', choice: 'stand' }); break;
       case 'ignoreFlags': must(d, { kind: 'ignoreFlags', count: 0 }); break;

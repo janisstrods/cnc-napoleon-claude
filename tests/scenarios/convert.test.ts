@@ -80,7 +80,7 @@ describe('convertBattle', () => {
   it('refuses Expansion #1 data, naming every unsupported feature (Plan 7)', () => {
     expect(unsupportedFeatures(RAW['101'])).toContain('unit type SP/LN ×' + RAW['101'].units.filter((u) => u.key === 'SP/LN').length);
     expect(() => convertBattle(RAW['101'], meta(), e('101'))).toThrow(/^101: not yet supported \(Plan 7\): .*unit type SP\//);
-    expect(unsupportedFeatures(synth({ terrain: [{ r: 1, c: 1, t: 'walledFarm' }] }))).toContain('terrain walledFarm ×1');
+    expect(unsupportedFeatures(synth({ terrain: [{ r: 1, c: 1, t: 'marsh' }] }))).toContain('terrain marsh ×1');   // walledFarm is supported (Plan 7C Task 2)
     expect(unsupportedFeatures(synth({ guerrilla: [] }))).toContain('field guerrilla');
     expect(unsupportedFeatures(synth({ units: [{ r: 1, c: 1, side: 'bottom', key: 'FR/LNC' }] }))).toContain('unit type FR/LNC ×1');
     expect(unsupportedFeatures(synth({ terrain: [{ r: 1, c: 1, t: 'hill', redoubt: true } as never] }))).toContain('terrain key redoubt ×1');

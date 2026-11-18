@@ -46,7 +46,10 @@ export function randomAnswer(s: GameState, d: Decision, rnd: Rand): Answer {
     }
     case 'leaveSquare':
     case 'advance':
+    case 'guerrilla':
       return { kind: 'yesno', yes: rnd() < 0.5 };
+    case 'moveFirst':
+      return { kind: 'playCard', card: pick(d.options, rnd) };
     case 'move': {
       if (rnd() < 0.1) return { kind: 'endMove' };
       const ids = movablePieces(s);

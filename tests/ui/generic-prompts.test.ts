@@ -1,4 +1,4 @@
-// The game screen's prompts on the new contract: every one of the 18 decision kinds has a titled prompt with the general's
+// The game screen's prompts on the new contract: every one of the 20 decision kinds has a titled prompt with the general's
 // button (so the player is never stuck), and every button it offers is a legal answer. promptSpec is the pure description
 // the prompt bar renders.
 import { describe, expect, it } from 'vitest';
@@ -37,12 +37,14 @@ const SAMPLES: Decision[] = [
   scout,
   { kind: 'shortSupplyTarget', side: 'bottom', options: ['u1', 'u2'] },
   { kind: 'shortSupplyHex', side: 'bottom', unit: 'u1', options: [hexId(3, 5), hexId(3, 6)] },
+  { kind: 'guerrilla', side: 'bottom', mode: 'spend', card: 'attackC', held: 1, pool: 5 },
+  { kind: 'moveFirst', side: 'bottom', options: [hand[0], hand[1]] },
 ];
 
 describe('a prompt for every decision', () => {
   it('every decision kind has a titled prompt with the general\'s button', () => {
-    expect(new Set(SAMPLES.map((d) => d.kind)).size).toBe(18);
-    expect(Object.keys(DECISION_TITLES)).toHaveLength(18);
+    expect(new Set(SAMPLES.map((d) => d.kind)).size).toBe(20);
+    expect(Object.keys(DECISION_TITLES)).toHaveLength(20);
     for (const d of SAMPLES) {
       const p = promptSpec(s, d);
       expect(p.title, d.kind).toBe(decisionTitle(d));
