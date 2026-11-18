@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { OFF_BOARD, answerError, newOrderedPiece, distance, unitById, unitMoves, type Answer, type GameDriver, type GameState, type HexId } from '../../src/engine';
+import { OFF_BOARD, answerError, cloneState, fireDice, newOrderedPiece, distance, unitById, unitMoves, type Answer, type GameDriver, type GameState, type HexId } from '../../src/engine';
 import type { MoveTarget } from '../../src/engine/movement';
 import { occOf } from '../../src/ai/board';
+import { evaluate } from '../../src/ai/evaluate';
+import { fireEstimate, makeEstCtx, takeGround } from '../../src/ai/estimate';
 import { makeBudget } from '../../src/ai/budget';
 import { greedyMoveStep, scoreTarget, type MoveCtx } from '../../src/ai/moves';
 import { Rng } from '../../src/ai/rand';
 import { NEUTRAL_W } from '../../src/ai/values';
-import { H, build, must, play, type Pos } from '../rules/helpers';
+import { H, build, giveCard, leaderId, must, play, type Pos } from '../rules/helpers';
 import { failOnAiErrors } from './no-ai-errors';
 
 failOnAiErrors();
@@ -171,7 +173,7 @@ describe('greedyMoveStep: the Napoleonic moves', () => {
     expect(distance(to, H(3, 5))).toBeGreaterThanOrEqual(5);
   });
 
-  it('a lone leader and an exit step are scored too (a leader move, an exit by an exit objective)', () => {
+  it('an exit step by an exit objective is scored as a win and taken', () => {
     const d = atMove({ objectives: [{ kind: 'exit', side: 'bottom', hex: [0, 6], banners: 1 }], units: [bot('BR/LN', [0, 6]), top('FR/LN', [5, 6])], banners: 1 });
     const s = d.state;
     const exit = unitMoves(s, 'u1').find((m) => m.hex === OFF_BOARD);
@@ -193,5 +195,92 @@ describe('greedyMoveStep: the Napoleonic moves', () => {
     expect(hit(calm)).toBeDefined();
     expect(hit(wild).hex).toBe(hit(calm).hex);
     expect(scoreTarget(wild, 'u1', hit(wild), mcOf(wild))).toBeLessThan(scoreTarget(calm, 'u1', hit(calm), mcOf(calm)) - 0.05);
+  });
+});
+
+describe('review round 1', () => {
+  it('1: the root context follows the board: a state mutated in place evaluates as its clone does', () => {
+    const s = build({
+      units: [bot('BR/LN', [8, 1], { square: 1 }), bot('BR/LN', [8, 6]), bot('BR/LN', [8, 8]), bot('BR/HC', [8, 10]), bot('BR/FA', [8, 4]), top('FR/LN', [1, 6]), top('FR/LN', [1, 3])],
+      first: 'bottom',
+    });
+    for (const k of ['attackC', 'assaultC', 'forward', 'bayonetCharge'] as const) giveCard(s, 'bottom', k);
+    evaluate(s, 'bottom', NEUTRAL_W); // makes and caches the root context for this board
+    // the same cards, a different board: the units close with the enemy
+    s.units[1].hex = H(2, 6);
+    s.units[2].hex = H(2, 7);
+    s.units[3].hex = H(2, 5);
+    s.units[4].hex = H(3, 6);
+    expect(evaluate(s, 'bottom', NEUTRAL_W)).toBe(evaluate(cloneState(s), 'bottom', NEUTRAL_W));
+    expect(makeEstCtx(s, 'bottom', NEUTRAL_W).cardValue).not.toBeNaN();
+  });
+
+  it('2a: a move that fires counts the halved dice of moving fire (step 1 hex, fire at 1 hex moved)', () => {
+    const s = atMove({ units: [bot('BR/LN', [6, 6]), top('FR/LN', [3, 6])] }).state;
+    const step = unitMoves(s, 'u1').find((m) => m.battle && distance(m.hex, H(3, 6)) === 2)!;
+    const mc = mcOf(s);
+    const c = cloneState(s);
+    const base = scoreTarget(s, 'u1', step, mcOf(s, { style: 'base' }));
+    // the attack part of the score is 0.85 x the fire estimate at the dice for 1 hex moved, not the standing dice
+    const noAttack = scoreTarget(s, 'u1', { ...step, battle: false }, mc);
+    const rec = (moved: number): number => {
+      const cc = cloneState(c);
+      const u = cc.units[0];
+      cc.turn.ordered.u1.moved = moved;
+      u.hex = step.hex;
+      const ec = { ...makeEstCtx(cc, 'bottom', NEUTRAL_W), occ: occOf(cc), moved };
+      return fireEstimate(cc, u, H(3, 6), ec).ev;
+    };
+    expect(fireDice(s, { ...s.units[0], hex: step.hex }, H(3, 6), { role: 'attack', moved: 1 })).toBeLessThan(fireDice(s, { ...s.units[0], hex: step.hex }, H(3, 6), { role: 'attack', moved: 0 }));
+    expect(rec(1)).toBeLessThan(rec(0));
+    expect(base - noAttack).toBeCloseTo(0.85 * rec(1), 6);
+  });
+
+  it('2b: the safe style closes less than the base style', () => {
+    const p: Pos = { units: [bot('BR/LN', [6, 6], { blocks: 3 }), bot('BR/LN', [8, 2]), top('FR/LN', [3, 6], { blocks: 2 })] };
+    const s = atMove(p).state;
+    const enemy = H(3, 6);
+    const safe = distance(endHex(s, 'u1', greedyMoveStep(s, mcOf(s, { style: 'safe' }))), enemy);
+    const base = distance(endHex(s, 'u1', greedyMoveStep(s, mcOf(s, { style: 'base' }))), enemy);
+    expect(safe).toBeGreaterThan(base);
+  });
+
+  it('3: a MoveCtx reused in the next turn forgets the pieces decided in the last', () => {
+    const p: Pos = { units: [bot('BR/FA', [6, 6]), top('FR/LN', [3, 6])] };
+    const s1 = atMove(p).state;
+    const mc = mcOf(s1);
+    expect(greedyMoveStep(s1, mc).kind).toBe('endMove'); // the gun stands: decided
+    expect(mc.decided!.has('u1')).toBe(true);
+    const s2 = cloneState(s1);
+    s2.turn.number += 1;
+    greedyMoveStep(s2, mc);
+    // a new turn: u1 was looked at afresh (it is decided again, after a clear)
+    expect(mc.decidedFor).toBe(`${s2.turn.number}|${s2.active}|${s2.turn.card}`);
+    expect([...mc.decided!]).toEqual(['u1']);
+  });
+
+  it('6: a lone leader next to the enemy is scored and steps away', () => {
+    const p: Pos = { units: [bot('BR/LN', [7, 6]), top('FR/LN', [3, 6])], leaders: [{ side: 'bottom', at: [4, 6] }] };
+    const id = leaderId(build({ first: 'bottom', ...p }), 0);
+    const s = atMove(p, 'attackC', [id]).state;
+    expect(unitMoves(s, id)).toEqual([]);
+    const mc = mcOf(s);
+    const a = greedyMoveStep(s, mc);
+    expect(a.kind).toBe('move');
+    expect(a.kind === 'move' && a.piece).toBe(id);
+    expect(distance(a.kind === 'move' ? a.to : H(4, 6), H(3, 6))).toBeGreaterThan(1);
+    expect(mc.budget.nodes).toBeGreaterThan(1);
+  });
+
+  it('7: the bonus prospect is memoised per (attacker, blocks, vacated hex, hexes moved): different keys, different prospects', () => {
+    const s = build({ units: [bot('BR/LC', [6, 6]), top('FR/LN', [5, 6], { blocks: 1 }), top('FR/LN', [4, 5]), top('FR/LN', [4, 7], { blocks: 1 })], first: 'bottom' });
+    const ec = makeEstCtx(s, 'bottom', NEUTRAL_W);
+    const adv = (moved: number, atk = s.units[0]) => takeGround(s, atk, H(5, 6), { ...ec, moved });
+    const a0 = adv(0).value;
+    const a2 = adv(2).value; // same occ, another `moved`: the bonus melee's dice differ (moved hexes), not a cached copy
+    expect(adv(0).value).toBe(a0);
+    expect(adv(2).value).toBe(a2);
+    const worn = { ...s.units[0], blocks: 1 };
+    expect(adv(0, worn).value).not.toBe(a0);
   });
 });

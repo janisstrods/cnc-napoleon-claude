@@ -39,6 +39,8 @@ export interface MoveCtx {
   ec?: EstCtx;
   /** Pieces whose move has been decided in this move phase (moved, or left standing); `greedyMoveStep` fills it. */
   decided?: Set<string>;
+  /** The turn `decided` belongs to; a different turn clears it (a context reused into the next move phase). */
+  decidedFor?: string;
 }
 
 /** The share of the best attack that a move leaves open which counts towards the move (the attack is not yet made). */
@@ -201,11 +203,11 @@ function bestMoveFor(s: GameState, id: string, moves: readonly MoveTarget[], mc:
   if (mc.budget.spent()) return nearestToGoal(s, id, moves, mc, goals);
   let best: HexId | null = null;
   let bestScore = scoreTarget(s, id, standTarget(s, id), mc) + STAY_EDGE;
-  const here = isLeaderId(id) ? 0 : goalGap(s, mc, goals, unitById(s, id)!.hex);
-  void here;
+  // a step off the board (an exit) is looked at first: it is where the objective is
+  const gap = (m: MoveTarget): number => (m.hex === OFF_BOARD ? 0 : goalGap(s, mc, goals, m.hex));
   const ordered = isLeaderId(id)
     ? moves
-    : [...moves].sort((a, b) => goalGap(s, mc, goals, a.hex === OFF_BOARD ? -1 : a.hex) - goalGap(s, mc, goals, b.hex === OFF_BOARD ? -1 : b.hex) || a.path.length - b.path.length || a.hex - b.hex);
+    : [...moves].sort((a, b) => gap(a) - gap(b) || a.path.length - b.path.length || a.hex - b.hex);
   for (const m of ordered) {
     if (mc.budget.spent()) break;
     const sc = scoreTarget(s, id, m, mc);
@@ -239,6 +241,11 @@ function orderKey(s: GameState, mc: MoveCtx, id: string): number {
  */
 export function greedyMoveStep(s: GameState, mc: MoveCtx): Answer {
   mc.occ = occOf(s);
+  const turn = `${s.turn.number}|${s.active}|${s.turn.card}`;
+  if (mc.decidedFor !== turn) {
+    mc.decided = new Set();
+    mc.decidedFor = turn;
+  }
   const decided = (mc.decided ??= new Set());
   const moves = new Map<string, MoveTarget[]>();
   for (const id of Object.keys(s.turn.ordered)) {

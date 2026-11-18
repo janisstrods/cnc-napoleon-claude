@@ -643,12 +643,19 @@ function advance(s: GameState, occ: Occ, side: Side, W: Weights): number {
 /** Root estimate contexts built without one from the caller, per state and viewer, keyed by the public card signature. */
 const rootCtx = new WeakMap<GameState, Map<string, EstCtx>>();
 
-/** Everything public that the assumed opponent hands depend on (the unseen pool and the hand and track sizes). */
+/**
+ * Everything the root context depends on: what the assumed opponent hands depend on (the unseen pool and the hand and track
+ * sizes) and the board, which the viewer's `cardValue` reads (its cards' worth depends on where the units stand): a state
+ * mutated in place with its cards unchanged must not reuse a context made for another board.
+ */
 function cardSignature(s: GameState, me: Side): string {
+  let board = '';
+  for (const u of s.units) board += `${u.hex}.${u.blocks}.${u.square ?? 0};`;
+  for (const l of s.leaders) board += `${l.hex};`;
   const top = handSize(s, 'top');
   const bottom = handSize(s, 'bottom');
   return `${me}|${top},${bottom}|${trackFilled(s, 'top')},${trackFilled(s, 'bottom')}|${s.discard.length},${s.discard[s.discard.length - 1]}|`
-    + `${s.turn.card}|${myHand(s, me).join(',')}|${myTrack(s, me).join(',')}`;
+    + `${s.turn.card}|${myHand(s, me).join(',')}|${myTrack(s, me).join(',')}|${board}`;
 }
 
 /** The estimate context for evaluating `s` for `me`: the caller's root context (its hands kept), else one built and cached. */
@@ -662,7 +669,8 @@ function contextFor(s: GameState, me: Side, W: Weights, occ: Occ, ec?: EstCtx): 
   if (!byKey) rootCtx.set(s, (byKey = new Map()));
   const key = cardSignature(s, me);
   let made = byKey.get(key);
-  if (!made) {
+  // cardValue is priced under the weights it was made with
+  if (!made || made.W !== W) {
     if (byKey.size > 8) byKey.clear();
     byKey.set(key, (made = makeEstCtx(s, me, W)));
   }
@@ -670,8 +678,9 @@ function contextFor(s: GameState, me: Side, W: Weights, occ: Occ, ec?: EstCtx): 
 }
 
 /**
- * The root estimate context of `s` for `me`: the same one `evaluate` builds without a caller's context (cached per state object
- * and public card signature), its board that of `s`. For callers that evaluate many positions made from `s` (move scoring).
+ * The root estimate context of `s` for `me`: the same one `evaluate` builds without a caller's context. It is cached on the state
+ * object, keyed by the public card signature, the board (units, blocks, squares, leaders) and the weights, so a state mutated in
+ * place never gets a stale `cardValue`; its board is that of `s`. For callers that evaluate many positions made from `s` (move scoring).
  */
 export function rootContextOf(s: GameState, me: Side, W: Weights): EstCtx {
   return contextFor(s, me, W, occOf(s));
