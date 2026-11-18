@@ -12,9 +12,10 @@ import {
   unitsOf, validateOrders, OFF_BOARD,
   type CardKind, type GameState, type HexId, type Leader, type OrderedPiece, type SectionName, type Side, type Unit,
 } from '../engine';
-import { commandOf, withCommand } from './cardsense';
+import { ELAN_SHARE, commandOf, rallyGain, withCommand } from './cardsense';
+import { occOf } from './board';
 import { fireEstimate, loneLeaderEstimate, makeEstCtx, meleeEstimate, bannerValue, type EstCtx, type Outcome } from './estimate';
-import { rowValue, unitValue, type Weights } from './values';
+import { unitValue, type Weights } from './values';
 
 /** The most candidates offered for one card. */
 export const MAX_CANDIDATES = 8;
@@ -98,9 +99,11 @@ export function pieceBenefits(s: GameState, me: Side, kind: CardKind | null, W: 
   const eff = kind === null ? null : effectiveOf(s, me, kind);
   const out = new Map<string, number>();
   const hasDice = eff !== null && CARD_DEFS[eff].select.kind === 'dice';
-  if (kind !== null && (eff === null || (!hasDice && ['none', 'shortSupply', 'copy'].includes(CARD_DEFS[eff].select.kind)))) return out;
+  if (kind !== null && (eff === null || (CARD_DEFS[eff].select.kind === 'dice' && CARD_DEFS[eff].select.roll === 'rally') || (!hasDice && ['none', 'shortSupply', 'copy'].includes(CARD_DEFS[eff].select.kind)))) return out;
   const v = orderView(s, me, eff);
-  const ctx = ec ?? makeEstCtx(s, me, W);
+  // the context's board is rebuilt for `s` (the one it was made for, normally); estimates read the board as it stands now: moves
+  // are scored against the board before the piece or its neighbours move (an approximation Task 6b's move scoring replaces)
+  const ctx: EstCtx = { ...(ec ?? makeEstCtx(s, me, W)), occ: occOf(s) };
   const occ = ctx.occ;
   const enemies = occ.bySide[other(me)];
   const nearest = (h: HexId): number => {
@@ -224,7 +227,8 @@ export function orderCandidates(s: GameState, me: Side, kind: CardKind, W: Weigh
   const v = orderView(s, me, eff);
   if (sel.kind === 'adjacentToEnemy') {
     const auto = autoOrders(v, me, eff) ?? [];
-    return [{ pieces: auto, label: 'every unit next to the enemy', benefit: 0 }];
+    const cb = pieceBenefits(s, me, eff, W, ec);
+    return [{ pieces: auto, label: 'every unit next to the enemy', benefit: auto.reduce((a, id) => a + Math.max(0, cb.get(id) ?? 0), 0) }];
   }
   const ben = pieceBenefits(s, me, eff, W, ec);
   const fb = fallbackActive(v, me, eff);
@@ -361,19 +365,12 @@ export function quickCardScore(s: GameState, me: Side, card: number, W: Weights,
   if (sel.kind === 'none') return -1;
   if (sel.kind === 'shortSupply') return 0.05;
   if (sel.kind === 'dice') {
-    const ctx = ec ?? makeEstCtx(s, me, W);
-    const ben = pieceBenefits(s, me, eff, W, ctx);
     const command = commandOf(s, me);
-    if (sel.roll === 'rally') {
-      const gains = unitsOf(s, me)
-        .filter((u) => u.blocks < u.maxBlocks)
-        .map((u) => rowValue(statsOf(s, u), u.blocks + 1) - rowValue(statsOf(s, u), u.blocks))
-        .sort((x, y) => y - x);
-      return gains.slice(0, Math.ceil(0.5 * command)).reduce((a, g) => a + g, 0);
-    }
+    if (sel.roll === 'rally') return rallyGain(s, me, command);
+    const ben = pieceBenefits(s, me, eff, W, ec);
     // Élan: about 0.6 of a die per Command orders a unit, each fighting with an extra die (the benefits already count it)
     const top = [...ben.values()].sort((x, y) => y - x);
-    return top.slice(0, Math.max(1, Math.round(0.6 * command))).reduce((a, x) => a + Math.max(0, x), 0);
+    return top.slice(0, Math.max(1, Math.round(ELAN_SHARE * command))).reduce((a, x) => a + Math.max(0, x), 0);
   }
   return orderCandidates(s, me, kind, W, 1, ec)[0]?.benefit ?? 0;
 }

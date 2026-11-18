@@ -8,12 +8,13 @@
 // Command here is the Command a card played now would have: the hand, the played card included, never counting square-track
 // cards (R28, RR §5.3). Cards on the track are not in the hand, so the hand size is the number.
 import {
-  CARD_DEFS, SQUARE_MIN_HAND, cardKind, distance, eligiblePieces, fallbackActive, mirrorKind, orderLimit, other, statsOf, unitsOf,
-  type CardKind, type GameState, type Side, type Unit,
+  CARD_DEFS, DIE_SIDES, SQUARE_MIN_HAND, TERRAIN_STATS, cardKind, distance, eligiblePieces, fallbackActive, greedyAssign, mirrorKind, orderLimit, other,
+  statsOf, terrainAt, unitsOf, validateRally, worksForbidSquare,
+  type CardKind, type DieFace, type GameState, type Side, type Unit,
 } from '../engine';
 import { occOf, type Occ } from './board';
 import { reachOf } from './evaluate';
-import { handSize, myHand } from './view';
+import { handSize, myHand, myTrack } from './view';
 import { CARD_VALUE, rowValue, unitValue, type Weights } from './values';
 
 /** The Command a card played from `me`'s hand now would have (R28): the hand, including that card; track cards excluded. */
@@ -51,7 +52,7 @@ const FILL_CAP = 1.5;
 /** Command a card's nominal use assumes. */
 const REF_COMMAND = 4;
 /** Élan orders a unit when a die shows its arm or a flag: about this share of Command dice (evaluate.ts ELAN_SHARE). */
-const ELAN_SHARE = 0.6;
+export const ELAN_SHARE = 0.6;
 /** Units this near an enemy are engaged: an order is worth its full value there, less further back. */
 const ENGAGED = 4;
 const NEAR = 7;
@@ -63,13 +64,6 @@ const FIRST_STRIKE_IDLE = 0.03;
 const SQUARE_SAVES = 0.3;
 /** Infantry units counted in the hand-floor penalty. */
 const FLOOR_UNITS = 3;
-/** The occupancy of this position, kept per state so a hand's cards share it. */
-const occMemo = new WeakMap<GameState, Occ>();
-function occFor(s: GameState): Occ {
-  let o = occMemo.get(s);
-  if (!o) occMemo.set(s, (o = occOf(s)));
-  return o;
-}
 
 /** How much one of our units counts as an order target: engaged units fully, far back ones less. */
 function engagement(s: GameState, occ: Occ, u: Unit): number {
@@ -92,17 +86,64 @@ function nominalOrders(kind: CardKind): number {
   }
 }
 
-/** Wounded units that a Rally could mend, and the value gained by mending the best `n` of them by one block. */
-// approximates RR §12.2 Rally (engine: canRally; the dice decide which arms, so the best wounded units stand in)
-function rallyGain(s: GameState, me: Side, n: number): number {
-  const gains: number[] = [];
-  for (const u of unitsOf(s, me)) {
-    if (u.blocks >= u.maxBlocks) continue;
-    const st = statsOf(s, u);
-    gains.push(rowValue(st, u.blocks + 1) - rowValue(st, u.blocks));
+/** P(a die shows each of: infantry, cavalry, artillery, anything else) (RR §12.2; the engine's `DIE_SIDES`). */
+const FACE_P = DIE_SIDES.reduce<[number, number, number, number]>((p, f) => {
+  p[f === 'infantry' ? 0 : f === 'cavalry' ? 1 : f === 'artillery' ? 2 : 3] += 1 / DIE_SIDES.length;
+  return p;
+}, [0, 0, 0, 0]);
+
+/** The faces of one Rally roll with these counts (the "other" faces are sabres: they rally nothing). */
+function facesOf(i: number, c: number, a: number, o: number): DieFace[] {
+  return [...Array<DieFace>(i).fill('infantry'), ...Array<DieFace>(c).fill('cavalry'), ...Array<DieFace>(a).fill('artillery'), ...Array<DieFace>(o).fill('sabre')];
+}
+
+/**
+ * The assignment a Rally roll `faces` gets from us: each arm face takes, in turn, the own wounded unit of that arm whose next
+ * block is worth most (ties by id) that the engine's `validateRally` still allows (never above the starting blocks, R54);
+ * `greedyAssign` is the engine's own. Deterministic.
+ */
+export function rallyAssign(s: GameState, me: Side, faces: readonly DieFace[]): (string | null)[] {
+  const wounded = unitsOf(s, me)
+    .filter((u) => u.blocks < u.maxBlocks)
+    .map((u) => ({ u, g: rowValue(statsOf(s, u), u.blocks + 1) - rowValue(statsOf(s, u), u.blocks) }))
+    .sort((x, y) => y.g - x.g || (x.u.id < y.u.id ? -1 : 1));
+  return greedyAssign(
+    faces.length,
+    (i) => wounded.filter((w) => statsOf(s, w.u).arm === faces[i]).map((w) => w.u.id),
+    (trial) => validateRally(s, me, faces, trial),
+  );
+}
+
+/**
+ * The expected value, in banners, of a Rally rolled with `command` dice: the exact expectation over the face counts (a
+ * multinomial over `DIE_SIDES`, at most C(command + 3, 3) cases), each case assigned by `rallyAssign` and priced by the
+ * blocks it returns (`rowValue`). No random draw.
+ */
+export function rallyGain(s: GameState, me: Side, command: number): number {
+  const n = Math.max(0, Math.floor(command));
+  if (!unitsOf(s, me).some((u) => u.blocks < u.maxBlocks)) return 0;
+  const fact = (k: number): number => (k <= 1 ? 1 : k * fact(k - 1));
+  let total = 0;
+  for (let i = 0; i <= n; i++) {
+    for (let c = 0; c + i <= n; c++) {
+      for (let a = 0; a + c + i <= n; a++) {
+        const o = n - i - c - a;
+        const p = (fact(n) / (fact(i) * fact(c) * fact(a) * fact(o))) * FACE_P[0] ** i * FACE_P[1] ** c * FACE_P[2] ** a * FACE_P[3] ** o;
+        if (i + c + a === 0) continue;
+        const faces = facesOf(i, c, a, o);
+        const ids = rallyAssign(s, me, faces);
+        const gain = new Map<string, number>();
+        for (const id of ids) if (id !== null) gain.set(id, (gain.get(id) ?? 0) + 1);
+        let v = 0;
+        for (const [id, k] of gain) {
+          const u = s.units.find((x) => x.id === id)!;
+          v += rowValue(statsOf(s, u), u.blocks + k) - rowValue(statsOf(s, u), u.blocks);
+        }
+        total += p * v;
+      }
+    }
   }
-  gains.sort((x, y) => y - x);
-  return gains.slice(0, Math.max(0, Math.ceil(n))).reduce((a, g) => a + g, 0);
+  return total;
 }
 
 /** Can an enemy unit reach ours (its nearest of ours within its reach for a battle next turn)? */
@@ -125,9 +166,8 @@ function enemiesReach(s: GameState, me: Side, occ: Occ): boolean {
 }
 
 /** The value, before the personality's retention weight, of holding a card of `kind` (`copied`: already a Counter-Attack's copy). */
-function kindValue(s: GameState, me: Side, kind: CardKind, W: Weights, copied: boolean): number {
+function kindValue(s: GameState, me: Side, kind: CardKind, W: Weights, copied: boolean, occ: Occ): number {
   const def = CARD_DEFS[kind];
-  const occ = occFor(s);
   const command = commandOf(s, me);
   switch (def.select.kind) {
     case 'copy': {
@@ -135,7 +175,7 @@ function kindValue(s: GameState, me: Side, kind: CardKind, W: Weights, copied: b
       const last = s.lastCard[other(me)];
       if (!last || copied) return COPY_NONE;
       const copy = mirrorKind(last);
-      return CARD_DEFS[copy].select.kind === 'copy' ? COPY_NONE : kindValue(s, me, copy, W, true);
+      return CARD_DEFS[copy].select.kind === 'copy' ? COPY_NONE : kindValue(s, me, copy, W, true, occ);
     }
     case 'none':
       return enemiesReach(s, me, occ) ? BASE[kind] + W.firstStrikeReserve : FIRST_STRIKE_IDLE;
@@ -145,7 +185,7 @@ function kindValue(s: GameState, me: Side, kind: CardKind, W: Weights, copied: b
       if (def.select.roll === 'rally') {
         const units = unitsOf(s, me);
         if (!units.length) return EMPTY;
-        const gain = rallyGain(s, me, ELAN_SHARE * command);
+        const gain = rallyGain(s, me, command);
         return gain <= 0 ? EMPTY : Math.min(FILL_CAP * BASE.rally, EMPTY + 0.4 * BASE.rally + gain);
       }
       // Élan: Command dice, each ordering about ELAN_SHARE of a unit, who then fight with an extra die
@@ -166,10 +206,12 @@ function kindValue(s: GameState, me: Side, kind: CardKind, W: Weights, copied: b
       const ws: number[] = [];
       for (const id of ids) {
         const u = s.units.find((x) => x.id === id);
-        ws.push(u ? engagement(s, occ, u) : 0.25);
+        if (u) ws.push(engagement(s, occ, u)); // a leader takes a slot but adds no fighting power
       }
       ws.sort((x, y) => y - x);
       const used = ws.slice(0, Math.max(1, limit)).reduce((a, x) => a + x, 0);
+      // approximates the value of La Grande Manoeuvre and Force March (their orders are movement and a whole section, not
+      // counted per fighting unit): left to Task 11's calibration
       const fill = Math.min(FILL_CAP, used / nominalOrders(kind));
       return Math.max(EMPTY, BASE[kind] * fill * (fallbackActive(view, me, kind) ? FALLBACK : 1));
     }
@@ -180,22 +222,27 @@ function kindValue(s: GameState, me: Side, kind: CardKind, W: Weights, copied: b
  * The value, in banners, of keeping `card` (an id in our hand, or one just drawn by a Scout) for a later turn. A mean card is
  * about `CARD_VALUE`. Reads our own units and public facts only.
  */
-export function keepValue(s: GameState, me: Side, card: number, W: Weights): number {
-  return kindValue(s, me, cardKind(card), W, false) * W.retention;
+export function keepValue(s: GameState, me: Side, card: number, W: Weights, occ: Occ = occOf(s)): number {
+  return kindValue(s, me, cardKind(card), W, false, occ) * W.retention;
 }
 
-/** The mean keep value of the cards in our hand (`CARD_VALUE` when the hand is empty). */
+/**
+ * The mean keep value of the cards in `me`'s own hand (`CARD_VALUE` when it is empty). Only for the viewer's own side: the
+ * opponent's hand is never read.
+ */
 export function meanHandValue(s: GameState, me: Side, W: Weights): number {
   const hand = myHand(s, me);
   if (!hand.length) return CARD_VALUE;
   let sum = 0;
-  for (const c of hand) sum += keepValue(s, me, c, W);
+  const occ = occOf(s);
+  for (const c of hand) sum += keepValue(s, me, c, W, occ);
   return sum / hand.length;
 }
 
 /** Which of two Scout cards to keep: the higher keep value (the first on a tie). */
 export function scoutKeepIndex(s: GameState, me: Side, cards: readonly [number, number], W: Weights): 0 | 1 {
-  return keepValue(s, me, cards[1], W) > keepValue(s, me, cards[0], W) ? 1 : 0;
+  const occ = occOf(s);
+  return keepValue(s, me, cards[1], W, occ) > keepValue(s, me, cards[0], W, occ) ? 1 : 0;
 }
 
 /**
@@ -203,15 +250,19 @@ export function scoutKeepIndex(s: GameState, me: Side, cards: readonly [number, 
  * played) while enemy cavalry can reach our infantry in the open: a square needs `SQUARE_MIN_HAND` cards (R26), so each
  * threatened unit loses what a square would save. Zero with a longer hand, or with no cavalry threat.
  */
-// approximates RR §5.3, R26 (engine: canFormSquare: terrain and the track's free slot are not weighed)
+// approximates RR §5.3, R26 (engine: canFormSquare; its conditions are applied here except the attacker's role)
 export function handFloorPenalty(s: GameState, me: Side, drop = 0): number {
   if (handSize(s, me) - drop >= SQUARE_MIN_HAND) return 0;
-  const occ = occFor(s);
+  const occ = occOf(s);
+  const track = myTrack(s, me);
+  const slotFree = track.some((c) => c === null || c === undefined);
   const threatened: number[] = [];
   for (const u of occ.bySide[me]) {
     if (statsOf(s, u).arm !== 'infantry' || u.square !== undefined) continue;
+    // the engine's square conditions that do not depend on the hand: a free track slot, terrain, works (R26)
+    if (!slotFree || !TERRAIN_STATS[terrainAt(s, u.hex)].squareAllowed) continue;
     for (const e of occ.bySide[other(me)]) {
-      if (statsOf(s, e).arm !== 'cavalry') continue;
+      if (statsOf(s, e).arm !== 'cavalry' || worksForbidSquare(s, u, e.hex)) continue;
       const d = distance(e.hex, u.hex);
       if (d <= 1 || reachOf(s, occ, e, u.hex) >= d) {
         threatened.push(unitValue(s, u));

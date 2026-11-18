@@ -150,6 +150,42 @@ describe('orderCandidates', () => {
   });
 });
 
+describe('trimming and detaching', () => {
+  it('asking for n candidates gives the first n of the full list, for n in 2..7', () => {
+    const s = atCard(kit());
+    for (const kind of ['attackC', 'forward', 'leadership', 'grandManoeuvre'] as const) {
+      const full = orderCandidates(s, 'bottom', kind, W, 99);
+      for (let n = 2; n <= 7; n++) {
+        const part = orderCandidates(s, 'bottom', kind, W, n);
+        expect(part.map((c) => c.label), `${kind} n=${n}`).toEqual(full.slice(0, n).map((c) => c.label));
+      }
+    }
+  });
+
+  it('a leader riding with a battered unit near the enemy is offered as a piece of his own (a detach candidate)', () => {
+    const s0 = build({
+      units: [bot('BR/LN', [6, 6], { blocks: 1 }), bot('BR/LN', [6, 7]), top('FR/LN', [4, 6])],
+      leaders: [{ side: 'bottom', at: [6, 6] }], first: 'bottom',
+    });
+    const s = atCard(s0);
+    const l = s.leaders[0].id;
+    expect(pieceBenefits(s, 'bottom', 'attackC', W).get(l)!).toBeGreaterThan(0.05);
+    const cands = orderCandidates(s, 'bottom', 'attackC', W, 99);
+    expect(cands.some((c) => c.pieces.includes(l))).toBe(true);
+    for (const c of cands) expect(validateOrders(s0 && { ...s, turn: { ...s.turn, command: 5 } }, 'bottom', 'attackC', c.pieces)).toBeNull();
+  });
+
+  it('Cold Steel scores above 0 with units next to the enemy, and Rally without a benefit pass', () => {
+    const s = atCard(kit());
+    expect(quickCardScore(s, 'bottom', id('coldSteel'), W)).toBeGreaterThan(0);
+    expect(orderCandidates(s, 'bottom', 'coldSteel', W)[0].benefit!).toBeGreaterThan(0);
+    expect(pieceBenefits(s, 'bottom', 'rally', W).size).toBe(0);
+    const hurt = cloneState(s);
+    hurt.units.find((u) => u.side === 'bottom')!.blocks = 1;
+    expect(quickCardScore(hurt, 'bottom', id('rally'), W)).toBeGreaterThan(0);
+  });
+});
+
 describe('pieceBenefits and quickCardScore', () => {
   it('pieces that can strike gain more than pieces far from the fight; a card that cannot order a piece gives it nothing', () => {
     const s = atCard(kit());
@@ -167,7 +203,8 @@ describe('pieceBenefits and quickCardScore', () => {
     const rightScore = quickCardScore(s, 'bottom', id('attackR'), W);
     const leftScore = quickCardScore(s, 'bottom', id('attackL'), W);
     expect(centreScore).toBeGreaterThan(0);
-    expect(centreScore).toBeGreaterThan(Math.min(rightScore, leftScore));
+    expect(centreScore).toBeGreaterThan(rightScore);
+    expect(centreScore).toBeGreaterThan(leftScore);
     expect(quickCardScore(s, 'bottom', id('firstStrike'), W)).toBeLessThan(0);
     for (const kind of KINDS) expect(Number.isFinite(quickCardScore(s, 'bottom', id(kind), W)), kind).toBe(true);
   });

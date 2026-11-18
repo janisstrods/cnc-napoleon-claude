@@ -46,7 +46,7 @@ export function squareTurns(s: GameState, unit: Unit, occ: Occ): number {
 
 /**
  * The cost to its side of `unit` forming square (R28, RR §5.3): the card goes back to the hand when the square ends, so the
- * cost is temporary: a card unavailable while it lasts (`CARD_VALUE` × turns ÷ 3), the hand one card short (Command −1) for
+ * cost is temporary: a card unavailable while it lasts (`card` × turns ÷ 3), the hand one card short (Command −1) for
  * that time, and the unit's immobility. `card` is the value of that card: callers pass the viewer's `meanHandValue` (cardsense.ts);
  * it is a parameter, not read here, because the unit may be the opponent's and its hand must not be read.
  */
@@ -54,7 +54,7 @@ export function squareCost(s: GameState, unit: Unit, occ: Occ, card = CARD_VALUE
   return squareTurns(s, unit, occ) * squareTurnCost(s, unit, card);
 }
 
-/** One turn of a square: a card unavailable (`CARD_VALUE` ÷ 3), Command −1 and the unit's immobility. */
+/** One turn of a square: a card unavailable (`card` ÷ 3), Command −1 and the unit's immobility. */
 function squareTurnCost(s: GameState, unit: Unit, card = CARD_VALUE): number {
   return card / 3 + COMMAND_TURN + IMMOBILE_TURN * unitValue(s, unit);
 }

@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { CARD_LIST, cloneState, sectionsOf, type CardKind, type GameState, type Side } from '../../src/engine';
-import { handFloorPenalty, keepValue, meanHandValue, scoutKeepIndex } from '../../src/ai/cardsense';
+import { CARD_LIST, cloneState, sectionsOf, statsOf, type CardKind, type GameState, type Side } from '../../src/engine';
+import { handFloorPenalty, keepValue, meanHandValue, rallyAssign, rallyGain, scoutKeepIndex } from '../../src/ai/cardsense';
 import { NEUTRAL_W, weightsFor } from '../../src/ai/values';
 import { personalityById } from '../../src/ai/personality';
-import { H, build, type Pos } from '../rules/helpers';
+import { rowValue } from '../../src/ai/values';
+import { build, must, play, type Pos } from '../rules/helpers';
 import { failOnAiErrors } from './no-ai-errors';
 
 failOnAiErrors();
@@ -55,7 +56,7 @@ describe('keepValue', () => {
     // the same keep value as a hand of n-1 with nothing on the track: the track card is not counted
     const sq = keepValue(inSquare, me, id('assaultC'), W);
     expect(sq).toBeLessThan(keepValue(base, me, id('assaultC'), W));
-    expect(sq).toBeCloseTo(keepValue(shorter, me, id('assaultC'), W), 1);
+    expect(sq).toBe(keepValue(shorter, me, id('assaultC'), W));
   });
 
   it('First Strike is kept while enemy units can reach ours and is cheap to play when none can', () => {
@@ -134,4 +135,59 @@ describe('handFloorPenalty', () => {
     const far = build({ units: [bot('BR/LN', [8, 2]), top('FR/HC', [0, 10])], cards: 2 });
     expect(handFloorPenalty(far, me)).toBe(0);
   });
+
+  it('follows the position when the engine mutates the state in place (no stale board)', () => {
+    const s = kit(2);
+    expect(handFloorPenalty(s, me)).toBeGreaterThan(0);
+    const m = s.units.find((u) => u.side === 'top')!;
+    m.hex = -1;
+    expect(handFloorPenalty(s, me)).toBe(0);
+    const f = centre(5);
+    const before = keepValue(f, me, id('firstStrike'), W);
+    f.units.find((u) => u.side === 'top')!.hex = -1;
+    f.units.find((u) => u.side === 'top' && u.hex >= 0)!.hex = -1;
+    expect(keepValue(f, me, id('firstStrike'), W)).not.toBe(before);
+  });
+
+  it('counts only infantry that could form square: not in a town, not with a full track', () => {
+    const open = build({ units: [bot('BR/LN', [6, 6]), top('FR/HC', [4, 6])], cards: 2 });
+    expect(handFloorPenalty(open, me)).toBeGreaterThan(0);
+    const town = build({ units: [bot('BR/LN', [6, 6]), top('FR/HC', [4, 6])], terrain: [{ at: [6, 6], t: 'town' }], cards: 2 });
+    expect(handFloorPenalty(town, me)).toBe(0);
+    const full = cloneState(open);
+    full.players[me].squareTrack = [0, 1, 2, 3];
+    expect(handFloorPenalty(full, me)).toBe(0);
+  });
+});
+
+describe('rallyGain: the exact expectation against the engine', () => {
+  const N = 700;
+  const cases: { label: string; units: Units }[] = [
+    { label: 'one cavalry at 1 block', units: [bot('BR/LC', [7, 6], { blocks: 1 }), bot('BR/LN', [7, 5]), top('FR/LN', [2, 6])] },
+    { label: 'one infantry at 1 of 4', units: [bot('BR/LN', [7, 6], { blocks: 1 }), top('FR/LN', [2, 6])] },
+    { label: 'mixed', units: [bot('BR/LN', [7, 6], { blocks: 2 }), bot('BR/LC', [7, 7], { blocks: 1 }), bot('BR/FA', [7, 5], { blocks: 1 }), bot('BR/LN', [7, 4], { blocks: 3 }), top('FR/LN', [2, 6])] },
+  ];
+  for (const c of cases) {
+    it(`${c.label}: rallyGain is within 3 standard errors of the engine's rolls`, () => {
+      const s0 = build({ units: c.units, first: 'bottom' });
+      const expected = rallyGain(s0, me, s0.players[me].hand.length);
+      expect(expected).toBeGreaterThan(0);
+      let sum = 0;
+      let sum2 = 0;
+      for (let seed = 1; seed <= N; seed++) {
+        const s = build({ units: c.units, first: 'bottom' });
+        s.rng = seed;
+        const before = new Map(s.units.map((u) => [u.id, u.blocks]));
+        const d = play(s, 'rally');
+        if (d.pending?.kind === 'rally') must(d, { kind: 'assign', ids: rallyAssign(d.state, me, d.pending.faces) });
+        let v = 0;
+        for (const u of d.state.units) v += rowValue(statsOf(d.state, u), u.blocks) - rowValue(statsOf(d.state, u), before.get(u.id)!);
+        sum += v;
+        sum2 += v * v;
+      }
+      const mean = sum / N;
+      const se = Math.sqrt(Math.max(1e-12, sum2 / N - mean * mean) / N);
+      expect(Math.abs(mean - expected), `${c.label}: engine ${mean.toFixed(4)} vs ${expected.toFixed(4)} (se ${se.toFixed(4)})`).toBeLessThanOrEqual(3 * se);
+    });
+  }
 });
