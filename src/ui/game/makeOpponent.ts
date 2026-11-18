@@ -19,5 +19,11 @@ export function makeOpponent(config: SessionConfig): Opponent {
     side: other(config.humanSide),
     difficulty: config.difficulty,
     personality: opponentPersonality(config),
+    ...config.ai,
   });
+}
+
+/** The general who decides for the human ("Let the general decide"): the same AI, for the human's side, in a worker of his own. */
+export function makeGeneral(config: SessionConfig): Opponent {
+  return new AiClient({ side: config.humanSide, difficulty: config.difficulty, personality: personalityById('veteran'), ...config.ai });
 }

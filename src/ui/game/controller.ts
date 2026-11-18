@@ -1,12 +1,13 @@
 // Game session controller: owns the engine driver, runs the AI, and turns engine events into paced animations.
 import {
-  CARD_DEFS, CARD_LIST, GameDriver, OFF_BOARD, UNIT_STATS, bannerTotal, cardKind, cloneState, createGame, freshSeed, other, pieceById, randomAnswer,
+  CARD_LIST, GameDriver, OFF_BOARD, bannerTotal, cloneState, createGame, freshSeed, other, pieceById, randomAnswer,
   type Answer, type CardKind, type Decision, type DieFace, type GameEvent, type GameState, type HexId, type Leader, type QueuedEvent,
   type RollPurpose, type Side, type UndoStep, type Unit,
 } from '../../engine';
-import { chooseAnswer, newMemory, personalityById, type AiMemory } from '../../ai';
+import { chooseAnswer, newMemory, personalityById, type AiMemory, type AiOptions } from '../../ai';
 import { SCENARIOS, scenarioById } from '../../scenarios';
 import type { Opponent } from './opponent';
+import { eventLog, rollSummary, rollTitle } from './logText';
 import { sfx } from '../sound';
 import { storage, storageKey } from '../storage';
 import { outcomeFor, recordFinished, type Medal } from '../record';
@@ -22,6 +23,8 @@ export interface SessionConfig {
   personality?: string;
   /** Dev/testing: card kinds dealt into the human's opening hand. */
   devCards?: CardKind[];
+  /** Extra AI options merged into every AI the session builds (tests: budget and determinism). */
+  ai?: Partial<AiOptions>;
   /** The second battle of a both-sides match (started with Switch sides): how the first one ended. */
   firstLeg?: LegResult;
 }
@@ -97,6 +100,8 @@ export interface ViewState {
   /** Combat highlight: attacker and target hexes. */
   combat: { from: HexId; to: HexId } | null;
   aiThinking: boolean;
+  /** "Let the general decide" is waiting for his answer: the prompt shows no answer buttons. */
+  generalThinking: boolean;
   error: string | null;
   /** The battle is over: who won, why, and the medal the human's side earned by it, when better than before. */
   over: { winner: Side | 'draw'; reason: string; newMedal?: Medal } | null;
@@ -153,6 +158,26 @@ export function initialState(config: SessionConfig): GameState {
 
 let seq = 1;
 
+/**
+ * The in-thread general (tests, and a session built without one): the computer's own policy answers for the human side,
+ * cheaply and the same way every run.
+ */
+export class LocalGeneral implements Opponent {
+  private readonly mem: AiMemory = newMemory();
+  /** The options of the latest decision. */
+  lastOpts: AiOptions | null = null;
+  constructor(private readonly config: SessionConfig) {}
+  async decide(state: GameState, d: Decision) {
+    const opts: AiOptions = {
+      side: d.side, difficulty: this.config.difficulty, personality: personalityById('veteran'), seed: this.config.seed,
+      budgetScale: 0.05, deterministic: true, ...this.config.ai,
+    };
+    this.lastOpts = opts;
+    return chooseAnswer(state, d, opts, this.mem);
+  }
+  dispose() {}
+}
+
 export class GameController {
   readonly config: SessionConfig;
   driver: GameDriver;
@@ -177,9 +202,10 @@ export class GameController {
    */
   private recorded: { newMedal?: Medal } | null = null;
 
-  constructor(config: SessionConfig, opponent: Opponent, answers: Answer[] = [], check?: SavedGame['check']) {
+  constructor(config: SessionConfig, opponent: Opponent, answers: Answer[] = [], check?: SavedGame['check'], general?: Opponent) {
     this.config = config;
     this.opponent = opponent;
+    this.general = general ?? new LocalGeneral(config);
     const sc = scenarioById(config.scenarioId);
     const initial = initialState(config);
     if (answers.length) {
@@ -202,6 +228,7 @@ export class GameController {
       walking: {},
       combat: null,
       aiThinking: false,
+      generalThinking: false,
       error: null,
       over: null,
       undo: null,
@@ -235,14 +262,31 @@ export class GameController {
     return () => this.listeners.delete(fn);
   };
   getView = () => this.view;
-  /** The general's memory when he decides for the human ("Let the general decide"). */
-  private general: AiMemory = newMemory();
-  /** "Let the general decide": the computer's own policy answers the pending human decision (always a legal answer). */
-  autoAnswer() {
+  /** The general who decides for the human ("Let the general decide"): in the app a worker of his own. */
+  private general: Opponent;
+  /** Bumped when an answer in flight is no longer wanted (the player answered or took back a move). */
+  private thinkSeq = 0;
+  /**
+   * "Let the general decide": the general answers the pending human decision. His answer comes late, so it is applied only
+   * if that same decision is still pending and the controller still lives; otherwise it is dropped.
+   */
+  async autoAnswer(): Promise<void> {
     const d = this.view.pending;
-    if (!d || this.busy || this.view.fatal) return;
-    const opts = { side: d.side, difficulty: this.config.difficulty, personality: personalityById('veteran'), seed: this.config.seed };
-    this.answer(chooseAnswer(cloneState(this.driver.state), d, opts, this.general).answer);
+    if (!d || this.busy || this.view.fatal || this.view.generalThinking || this.disposed) return;
+    const seq = ++this.thinkSeq;
+    this.set({ generalThinking: true });
+    let answer: Answer;
+    try {
+      answer = (await this.general.decide(cloneState(this.driver.state), d)).answer;
+    } catch (e) {
+      if (this.disposed || seq !== this.thinkSeq) return;
+      console.error('The general failed', e);
+      answer = randomAnswer(this.driver.state, d, Math.random);
+    }
+    if (this.disposed || seq !== this.thinkSeq) return;
+    this.set({ generalThinking: false });
+    if (this.view.pending !== d) return;
+    this.answer(answer);
   }
   private set(patch: Partial<ViewState>) {
     this.view = { ...this.view, ...patch };
@@ -250,8 +294,10 @@ export class GameController {
   }
 
   dispose() {
+    if (this.disposed) return;
     this.disposed = true;
     this.opponent.dispose();
+    this.general.dispose();
     this.listeners.clear();
   }
 
@@ -306,7 +352,8 @@ export class GameController {
       return;
     }
     this.logMarks.set(at, seq);
-    this.set({ pending: null, error: null, undo: null });
+    this.thinkSeq++;
+    this.set({ pending: null, error: null, undo: null, generalThinking: false });
     this.save();
     this.run();
   }
@@ -321,6 +368,7 @@ export class GameController {
 
   undo() {
     if (!this.view.undo || this.busy || !this.driver.canUndo()) return;
+    this.thinkSeq++;
     this.driver = this.driver.undo();
     this.driver.drainEvents();
     // the lines the step logged go with it ("… plays …", an arrival)
@@ -329,7 +377,7 @@ export class GameController {
     for (const k of this.logMarks.keys()) if (k >= from) this.logMarks.delete(k);
     if (mark !== undefined) this.set({ log: this.view.log.filter((l) => l.id < mark) });
     const p = this.driver.pending;
-    this.set({ display: cloneState(this.driver.state), pending: p && p.side === this.config.humanSide ? p : null, undo: this.undoable(p), error: null, walking: {} });
+    this.set({ display: cloneState(this.driver.state), pending: p && p.side === this.config.humanSide ? p : null, undo: this.undoable(p), error: null, walking: {}, generalThinking: false });
     this.save();
     if (p && p.side !== this.config.humanSide) this.run();
   }
@@ -453,13 +501,6 @@ export class GameController {
     return pieceById(s, id) ?? pieceById(this.view.display, id);
   }
 
-  /** "British Line Infantry", a leader's name ("Leader" when he has none), or "unit"/"Leader" for a piece not found. */
-  private name(id: string, s: GameState): string {
-    const p = this.piece(id, s);
-    if (!p) return id.startsWith('L') ? 'Leader' : 'unit';
-    return 'key' in p ? `${s.players[p.side].army} ${UNIT_STATS[p.key].name}` : p.name || 'Leader';
-  }
-
   private hexOf(id: string, s: GameState): HexId {
     return this.piece(id, s)?.hex ?? OFF_BOARD;
   }
@@ -534,19 +575,20 @@ export class GameController {
     const after = q.state!;
     const before = this.view.display;
     const human = this.config.humanSide;
-    const army = (side: Side) => after.players[side].army;
-    const plural = (n: number, w: string, many = `${w}s`) => `${n} ${n === 1 ? w : many}`;
+    // the log line of every event is worded in logText; each case below logs it where its animation wants it
+    const line = eventLog(e, before, after, human);
+    const log = () => {
+      if (line) this.addLog(line);
+    };
     switch (e.t) {
       case 'turnStart': {
-        this.addLog({ text: `Turn ${e.turn} — ${army(e.side)}${e.side === human ? ' (you)' : ''}`, side: e.side, kind: 'turn' });
+        log();
         this.set({ display: after, combat: null });
         break;
       }
       case 'cardPlayed': {
         // `side` need not be the active side: a First Strike is played by the defender
-        const def = CARD_DEFS[e.kind];
-        const eff = e.effective !== null && e.effective !== e.kind ? ` → ${CARD_DEFS[e.effective].title}` : '';
-        this.addLog({ text: `${after.players[e.side].commander} plays ${def.title}${eff}.`, side: e.side, kind: 'card' });
+        log();
         sfx.card();
         if (e.side !== human) {
           this.set({ display: after, cardShow: { id: seq++, kind: e.kind, side: e.side } });
@@ -556,7 +598,7 @@ export class GameController {
         break;
       }
       case 'ordered': {
-        if (e.ids.length === 0 && e.side !== human) this.addLog({ text: 'No units could be ordered.', side: e.side, kind: 'info' });
+        log();
         this.set({ display: after });
         if (e.side !== human) await sleep(this.dur(350));
         break;
@@ -566,207 +608,115 @@ export class GameController {
       case 'retire':
       case 'leaderRetreat':
       case 'advance': {
-        const path = e.path;
         const stepMs = e.t === 'move' ? 230 : 190;
         // walk on the 'before' display, then commit
-        await this.walk(e.id, path, stepMs);
+        await this.walk(e.id, e.path, stepMs);
         const walking = { ...this.view.walking };
         delete walking[e.id];
         this.set({ display: after, walking });
-        const hexes = Math.max(0, path.filter((h) => h >= 0).length - 1);
-        const who = this.name(e.id, after);
-        const side = this.sideOf(e.id, after);
-        if (e.t === 'move' && path[path.length - 1] === OFF_BOARD) this.addLog({ text: `${who} leaves the battlefield.`, side, kind: 'result' });
-        else if (e.t === 'retreat' && hexes > 0) this.addLog({ text: `${who} retreats ${plural(hexes, 'hex', 'hexes')}.`, side, kind: 'result' });
-        else if (e.t === 'retire') this.addLog({ text: `${who} retires ${plural(hexes, 'hex', 'hexes')}.`, side, kind: 'result' });
-        else if (e.t === 'leaderRetreat') this.addLog({ text: e.offBoard ? `${who} leaves the battlefield.` : `${who} falls back.`, side, kind: 'result' });
-        else if (e.t === 'advance') this.addLog({ text: `${who} advances.`, side, kind: 'result' });
+        log();
         break;
       }
       case 'combat': {
         const from = this.hexOf(e.attacker, after);
         const to = this.hexOf(e.target, after);
-        const verb: Record<RollPurpose, string> = {
-          fire: 'fires on', melee: 'attacks', battleBack: 'battles back against', firstStrike: 'strikes first at', bonus: 'attacks again, into',
-          squareFirst: 'in square, strikes first at', retireReform: 'retires and reforms against', leaderCheck: 'threatens',
-          escape: 'tries to catch', elan: 'inspires against', rally: 'rallies against',
-        };
         if (e.purpose !== 'fire') sfx.clash();
-        const guns = e.artillery?.length ? ` and ${plural(e.artillery.length, 'gun')}` : '';
-        this.addLog({
-          text: `${this.name(e.attacker, after)} ${verb[e.purpose]} ${this.name(e.target, after)} (${plural(e.dice, 'die', 'dice')}${guns}).`,
-          side: this.sideOf(e.attacker, after), kind: 'combat',
-        });
+        log();
         this.set({ display: after, combat: from >= 0 && to >= 0 ? { from, to } : null });
         await sleep(this.dur(e.purpose === 'battleBack' ? 300 : 420));
         break;
       }
       case 'roll': {
-        const title = this.rollTitle(e.purpose, e.by, e.against, after);
+        const title = rollTitle(e.purpose, e.by, e.against, after);
         const id = seq++;
-        const sub = this.rollSummary(e.purpose, e.faces, e.scoring);
+        const sub = rollSummary(e.purpose, e.faces, e.scoring);
         sfx.dice(e.faces.length);
         this.set({ dice: { id, title, subtitle: 'Rolling…', faces: e.faces, scoring: e.scoring, rolling: true, purpose: e.purpose } });
         await sleep(this.dur(650));
+        log();
         this.set({ dice: { id, title, subtitle: sub, faces: e.faces, scoring: e.scoring, rolling: false, purpose: e.purpose }, display: after });
         await sleep(this.dur(e.purpose === 'leaderCheck' || e.purpose === 'escape' ? 750 : 1050));
         break;
       }
       case 'damage': {
-        const hex = this.hexOf(e.id, before);
-        this.flash(hex, `−${e.amount}`, 'hit');
+        this.flash(this.hexOf(e.id, before), `−${e.amount}`, 'hit');
         sfx.hit();
-        this.addLog({ text: `${this.name(e.id, before)} loses ${plural(e.amount, 'block')} (${e.reason}).`, side: this.sideOf(e.id, before), kind: 'result' });
+        log();
         this.set({ display: after });
         await sleep(this.dur(380));
         break;
       }
       case 'eliminated': {
-        this.addLog({ text: `${this.name(e.id, before)} is eliminated.`, side: this.sideOf(e.id, before), kind: 'result' });
+        log();
         this.set({ display: after });
         await sleep(this.dur(450));
         break;
       }
       case 'removed': {
         // leaves the board like an eliminated unit, but no banner is awarded
-        const hex = this.hexOf(e.id, before);
-        this.flash(hex, 'Removed', 'info');
-        this.addLog({ text: `${this.name(e.id, before)} removed from the field (${e.reason}).`, side: this.sideOf(e.id, before), kind: 'result' });
+        this.flash(this.hexOf(e.id, before), 'Removed', 'info');
+        log();
         this.set({ display: after });
         await sleep(this.dur(450));
         break;
       }
       case 'leaderKilled': {
         this.flash(this.hexOf(e.id, before), 'Leader slain', 'hit');
-        this.addLog({ text: `${this.name(e.id, before)} is slain.`, side: this.sideOf(e.id, before), kind: 'result' });
+        log();
         this.set({ display: after });
         await sleep(this.dur(600));
         break;
       }
-      case 'leaderSafe':
-        this.addLog({ text: `${this.name(e.id, after)} is safe.`, side: this.sideOf(e.id, after), kind: 'result' });
-        this.set({ display: after });
-        break;
-      case 'leaderLeft':
-        this.addLog({ text: `${this.name(e.id, before)} leaves the field.`, side: this.sideOf(e.id, before), kind: 'result' });
-        this.set({ display: after });
-        break;
       case 'flags': {
-        const who = this.name(e.id, after);
-        const side = this.sideOf(e.id, after);
-        if (e.ignored > 0) {
-          this.flash(this.hexOf(e.id, after), e.ignored >= e.flags ? 'Holds firm!' : `Ignores ${e.ignored}`, 'flag');
-          this.addLog({ text: `${who} ignores ${plural(e.ignored, 'flag')}.`, side, kind: 'result' });
-        } else this.addLog({ text: `${plural(e.flags, 'flag')} against ${who}.`, side, kind: 'result' });
-        if (e.bounce) this.addLog({ text: `${who} cannot fall back: it is bounced.`, side, kind: 'result' });
+        if (e.ignored > 0) this.flash(this.hexOf(e.id, after), e.ignored >= e.flags ? 'Holds firm!' : `Ignores ${e.ignored}`, 'flag');
+        log();
         this.set({ display: after });
         break;
       }
-      case 'attach':
-        this.addLog({ text: `${this.name(e.leader, after)} joins ${this.name(e.unit, after)}.`, side: this.sideOf(e.leader, after), kind: 'info' });
-        this.set({ display: after });
-        break;
       case 'squareFormed':
         this.flash(this.hexOf(e.id, after), 'Square!', 'info');
-        this.addLog({ text: `${this.name(e.id, after)} forms square.`, side: this.sideOf(e.id, after), kind: 'result' });
+        log();
         this.set({ display: after });
         await sleep(this.dur(450));
         break;
-      case 'squareLeft':
-        this.addLog({ text: `${this.name(e.id, after)} leaves the square.`, side: this.sideOf(e.id, after), kind: 'info' });
-        this.set({ display: after });
-        break;
-      case 'cardReturned':
-        this.addLog({ text: `A card returns to the ${army(e.side)} hand as a square is left.`, side: e.side, kind: 'card' });
-        this.set({ display: after });
-        break;
       case 'rallied':
         this.flash(this.hexOf(e.id, after), `+${e.blocks}`, 'rally');
-        this.addLog({ text: `${this.name(e.id, after)} rallies ${plural(e.blocks, 'block')}.`, side: this.sideOf(e.id, after), kind: 'result' });
+        log();
         this.set({ display: after });
         await sleep(this.dur(450));
         break;
       case 'shortSupply':
         this.flash(e.hex, 'Short supply', 'info');
-        this.addLog({ text: `${this.name(e.id, after)} is moved by Short Supply.`, side: this.sideOf(e.id, after), kind: 'result' });
+        log();
         this.set({ display: after });
         await sleep(this.dur(450));
         break;
       case 'banner':
         sfx.banner();
-        this.addLog({ text: `The ${army(e.side)} army gains a Victory Banner (${e.total}/${after.bannersToWin}) — ${e.reason}.`, side: e.side, kind: 'banner' });
+        log();
         this.set({ display: after });
         await sleep(this.dur(500));
         break;
       case 'held':
-        this.addLog({ text: `The ${army(e.side)} army holds ${plural(e.held, 'banner')} (${e.total}/${after.bannersToWin}) — ${e.reason}.`, side: e.side, kind: 'banner' });
+        log();
         this.set({ display: after });
         await sleep(this.dur(350));
         break;
+      case 'leaderSafe':
+      case 'leaderLeft':
+      case 'attach':
+      case 'squareLeft':
+      case 'cardReturned':
       case 'draw':
-        this.addLog({ text: `The ${army(e.side)} army draws a card.`, side: e.side, kind: 'info' });
-        this.set({ display: after });
-        break;
       case 'scoutDrew':
-        this.addLog({ text: `The ${army(e.side)} army draws two cards and keeps one.`, side: e.side, kind: 'info' });
-        this.set({ display: after });
-        break;
       case 'discarded':
-        this.addLog({ text: `The ${army(e.side)} army discards ${CARD_DEFS[cardKind(e.card)].title}.`, side: e.side, kind: 'card' });
-        this.set({ display: after });
-        break;
       case 'reshuffle':
-        this.addLog({ text: 'The command deck is reshuffled.', kind: 'info' });
-        this.set({ display: after });
-        break;
       case 'log':
-        this.addLog({ text: e.text, side: e.side, kind: 'info' });
-        this.set({ display: after });
-        break;
       case 'victory':
-        this.addLog({ text: `Victory: ${e.winner === 'draw' ? 'Draw' : army(e.winner)} — ${e.reason}.`, kind: 'victory' });
+        log();
         this.set({ display: after });
         break;
-      default: {
-        // an event with no wording of its own is logged by its kind
-        const kind: string = (e as { t: string }).t;
-        this.addLog({ text: kind, kind: 'info' });
-        this.set({ display: after });
-      }
     }
-  }
-
-  private sideOf(id: string, s: GameState): Side | undefined {
-    return this.piece(id, s)?.side;
-  }
-
-  private rollTitle(p: RollPurpose, by: string | null, against: string | null, s: GameState): string {
-    const a = by ? this.name(by, s) : '';
-    const t = against ? this.name(against, s) : '';
-    switch (p) {
-      case 'fire': return `${a} fires`;
-      case 'melee': return `${a} attacks`;
-      case 'bonus': return `${a} — bonus melee`;
-      case 'battleBack': return `${a} battles back`;
-      case 'firstStrike': return `${a} — First Strike`;
-      case 'squareFirst': return `${a || t} — square strikes first`;
-      case 'retireReform': return `${a || t} — Retire and Reform`;
-      case 'leaderCheck': return `${t || a} — leader casualty check`;
-      case 'escape': return `${t || a} tries to escape`;
-      case 'elan': return 'Élan';
-      case 'rally': return 'Rally';
-    }
-  }
-
-  /** Subtitle of a roll in the dice tray. */
-  private rollSummary(p: RollPurpose, faces: DieFace[], scoring: boolean[]): string {
-    if (p === 'elan' || p === 'rally') return 'Dice rolled';
-    if (p === 'leaderCheck' || p === 'escape') return faces.includes('sabre') ? 'The leader is hit!' : 'The leader is safe';
-    const hits = scoring.filter(Boolean).length;
-    const flags = faces.filter((f) => f === 'flag').length;
-    const parts = [hits === 1 ? '1 hit' : `${hits} hits`];
-    if (flags && p !== 'retireReform') parts.push(flags === 1 ? '1 flag' : `${flags} flags`);
-    return parts.join(', ');
   }
 
   get scenario() {

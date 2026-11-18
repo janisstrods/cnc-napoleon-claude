@@ -109,7 +109,7 @@ describe('the general decides for the human', () => {
     try {
       for (let i = 0; i < 60000 && !c.view.over; i++) {
         if (c.view.fatal) throw new Error(`the game loop failed: ${c.view.error}`);
-        if (c.view.pending) c.autoAnswer();
+        if (c.view.pending) await c.autoAnswer();
         else {
           c.hurry();
           await vi.advanceTimersByTimeAsync(50);
