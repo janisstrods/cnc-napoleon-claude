@@ -50,8 +50,21 @@ export function squareTurns(s: GameState, unit: Unit, occ: Occ): number {
  * that time, and the unit's immobility.
  */
 export function squareCost(s: GameState, unit: Unit, occ: Occ): number {
-  const turns = squareTurns(s, unit, occ);
-  return turns * (CARD_VALUE / 3 + COMMAND_TURN + IMMOBILE_TURN * unitValue(s, unit));
+  return squareTurns(s, unit, occ) * squareTurnCost(s, unit);
+}
+
+/** One turn of a square: a card unavailable (`CARD_VALUE` ÷ 3), Command −1 and the unit's immobility. */
+function squareTurnCost(s: GameState, unit: Unit): number {
+  return CARD_VALUE / 3 + COMMAND_TURN + IMMOBILE_TURN * unitValue(s, unit);
+}
+
+/**
+ * The standing cost of a square already formed, for the evaluation: `SQUARE_BASE_TURNS` turns of its cost, whatever cavalry
+ * is about. (`squareCost`'s longer duration with massed cavalry belongs to the form-square decision; in a position's value it
+ * would make the cavalry's side gain by parking more cavalry near the square.)
+ */
+export function squareHoldCost(s: GameState, unit: Unit): number {
+  return SQUARE_BASE_TURNS * squareTurnCost(s, unit);
 }
 
 /**

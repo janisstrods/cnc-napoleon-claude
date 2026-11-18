@@ -8,6 +8,7 @@
 // prospect) is part of every melee's `ev`.
 import {
   artilleryShares, attachedLeader, bannerTotal, escapeDice, fireDice, leaderRetreatOptions, meleeDice, neighbours, noBattleAfterEntering, onBaseline,
+  other,
   passableFor, retreatDistance, retreatOptions, squareFirstApplies, statsOf, unitById,
   type DefendChoice, type GameState, type HexId, type Leader, type MeleeCtx, type Side, type StrikeRole, type Unit,
 } from '../engine';
@@ -134,9 +135,27 @@ function bannerAt(s: GameState, scorer: Side, k: number): number {
   return bannersWorth(bannerTotal(s, scorer) + k - 1, 1, s.bannersToWin);
 }
 
-/** Does `scorer`'s k-th next banner win the game? */
-function winsWith(s: GameState, scorer: Side, k: number): boolean {
-  return bannerTotal(s, scorer) + k >= s.bannersToWin;
+/**
+ * Banners the elimination of `victim` scores for its enemy: 1, or the weight of a `killWeight` objective of the enemy's side
+ * against the victim's arm, `first` while its public kill count (`special.objState`) is 0 and `later` afterwards.
+ */
+// approximates RR §13.2, §13.4, R65 (engine: scoreKill)
+export function killBanners(s: GameState, victim: Pick<Unit, 'key' | 'side'>): number {
+  const scorer = other(victim.side);
+  const arm = statsOf(s, victim).arm;
+  let n = 1;
+  s.scenario.objectives.forEach((o, i) => {
+    if (o.kind === 'killWeight' && o.side === scorer && o.enemyArm === arm) n = (s.special.objState[i]?.count ?? 0) === 0 ? o.first : o.later;
+  });
+  return n;
+}
+
+/**
+ * The value to `scorer` of the banners that eliminating `victim` scores (`killBanners`), as its k-th next banners onward:
+ * the one pricing point of an elimination for the estimates, the planner and the evaluation.
+ */
+export function bannerValue(s: GameState, scorer: Side, victim: Pick<Unit, 'key' | 'side'>, k = 1): number {
+  return bannersWorth(bannerTotal(s, scorer) + k - 1, killBanners(s, victim), s.bannersToWin);
 }
 
 /** A leader left alone on his hex: the chance he dies on the way back and whether that way leads off the map. */
@@ -198,17 +217,23 @@ function strike(s: GameState, ec: EstCtx, victim: Unit, source: Unit, dice: numb
   const blocks = victim.blocks;
   const leader = attachedLeader(s, victim, ec.occ);
   const banner = bannerAt(s, scorer, 1);
+  // the elimination's banners, by the victim's arm and the scenario's kill weights
+  const kill = bannerValue(s, scorer, victim);
   // the leader's kill while his unit survives is the next banner
   const leaderLoss = LEADER_VALUE + banner;
   // a winning elimination ends the game before the casualty check (applyOutcome returns on the winner)
-  const elimWins = winsWith(s, scorer, 1);
+  const killN = killBanners(s, victim);
+  const elimWins = bannerTotal(s, scorer) + killN >= s.bannersToWin;
   let alone: number | undefined;
-  /** The leader's part of his unit's elimination: the check (`checkNow`: 1 die) and, if he survives it, his retreat alone. */
+  /**
+   * The leader's part of his unit's elimination: the check (`checkNow`: 1 die) and, if he survives it, his retreat alone;
+   * his death is the banner after the elimination's `killN`.
+   */
   const elimLeader = (checkNow: boolean): number => {
     if (!leader || elimWins) return 0;
     const pK = checkNow ? leaderCheckP(true) : 0;
-    alone ??= aloneValue(s, leader, scorer, 2);
-    return pK * (LEADER_VALUE + bannerAt(s, scorer, 2)) + (1 - pK) * alone;
+    alone ??= aloneValue(s, leader, scorer, 1 + killN);
+    return pK * (LEADER_VALUE + bannerAt(s, scorer, 1 + killN)) + (1 - pK) * alone;
   };
   const worth = (k: number): number => unitValue(s, { key: victim.key, blocks: k });
   const memo = new Map<number, FlagResult>();
@@ -221,7 +246,7 @@ function strike(s: GameState, ec: EstCtx, victim: Unit, source: Unit, dice: numb
       const hits = Math.max(0, h - ignore);
       if (hits >= blocks) {
         out.expHits += p * blocks;
-        out.value += p * (worth(blocks) + banner + elimLeader(true));
+        out.value += p * (worth(blocks) + kill + elimLeader(true));
         out.pElim += p;
         continue;
       }
@@ -241,7 +266,7 @@ function strike(s: GameState, ec: EstCtx, victim: Unit, source: Unit, dice: numb
         const fo = flagOutcome(s, victim, source, f, { leaderOk, memo, bounce });
         if (fo.lost >= left) {
           // eliminated by a blocked retreat: a leader killed by the hit is gone; otherwise he is checked now if not yet
-          out.value += q * (worth(left) + banner + (leaderOk ? elimLeader(!checked) : 0));
+          out.value += q * (worth(left) + kill + (leaderOk ? elimLeader(!checked) : 0));
           out.pElim += q;
           continue;
         }
