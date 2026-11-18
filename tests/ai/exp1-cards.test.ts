@@ -461,6 +461,7 @@ describe('review round 1: hidden information, the memo and the spend point', () 
     // the 'nothing ordered' clause on its own: the counter question unanswered (guerrilla 'none') but a piece already ordered
     const orderedOnly = cloneState(later);
     orderedOnly.turn.guerrilla = 'none';
+    orderedOnly.turn.phase = 'orders';   // so only the 'nothing ordered' clause can throw
     expect(Object.keys(orderedOnly.turn.ordered).length).toBeGreaterThan(0);
     expect(() => opponentTurnValue(orderedOnly, 'bottom', 'attackC', W)).toThrow(/spend point/);
     // and inside a simulation the same guard holds

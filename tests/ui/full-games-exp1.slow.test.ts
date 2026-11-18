@@ -17,10 +17,12 @@ const EVENT_KINDS: Record<GameEvent['t'], true> = {
 };
 
 const MAX_DECISIONS = 3000;
+/** The human plays the side that meets the Spanish rules: top holds the Guerrilla counters (101) and the 106 hand shrink and square cap; 116's Move First asks both sides. */
+const humanSide = (id: string) => (id === '116' ? 'bottom' : 'top');
 
 async function playToEnd(id: string) {
   const config: SessionConfig = {
-    ...newSessionConfig(id, 'bottom', 'captain'), seed: 1,
+    ...newSessionConfig(id, humanSide(id), 'captain'), seed: 1,
     ai: { difficulty: 'captain', budgetScale: 0.05, deterministic: true },
   };
   const c = new GameController(config, new SeededOpponent(), []);
