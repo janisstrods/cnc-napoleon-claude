@@ -1,0 +1,18 @@
+/* The keyboard cursor of the board (Task 10c): shown while the board has the keyboard focus, never after a mouse click. */
+.board-svg { outline: none; }
+.board-cursor { pointer-events: none; opacity: 0; }
+.board-svg:focus-visible .board-cursor { opacity: 1; }
+.board-cursor-halo { fill: none; stroke: var(--kit-ink); stroke-width: 9; stroke-linejoin: round; }
+.board-cursor-ring { fill: rgba(255, 255, 255, .10); stroke: var(--kit-gold); stroke-width: 5; stroke-linejoin: round; }
+.board-cursor-coords {
+  font-family: var(--kit-font-body);
+  font-size: 15px;
+  font-weight: 700;
+  fill: var(--kit-parchment-light);
+  stroke: var(--kit-ink);
+  stroke-width: 3.5px;
+  paint-order: stroke;
+}
+@media (forced-colors: active) {
+  .board-svg:focus-visible .board-cursor-ring { stroke: Highlight; }
+}

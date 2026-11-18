@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import {
-  UNIT_STATS, battleReady, battleTargets, cardKind, eligiblePieces, leaderAt, leaderUnit, movablePieces, other, pieceMoves, unitAt,
+  COLS, ROWS, UNIT_STATS, battleReady, battleTargets, cardKind, eligiblePieces, hexId, leaderAt, leaderUnit, movablePieces, other, pieceMoves, unitAt,
   type Answer, type GameState, type HexId, type Side,
 } from '../../engine';
 import { UnitIcon } from '../../art';
@@ -9,7 +9,8 @@ import { BattleResult } from './BattleResult';
 import { Board } from './Board';
 import type { GameController } from './controller';
 import { HoverTip, LogPanel } from './panels';
-import { PromptBar, focusPromptTarget, gamePrompt } from './prompts';
+import { PromptBar, focusNewDecision, focusPromptTarget, gamePrompt } from './prompts';
+import { boardKeyAction, firstMarked, hexLabel, markedHexes, moveCursor, screenKey } from './boardKeys';
 import { bannerCounts, objectiveSummary, objectiveTipLines } from './objectiveText';
 import { boardMarks, escapeSelection, leaderRetreatChoices, retreatChoices, selectionDeps, toggleGun, wantsPromptFocus, type UiSel } from './uiModel';
 import { assignClick, assignClickRefusal, assignOptions, currentAssign, nextDie, type ElanOrRally } from './assign';
@@ -59,6 +60,7 @@ export function GameScreen({ controller, onExit, onRematch }: {
       if (t instanceof HTMLSelectElement || t instanceof HTMLInputElement) return;
       if (document.querySelector('.kit-modal')) return; // dialogs own the keyboard
       if (e.key === 'Enter') {
+        if (t instanceof Element && t.closest('.board-svg')) return; // the board's own handler: Enter acts on the cursor hex
         if (t instanceof HTMLButtonElement) {
           // a held Enter must not press the focused prompt button of each new decision in turn
           if ((e.repeat || performance.now() - shownAt.current < 400) && t.closest('.prompt-buttons')) e.preventDefault();
@@ -71,6 +73,10 @@ export function GameScreen({ controller, onExit, onRematch }: {
       } else if (e.key === 'Escape') {
         // Escape also disarms the Élan / Rally die
         setUi((u) => escapeSelection(s, d, human, u));
+      } else if ((e.key === 'b' || e.key === 'B') && !e.ctrlKey && !e.metaKey && !e.altKey && !(t instanceof HTMLButtonElement)) {
+        document.querySelector<SVGSVGElement>('.board-svg')?.focus(); // jump to the board from anywhere else
+      } else if ((e.key === 'p' || e.key === 'P') && !e.ctrlKey && !e.metaKey && !e.altKey && !(t instanceof HTMLButtonElement)) {
+        focusPromptTarget(document); // and from the board to the prompt's buttons
       } else if (/^[1-9]$/.test(e.key) && d?.kind === 'playCard' && d.side === human) {
         const c = s.players[human].hand[Number(e.key) - 1];
         if (c !== undefined) setUi((u) => ({ ...u, selCard: c }));
@@ -80,29 +86,26 @@ export function GameScreen({ controller, onExit, onRematch }: {
     return () => window.removeEventListener('keydown', onKey);
   }, [d, human, s]);
 
+  /** The selection a new decision starts with: nothing, or the one piece that can act. */
+  const freshSel = (): UiSel => {
+    let selPiece: string | null = null;
+    if (d?.kind === 'move' && d.side === human) { const movers = movablePieces(s); if (movers.length === 1) selPiece = movers[0]; }
+    if (d?.kind === 'battle' && d.side === human) { const ready = battleReady(s); if (ready.length === 1) selPiece = ready[0]; }
+    return { ...EMPTY_SEL, selPiece };
+  };
+
   // reset local selection whenever a new decision arrives
   useEffect(() => {
     shownAt.current = performance.now();
     setRefusal(null);
-    setUi((u) => ({ ...EMPTY_SEL, hoverHex: u.hoverHex }));
-    if (d?.kind === 'move' && d.side === human) {
-      const movers = movablePieces(s);
-      if (movers.length === 1) setUi((u) => ({ ...u, selPiece: movers[0] }));
-    }
-    if (d?.kind === 'battle' && d.side === human) {
-      const ready = battleReady(s);
-      if (ready.length === 1) setUi((u) => ({ ...u, selPiece: ready[0] }));
-    }
+    setUi((u) => ({ ...freshSel(), hoverHex: u.hoverHex }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [d]);
 
   // a new decision of the human's takes the keyboard focus on its primary button, unless the pointer is on the board
   const overBoard = useRef(false);
   useEffect(() => {
-    if (!wantsPromptFocus(d, human, overBoard.current) || document.querySelector('.kit-modal')) return;
-    const a = document.activeElement;
-    if (a instanceof HTMLSelectElement || a instanceof HTMLInputElement) return;
-    focusPromptTarget(document);
+    focusNewDecision(d, human, overBoard.current, document);
   }, [d, human]);
 
   const answer = (a: Answer) => controller.answer(a);
@@ -113,6 +116,18 @@ export function GameScreen({ controller, onExit, onRematch }: {
     [s, d, human, ...selectionDeps(ui)],
   );
   const pathPreview = useMemo(() => bui.pathAt(ui.hoverHex), [bui, ui.hoverHex]);
+
+  // the keyboard cursor: the first marked hex of each new decision (for keyboard players), then wherever the arrows take it
+  const [cursor, setCursor] = useState<HexId>(() => hexId(Math.floor(ROWS / 2), Math.floor(COLS / 2)));
+  const marked = useMemo(() => markedHexes(bui, s), [bui, s]);
+  useEffect(() => {
+    // the marks the decision starts with (this render's still hold the last decision's selection)
+    if (!wantsPromptFocus(d, human, overBoard.current) || d?.kind === 'playCard') return;
+    const first = firstMarked(markedHexes(boardMarks(s, d, freshSel(), human), s), flipped);
+    if (first !== null) setCursor(first);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [d]);
+  const cursorLabel = useMemo(() => hexLabel(s, cursor, marked), [s, cursor, marked]);
 
   const orderedIds = useMemo(() => new Set(Object.keys(s.turn.ordered)), [s]);
   const doneIds = useMemo(() => {
@@ -254,6 +269,24 @@ export function GameScreen({ controller, onExit, onRematch }: {
   handlers.current = { onHexClick, onLeaderClick };
   const onHexClickS = useCallback((h: HexId) => handlers.current.onHexClick(h), []);
   const onLeaderClickS = useCallback((id: string) => handlers.current.onLeaderClick(id), []);
+  const onBoardKeyDown = (e: React.KeyboardEvent<SVGSVGElement>) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const act = boardKeyAction(e.key, e.shiftKey);
+    if (!act) return;
+    e.preventDefault();
+    if (act.kind === 'move') {
+      const to = moveCursor(cursor, screenKey(act.key, flipped), ROWS, COLS);
+      setCursor(to);
+      setUi((u) => (u.hoverHex === to ? u : { ...u, hoverHex: to })); // the path preview and dice line follow the cursor as they follow the pointer
+    } else if (act.kind === 'activate') {
+      if (e.repeat) return;
+      handlers.current.onHexClick(cursor);
+    } else {
+      if (e.repeat) return;
+      const l = leaderAt(s, cursor);
+      if (!(l && handlers.current.onLeaderClick(l.id))) handlers.current.onHexClick(cursor);
+    }
+  };
   const onHexHoverS = useCallback((h: HexId | null) => setUi((u) => (u.hoverHex === h ? u : { ...u, hoverHex: h })), []);
 
   // ------------------------------------------------------------------ prompt
@@ -330,6 +363,9 @@ export function GameScreen({ controller, onExit, onRematch }: {
             onHexClick={onHexClickS}
             onHexHover={onHexHoverS}
             onLeaderClick={onLeaderClickS}
+            cursor={cursor}
+            cursorLabel={cursorLabel}
+            onBoardKeyDown={onBoardKeyDown}
           />
           {view.toast && (
             <div

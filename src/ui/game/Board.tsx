@@ -1,10 +1,11 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, type KeyboardEvent } from 'react';
 import { ALL_HEXES, leaderUnit, rowOf, colOf, type GameState, type HexId, type Leader, type Side, type Unit } from '../../engine';
 import { LEADER_ATTACH_OFFSET, LeaderToken, UnitToken } from '../../art';
 import { BoardArt, ObjectiveMarkers } from '../terrain';
 import { BOARD_H, BOARD_W, HEX_R, hexCenterId, hexPoints } from '../geometry';
 import { boardArtProps, leaderTokenProps, unitTokenProps } from './boardProps';
 import type { Flash } from './controller';
+import './board-keys.css';
 
 export type Highlight =
   | 'eligible' | 'selected' | 'mover' | 'attacker' | 'move' | 'moveNoBattle' | 'moveMustBattle'
@@ -30,6 +31,10 @@ export interface BoardProps {
   onHexClick?: (h: HexId) => void;
   onHexHover?: (h: HexId | null) => void;
   onLeaderClick?: (id: string) => boolean; // return true if handled
+  /** The keyboard cursor hex and what it says aloud; the board is one tab stop and `onBoardKeyDown` moves the cursor. */
+  cursor?: HexId | null;
+  cursorLabel?: string;
+  onBoardKeyDown?: (e: KeyboardEvent<SVGSVGElement>) => void;
 }
 
 const HL_STYLE: Record<Highlight, { fill: string; stroke: string; dash?: string; width?: number }> = {
@@ -159,7 +164,16 @@ export function Board(p: BoardProps) {
   );
   const comb = p.combat ? { a: hexCenterId(p.combat.from, flipped), b: hexCenterId(p.combat.to, flipped) } : null;
   return (
-    <svg className="board-svg" viewBox={`0 0 ${BOARD_W} ${BOARD_H}`} preserveAspectRatio="xMidYMid meet">
+    <svg
+      className="board-svg"
+      viewBox={`0 0 ${BOARD_W} ${BOARD_H}`}
+      preserveAspectRatio="xMidYMid meet"
+      role="application"
+      aria-label="Battlefield. Arrow keys move the cursor, Enter or Space acts on its hex, Shift+Enter on its leader, Escape clears the selection. P goes to the prompt buttons, B comes back to the board."
+      aria-activedescendant={p.cursor != null ? 'board-cursor' : undefined}
+      tabIndex={0}
+      onKeyDown={p.onBoardKeyDown}
+    >
       <defs>
         <marker id="arrowhead" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
           <path d="M0 0 L10 5 L0 10 z" fill="#ffdf8a" />
@@ -258,6 +272,16 @@ export function Board(p: BoardProps) {
           );
         })}
       </g>
+      {p.cursor != null && p.cursor >= 0 && (() => {
+        const { x, y } = hexCenterId(p.cursor, flipped);
+        return (
+          <g id="board-cursor" className="board-cursor" role="img" aria-label={p.cursorLabel ?? ''}>
+            <polygon points={hexPoints(x, y, HEX_R - 1)} className="board-cursor-halo" />
+            <polygon points={hexPoints(x, y, HEX_R - 4)} className="board-cursor-ring" />
+            <text x={x} y={y + HEX_R * 0.82} textAnchor="middle" className="board-cursor-coords">{rowOf(p.cursor)},{colOf(p.cursor)}</text>
+          </g>
+        );
+      })()}
       <g className="flash-layer">
         {p.flashes.map((f) => {
           const { x, y } = hexCenterId(f.hex, flipped);
