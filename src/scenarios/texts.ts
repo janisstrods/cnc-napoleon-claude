@@ -123,7 +123,7 @@ export const TEXTS: Record<string, ScenarioTexts> = {
     hint: "Hold the ridge and the farms; let the French break on your squares.",
   },
   '101': {
-    blurb: "On 19 July 1808 Dupont's French corps of raw conscripts, with Swiss and Guard detachments, marched at night to break through at Bailén. Reding and Coupigny held the hills on either side of the road with Spanish regulars, militia and guns. Dupont's attacks failed one after another, and the Swiss changed sides or surrendered. A few days later his army laid down its arms, a shock to the French.",
+    blurb: "Dupont's French corps, mostly raw conscripts with Swiss and Guard detachments, set out in the night of 18 July 1808 to force the road through Bailén. Reding and Coupigny barred it from the hills with regulars, militia and guns. Attack after attack failed, and the Swiss went over or gave up. Within days the whole French army had surrendered.",
     specialText: [
       "The Rumblar is fordable everywhere.",
       "Guerrilla Action: the Spanish start with no counters.",
@@ -133,7 +133,7 @@ export const TEXTS: Record<string, ScenarioTexts> = {
     hint: "Hold the hills and watch the Swiss: they will not stand for long.",
   },
   '102': {
-    blurb: "On 31 October 1808 Lefebvre's French IV Corps attacked Blake's Army of Galicia as it stood at Zornoza on the road from Bilbao, against King Joseph's orders according to Oman. The Spanish gave ground rather than be cut off and fell back along the road. The French won the field, but Blake got his army away to fight again.",
+    blurb: "Blake's Army of Galicia had advanced from Bilbao and halted at Zornoza. On 31 October Lefebvre's IV Corps fell upon it, against King Joseph's wishes. The Spanish gave way along the road rather than risk encirclement. The field went to the French, yet Blake kept his army in being.",
     specialText: [
       "A Spanish unit may leave the board from the Spanish baseline; from the fourth on, each scores 1 permanent banner. Leaders may leave but score nothing.",
       "Guerrilla Action: the Spanish start with no counters.",
@@ -142,7 +142,7 @@ export const TEXTS: Record<string, ScenarioTexts> = {
     hint: "Win the field, or save the army: Blake must slip away down the road.",
   },
   '103': {
-    blurb: "On 10 November 1808 Soult, newly arrived to command the French 2nd Corps, found the Army of Estremadura drawn up in the open before Gamonal. Its young commander, Belvedere, had no battlefield experience and had left the defences of Burgos behind him. Lasalle's and Milhaud's cavalry rode down the Spanish line, and the army broke.",
+    blurb: "Soult took over the French 2nd Corps on 9 November 1808 and next day met the Army of Estremadura in the open outside Gamonal. Its young general, Belveder, had never commanded in battle and had abandoned the defences of Burgos. Lasalle's and Milhaud's horsemen swept over the Spanish line, which fell apart.",
     specialText: [
       "The Pico is fordable.",
       "Guerrilla Action: the Spanish start with 1 counter.",
@@ -150,15 +150,15 @@ export const TEXTS: Record<string, ScenarioTexts> = {
     hint: "Break the untried Spanish line early; the horse will help.",
   },
   '104': {
-    blurb: "After Zornoza, Blake's Army of the Left, hungry, ragged and thinned by desertion, turned to bay on 10 November 1808 before Espinosa de los Monteros. Victor's French 1st Corps, urged on by Napoleon after a rebuke, pressed the pursuit while Lefebvre swung inland to cut the retreat. The fighting ran into the next day, and the Spanish army was routed.",
+    blurb: "Blake's Army of the Left, starving, in rags and depleted by desertion, made a stand at Espinosa de los Monteros on 10 November 1808. Victor's 1st Corps, spurred by an imperial reproach, chased it hard, and Lefebvre marched inland to block its escape. The fighting lasted into the second day and ended with the Spanish routed.",
     specialText: [
       "The Trueba is impassable; the Shallow Stream is fordable.",
       "Guerrilla Action: the Spanish start with 1 counter.",
     ],
-    hint: "Blake's tired army must stand two days against Victor's pursuit.",
+    hint: "Blake's army is spent; make Victor pay for every hex.",
   },
   '105': {
-    blurb: "On 30 November 1808 Napoleon marched on Madrid by the northern pass of the Somosierra. San Juan, with an improvised force, had put sixteen guns across the crest, with a shallow earthwork in front. The Emperor sent his troops straight up the road to carry the battery, and the Spanish defence gave way, opening the way to the capital.",
+    blurb: "Napoleon took the northern road to Madrid on 30 November 1808, over the Somosierra pass. San Juan, with a hastily gathered force, had lined the crest with sixteen guns behind a low earthwork. The French drove straight up the road at the battery, and the defence collapsed, leaving the capital exposed.",
     specialText: [
       "The French win at once when all three Spanish batteries are destroyed.",
       "Guerrilla Action: the Spanish start with 1 counter.",
@@ -166,7 +166,7 @@ export const TEXTS: Record<string, ScenarioTexts> = {
     hint: "Storm up the pass and silence the guns before they wear you down.",
   },
   '106': {
-    blurb: "On 28 March 1809 Cuesta turned back on Victor's French 1st Corps with fresh reinforcements. Victor met him on the open plain at Medellín, between the Guadiana and the Hortiga ravine, with the town and its long bridge behind him. The Spanish infantry was caught on open ground and destroyed, while Cuesta himself escaped.",
+    blurb: "Cuesta, newly reinforced, turned on Victor's 1st Corps and on 28 March 1809 attacked it at Medellín, a plain bounded by the Guadiana and a ravine, with a long bridge at the town. Cavalry charges broke the Spanish horse and exposed its infantry, which was cut to pieces. Cuesta himself got away.",
     specialText: [
       "Each banner the French gain costs the Spanish a random card from their hand, until their hand is down to 3.",
       "Only two Spanish units may ever form square in this battle.",
@@ -176,7 +176,7 @@ export const TEXTS: Record<string, ScenarioTexts> = {
     hint: "On open ground the Spanish infantry will melt; strike fast.",
   },
   '107': {
-    blurb: "On 23 May 1809 Suchet, who had just taken over the French III Corps in Aragon, found Blake and his Army of the Right on three hills beside Alcañiz, with the Guadalope at their back. Suchet attacked, but the Spanish held their ground. His corps fell back on Híjar, and Blake claimed the day.",
+    blurb: "Suchet had barely taken charge of the French III Corps in Aragon when, on 23 May 1809, he came upon Blake's Army of the Right holding three hills by Alcañiz with the Guadalope behind. His attack did not dislodge the Spanish. The French retired on Híjar, and Blake could claim a win.",
     specialText: [
       "The Guadalope is impassable except at the bridge.",
       "Guerrilla Action: the Spanish start with 1 counter.",
@@ -184,7 +184,7 @@ export const TEXTS: Record<string, ScenarioTexts> = {
     hint: "Hold the three hills and let Suchet's attack wear itself out.",
   },
   '108': {
-    blurb: "On 15 June 1809 Blake's army, strengthened with Valencian reinforcements, marched down the Huerba valley to threaten Zaragoza. Suchet, who had made the Abbey of Santa Fe his headquarters, learnt that Blake had divided his force and struck the main body at María. The Spaniards were driven from the field.",
+    blurb: "Blake marched his enlarged army, swollen by Valencian troops, down the Huerba valley in June 1809 to threaten Suchet's communications with Zaragoza. Suchet set up at the Abbey of Santa Fe and, learning that Areizaga's division stood apart on the far bank at Botorrita, struck the main body at María on 15 June and drove it away.",
     specialText: [
       "The Abbey of Santa Fe counts as a town.",
       "Guerrilla Action: the Spanish start with 1 counter.",
@@ -192,7 +192,7 @@ export const TEXTS: Record<string, ScenarioTexts> = {
     hint: "Strike Blake's main body while the rest of his army is far off.",
   },
   '109': {
-    blurb: "At Talavera on 28 July 1809, while Wellesley fought on the Cerro de Medellín, Cuesta's Army of Estremadura held the town and the enclosed ground north of it as far as the Pajar de Vergara. There it joined Campbell's British 4th Division. A night panic had already thinned the Spanish ranks. Leval's French division attacked the line and was shattered.",
+    blurb: "At Talavera on 28 July 1809 Cuesta's Spaniards held the town and the enclosed groves to its north, joining Campbell's British 4th Division near the Pajar de Vergara, while Wellesley fought on the Cerro de Medellín. Leval's German division, Baden, Nassau, Hessian and Dutch troops, stormed the Pajar twice and was broken by canister, Campbell's charge and Spanish cavalry.",
     specialText: [
       "The Portina Brook stops movement but gives no battle penalties; a unit that entered it this turn may not take ground.",
       "Spanish and British units share one hand of cards.",
@@ -201,7 +201,7 @@ export const TEXTS: Record<string, ScenarioTexts> = {
     hint: "Spaniards and British share one hand; hold the line between them.",
   },
   '110': {
-    blurb: "On 17 October 1809 Marchand marched his French 6th Corps out of Salamanca and found Del Parque's Galician divisions drawn up on the heights above Tamames. The Spanish held the ground and repulsed the attack. It was one of the rare Spanish field victories of the war, though little came of it.",
+    blurb: "Marchand brought the French 6th Corps out of Salamanca and on 18 October 1809 found Del Parque's Galician divisions posted on the heights over Tamames. The Spaniards stood firm and beat the attack back. It was a rare Spanish success in the open field, although it led to little.",
     specialText: [
       "The stream is fordable.",
       "Guerrilla Action: the Spanish start with 1 counter.",
@@ -209,21 +209,21 @@ export const TEXTS: Record<string, ScenarioTexts> = {
     hint: "Stand on the heights and beat off Marchand's attack.",
   },
   '111': {
-    blurb: "On 18 November 1809 the French horse crossed the Tagus at Aranjuez to cut off Areizaga's retreating column. Milhaud's dragoons and Paris's light cavalry met Freire's Spanish cavalry at the head of the column, on the road to Ocaña. The Spanish horse was routed, and the army behind it was left without its cavalry screen.",
+    blurb: "Areizaga's column was retreating towards Ocaña, and on 18 November 1809 French cavalry crossed the Tagus at Aranjuez to intercept it. Milhaud's dragoons and Paris's light horse found Freire's Spanish cavalry heading the column. In a hard clash the Spanish horsemen were broken and fled, and they were shaken for the next day's battle.",
     specialText: [
       "Guerrilla Action: the Spanish start with 1 counter.",
     ],
     hint: "A cavalry duel on the road: ride down Freire's horse.",
   },
   '112': {
-    blurb: "On 19 November 1809 Areizaga offered battle on the open plateau at Ocaña, his trains far behind and his men too tired to march on. Soult and King Joseph, outnumbered in infantry, chose to attack at once rather than wait for Victor. The Spanish army was destroyed, and the road to Andalusia lay open.",
+    blurb: "Areizaga's Spaniards stood on the open plateau of Ocaña on 19 November 1809, tired and without their baggage trains. Soult and King Joseph had fewer infantry, but attacked straight away instead of waiting for Victor, afraid the enemy would escape. The Army of La Mancha was wrecked, and Andalusia was open to the French.",
     specialText: [
       "Guerrilla Action: the Spanish start with no counters.",
     ],
     hint: "Crush Areizaga on the plateau before his army can slip away.",
   },
   '113': {
-    blurb: "On 28 November 1809 Del Parque, retreating after the disaster at Ocaña, fell back towards the hills by way of Alba de Tormes. Kellermann, commanding in Old Castile, pursued with the cavalry, with Marchand's infantry and guns coming up behind. The French caught the Army of the Left at the bridge, and it was scattered.",
+    blurb: "Del Parque was falling back through Alba de Tormes on 28 November 1809, after learning of the defeat at Ocaña. Kellermann, in command in Old Castile, chased him with cavalry while Marchand's infantry and guns trailed behind. The Army of the Left was overtaken near the bridge and dispersed.",
     specialText: [
       "The bridge gives the French a temporary banner while held at the start of their turn.",
       "The Tormes cannot be forded.",
@@ -232,7 +232,7 @@ export const TEXTS: Record<string, ScenarioTexts> = {
     hint: "Catch the retreating Spaniards and take the bridge.",
   },
   '114': {
-    blurb: "On 5 March 1811 the Allied army landed at Tarifa and marched to relieve Cadiz, reaching the coast near the Cerro del Puerco after night marches through flooded country. La Peña commanded the combined force, with Graham in second place. Victor's French 1st Corps attacked the British division on the ridge, and the British won the field, though the siege went on.",
+    blurb: "Marching at night over flooded ground to relieve Cadiz, the Anglo-Spanish force came out on the coast by the Cerro del Puerco on 5 March 1811, La Peña commanding and Graham his deputy. Once Graham was told to leave the ridge, Victor attacked it. The British wheeled about and stormed it back, yet Cadiz stayed besieged.",
     specialText: [
       "Barrosa Ridge: the side holding more of its 11 hexes at the start of its turn gains a temporary banner, lost the moment it no longer holds more; the Anglo-Spanish start with it.",
       "The river cannot be forded.",
@@ -241,7 +241,7 @@ export const TEXTS: Record<string, ScenarioTexts> = {
     hint: "Win the ridge, and keep more of it than Victor does.",
   },
   '115': {
-    blurb: "On 16 May 1811 Beresford drew up his Anglo-Portuguese and Spanish army on the low ridge above the Albuera brook, across the Badajoz road. Soult hid most of his army behind the woods and struck the Allied right. The fighting was bloody and close, but Soult drew off, leaving Beresford with a costly victory.",
+    blurb: "Beresford, besieging Badajoz with Anglo-Portuguese troops, broke off in May 1811 to meet Soult's relief army. On 16 May he held the ridge above the Albuera stream, with Blake's Spaniards on his right. Soult feinted at the village, then sent his main force round the right from behind the woods. After a savage struggle Soult withdrew, and Beresford had a bloody win.",
     specialText: [
       "Albuera gives the French a temporary banner while a French unit holds either of its hexes from the start of their turn.",
       "The river is fordable everywhere; crossing at a ford does not stop movement.",
@@ -251,16 +251,16 @@ export const TEXTS: Record<string, ScenarioTexts> = {
     hint: "Hold the ridge and guard the right from Soult's cavalry.",
   },
   '116': {
-    blurb: "On 21 June 1813 King Joseph's three French armies stood in the basin of Vitoria with the winding Zadorra across their front. Wellington sent four columns converging on the river and the road to France, with Hill and Graham on the flanks, and turned the French position. The French lost nearly all their guns in the rout.",
+    blurb: "King Joseph's three French armies had halted in the Vitoria basin on 21 June 1813, the twisting Zadorra before them. Wellington came on in four columns aimed at the river crossings and the road to France, Hill and Graham on the outer wings. The French position was turned and the army fled, abandoning almost its whole artillery.",
     specialText: [
       "Before the battle each side picks the card it will open with; the card ordering fewer units moves first, the Allies on a tie.",
       "The Zadorra cannot be forded.",
       "No Guerrilla Action in this battle.",
     ],
-    hint: "Pick your opening card well: moving first wins the bridges.",
+    hint: "Choose your opening card with care; moving first matters.",
   },
   '117': {
-    blurb: "On 31 August 1813 Soult tried once more to save the garrison of San Sebastián. Reille's divisions were to storm the San Marcial heights, held by Freire's Army of Galicia above the fords of the lower Bidassoa, while Clausel crossed higher up. A storm of rain broke over the field, and the Spanish held the heights.",
+    blurb: "Soult made a fresh effort on 31 August 1813 to relieve San Sebastián. Reille was to assault the heights of San Marcial, which Freire's Galician army held above the lower Bidassoa fords, as Clausel crossed upstream. Rain fell heavily in the afternoon. The Spanish kept the heights and the relief failed.",
     specialText: [
       "Each of the three hill groups gives a temporary banner to the side holding more of its hexes at the start of its turn; the Spanish start with all three.",
       "The Bidassoa is fordable.",
@@ -269,7 +269,7 @@ export const TEXTS: Record<string, ScenarioTexts> = {
     hint: "Keep the heights and throw Soult back into the river.",
   },
   '118': {
-    blurb: "On the night of 12 September 1813 Suchet resolved to retake the Ordal pass by surprise, while Decaen marched by another valley to turn the flank. Colonel Adam's advanced guard, sent ten miles forward by Bentinck, held the pass with a Spanish brigade that had joined it that evening. The French struck in the dark and routed it.",
+    blurb: "Suchet planned a surprise attack by night on the Ordal pass, while Decaen came by another valley to outflank it. The pass was held by Colonel Adam's advanced guard, pushed forward by Bentinck on 12 September 1813 and joined that evening by a Spanish brigade. The French fell on it in the dark and drove it off in rout.",
     specialText: [
       "The river cannot be forded.",
       "Guerrilla Action: the Anglo-Spanish start with 1 counter.",

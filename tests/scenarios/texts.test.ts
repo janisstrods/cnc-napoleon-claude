@@ -91,4 +91,11 @@ describe('briefing texts', () => {
       }
     }
   });
+
+  it('Spanish battles never say "Allied army" (109, 114, 118 use the Anglo-Spanish force)', () => {
+    for (const id of ['109', '114', '118']) {
+      const t = TEXTS[id];
+      expect([t?.blurb, t?.hint, ...(t?.specialText ?? [])].join(' ')).not.toContain('Allied army');
+    }
+  });
 });
