@@ -3,7 +3,7 @@
 // breakOnLosses and handShrink. Positions are the real battles' setups with a few units moved or removed.
 import { describe, expect, it } from 'vitest';
 import {
-  GameDriver, OFF_BOARD, cloneState, createGame, distance, rowOf, hexId, neighbours, sectionsOf, type Answer, type CardKind, type GameState, type HexId, type Side,
+  GameDriver, OFF_BOARD, bannerTotal, cloneState, createGame, distance, rowOf, hexId, neighbours, sectionsOf, type Answer, type CardKind, type GameState, type HexId, type Side,
 } from '../../src/engine';
 import { scenarioById } from '../../src/scenarios';
 import { occOf } from '../../src/ai/board';
@@ -13,7 +13,7 @@ import { makeBudget } from '../../src/ai/budget';
 import { greedyMoveStep, type MoveCtx } from '../../src/ai/moves';
 import { pieceBenefits } from '../../src/ai/ordering';
 import { Rng } from '../../src/ai/rand';
-import { CARD_VALUE, NEUTRAL_W, bannerStep, bannerScore, unitValue } from '../../src/ai/values';
+import { CARD_VALUE, NEUTRAL_W, bannerStep, bannerScore, bannersWorth, unitValue } from '../../src/ai/values';
 import { build, giveCard, must, noFirstStrike } from '../rules/helpers';
 import { failOnAiErrors } from './no-ai-errors';
 
@@ -410,5 +410,17 @@ describe('review round 1: the pieces of the new pricing, one by one', () => {
     const firstGain = fire(make(false, true)) - fire(make(false, false));
     expect(firstGain).toBeGreaterThan(0.1);
     expect(lastGain).toBeLessThan(firstGain - 0.1);
+  });
+});
+
+describe('tempGroup: a unit already on the group (Task 11 carry from Plan 7C T20)', () => {
+  it('003: a French unit on one Vimiero hex is no entry for the other: only the held hex scores', () => {
+    // the lone French line stands on (1,3); the British unit is far off, so (1,3) is safe and no other French unit can come
+    const s = keep(real('003'), { u18: H(1, 3), u1: H(8, 12) });
+    const o = s.scenario.objectives[0];
+    expect(o.kind === 'tempGroup' && o.hexes).toEqual([H(1, 3), H(1, 4)]);
+    const worth = bannersWorth(bannerTotal(s, 'bottom'), 2, s.bannersToWin);
+    // GROUP_PARTIAL × CAPTURE_SHARE for the held hex, nothing for (1,4): stepping across leaves (1,3) free
+    expect(evalTerms(s, 'bottom', W).objectives).toBeCloseTo((worth * 0.5 * 0.85) / 2, 9);
   });
 });

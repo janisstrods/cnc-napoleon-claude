@@ -150,11 +150,13 @@ export interface Counters {
   exits: number;
   /** Turns (at the card decision) that began with the active side holding a temporary-objective banner. */
   heldTurns: number;
+  /** Guerrilla questions (RR §15.5, Expansion #1): spend offers and counters spent, Scout offers and counters taken. */
+  guerrillaOffers: number; guerrillaSpent: number; scoutOffers: number; scoutTaken: number;
 }
 
 export const zeroCounters = (): Counters => ({
   squareOffers: 0, squaresFormed: 0, rrOffers: 0, rrUsed: 0, fsOffers: 0, fsPlayed: 0, combinedArms: 0, gunShotsByRange: [0, 0, 0, 0, 0],
-  infantryMelees: 0, wornAttacks: 0, leadersLost: 0, exits: 0, heldTurns: 0,
+  infantryMelees: 0, wornAttacks: 0, leadersLost: 0, exits: 0, heldTurns: 0, guerrillaOffers: 0, guerrillaSpent: 0, scoutOffers: 0, scoutTaken: 0,
 });
 
 /** Add `b` into `a`. */
@@ -163,7 +165,7 @@ export function addCounters(a: Counters, b: Counters): Counters {
     const x = a[k];
     const y = b[k];
     if (Array.isArray(x) && Array.isArray(y)) y.forEach((v, i) => { x[i] = (x[i] ?? 0) + v; });
-    else (a as unknown as Record<string, number>)[k] += y as number;
+    else (a as unknown as Record<string, number>)[k] += (y as number | undefined) ?? 0; // a counter added later is absent from older files
   }
   return a;
 }
@@ -191,6 +193,11 @@ export function countDecision(c: Counters, s: GameState, dec: Decision, ans: Ans
   }
   if (dec.kind === 'bonusMelee') {
     if (ans.kind === 'hex' && ans.hex !== null) countMelee(c, s, dec.unit, ans.hex);
+    return;
+  }
+  if (dec.kind === 'guerrilla') {
+    const yes = ans.kind === 'yesno' && ans.yes;
+    if (dec.mode === 'spend') { c.guerrillaOffers++; if (yes) c.guerrillaSpent++; } else { c.scoutOffers++; if (yes) c.scoutTaken++; }
     return;
   }
   if (dec.kind !== 'defend') return;

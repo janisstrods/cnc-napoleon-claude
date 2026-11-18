@@ -79,6 +79,16 @@ describe('behaviour counters', () => {
     expect(d).toEqual(zeroCounters());
   });
 
+  it('counts the Guerrilla spend and Scout questions and the yes answers', () => {
+    const s = kit();
+    const g = (mode: 'spend' | 'scout') => ({ kind: 'guerrilla' as const, side: 'top' as Side, mode, card: null, held: 1, pool: 2 });
+    const c = zeroCounters();
+    countDecision(c, s, g('spend'), { kind: 'yesno', yes: true });
+    countDecision(c, s, g('spend'), { kind: 'yesno', yes: false });
+    countDecision(c, s, g('scout'), { kind: 'yesno', yes: true });
+    expect(c).toMatchObject({ guerrillaOffers: 2, guerrillaSpent: 1, scoutOffers: 1, scoutTaken: 1 });
+  });
+
   it('counts Combined Arms combats and gun shots by range', () => {
     const s = kit();
     const c = events(s, [
