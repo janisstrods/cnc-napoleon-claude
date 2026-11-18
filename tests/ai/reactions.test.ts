@@ -13,6 +13,9 @@ import * as view from '../../src/ai/view';
 import { occOf } from '../../src/ai/board';
 import { dieOdds } from '../../src/ai/odds';
 import { NEUTRAL_W, CARD_VALUE } from '../../src/ai/values';
+import { meanHandValue } from '../../src/ai/cardsense';
+import { evalTerms } from '../../src/ai/evaluate';
+import { squareHoldCost } from '../../src/ai/reactions';
 import {
   fireEstimate, firstStrikeEstimate, leaderAloneRisk, leaderCheckP, loneLeaderEstimate, makeEstCtx, meleeBranch, meleeEstimate,
   meleeWithGuns, squareFirstEstimate, takeGround, type EstCtx,
@@ -453,7 +456,7 @@ describe('First Strike', () => {
     for (let seed = 1; seed <= 60; seed++) {
       const c = view.blindClone(s, 'top');
       view.determinize(c, 'top', new Rng(seed));
-      const ec: EstCtx = { occ: occOf(c), W: NEUTRAL_W, viewer: 'top', moved: 0, role: 'attack', determinised: true };
+      const ec: EstCtx = { occ: occOf(c), W: NEUTRAL_W, viewer: 'top', cardValue: CARD_VALUE, moved: 0, role: 'attack', determinised: true };
       const holds = view.sampledOppHolds(c, 'top', 'firstStrike');
       const b = branches(c, ec);
       expect(meleeEstimate(c, unit(c, 'u1'), H(4, 6), ec).ev).toBeCloseTo(holds ? b.fs : b.stand, 12);
@@ -709,5 +712,49 @@ describe('Task 3 carry-overs', () => {
   it('neighbours of the target are what the bonus prospect reads', () => {
     // a guard on the helper: the bonus-melee case above relies on (4,7) touching (4,6)
     expect(neighbours(H(4, 6))).toContain(H(4, 7));
+  });
+});
+
+describe('the viewer\'s own hand prices its squares (Task 6b carry)', () => {
+  it('makeEstCtx computes cardValue once per root: the mean keep value of the viewer\'s own hand', () => {
+    const s = kit([top('FR/HC', [3, 6]), bot('BR/LN', [4, 6])])(1).state;
+    for (const viewer of ['top', 'bottom'] as const) {
+      const ec = makeEstCtx(s, viewer, NEUTRAL_W);
+      expect(ec.cardValue).toBeCloseTo(meanHandValue(s, viewer, NEUTRAL_W), 12);
+    }
+    // 50 estimates read it, none recompute it
+    const ec = makeEstCtx(s, 'bottom', NEUTRAL_W);
+    const spy = vi.spyOn(view, 'myHand');
+    for (let i = 0; i < 50; i++) meleeEstimate(s, unit(s, 'u1'), H(4, 6), ec);
+    expect(spy).not.toHaveBeenCalled();
+    spy.mockRestore();
+  });
+
+  it('a square the viewer would form costs its card at cardValue; an enemy square stays at CARD_VALUE (its hand is never read)', () => {
+    const s = kit([top('FR/HC', [3, 6]), bot('BR/LN', [4, 6])], { bottomCards: 4 })(1).state;
+    const m = mOf(s, 'u1', H(4, 6));
+    const evOf = (viewer: 'top' | 'bottom', cardValue: number): number => meleeBranch(s, unit(s, 'u1'), unit(s, 'u2'), m, 'formSquare', { ...ctx(s, viewer), cardValue }).ev;
+    // the defender (bottom) is the viewer: its card is worth what the viewer's hand says
+    const mine = evOf('bottom', 0.9) - evOf('bottom', 0.1);
+    expect(mine).toBeCloseTo(squareCost(s, unit(s, 'u2'), occOf(s), 0.9) - squareCost(s, unit(s, 'u2'), occOf(s), 0.1), 10);
+    expect(Math.abs(mine)).toBeGreaterThan(0.05);
+    // the viewer is the attacker: the defender's cost ignores cardValue
+    expect(evOf('top', 0.9)).toBeCloseTo(evOf('top', 0.1), 12);
+  });
+
+  it('the evaluation prices only the viewer\'s own squares with cardValue', () => {
+    const s = build({ units: [top('FR/LN', [1, 2], { square: 1 }), bot('BR/LN', [7, 6], { square: 1 })] });
+    const base = makeEstCtx(s, 'bottom', NEUTRAL_W);
+    const dear = { ...base, cardValue: 0.9 };
+    const cheap = { ...base, cardValue: 0.1 };
+    const a = evalTerms(s, 'bottom', NEUTRAL_W, dear).squares;
+    const b = evalTerms(s, 'bottom', NEUTRAL_W, cheap).squares;
+    // mine (bottom) is dearer, the enemy's (top) unchanged: the term falls by exactly my square's difference
+    expect(b - a).toBeCloseTo(squareHoldCost(s, unit(s, 'u2'), 0.9) - squareHoldCost(s, unit(s, 'u2'), 0.1), 10);
+    // from the other side's view the same square is the enemy's and ignores that viewer's cardValue
+    const topBase = makeEstCtx(s, 'top', NEUTRAL_W);
+    const t1 = evalTerms(s, 'top', NEUTRAL_W, { ...topBase, cardValue: 0.9 }).squares;
+    const t2 = evalTerms(s, 'top', NEUTRAL_W, { ...topBase, cardValue: 0.1 }).squares;
+    expect(t2 - t1).toBeCloseTo(squareHoldCost(s, unit(s, 'u1'), 0.9) - squareHoldCost(s, unit(s, 'u1'), 0.1), 10);
   });
 });

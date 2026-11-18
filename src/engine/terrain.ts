@@ -52,6 +52,7 @@ export const TERRAIN_STATS: Readonly<Record<TerrainType, TerrainStats>> = {
   fordNoStop: { ...FORD, stopsOnEntry: false },
   brook: stats('Brook', { stopsOnEntry: true }),
   bridge: stats('Bridge'),
+  walledFarm: { ...TOWN, name: 'Walled farm' },   // a Town in every respect, no flag-ignore (S22)
   sandQuarry: stats('Sand quarry', {
     closedTo: ['artillery'], stopsOnEntry: true, into: RED(FIRE(-1, -1), AV(0, -2, 0)), out: RED(FIRE(0, 0), AV(0, -2, 0)),
   }),

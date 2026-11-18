@@ -23,7 +23,7 @@ import { dieOdds, pAnySabre } from './odds';
 import { bannerValue, fireEstimate, loneLeaderEstimate, makeEstCtx, meleeEstimate, type EstCtx, type Outcome } from './estimate';
 import { squareHoldCost } from './reactions';
 import { asNextTurn, handSize, isDeterminised, myHand, myTrack, trackFilled, unseenCards } from './view';
-import { LEADER_VALUE, WIN_SCORE, bannerScore, bannersWorth, unitValue, type Weights } from './values';
+import { ELAN_SHARE, LEADER_VALUE, WIN_SCORE, bannerScore, bannersWorth, unitValue, type Weights } from './values';
 
 /** The threats of the side that does not act next count at this share (the other side moves, or strikes, first). */
 const LATER = 0.6;
@@ -34,8 +34,6 @@ const REACH_KEPT = 2;
 const BASE: Readonly<Record<AttackKind, number>> = { melee: 1, fire: 0.9, reach: 0.7 };
 /** Units a card orders in one section, about: more attackers than this in a section share the orders. */
 const ORDERS_PER_SECTION = 3;
-/** Élan orders a unit when a die shows its arm or a flag (Command dice): about this share of units. */
-const ELAN_SHARE = 0.6;
 /** Risk cap above a victim's value and banners (displacement, follow-ups). */
 const CAP_EXTRA = 0.15;
 /** A temporary objective occupied but not yet held is captured at the next turn start: this share of its banners, kept. */
@@ -194,7 +192,7 @@ export function impetuousEnd(s: GameState, occ: Occ, attacker: Unit, vacated: He
 }
 
 /** The forced advance's cost to an impetuous attacker: a fixed part plus its exposure to the enemy units next to where it ends. */
-function impetuousCost(s: GameState, occ: Occ, attacker: Unit, victim: Unit | Leader, o: Outcome): number {
+export function impetuousCost(s: GameState, occ: Occ, attacker: Unit, victim: Unit | Leader, o: Outcome): number {
   let exposed = Infinity;
   for (const h of impetuousEnd(s, occ, attacker, victim.hex)) {
     let n = 0;
@@ -460,7 +458,7 @@ function sideBanners(s: GameState, side: Side, pVac: Map<HexId, number>): number
 }
 
 /** Hexes `side` still needs or holds by its own objectives (temporary objective hexes and exit hexes). */
-function objectiveHexes(s: GameState, side: Side): HexId[] {
+export function objectiveHexes(s: GameState, side: Side): HexId[] {
   const out: HexId[] = [];
   for (const o of s.scenario.objectives) {
     if (o.side !== side) continue;
@@ -563,11 +561,15 @@ function material(s: GameState, occ: Occ, me: Side): number {
   return v;
 }
 
-/** The standing cost of every unit in square (cavalry-independent, `squareHoldCost`): mine against, the enemy's for me. */
-function squares(s: GameState, occ: Occ, me: Side): number {
+/**
+ * The standing cost of every unit in square (cavalry-independent, `squareHoldCost`): mine against, the enemy's for me. Only my
+ * own squares are priced with `cardValue` (my hand's mean keep value, worked out once per root); the enemy's, whose hand is
+ * hidden, at the mean card.
+ */
+function squares(s: GameState, occ: Occ, me: Side, cardValue: number): number {
   let v = 0;
   for (const side of [me, other(me)] as const) {
-    for (const u of occ.bySide[side]) if (u.square !== undefined) v += (side === me ? -1 : 1) * squareHoldCost(s, u);
+    for (const u of occ.bySide[side]) if (u.square !== undefined) v += side === me ? -squareHoldCost(s, u, cardValue) : squareHoldCost(s, u);
   }
   return v;
 }
@@ -641,12 +643,19 @@ function advance(s: GameState, occ: Occ, side: Side, W: Weights): number {
 /** Root estimate contexts built without one from the caller, per state and viewer, keyed by the public card signature. */
 const rootCtx = new WeakMap<GameState, Map<string, EstCtx>>();
 
-/** Everything public that the assumed opponent hands depend on (the unseen pool and the hand and track sizes). */
+/**
+ * Everything the root context depends on: what the assumed opponent hands depend on (the unseen pool and the hand and track
+ * sizes) and the board, which the viewer's `cardValue` reads (its cards' worth depends on where the units stand): a state
+ * mutated in place with its cards unchanged must not reuse a context made for another board.
+ */
 function cardSignature(s: GameState, me: Side): string {
+  let board = '';
+  for (const u of s.units) board += `${u.hex}.${u.blocks}.${u.square ?? 0};`;
+  for (const l of s.leaders) board += `${l.hex};`;
   const top = handSize(s, 'top');
   const bottom = handSize(s, 'bottom');
   return `${me}|${top},${bottom}|${trackFilled(s, 'top')},${trackFilled(s, 'bottom')}|${s.discard.length},${s.discard[s.discard.length - 1]}|`
-    + `${s.turn.card}|${myHand(s, me).join(',')}|${myTrack(s, me).join(',')}`;
+    + `${s.turn.card}|${myHand(s, me).join(',')}|${myTrack(s, me).join(',')}|${board}`;
 }
 
 /** The estimate context for evaluating `s` for `me`: the caller's root context (its hands kept), else one built and cached. */
@@ -660,11 +669,21 @@ function contextFor(s: GameState, me: Side, W: Weights, occ: Occ, ec?: EstCtx): 
   if (!byKey) rootCtx.set(s, (byKey = new Map()));
   const key = cardSignature(s, me);
   let made = byKey.get(key);
-  if (!made) {
+  // cardValue is priced under the weights it was made with
+  if (!made || made.W !== W) {
     if (byKey.size > 8) byKey.clear();
     byKey.set(key, (made = makeEstCtx(s, me, W)));
   }
   return { ...made, occ, W, moved: 0, role: 'attack' };
+}
+
+/**
+ * The root estimate context of `s` for `me`: the same one `evaluate` builds without a caller's context. It is cached on the state
+ * object, keyed by the public card signature, the board (units, blocks, squares, leaders) and the weights, so a state mutated in
+ * place never gets a stale `cardValue`; its board is that of `s`. For callers that evaluate many positions made from `s` (move scoring).
+ */
+export function rootContextOf(s: GameState, me: Side, W: Weights): EstCtx {
+  return contextFor(s, me, W, occOf(s));
 }
 
 /** The side whose turn comes next: the active side before its card is played, the other side after. */
@@ -694,7 +713,7 @@ function terms(s0: GameState, me: Side, W: Weights, ec?: EstCtx): Record<string,
     material: material(s, occ, me),
     riskMine: -W.riskSelf * (next === opp ? 1 : LATER) * onMe.total,
     riskTheirs: W.riskEnemy * (next === me ? 1 : LATER) * onThem.total,
-    squares: squares(s, occ, me),
+    squares: squares(s, occ, me, root.cardValue),
     guns: mine.guns - theirs.guns,
     formation: mine.formation - theirs.formation,
     leaders: mine.leaders - theirs.leaders,

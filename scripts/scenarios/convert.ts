@@ -26,8 +26,8 @@ export interface BattleMeta {
 export const RAW_FIELDS: readonly string[] = ['id', 'grid', 'terrain', 'units', 'leaders', 'objectives', 'notes', 'riverPieces'];
 
 // The converter's own list of setup terrain names (not the engine's TERRAIN_TYPES rows, which differ).
-const SETUP_TERRAIN = ['plain', 'hill', 'forest', 'rugged', 'town', 'windmill', 'fortress', 'river', 'fieldworks', 'sandQuarry'] as const satisfies readonly TerrainName[];
-const _all: Record<TerrainName, true> = { plain: true, hill: true, forest: true, rugged: true, town: true, windmill: true, fortress: true, river: true, fieldworks: true, sandQuarry: true };  // fails to compile if TerrainName gains a name
+const SETUP_TERRAIN = ['plain', 'hill', 'forest', 'rugged', 'town', 'windmill', 'fortress', 'river', 'fieldworks', 'sandQuarry', 'walledFarm'] as const satisfies readonly TerrainName[];
+const _all: Record<TerrainName, true> = { plain: true, hill: true, forest: true, rugged: true, town: true, windmill: true, fortress: true, river: true, fieldworks: true, sandQuarry: true, walledFarm: true };  // fails to compile if TerrainName gains a name
 void _all;
 
 const ITEM_KEYS = {

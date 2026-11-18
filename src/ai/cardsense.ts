@@ -15,7 +15,7 @@ import {
 import { occOf, type Occ } from './board';
 import { reachOf } from './evaluate';
 import { handSize, myHand, myTrack } from './view';
-import { CARD_VALUE, rowValue, unitValue, type Weights } from './values';
+import { CARD_VALUE, ELAN_SHARE, rowValue, unitValue, type Weights } from './values';
 
 /** The Command a card played from `me`'s hand now would have (R28): the hand, including that card; track cards excluded. */
 export function commandOf(s: GameState, me: Side): number {
@@ -51,8 +51,6 @@ const FALLBACK = 0.5;
 const FILL_CAP = 1.5;
 /** Command a card's nominal use assumes. */
 const REF_COMMAND = 4;
-/** Élan orders a unit when a die shows its arm or a flag: about this share of Command dice (evaluate.ts ELAN_SHARE). */
-export const ELAN_SHARE = 0.6;
 /** Units this near an enemy are engaged: an order is worth its full value there, less further back. */
 const ENGAGED = 4;
 const NEAR = 7;

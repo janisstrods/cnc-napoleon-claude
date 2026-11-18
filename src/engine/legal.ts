@@ -46,7 +46,12 @@ export function randomAnswer(s: GameState, d: Decision, rnd: Rand): Answer {
     }
     case 'leaveSquare':
     case 'advance':
+    case 'guerrilla':
       return { kind: 'yesno', yes: rnd() < 0.5 };
+    case 'moveFirst':
+      // a side with no eligible card picks nothing and is never asked (S43)
+      if (d.options.length === 0) throw new Error(`moveFirst with no options for ${d.side}: the flow must not ask it (S43)`);
+      return { kind: 'playCard', card: pick(d.options, rnd) };
     case 'move': {
       if (rnd() < 0.1) return { kind: 'endMove' };
       const ids = movablePieces(s);

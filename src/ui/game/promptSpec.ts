@@ -31,6 +31,8 @@ export const DECISION_TITLES: Readonly<Record<Decision['kind'], string>> = {
   scoutKeep: 'Scout: keep a card',
   shortSupplyTarget: 'Short Supply: choose a unit',
   shortSupplyHex: 'Short Supply: choose a hex',
+  guerrilla: 'Guerrilla Action',
+  moveFirst: 'Choose your opening card',
 };
 
 /**

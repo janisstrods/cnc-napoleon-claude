@@ -77,12 +77,12 @@ describe('convertBattle', () => {
     expect(convertBattle(river, meta({ rivers: 'brook' }), e('002')).rivers).toBe('brook');
   });
 
-  it('refuses Expansion #1 data, naming every unsupported feature (Plan 7)', () => {
-    expect(unsupportedFeatures(RAW['101'])).toContain('unit type SP/LN ×' + RAW['101'].units.filter((u) => u.key === 'SP/LN').length);
-    expect(() => convertBattle(RAW['101'], meta(), e('101'))).toThrow(/^101: not yet supported \(Plan 7\): .*unit type SP\//);
-    expect(unsupportedFeatures(synth({ terrain: [{ r: 1, c: 1, t: 'walledFarm' }] }))).toContain('terrain walledFarm ×1');
+  it('no Spanish battle has an unsupported unit type; synthetic unsupported features are named (Task 11 restores the positive conversions)', () => {
+    const spanish = Object.keys(RAW).filter((id) => id.startsWith('1'));
+    expect(spanish.flatMap((id) => unsupportedFeatures(RAW[id])).some((f) => f.startsWith('unit type'))).toBe(false);   // every Spanish row exists since Plan 7C Task 3
+    expect(unsupportedFeatures(synth({ terrain: [{ r: 1, c: 1, t: 'marsh' }] }))).toContain('terrain marsh ×1');   // walledFarm is supported (Plan 7C Task 2)
     expect(unsupportedFeatures(synth({ guerrilla: [] }))).toContain('field guerrilla');
-    expect(unsupportedFeatures(synth({ units: [{ r: 1, c: 1, side: 'bottom', key: 'FR/LNC' }] }))).toContain('unit type FR/LNC ×1');
+    expect(unsupportedFeatures(synth({ units: [{ r: 1, c: 1, side: 'bottom', key: 'BR/YG' as never }] }))).toContain('unit type BR/YG ×1');
     expect(unsupportedFeatures(synth({ terrain: [{ r: 1, c: 1, t: 'hill', redoubt: true } as never] }))).toContain('terrain key redoubt ×1');
     expect(unsupportedFeatures(synth({ units: [{ r: 1, c: 1, side: 'top', key: 'BR/LN', blocks: 2 } as never] }))).toContain('unit key blocks ×1');
     expect(unsupportedFeatures(synth({ leaders: [{ r: 1, c: 1, side: 'top', name: 'X', nation: 'SP' } as never] }))).toContain('leader key nation ×1');
