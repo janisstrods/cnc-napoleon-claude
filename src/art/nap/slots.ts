@@ -19,7 +19,8 @@ const HF = 0.95; // front-rank scale (horse)
 // a left-facing unit is the mirror image of a right-facing one (its muzzles, bayonets and horses' heads lead, with the room
 // behind them). Nothing is reserved for an attached leader: the medallion sits on the badge's left end, below the figures.
 // tests/art/nap/token.test.ts checks that every figure stays at least 1 unit inside the hex in both facings, at every strength.
-// Strengths above 4 blocks are undefined until Plan 7 (a fifth figure would stand in the back-rank gap, not a new column).
+// A five-block unit (the Spanish light infantry and the Swiss) adds one figure further back, in a gap of the back rank
+// (FIFTH), so at 4 blocks it stands exactly as a 4-block unit does.
 //
 // The full-strength list of each formation, back rank first (draw order). Depleted units drop figures from the back rank
 // first, so every strength from 2 to 4 is the tail of this list and a surviving figure keeps its slot; the one-block slot is
@@ -38,6 +39,15 @@ const FULL: Record<Formation, readonly [Slot, Slot, Slot, Slot]> = {
   // bag behind the trail. A horse-artillery stand's horse holder takes the layer's place by the trail (HOLDER_SLOT).
   gun: [{ x: -9, y: 6, s: 0.9 }, { x: 9, y: 7, s: 0.95 }, { x: 30, y: 11, s: 0.92, face: -1 }, { x: 2, y: 19, s: 1.1 }],
 };
+/**
+ * The fifth figure of a five-block foot unit: drawn first, a little smaller and further back than the back rank, with its head
+ * and musket showing in the gap between two heads (close order: between the left front man and the right back man; loose
+ * order: between the two left-hand men). It is the first figure lost. Horse and guns have no fifth figure (no such rows).
+ */
+const FIFTH: Partial<Record<Formation, Slot>> = {
+  close: { x: 1, y: 4, s: 1.0 },
+  loose: { x: -12, y: 4, s: 1.0 },
+};
 const SINGLE: Record<Formation, Slot> = {
   close: { x: 0, y: 18.5, s: FF },
   loose: { x: 0, y: 18.5, s: FF },
@@ -53,13 +63,15 @@ const SINGLE: Record<Formation, Slot> = {
  */
 export const HOLDER_SLOT: Slot = { x: -25, y: 10, s: 0.75, face: -1 };
 
-function table(f: Formation): Record<1 | 2 | 3 | 4, readonly Slot[]> {
+type Strength = 1 | 2 | 3 | 4 | 5;
+function table(f: Formation): Record<Strength, readonly Slot[]> {
   const full = FULL[f];
-  return { 1: [SINGLE[f]], 2: full.slice(2), 3: full.slice(1), 4: full };
+  const fifth = FIFTH[f];
+  return { 1: [SINGLE[f]], 2: full.slice(2), 3: full.slice(1), 4: full, 5: fifth ? [fifth, ...full] : full };
 }
 
-/** Slots by formation and strength 1..4, listed back rank first. */
-export const SLOTS: Record<Formation, Record<1 | 2 | 3 | 4, readonly Slot[]>> = {
+/** Slots by formation and strength 1..5 (horse and guns stop at 4), listed back rank first. */
+export const SLOTS: Record<Formation, Record<Strength, readonly Slot[]>> = {
   close: table('close'), loose: table('loose'), horse: table('horse'), gun: table('gun'),
 };
 
@@ -68,19 +80,22 @@ export function formationOf(spec: FigureSpec): Formation {
   return spec.drawing === 'horse' ? 'horse' : 'gun';
 }
 
-/** The slots of `n` blocks, clamped to 1..4. */
+/** The slots of `n` blocks, clamped to 1..5. */
 export function slotsFor(f: Formation, n: number): readonly Slot[] {
-  return SLOTS[f][Math.max(1, Math.min(4, Math.round(n))) as 1 | 2 | 3 | 4];
+  return SLOTS[f][Math.max(1, Math.min(5, Math.round(n))) as Strength];
 }
 
 /**
- * Where a unit with `n` of `max` blocks stands, as [slot, index in the full-strength list] pairs: the index picks the
- * figure's paint (and the gun piece), so a figure keeps its look as the unit is depleted.
+ * Where a unit with `n` of `max` blocks stands, as [slot, figure index] pairs: the index picks the figure's paint (and the gun
+ * piece), so a figure keeps its look as the unit is depleted. It is the slot's place in the full-strength list, except that a
+ * fifth figure (FIFTH) takes index 4 and the other four keep 0..3, so a five-block unit at 4 blocks is drawn as a four-block one.
  */
 export function standing(f: Formation, n: number, max: number): readonly (readonly [Slot, number])[] {
   const full = slotsFor(f, max);
   const now = slotsFor(f, Math.min(n, max));
-  return now.map((sl, k) => [sl, n >= 2 ? k + (full.length - now.length) : full.length - 1] as const);
+  const extra = full.length > 4 ? full.length - 4 : 0;
+  const index = (j: number) => (j < extra ? 4 + j : j - extra);
+  return now.map((sl, k) => [sl, index(n >= 2 ? k + (full.length - now.length) : full.length - 1)] as const);
 }
 
 /**
@@ -116,7 +131,7 @@ export const FIGURE_BANDS: Record<BandKey, readonly Rect[]> = {
   ],
   loose: [
     [-42, -40, 0.5, 5.5], [-40, -38, -0.5, 6], [-38, -36, -2, 13.5], [-36, -34, -3, 13.5], [-34, -32, -3.5, 12.5],
-    [-32, -30, -3, 11], [-30, -28, -3, 10], [-28, -26, -3, 9], [-26, -24, -7.5, 9], [-24, -22, -8.5, 16.5],
+    [-32, -30, -3, 11], [-30, -28, -3, 10], [-28, -26, -4, 9], [-26, -24, -7.5, 9], [-24, -22, -8.5, 16.5],
     [-22, -20, -8.5, 16.5], [-20, -18, -8, 16.5], [-18, -16, -8, 11.5], [-16, -14, -8, 6.5], [-14, -12, -7.5, 7],
     [-12, -10, -7.5, 5.5], [-10, -8, -7.5, 6.5], [-8, -6, -6, 7], [-6, -4, -7, 7.5], [-4, -2, -11, 8],
     [-2, 0, -11, 9.5], [0, 2, -11, 9.5],
@@ -142,7 +157,7 @@ export const FIGURE_BANDS: Record<BandKey, readonly Rect[]> = {
   ],
   rammer: [
     [-44, -42, 1.5, 4], [-42, -40, 0.5, 4.5], [-40, -38, 0.5, 4.5], [-38, -36, 1, 7.5], [-36, -34, -0.5, 9],
-    [-34, -32, -1, 9], [-32, -30, -1.5, 8.5], [-30, -28, -1, 8], [-28, -26, -1.5, 8], [-26, -24, -1, 9],
+    [-34, -32, -1, 9], [-32, -30, -1.5, 8.5], [-30, -28, -1.5, 8], [-28, -26, -1.5, 8], [-26, -24, -1, 9],
     [-24, -22, -5.5, 5.5], [-22, -20, -5.5, 6], [-20, -18, -4.5, 7.5], [-18, -16, -4.5, 8], [-16, -14, -4.5, 8.5],
     [-14, -12, -4.5, 10], [-12, -10, -5.5, 14], [-10, -8, -5.5, 15.5], [-8, -6, -6, 15.5], [-6, -4, -7, 14],
     [-4, -2, -7.5, 8], [-2, 0, -7.5, 9.5], [0, 2, -7.5, 9.5],

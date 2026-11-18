@@ -2,7 +2,7 @@
 // the renderers; they do not add to these types.
 
 export type FootHeadgear = 'shako' | 'bearskin' | 'bearskinPlate' | 'coveredShako' | 'stovepipe' | 'barretina' | 'roundHat';
-export type HorseHeadgear = 'tarleton' | 'dragoonHelmet' | 'cuirassierHelmet' | 'crestedHelmet' | 'czapka';
+export type HorseHeadgear = 'tarleton' | 'dragoonHelmet' | 'cuirassierHelmet' | 'crestedHelmet' | 'czapka' | 'colpack';
 export type CommandHeadgear = 'bicorne';
 export type HeadgearKind = FootHeadgear | HorseHeadgear | CommandHeadgear;
 
@@ -17,7 +17,7 @@ export interface Headwear {
   plate?: 'brass' | 'white' | 'skull' | 'none';
   /** Horsehair mane or fur crest of a helmet. */
   mane?: string;
-  /** Dragoon-helmet fur band, Tarleton turban. */
+  /** Dragoon-helmet fur band, Tarleton turban; the colpack's cloth bag. */
   turban?: string;
   /** Bicorne only (default athwart). */
   worn?: 'athwart' | 'foreAft';

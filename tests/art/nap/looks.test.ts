@@ -3,9 +3,9 @@ import { createElement as h } from 'react';
 import { NapLeaderToken, NapUnitIcon, NapUnitToken, ART_KEYS, ART_NATIONS } from '../../../src/art/nap';
 import { svg } from './helpers';
 
-// The hash pin: fixes the Napoleonic art as of Plan 6B Task 7. After a deliberate art change, re-pin by pasting the hash this
-// failure prints, and say so in the commit message.
-const BASELINE = 'c3c2f87557342eb6e89bdd4ca1addbc8c6f76839d4da22aa32ff243372be3b2c';
+// The hash pin: fixes the Napoleonic art as of Plan 7C Task 13 (the Spanish, Swiss and Guard light cavalry miniatures). After
+// a deliberate art change, re-pin by pasting the hash this failure prints, and say so in the commit message.
+const BASELINE = '487b0bb6f2f5d630edf32523c10827c69ff32ae33eb4735f21401054ad4e6284';
 
 function markup(): string {
   const out: string[] = [];

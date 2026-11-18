@@ -11,7 +11,7 @@ import { leaderTokenProps } from '../../../src/ui/game/boardProps';
 import { svg } from './helpers';
 
 /** UNIT_KEYS rows of an art nation that deliberately keep the placeholder. Each carries its reason. A new row fails the coverage test until decided. */
-const PLACEHOLDER_OK: readonly UnitKey[] = ['FR/SWI', 'FR/GLC'];  // art in Plan 7C Task 13
+const PLACEHOLDER_OK: readonly UnitKey[] = [];
 
 describe('public tokens delegate to the Napoleonic art', () => {
   for (const key of ART_KEYS) {
@@ -27,12 +27,6 @@ describe('public tokens delegate to the Napoleonic art', () => {
     }
   }
 
-  it('an SP key keeps the placeholder figures', () => {
-    const m = svg(h(UnitToken, { unitKey: 'SP/LN', nation: 'SP', blocks: 3, maxBlocks: 4, facing: 'right' }));
-    expect(m).not.toContain('data-nap');
-    expect(m.split('data-figure=').length - 1).toBe(3);
-  });
-
   for (const nation of ART_NATIONS) {
     for (const attached of [true, false]) {
       it(`LeaderToken ${nation} ${attached ? 'attached' : 'alone'} is NapLeaderToken`, () => {
@@ -44,8 +38,13 @@ describe('public tokens delegate to the Napoleonic art', () => {
     }
   }
 
-  it('an SP leader keeps the placeholder', () => {
-    expect(svg(h(LeaderToken, { name: 'Castaños', nation: 'SP', attached: false }))).toContain('data-leader="Castaños"');
+  it('SP keys and SP leaders draw the Napoleonic art', () => {
+    const m = svg(h(UnitToken, { unitKey: 'SP/LN', nation: 'SP', blocks: 3, maxBlocks: 4, facing: 'right' }));
+    expect(m).toBe(svg(h(NapUnitToken, { unitKey: 'SP/LN', blocks: 3, maxBlocks: 4, facing: 'right' })));
+    expect(m).toContain('data-nap');
+    const l = svg(h(LeaderToken, { name: 'Castaños', nation: 'SP', attached: false }));
+    expect(l).toBe(svg(h(NapLeaderToken, { nation: 'SP', facing: 'right', attached: false, name: 'Castaños', showName: true })));
+    expect(l).not.toContain('data-leader="Castaños"'); // the placeholder's marker
   });
 
   it('UnitIcon for an art key is NapUnitIcon', () => {

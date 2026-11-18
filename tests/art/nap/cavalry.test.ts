@@ -43,8 +43,9 @@ describe('cavalry', () => {
   });
 
   it('only the cuirassiers wear a cuirass', () => {
-    expect(fig('FR/CU')).toContain('data-cuirass');
-    for (const k of CAVALRY.filter((x) => x !== 'FR/CU')) expect(all(k), k).not.toContain('data-cuirass');
+    const CUIRASSIERS: readonly string[] = ['FR/CU', 'SP/CU'];
+    for (const k of CUIRASSIERS) expect(fig(k as CavalryKey), k).toContain('data-cuirass');
+    for (const k of CAVALRY.filter((x) => !CUIRASSIERS.includes(x))) expect(all(k), k).not.toContain('data-cuirass');
   });
 
   it('the lancers carry a lance with a red-over-white pennon, and nobody else does', () => {
@@ -58,8 +59,8 @@ describe('cavalry', () => {
   });
 
   it('carries sabres, raised or sloped swords as the table says', () => {
-    for (const k of ['FR/LC', 'BR/LC', 'PT/LC', 'AL/LC'] as const) expect(fig(k), k).toContain('data-weapon="sabre"');
-    for (const k of ['FR/HC', 'FR/CU', 'FR/GHC', 'BR/HC', 'BR/GHC', 'PT/HC'] as const) expect(fig(k), k).toContain('data-weapon="sword"');
+    for (const k of ['FR/LC', 'FR/GLC', 'BR/LC', 'PT/LC', 'AL/LC', 'SP/LC'] as const) expect(fig(k), k).toContain('data-weapon="sabre"');
+    for (const k of ['FR/HC', 'FR/CU', 'FR/GHC', 'BR/HC', 'BR/GHC', 'PT/HC', 'SP/HC', 'SP/CU'] as const) expect(fig(k), k).toContain('data-weapon="sword"');
     // the sloped carry differs from the raised one in the drawing
     const slope = spec('FR/HC');
     expect(slope.carry).toBe('sloped');
@@ -67,8 +68,9 @@ describe('cavalry', () => {
     expect(spec('BR/HC').carry).toBe('sloped');
     expect(spec('BR/GHC').carry).toBe('raised');
     expect(spec('FR/GHC').carry).toBe('sloped');
-    expect(fig('FR/HC')).toContain('data-carbine');
-    for (const k of CAVALRY.filter((x) => x !== 'FR/HC')) expect(all(k), k).not.toContain('data-carbine');
+    const CARBINES: readonly string[] = ['FR/HC', 'SP/HC'];
+    for (const k of CARBINES) expect(fig(k as CavalryKey), k).toContain('data-carbine');
+    for (const k of CAVALRY.filter((x) => !CARBINES.includes(x))) expect(all(k), k).not.toContain('data-carbine');
   });
 
   it('heavy keys ride heavy horses and light keys light ones, and the heavy horse is taller', () => {
@@ -155,8 +157,9 @@ describe('cavalry', () => {
   });
 
   it('marks the Guard', () => {
-    for (const k of ['FR/GHC', 'BR/GHC']) expect(token(k as CavalryKey), k).toContain('data-base-rim="gold"');
-    for (const k of CAVALRY.filter((x) => x !== 'FR/GHC' && x !== 'BR/GHC')) expect(token(k), k).not.toContain('data-base-rim');
+    const GUARD: readonly string[] = ['FR/GHC', 'FR/GLC', 'BR/GHC'];
+    for (const k of GUARD) expect(token(k as CavalryKey), k).toContain('data-base-rim="gold"');
+    for (const k of CAVALRY.filter((x) => !GUARD.includes(x))) expect(token(k), k).not.toContain('data-base-rim');
   });
 
   it('renders every key at 1..4 blocks, both facings, one figure per block, without NaN', () => {

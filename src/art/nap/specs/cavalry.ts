@@ -11,6 +11,9 @@ const GREEN_PLUME = '#3f8a4a';
 const FUR_BROWN = '#54382a';
 const GREY_FUR = '#8a8780';
 const WHITE_PLUME = '#f0ece0';
+const COLPACK_FUR = '#3a2a1e'; // the Guard chasseurs' dark brown fur
+const SP_BLUE = '#1e2a52'; // the Spanish dark blue of the line cavalry and the cuirassiers
+const BLACK_FELT = '#1b1a1a';
 
 const white = CLOTH.white;
 const dress = (d: Pick<Dress, 'coat' | 'cut' | 'facings' | 'trousers'> & Partial<Dress>): Dress => ({ belts: white, ...d });
@@ -51,6 +54,15 @@ export const CAVALRY_SPECS: Record<CavalryKey, HorseSpec> = {
     dress: dress({ coat: CLOTH.frenchBlue, cut: 'tails', facings: CLOTH.scarlet, lapels: white, lace: CLOTH.orange, trousers: white, shoulders: { kind: 'epaulettes', colour: CLOTH.orange } }),
     head: { kind: 'bearskin', plume: { colour: CLOTH.scarlet, tall: true } },
     shabraque: { cloth: CLOTH.frenchBlue, trim: METAL.gold },
+  },
+  // Chasseurs a cheval of the Guard: the green dolman laced orange with scarlet facings, a scarlet pelisse with black fur,
+  // green campaign overalls (scarlet breeches were the full dress), and the fur colpack with a scarlet bag and a green plume
+  // tipped red. A green shabraque laced in gold.
+  'FR/GLC': {
+    drawing: 'horse', horse: 'light', weapon: 'sabre', coats: ['bay', 'chestnut'], guard: true,
+    dress: dress({ coat: CLOTH.chasseurGreen, cut: 'dolman', facings: CLOTH.scarlet, lace: CLOTH.orange, trousers: CLOTH.chasseurGreen, pelisse: { colour: CLOTH.scarlet, fur: CLOTH.black } }),
+    head: { kind: 'colpack', body: COLPACK_FUR, turban: CLOTH.scarlet, plume: { colour: GREEN_PLUME, tip: CLOTH.scarlet, tall: true } },
+    shabraque: { cloth: CLOTH.chasseurGreen, trim: METAL.gold },
   },
   // British light dragoons: dark-blue jacket, buff facings, white breeches, black Tarleton helmet with a fur crest and a
   // buff turban (the pre-1812 pattern is a hedge: the 1812 reform put them in lancer or hussar dress).
@@ -97,5 +109,31 @@ export const CAVALRY_SPECS: Record<CavalryKey, HorseSpec> = {
     dress: dress({ coat: CLOTH.brunswickBlack, cut: 'dolman', facings: CLOTH.sky, lace: CLOTH.sky, trousers: CLOTH.brunswickBlack, belts: CLOTH.sky, pelisse: { colour: CLOTH.black, fur: GREY_FUR } }),
     head: { kind: 'shako', body: CLOTH.black, plate: 'skull', cords: CLOTH.sky },
     shabraque: { cloth: CLOTH.black, trim: CLOTH.sky },
+  },
+  // Spanish hussars (the María Luisa and Españoles regiments): a sky-blue dolman and pelisse laced white, the pelisse edged with
+  // white fur, scarlet facings and blue overalls, a black shako with white cords and a short scarlet plume. Spanish light
+  // cavalry also wore green or yellow; of the brief's green or light blue, the light blue reads better on the yellow base.
+  'SP/LC': {
+    drawing: 'horse', horse: 'light', weapon: 'sabre', coats: ['chestnut', 'bay'],
+    dress: dress({ coat: CLOTH.sky, cut: 'dolman', facings: CLOTH.scarlet, lace: white, trousers: SP_BLUE, pelisse: { colour: CLOTH.sky, fur: white } }),
+    head: { kind: 'shako', body: BLACK_FELT, plate: 'none', cords: white, plume: { colour: CLOTH.scarlet } },
+    shabraque: { cloth: SP_BLUE, trim: white, sheepskin: true },
+  },
+  // Spanish line cavalry: a dark blue coat with scarlet facings and lapels, buff breeches, a black bicorne worn athwart with the
+  // red cockade; carbine. The sword is sloped, the heavy cavalry's carry.
+  'SP/HC': {
+    drawing: 'horse', horse: 'heavy', weapon: 'sword', carry: 'sloped', carbine: true, coats: ['bay', 'black'],
+    dress: dress({ coat: SP_BLUE, cut: 'tails', facings: CLOTH.scarlet, lapels: CLOTH.scarlet, trousers: CLOTH.buff, belts: CLOTH.buff }),
+    head: { kind: 'bicorne', body: BLACK_FELT, cords: white, pompoms: [CLOTH.scarlet] },
+    shabraque: { cloth: SP_BLUE, trim: CLOTH.scarlet },
+  },
+  // Spanish cuirassiers (the few regiments raised from 1810, partly with captured cuirasses): a dark blue jacket with scarlet
+  // facings, a steel cuirass, buff breeches and a steel helmet with a black mane and no plume. Sources on their dress are thin;
+  // this is a hedge built on the French pattern they copied.
+  'SP/CU': {
+    drawing: 'horse', horse: 'heavy', weapon: 'sword', carry: 'raised', coats: ['brown', 'bay'],
+    dress: dress({ coat: SP_BLUE, cut: 'jacket', facings: CLOTH.scarlet, trousers: CLOTH.buff, belts: CLOTH.buff, cuirass: 'steel' }),
+    head: { kind: 'cuirassierHelmet', body: METAL.steel, mane: HAIR },
+    shabraque: { cloth: SP_BLUE, trim: CLOTH.scarlet },
   },
 };

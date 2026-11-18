@@ -20,12 +20,12 @@ describe('placeholder figures', () => {
     expect(renderToStaticMarkup(createElement(UnitToken, { unitKey: 'FR/LNC', nation: 'FR', blocks: 4, maxBlocks: 4, facing: 'right' }))).not.toContain('NaN');
   });
 
-  it('draws one figure per remaining block', () => {
-    const fig = (blocks: number) => renderToStaticMarkup(createElement(UnitToken, { unitKey: 'SP/LN', nation: 'SP', blocks, maxBlocks: 4, facing: 'right' })).split('data-figure').length - 1;
+  it('draws one figure per remaining block (SP has the Napoleonic art since Plan 7C Task 13: its data-fig markers)', () => {
+    const fig = (blocks: number) => renderToStaticMarkup(createElement(UnitToken, { unitKey: 'SP/LN', nation: 'SP', blocks, maxBlocks: 4, facing: 'right' })).split('data-fig=').length - 1;
     expect([1, 2, 3, 4].map(fig)).toEqual([1, 2, 3, 4]);
-    const five = (k: 'SP/LT' | 'SP/FA', blocks: number) => renderToStaticMarkup(createElement(UnitToken, { unitKey: k, nation: 'SP', blocks, maxBlocks: 5, facing: 'right' })).split('data-figure').length - 1;
+    const five = (k: 'SP/LT' | 'SP/SWI', blocks: number) => renderToStaticMarkup(createElement(UnitToken, { unitKey: k, nation: 'SP', blocks, maxBlocks: 5, facing: 'right' })).split('data-fig=').length - 1;
     expect(five('SP/LT', 5)).toBe(5);
-    expect(five('SP/FA', 5)).toBe(5);
+    expect(five('SP/SWI', 5)).toBe(5);
   });
 
   it('placeholder figures follow the arm', () => {

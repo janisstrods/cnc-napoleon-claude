@@ -10,7 +10,7 @@ import FigureGallery from '../../../src/dev/FigureGallery';
 import { balanced, count, placed, svg, token } from './helpers';
 
 const BAD = /NaN|undefined|Infinity/;
-const GUARDS = ['FR/YG', 'FR/OG', 'FR/GHC', 'FR/GA', 'BR/GG', 'BR/GHC'];
+const GUARDS = ['FR/YG', 'FR/OG', 'FR/GHC', 'FR/GLC', 'FR/GA', 'BR/GG', 'BR/GHC'];
 const badge = (m: string) => (m.indexOf('<g data-badge') < 0 ? '' : balanced(m, m.indexOf('<g data-badge')));
 /** The figure groups of a token by data-slot value. */
 function slotGroups(m: string): Record<string, string> {
