@@ -3,7 +3,7 @@
 // the last button is always "Let the general decide". The bespoke choosers of the game screen (card, orders, move, battle,
 // retreat, leader retreat, flags) add their board interaction on top of the title and that button.
 import {
-  CARD_DEFS, UNIT_STATS, cardKind, hexLabel, pieceHex, unitById,
+  CARD_DEFS, UNIT_STATS, cardKind, hexLabel, pieceHex, statsOf, stopsOnEntry, unitById,
   type Answer, type Decision, type DefendChoice, type GameState, type HexId,
 } from '../../engine';
 import { suggestAssign } from './assign';
@@ -32,6 +32,32 @@ export const DECISION_TITLES: Readonly<Record<Decision['kind'], string>> = {
   shortSupplyHex: 'Short Supply: choose a hex',
 };
 
+/**
+ * The title of decision `d`: the table's, except for the refinements that tell the player which rule is at work (take ground
+ * or breakthrough, Retire and Reform, a bonus melee against the player's own unit).
+ */
+export function decisionTitle(d: Decision, s?: GameState): string {
+  if (d.kind === 'advance') return d.how === 'breakthrough' && !(s && afterBonus(s, d.unit)) ? 'Break through?' : 'Take ground?';
+  if (d.kind === 'retreat' && d.reason === 'retireReform') return 'Retire and Reform';
+  if (d.kind === 'defend' && d.bonus) return `${DECISION_TITLES.defend} (bonus melee)`;
+  return DECISION_TITLES[d.kind];
+}
+
+/** True when the unit has fought its bonus melee this turn: the move that follows takes the hex and no more (R36). */
+function afterBonus(s: GameState, unit: string): boolean {
+  return !!s.turn.ordered[unit]?.bonusMeleeDone;
+}
+
+/** What a flag not ignored costs the unit (RR §10.1): hexes back by its own row, or blocks for a unit in square. */
+export function flagCostText(s: GameState, id: string): string {
+  const u = unitById(s, id);
+  if (!u) return 'Each flag not ignored moves it back; a hex it cannot take costs a block.';
+  if (u.square !== undefined) return 'Each flag not ignored costs a block per hex it would have moved back.';
+  const { first, then } = statsOf(s, u).retreat;
+  const back = first === then ? `${first} hex${first === 1 ? '' : 'es'}` : `${first}, then ${then} hex${then === 1 ? '' : 'es'}`;
+  return `Each flag not ignored moves it back ${back}; a hex it cannot take costs a block.`;
+}
+
 export const ELAN_TEXT = 'Give each die to a piece. An arm symbol orders a unit of that arm (horse artillery is artillery); a flag orders any unit or leader. Sabres order nothing. Ordered units roll one extra die in every battle this turn.';
 export const RALLY_TEXT = 'Each infantry, cavalry or artillery symbol returns one block to a weakened unit of that arm, anywhere on the field, never above its starting strength. Flags and sabres do nothing. A unit that gains a block is ordered.';
 
@@ -58,7 +84,7 @@ const hexesOf = (s: GameState, ids: readonly string[]): HexId[] =>
 
 /** The prompt of decision `d` in state `s`. */
 export function promptSpec(s: GameState, d: Decision): PromptSpec {
-  const title = DECISION_TITLES[d.kind];
+  const title = decisionTitle(d, s);
   const actions: PromptAction[] = [];
   let text = '';
   let hexes: HexId[] = [];
@@ -95,7 +121,7 @@ export function promptSpec(s: GameState, d: Decision): PromptSpec {
       for (const o of d.options) actions.push({ key: o, label: DEFEND_LABELS[o], answer: { kind: 'defend', choice: o } });
       break;
     case 'ignoreFlags':
-      text = `${d.flags} flag${d.flags === 1 ? '' : 's'} against ${unitLabel(s, d.unit)}: it may ignore up to ${d.max}.`;
+      text = `${d.flags} flag${d.flags === 1 ? '' : 's'} against ${unitLabel(s, d.unit)}: it may ignore up to ${d.max}. ${flagCostText(s, d.unit)}`;
       break;
     case 'retreat':
       text = `Click a hex to choose where ${unitLabel(s, d.unit)} ends up.`;
@@ -104,7 +130,10 @@ export function promptSpec(s: GameState, d: Decision): PromptSpec {
       text = 'Click a hex to choose where the leader goes.';
       break;
     case 'advance':
-      text = `${unitLabel(s, d.unit)} may ${d.how === 'breakthrough' ? 'break through into' : 'take ground in'} the vacated hex.`;
+      if (d.how === 'takeGround') text = `${unitLabel(s, d.unit)} may take ground in the hex its enemy left.`;
+      else if (afterBonus(s, d.unit)) text = `${unitLabel(s, d.unit)} may take ground in the hex its enemy left (no further move after a bonus melee).`;
+      else if (stopsOnEntry(s, pieceHex(s, d.unit) ?? -1, d.hex)) text = `${unitLabel(s, d.unit)} may break through into the hex its enemy left; it stops there.`;
+      else text = `${unitLabel(s, d.unit)} may break through into the hex its enemy left, then move one more hex.`;
       hexes = [d.hex];
       actions.push(
         { key: 'yes', label: 'Advance', answer: { kind: 'yesno', yes: true } },
@@ -112,9 +141,9 @@ export function promptSpec(s: GameState, d: Decision): PromptSpec {
       );
       break;
     case 'breakthroughExtra':
-      text = `${unitLabel(s, d.unit)} breaks through: click a hex to move on${d.required ? '' : ', or decline'}.`;
+      text = `${unitLabel(s, d.unit)} breaks through: click a hex to move on${d.required ? '' : ', or stay'}.`;
       hexes = [...d.options];
-      if (!d.required) actions.push({ key: 'decline', label: 'Decline', answer: { kind: 'hex', hex: null } });
+      if (!d.required) actions.push({ key: 'decline', label: 'Stay here', answer: { kind: 'hex', hex: null } });
       break;
     case 'bonusMelee':
       text = `${unitLabel(s, d.unit)} may fight a bonus melee: click a target, or decline.`;
