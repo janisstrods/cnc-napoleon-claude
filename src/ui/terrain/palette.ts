@@ -66,7 +66,7 @@ export const P = {
   canvas: '#efe5c9',
   canvasShade: '#c2b38c',
 
-  // Expansion #3: city walls of limestone, Rome's tufa wall, the towns' plaster and roof tiles, ships' hulls
+  // town walls of limestone, the Napoleonic towns' stone, plaster and roof tiles, ships' hulls
   wallTop: '#ddd3b6',
   wallFace: '#b6a684',
   wallShade: '#8c7c5e',

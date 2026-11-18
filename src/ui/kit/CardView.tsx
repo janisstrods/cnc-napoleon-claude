@@ -1,18 +1,17 @@
 import type { CSSProperties, KeyboardEvent } from 'react';
 import { CARD_DEFS, mirrorKind } from '../../engine/cards';
 import type { CardKind, SectionName } from '../../engine/types';
-import { Icon, type IconName } from './Icon';
+import { Icon, type IconName, type NapGlyph } from './Icon';
 import { SectionMiniMap } from './SectionMiniMap';
 import { GROUP_COLORS } from './theme';
 
 export type CardSize = 'sm' | 'md' | 'lg';
 
-/** Illustration of each tactic card (game-icons.net, CC BY 3.0); section cards show the mini-map instead. */
-export const CARD_ICONS: Partial<Record<CardKind, IconName>> = {
+/** Illustration of each tactic card (game-icons.net, CC BY 3.0, or our own glyphs); section cards show the mini-map instead. */
+export const CARD_ICONS: Partial<Record<CardKind, IconName | NapGlyph>> = {
   coordinatedAdvance: 'laurels',
-  flankAttack: 'horseHead',
   forward: 'run',
-  reconInForce: 'bowman',
+  reconInForce: 'spyglass',
   bayonetCharge: 'spears',
   bombard: 'strikingArrows',
   cavalryCharge: 'cavalry',
@@ -22,10 +21,10 @@ export const CARD_ICONS: Partial<Record<CardKind, IconName>> = {
   firstStrike: 'swordWound',
   forceMarch: 'run',
   coldSteel: 'crossedSwords',
-  leadership: 'caesar',
+  leadership: 'bicorne',
   grandManoeuvre: 'laurelCrown',
   rally: 'trumpetFlag',
-  shortSupply: 'romanShield',
+  shortSupply: 'breadBag',
 };
 
 const GOLD = ['#fff0bf', '#e6c06a', '#b38532', '#8a6020'];
@@ -58,10 +57,10 @@ export function Ornament({ className }: { className?: string }) {
   );
 }
 
-function HelmetBadge() {
+function DetachBadge() {
   return (
-    <div className="kit-card__helmet" title="Leaders may detach from their units">
-      <Icon name="helmet" size="100%" />
+    <div className="kit-card__detach" title="Leaders may detach from their units">
+      <Icon name="bicorne" size="100%" />
     </div>
   );
 }
@@ -145,7 +144,7 @@ export function CardView(p: {
         <Corner pos="br" />
         <header className="kit-card__header">
           <span className="kit-card__title">{def.title}</span>
-          {def.detach ? <HelmetBadge /> : null}
+          {def.detach ? <DetachBadge /> : null}
           {p.mirrored ? (
             <div className="kit-card__mirror" title="Left and right swapped">
               &#8644;
