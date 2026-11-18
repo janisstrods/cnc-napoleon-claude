@@ -6,13 +6,37 @@ import type { Answer, CardKind, Decision, GameState, Side } from '../engine';
 import { PERSONALITIES, personalityById, personalityFor, type Personality } from './personality';
 import { Rng, entropySeed } from './rand';
 
-export type Difficulty = 'recruit' | 'tribune' | 'consul'; // renamed in Plan 4
+/** Strength levels, weakest first; per-level settings are indexed by position (`levelOf`). */
+export const DIFFICULTIES = ['captain', 'colonel', 'marshal'] as const;
+export type Difficulty = (typeof DIFFICULTIES)[number];
+/** Transitional (removed in Plan 5 Task 9): the Ancients-era slugs that src/ui and the soak scripts still pass. */
+export type LegacyDifficulty = 'recruit' | 'tribune' | 'consul';
+
+/** Level index of a difficulty: captain/recruit 0, colonel/tribune 1, marshal/consul 2. An unknown string reads as colonel. */
+export function levelOf(d: Difficulty | LegacyDifficulty): 0 | 1 | 2 {
+  switch (d) {
+    case 'captain':
+    case 'recruit':
+      return 0;
+    case 'colonel':
+    case 'tribune':
+      return 1;
+    case 'marshal':
+    case 'consul':
+      return 2;
+    default: {
+      const unknown: never = d; // a new slug must be added above
+      void unknown;
+      return 1;
+    }
+  }
+}
 export type { Personality };
 export { PERSONALITIES, personalityById, personalityFor };
 
 export interface AiOptions {
   side: Side;
-  difficulty: Difficulty;
+  difficulty: Difficulty | LegacyDifficulty;
   personality: Personality;
   seed?: number;
   /** Scales thinking time (unused by the stub). */
@@ -40,13 +64,13 @@ export function isLegal(s: GameState, d: Decision, a: Answer): boolean {
 }
 
 /** The stub's policy; the caller checks the answer and falls back to a random one. */
-function decide(s: GameState, d: Decision, rng: Rng): Answer {
+function decide(s: GameState, d: Decision, rand: Rng): Answer {
   switch (d.kind) {
     case 'battle': {
       const ids = Object.keys(s.turn.ordered).sort((a, b) => a.localeCompare(b, 'en', { numeric: true }));
       for (const id of ids) {
         const targets = battleTargets(s, id);
-        if (targets.length) return { kind: 'attack', unit: id, target: rng.pick(targets).hex };
+        if (targets.length) return { kind: 'attack', unit: id, target: rand.pick(targets).hex };
       }
       return { kind: 'endBattle' };
     }
@@ -55,7 +79,7 @@ function decide(s: GameState, d: Decision, rng: Rng): Answer {
     case 'advance':
       return { kind: 'yesno', yes: true };
     default:
-      return randomAnswer(s, d, () => rng.next());
+      return randomAnswer(s, d, () => rand.next());
   }
 }
 
@@ -63,21 +87,22 @@ function decide(s: GameState, d: Decision, rng: Rng): Answer {
 export function chooseAnswer(state: GameState, decision: Decision, opts: AiOptions, mem: AiMemory): { answer: Answer; say?: string } {
   const t0 = now();
   if (!mem.rngState) mem.rngState = (opts.seed ?? entropySeed()) >>> 0 || 1;
-  const rng = new Rng(mem.rngState);
+  const rand = new Rng(mem.rngState);
   let answer: Answer;
   try {
-    answer = decide(state, decision, rng);
+    answer = decide(state, decision, rand);
     if (!isLegal(state, decision, answer)) {
       if (typeof console !== 'undefined') console.error('AI error: illegal answer replaced by a fallback', decision.kind, JSON.stringify(answer));
       mem.fallbacks = (mem.fallbacks ?? 0) + 1;
-      answer = randomAnswer(state, decision, () => rng.next());
+      answer = randomAnswer(state, decision, () => rand.next());
     }
   } catch (e) {
     if (typeof console !== 'undefined') console.error('AI error', e);
     mem.fallbacks = (mem.fallbacks ?? 0) + 1;
-    answer = randomAnswer(state, decision, () => rng.next());
+    answer = randomAnswer(state, decision, () => rand.next());
+  } finally {
+    mem.rngState = rand.state; // saved even when the fallback throws, so a retry does not repeat the same draws
   }
-  mem.rngState = rng.state;
   mem.last = { kind: decision.kind, ms: now() - t0 };
   return { answer };
 }
