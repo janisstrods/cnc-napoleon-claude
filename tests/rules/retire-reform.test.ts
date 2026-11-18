@@ -44,6 +44,7 @@ describe('Retire and Reform (§9.4)', () => {
     forceDice(n('artillery', 40));
     must(d2, { kind: 'attack', unit: 'u1', target: H(4, 6) });
     if (d2.pending?.kind === 'combinedArms') must(d2, { kind: 'select', ids: [] });
+    if (d2.pending?.kind === 'defend') must(d2, { kind: 'defend', choice: 'stand' });  // T9: infantry may form square against cavalry
     expect(d2.pending?.kind).not.toBe('defend');
     expect(ev(d2).some((e) => e.t === 'combat' && e.purpose === 'battleBack')).toBe(true);
   });
