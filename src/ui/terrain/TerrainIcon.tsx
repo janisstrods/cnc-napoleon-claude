@@ -7,7 +7,7 @@ import { iconCtx } from './hexmath';
 import { paintHills, paintRugged } from './hills';
 import { paintFieldWorks } from './fieldworks';
 import { P } from './palette';
-import { paintTowns } from './towns';
+import { paintTowns, paintWalledFarm } from './towns';
 import { paintForests } from './vegetation';
 import { paintRivers } from './water';
 
@@ -40,6 +40,8 @@ function terrainArt(t: TerrainType): JSX.Element | null {
     case 'windmill':
     case 'fortress':
       return <g transform="scale(0.92)">{paintTowns(ctx)}</g>;
+    case 'walledFarm':
+      return <g transform="scale(0.92)">{paintWalledFarm(ctx)}</g>;
     case 'river':
     case 'ford':
     case 'fordNoStop':
