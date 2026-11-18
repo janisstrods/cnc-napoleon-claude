@@ -59,8 +59,8 @@ export function attackerStrike(s: GameState, ctx: FlowCtx, m: MeleeCtx, purpose:
   const sc = scoreRoll(faces, kind, statsOf(s, attacker), kind === 'retireReform' ? 'cavalry' : statsOf(s, target).arm);
   emitRoll(ctx, purpose, faces, sc.scoring, m.attacker, m.target, shares.length ? [m.attacker, ...shares.map((g) => g.id)] : undefined);
   if (kind === 'melee' && flagRerollApplies(s, attacker, target, m.role)) {  // S12: the melee unit's and the guns' flags, once; the new score adds to the first
-    const again = rerollFlags(s, ctx, purpose, faces, 'melee', statsOf(s, attacker), statsOf(s, target).arm, { by: m.attacker, against: m.target });
-    if (again) return { hits: sc.hits + again.hits, flags: sc.flags + again.flags, scoring: [...sc.scoring, ...again.scoring], own };
+    const again = rerollFlags(s, ctx, purpose, faces, 'melee', statsOf(s, attacker), statsOf(s, target).arm, { by: m.attacker, against: m.target, from: shares.length ? [m.attacker, ...shares.map((g) => g.id)] : undefined });
+    if (again) return { hits: sc.hits + again.hits, flags: sc.flags + again.flags, scoring: sc.scoring, own };  // scoring is the first roll's: no caller reads it
   }
   return { ...sc, own };
 }

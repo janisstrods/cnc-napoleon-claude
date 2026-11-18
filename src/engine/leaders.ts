@@ -94,7 +94,7 @@ export function* loneLeaderMelee(s: GameState, ctx: FlowCtx, attacker: Unit, l: 
   emitRoll(ctx, purpose, faces, faces.map((f) => f === 'sabre'), attacker.id, l.id);
   let killed = sabreKills(faces);
   if (flagRerollApplies(s, attacker, l, m.role)) {  // S12: a lancer's flags are re-rolled against a lone leader too; a re-rolled sabre kills
-    const again = rerollFlags(s, ctx, purpose, faces, 'melee', statsOf(s, attacker), 'infantry', { by: attacker.id, against: l.id });
+    const again = rerollFlags(s, ctx, purpose, faces, 'leader', statsOf(s, attacker), 'infantry', { by: attacker.id, against: l.id });
     if (again) killed ||= sabreKills(again.faces);
   }
   if (killed) killLeader(s, ctx, l, 'melee');

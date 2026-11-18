@@ -1,9 +1,9 @@
-// Rules: RR §15.4 (pending Task 1) (design/rules-reference.md); design/exp1-rulings.md S12, S5, S14
+// Rules: RR §15.4 (design/rules-reference.md); design/exp1-rulings.md S12, S5, S14
 import { describe, expect, it } from 'vitest';
 import type { DieFace, GameDriver, GameEvent, RowKey } from '../../src/engine';
 import { battleTargets, statsOf } from '../../src/engine';
 import { flagRerollApplies } from '../../src/engine/dice';
-import { H, attack, build, ev, forceDice, giveCard, miss, must, n, toBattle, u, type Pos } from './helpers';
+import { H, attack, build, ev, forceDice, giveCard, miss, must, n, rolls, toBattle, u, type Pos } from './helpers';
 
 const PAD = n('artillery', 60); // an artillery face never hits infantry or cavalry
 type Unit1 = NonNullable<Pos['units']>[number];
@@ -31,8 +31,7 @@ describe('Lancers re-roll flags (S12)', () => {
     expect(rerolls(es, 'melee')).toEqual([false, true]);
     expect(rollEvs(es, 'melee')[1].scoring).toEqual([false, true]);
     expect(u(d, 'u2')!.blocks).toBe(2); // cavalry + the re-rolled sabre; 4 - 2
-    const flags = es.find((e) => e.t === 'flags') as { count?: number; flags?: number; n?: number } | undefined;
-    if (flags) expect(flags.count ?? flags.flags ?? flags.n).toBe(3); // 2 + 1
+    expect(es.find((e) => e.t === 'flags')).toMatchObject({ flags: 3 }); // 2 + 1
   });
 
   it('no re-roll against a cuirassier (SP/CU, FR/CU) (S12)', () => {
@@ -67,6 +66,7 @@ describe('Lancers re-roll flags (S12)', () => {
     const fs = ev(e);
     expect(faces(fs, 'firstStrike')).toEqual([['flag', 'flag', 'cavalry', 'artillery'], ['cavalry', 'sabre']]);
     expect(rerolls(fs, 'firstStrike')).toEqual([false, true]);
+    expect(u(e, 'u1')).toBeUndefined(); // the first roll's cavalry + the re-roll's cavalry and sabre: 3 hits eliminate the 3-block attacker (2 without the re-roll)
     forceDice([]);
   });
 
@@ -98,6 +98,16 @@ describe('Lancers re-roll flags (S12)', () => {
     expect(rerolls(es, 'melee')).toEqual([false, true]);
     expect(es.filter((e) => e.t === 'leaderKilled')).toHaveLength(1);
     forceDice([]);
+    // a re-rolled infantry face does nothing to a leader: it does not score, and he lives
+    const w = build({ ...lone, units: [bot('FR/LNC', [5, 6])] });
+    const f = toBattle(w, 'attackC', ['u1']);
+    ev(f);
+    forceDice(['flag', 'infantry', 'artillery', 'artillery', /* re-roll */ 'infantry', ...PAD]);
+    attack(f, 'u1', H(4, 6));
+    const fe = ev(f);
+    expect(rollEvs(fe, 'melee').map((r) => r.scoring)).toEqual([[false, false, false, false], [false]]);
+    expect(fe.filter((e) => e.t === 'leaderKilled')).toHaveLength(0);
+    forceDice([]);
     // escape: a lancer in the leader's path rolls flags and does not re-roll
     const t = build({ ...lone, units: [bot('BR/LN', [5, 6]), top('FR/LN', [4, 6], { blocks: 1 }), bot('FR/LNC', [3, 5])], leaders: [{ side: 'top', at: [4, 6] }] });
     const e = toBattle(t, 'attackC', ['u1']);
@@ -111,6 +121,24 @@ describe('Lancers re-roll flags (S12)', () => {
     expect(faces(esc, 'escape')).toEqual([n('flag', 4)]);
     expect(rerolls(esc, 'escape')).toEqual([false]);
     forceDice([]);
+  });
+
+  it('a bonus melee re-rolls too (S12)', () => {
+    const s = build({ units: [bot('FR/LNC', [5, 6]), top('FR/LN', [4, 6], { blocks: 1 }), top('FR/LN', [2, 6])] });
+    const d = toBattle(s, 'attackC', ['u1']);
+    ev(d);
+    forceDice([...n('infantry', 4), 'flag', 'flag', 'artillery', 'artillery', 'infantry', 'infantry', ...PAD]);
+    attack(d, 'u1', H(4, 6));
+    if (d.pending?.kind === 'advance') must(d, { kind: 'yesno', yes: true });
+    expect(d.pending?.kind).toBe('breakthroughExtra'); // light cavalry advances a second hex
+    must(d, { kind: 'hex', hex: H(3, 6) });
+    expect(d.pending?.kind).toBe('bonusMelee');
+    must(d, { kind: 'hex', hex: H(2, 6) });
+    if (d.pending?.kind === 'defend') must(d, { kind: 'defend', choice: 'stand' });
+    const es = ev(d);
+    expect(rolls(es, 'bonus')).toEqual([['flag', 'flag', 'artillery', 'artillery'], ['infantry', 'infantry']]);
+    expect(rerolls(es, 'bonus')).toEqual([false, true]);
+    expect(u(d, 'u3')!.blocks).toBe(2); // 4 - 2
   });
 
   it('re-rolled flags are not re-rolled again', () => {
