@@ -49,12 +49,12 @@ export function Medal(p: { standing: Standing; size?: number; faint?: boolean; c
             </linearGradient>
           </defs>
           <g className="medal-ribbon">
-            <path d="M12 0 H28 V9 L20 14 L12 9 Z" />
-            <path d="M18.4 0 H21.6 V11 L20 12 L18.4 11 Z" fill="#f1e2b6" stroke="none" />
+            <path d="M12 1 H28 V12 H12 Z" />
+            <path d="M18.4 1 H21.6 V12 H18.4 Z" fill="#f1e2b6" stroke="none" />
           </g>
           <circle cx="20" cy="24" r="15.2" fill={`url(#${uid}m)`} stroke={METAL[s].rim} strokeWidth="1.4" />
           <circle cx="20" cy="24" r="12.2" fill="none" stroke={METAL[s].stops[0]} strokeWidth="1" opacity=".75" />
-          <path d={iconPath('laurels')} transform="translate(9.4 13.4) scale(0.04)" fill={METAL[s].rim} opacity=".82" />
+          <path d={iconPath('laurels')} transform="translate(9.76 13.76) scale(0.04)" fill={METAL[s].rim} opacity=".82" />
           <path className="medal-star" d={STAR} fill={METAL[s].stops[0]} stroke={METAL[s].rim} strokeWidth=".8" strokeLinejoin="round" />
         </>
       )}

@@ -54,7 +54,11 @@ describe('Napoleonic ranks', () => {
     const m = stubStorage();
     m.set(storageKey('difficulty'), 'tribune');
     const html = renderToStaticMarkup(createElement(ScenarioSelect, { onBack: () => {}, onStart: () => {} }));
-    expect(html).toMatch(/class="choice has-medal active"[^>]*><b>Colonel<\/b>/);
+    const buttons = html.match(/<button[^>]*class="choice[^"]*"[^>]*>[\s\S]*?<\/button>/g) ?? [];
+    const byName = (n: string) => buttons.find((b) => b.includes(`<b>${n}</b>`)) ?? '';
+    expect(byName('Colonel')).toMatch(/class="[^"]*\bactive\b/);
+    expect(byName('Captain')).not.toMatch(/class="[^"]*\bactive\b/);
+    expect(byName('Marshal')).not.toMatch(/class="[^"]*\bactive\b/);
   });
 
   it('the dev route takes the new slugs only', () => {
@@ -80,6 +84,33 @@ describe('Triumphs for 33 battles', () => {
     const ids = visibleBattles(SCENARIOS).map((s) => s.id);
     expect(tallyText(recordTotals({}, ids))).toContain('of 30 medals');
     expect(tallyText(recordTotals({}, ids))).toContain('of 15 battles fought');
+  });
+
+  it('a battle in the dialog shows its medals and their meaning', () => {
+    stubStorage();
+    const rec = { '003': { bottom: { marshal: { won: 1, lost: 0, draw: 0 } } } };
+    const html = renderToStaticMarkup(createElement(TriumphsDialog, {
+      open: true, record: rec, onClose: () => {}, onRecord: () => {}, onPick: () => {},
+    }));
+    const cell = (html.match(/<button[^>]*class="tri-cell"[^>]*>[\s\S]*?<\/button>/g) ?? []).find((b) => b.includes('>Vimiero<')) ?? '';
+    expect(cell).toContain('medal is-gold');
+    expect(cell).toContain('gold (beat the Marshal)');
+  });
+
+  it('every playable battle is catalogued, in the box its scenario names', () => {
+    for (const s of visibleBattles(SCENARIOS)) {
+      const c = CATALOGUE.find((x) => x.id === s.id);
+      expect(c, s.id).toBeDefined();
+      expect(c!.box, s.id).toBe(s.expansion);
+    }
+  });
+
+  it('a box with no playable battle shows no tally', () => {
+    stubStorage();
+    const html = renderToStaticMarkup(createElement(TriumphsDialog, {
+      open: true, record: {}, onClose: () => {}, onRecord: () => {}, onPick: () => {},
+    }));
+    expect(html).not.toContain('of 0 battles fought');
   });
 
   it('a medal has its ribbon and star; legend says "beat the Marshal"', () => {

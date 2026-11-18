@@ -9,7 +9,8 @@ import { exportRecord, importRecord, mergeRecords, recordTotals, saveRecord, typ
 import { Medal, MedalPair, pairText } from './Medal';
 import { PICKER_TABS, battlesOf, visibleBattles } from './picker';
 
-const ALL_IDS = visibleBattles(SCENARIOS).map((s) => s.id);
+const PLAYABLE = visibleBattles(SCENARIOS);
+const ALL_IDS = PLAYABLE.map((s) => s.id);
 
 export function tallyText(t: Totals): string {
   return `${t.gold} gold, ${t.silver} silver, ${t.bronze} bronze of ${t.sides} medals; ${t.fought} of ${t.battles} battles fought`;
@@ -109,11 +110,11 @@ export function TriumphsDialog(p: {
               <section key={t.id} className="triumphs-box" aria-label={t.label}>
                 <h3>
                   {t.label}
-                  <MedalTally totals={recordTotals(record, battles.map((s) => s.id))} className="is-small" />
+                  {battles.length > 0 && <MedalTally totals={recordTotals(record, battles.map((s) => s.id))} className="is-small" />}
                 </h3>
                 <div className="triumphs-grid">
                   {CATALOGUE.filter((c) => c.box === t.id).map((c) => {
-                    const s = battles.find((b) => b.id === c.id);
+                    const s = PLAYABLE.find((b) => b.id === c.id);
                     return s ? (
                       <button key={c.id} type="button" className="tri-cell" onClick={() => p.onPick(s.id)} title={`${s.name}: ${pairText(record, s)}`}>
                         <span className="tri-num">{Number(s.id)}</span>
@@ -121,7 +122,7 @@ export function TriumphsDialog(p: {
                         <MedalPair rec={record} sc={s} size={18} />
                       </button>
                     ) : (
-                      <div key={c.id} className="tri-cell is-missing">
+                      <div key={c.id} className="tri-cell is-missing" title={`${c.name}: not yet available`}>
                         <span className="tri-num">{Number(c.id)}</span>
                         <span className="tri-name">{c.name}</span>
                         <span className="tri-missing">Not yet available</span>
