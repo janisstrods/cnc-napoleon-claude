@@ -1,4 +1,4 @@
-// Fast policies for all 18 decision kinds (Plan 5 Task 7b): live answers to the reactions of a turn, and the answers of both sides inside a
+// Fast policies for all 20 decision kinds (Plan 5 Task 7b): live answers to the reactions of a turn, and the answers of both sides inside a
 // simulation (sim.ts). Each kind has one exported helper; `policyFor` dispatches over `d.kind` exhaustively.
 //
 // Nothing here searches. Estimates (estimate.ts, reactions.ts), the evaluation and the engine's own queries rank the engine's own
@@ -10,14 +10,14 @@ import {
 } from '../engine';
 import { occOf, type Occ } from './board';
 import { makeBudget, type Budget } from './budget';
-import { rallyAssign, scoutKeepIndex, keepValue } from './cardsense';
+import { guerrillaScoutTake, guerrillaSpend, keepValue, moveFirstPick, openingCard, rallyAssign, scoutKeepIndex } from './cardsense';
 import { bestGuns, defendValue } from './reactions';
 import { fireEstimate, loneLeaderEstimate, makeEstCtx, meleeEstimate, takeGround, type EstCtx, type Outcome } from './estimate';
 import { evaluate, impetuousCost, objectiveHexes, reachOf, rootContextOf } from './evaluate';
 import { greedyMoveStep, type MoveCtx, type MoveStyle } from './moves';
 import { MAX_CANDIDATES, orderCandidates, pieceBenefits, quickCardScore } from './ordering';
 import type { Rng } from './rand';
-import { safeAnswer, type Policy } from './sim';
+import type { Policy } from './sim';
 import { unitValue, type Weights } from './values';
 import { blindClone, isDeterminised, myHand, withoutSquare } from './view';
 
@@ -117,8 +117,14 @@ function safetyMargin(s: GameState, occ: Occ, side: Side, hex: HexId): number {
 // ---------------------------------------------------------------------------------------------------------------------
 // The card and its orders
 
-/** `playCard`: the card with the best quick score less its keep value (the planner replaces this at the live decision). */
-export function pickCard(s: GameState, d: D<'playCard'>, W: Weights, ec: EstCtx = estCtxFor(s, d.side, W)): Answer {
+/**
+ * `playCard`: the card with the best quick score less its keep value (the planner replaces this at the live decision); on its
+ * first turn at 116 a side plays the opening card it revealed (RR §15.8, S38).
+ */
+export function pickCard(s: GameState, d: D<'playCard'>, W: Weights, ec?: EstCtx): Answer {
+  const bound = openingCard(s, d.side);
+  if (bound !== null) return { kind: 'playCard', card: bound };
+  ec ??= estCtxFor(s, d.side, W);
   const hand = myHand(s, d.side);
   const best = argmaxBy(hand, (c) => quickCardScore(s, d.side, c, W, ec) - keepValue(s, d.side, c, W, ec.occ));
   return { kind: 'playCard', card: best ?? hand[0] };
@@ -404,6 +410,23 @@ export function pickShortSupplyHex(s: GameState, d: D<'shortSupplyHex'>, W: Weig
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// Expansion #1 (Plan 7C Task 19)
+
+/**
+ * `guerrilla`: spend a counter when cancelling the opponent's card is worth the counter (`guerrillaSpend`); take one with our
+ * Scout while few are held or when it beats the keep-one draw (`guerrillaScoutTake`).
+ */
+export function pickGuerrilla(s: GameState, d: D<'guerrilla'>, W: Weights): Answer {
+  if (d.mode === 'scout') return { kind: 'yesno', yes: guerrillaScoutTake(s, d.side, W) };
+  return { kind: 'yesno', yes: d.card !== null && guerrillaSpend(s, d.side, d.card, W) };
+}
+
+/** `moveFirst`: the option with the best opening value, ties to the lower Move First value (`moveFirstPick`). */
+export function pickMoveFirst(s: GameState, d: D<'moveFirst'>, W: Weights): Answer {
+  return { kind: 'playCard', card: moveFirstPick(s, d.side, d.options, W) };
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 
 function assertNever(d: never): never {
   throw new Error(`policyFor: unhandled decision ${JSON.stringify(d)}`);
@@ -444,9 +467,8 @@ export function policyFor(c: PolicyCtx): Policy {
       case 'scoutKeep': return pickScout(s, d, W);
       case 'shortSupplyTarget': return pickShortSupplyTarget(s, d, W);
       case 'shortSupplyHex': return pickShortSupplyHex(s, d, W);
-      // expansion kinds: safe answers until Plan 7C Task 19 gives them policies
-      case 'guerrilla':
-      case 'moveFirst': return safeAnswer(s, d, c.rand, 1);
+      case 'guerrilla': return pickGuerrilla(s, d, W);
+      case 'moveFirst': return pickMoveFirst(s, d, W);
       default: return assertNever(d);
     }
   };

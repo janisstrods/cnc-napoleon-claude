@@ -2,8 +2,10 @@
 // `rng` or `rngCalls`, or call `cloneState` (tests/ai/hidden-scan.test.ts enforces it). Everything else asks this module.
 //
 // What a side may see: its own hand and own square-track cards, both hand sizes, the discard pile, `lastCard`, and the
-// square counters on units (`unit.square`, public). It never sees the opponent's hand, the opponent's track cards, the deck
-// order or the game's random generator. The "unseen pool" is therefore built as the complement of what is seen.
+// square counters on units (`unit.square`, public), and at 116 the opponent's opening card once both are revealed (RR §15.8).
+// It never sees the opponent's hand, the opponent's track cards, the deck order, the game's random generator or the
+// opponent's Move First pick before the reveal (`special.moveFirst.picks`, S44). The "unseen pool" is therefore built as the
+// complement of what is seen.
 import { CARD_LIST, GameDriver, NO_MODS, cardKind, cloneState, other, type CardKind, type GameState, type Side } from '../engine';
 import type { Rng } from './rand';
 
@@ -12,6 +14,17 @@ const blind = new WeakSet<GameState>();
 
 /** Clones that `determinize` produced (the only ones on which the sampled opponent hand may be read). */
 const determinised = new WeakSet<GameState>();
+
+/** The state each AI clone was first made from (a clone of a clone keeps it): every simulation of one decision shares it. */
+const origin = new WeakMap<GameState, GameState>();
+
+/**
+ * The state the AI clone `s` was first made from (`s` itself for any other state): a key for work shared by the simulations
+ * of one decision. Never read or drive it; only compare it.
+ */
+export function originOf(s: GameState): GameState {
+  return origin.get(s) ?? s;
+}
 
 /** My own hand. */
 export function myHand(s: GameState, me: Side): readonly number[] {
@@ -73,9 +86,34 @@ export function oppHoldsP(s: GameState, me: Side, kind: CardKind): number {
   return 1 - none;
 }
 
-/** Deal `order` into the opponent's hand, then its filled track slots, then the deck (the rest). Sizes and slots are kept. */
-function deal(c: GameState, opp: Side, order: readonly number[], slots: readonly number[], n: number): void {
+/**
+ * The opponent's revealed Move First card while it is still bound to play it (RR §15.8, S38): public since the reveal and in its
+ * hand until its first turn, so a sampled hand must hold it. Null otherwise (no reveal yet, no pick, or the first turn played).
+ */
+function openingCardOf(s: GameState, opp: Side): number | null {
+  const mf = s.special.moveFirst;
+  return mf && mf.done && s.special.turnsDone[opp] === 0 ? mf.committed[opp] : null;
+}
+
+/**
+ * Clear the opponent's Move First pick while it is unrevealed (RR §15.8, S44): before the reveal neither side may read the
+ * other's. The engine keeps the picks local until the reveal; this holds whatever the field says. One's own pick stays.
+ */
+function redactPick(c: GameState, opp: Side): void {
+  const mf = c.special.moveFirst;
+  if (!mf || mf.done) return;
+  mf.picks = { ...mf.picks, [opp]: null };
+  mf.committed = { ...mf.committed, [opp]: null };
+}
+
+/**
+ * Deal `order` into the opponent's hand, then its filled track slots, then the deck (the rest). Sizes and slots are kept. A
+ * revealed opening card still unseen (`openingCardOf`) is dealt into the hand first, the rest in order after it.
+ */
+function deal(c: GameState, opp: Side, order0: readonly number[], slots: readonly number[], n: number): void {
   const p = c.players[opp];
+  const known = openingCardOf(c, opp);
+  const order = known !== null && n > 0 && order0.includes(known) ? [known, ...order0.filter((x) => x !== known)] : order0;
   p.hand = order.slice(0, n);
   const track: (number | null)[] = p.squareTrack.map(() => null);
   slots.forEach((slot, i) => {
@@ -87,7 +125,8 @@ function deal(c: GameState, opp: Side, order: readonly number[], slots: readonly
 
 /**
  * A clone with everything hidden rebuilt canonically: the opponent's hand, its filled track slots and the deck are dealt
- * from the sorted unseen pool (same sizes, same slots); `rng` is fixed. Every AI clone starts here.
+ * from the sorted unseen pool (same sizes, same slots); `rng` is fixed; an unrevealed opponent Move First pick is cleared and
+ * a revealed opening card it must still play stays in its hand. Every AI clone starts here.
  */
 export function blindClone(s: GameState, me: Side): GameState {
   const opp = other(me);
@@ -99,10 +138,12 @@ export function blindClone(s: GameState, me: Side): GameState {
   if (pool.length !== s.deck.length + n + slots.length) {
     throw new Error(`blindClone: unseen pool ${pool.length} != deck ${s.deck.length} + hand ${n} + filled slots ${slots.length}`);
   }
+  redactPick(c, opp);
   deal(c, opp, pool, slots, n);
   c.rng = 1;
   c.rngCalls = 0;
   blind.add(c);
+  origin.set(c, originOf(s));
   return c;
 }
 
@@ -126,14 +167,16 @@ export function assumeOppHand(s: GameState, me: Side, kind: CardKind, holds: boo
 
 /**
  * Sample the hidden cards in place (on a blind clone): sort the unseen pool, shuffle it with `rand`, deal the opponent's
- * hand, its filled track slots and the deck. The result depends only on which cards are unseen. Then the clone gets a
- * fresh game-RNG state from `rand`.
+ * hand, its filled track slots and the deck (a revealed opening card the opponent must still play goes into its hand; an
+ * unrevealed pick is cleared). The result depends only on which cards are unseen. Then the clone gets a fresh game-RNG state
+ * from `rand`.
  */
 export function determinize(s: GameState, me: Side, rand: Rng): void {
   if (!blind.has(s)) throw new Error('determinize needs a clone made by blindClone');
   const opp = other(me);
   const pool = unseenCards(s, me);
   rand.shuffle(pool);
+  redactPick(s, opp);
   deal(s, opp, pool, filledSlots(s, opp), handSize(s, opp));
   s.rng = rand.u32();
   s.rngCalls = 0;
