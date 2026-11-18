@@ -35,7 +35,7 @@ describe('generated scenario files', () => {
 
   it('unsupportedFeatures is sorted, and empty for every base battle', () => {
     for (const id of Object.keys(META)) expect(unsupportedFeatures(RAW[id]), id).toEqual([]);
-    const f = unsupportedFeatures({ id: '002', terrain: [{ r: 1, c: 1, t: 'walledFarm' }, { r: 1, c: 2, t: 'abatis' }], units: [{ r: 1, c: 1, side: 'top', key: 'SP/LN' }], leaders: [], objectives: [], guerrilla: [] } as unknown as RawBattle);
+    const f = unsupportedFeatures({ id: '002', terrain: [{ r: 1, c: 1, t: 'marsh' }, { r: 1, c: 2, t: 'abatis' }], units: [{ r: 1, c: 1, side: 'top', key: 'SP/LN' }], leaders: [], objectives: [], guerrilla: [] } as unknown as RawBattle);
     expect(f).toEqual([...f].sort());
     expect(f.length).toBeGreaterThan(2);
   });

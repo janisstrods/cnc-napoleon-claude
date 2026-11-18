@@ -11,7 +11,7 @@ import { leaderTokenProps } from '../../../src/ui/game/boardProps';
 import { svg } from './helpers';
 
 /** UNIT_KEYS rows of an art nation that deliberately keep the placeholder. Each carries its reason. A new row fails the coverage test until decided. */
-const PLACEHOLDER_OK: readonly UnitKey[] = [];
+const PLACEHOLDER_OK: readonly UnitKey[] = ['FR/SWI', 'FR/GLC'];  // art in Plan 7C Task 13
 
 describe('public tokens delegate to the Napoleonic art', () => {
   for (const key of ART_KEYS) {

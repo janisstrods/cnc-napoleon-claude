@@ -80,10 +80,10 @@ describe('the rules reference content', () => {
     expect(text(body('squares'))).toContain('Our reading:');
   });
 
-  it('an expansion tab appears only when the expansion has unit rows', () => {
+  it('an expansion tab appears when the expansion has unit rows (SP rows exist, so Expansion #1 is offered)', () => {
     const html = renderToStaticMarkup(createElement(RulesReference));
     const tabs = [...[...html.matchAll(/<nav class="rules-tabs">([\s\S]*?)<\/nav>/g)][0][1].matchAll(/<button[^>]*>([^<]*)<\/button>/g)].map((m) => m[1].replace(/&amp;/g, '&'));
-    expect(tabs).toEqual(['Basics', 'Units', 'Combat', 'Squares & Combined Arms', 'Terrain', 'Cards']);
+    expect(tabs).toEqual(['Basics', 'Units', 'Combat', 'Squares & Combined Arms', 'Terrain', 'Cards', 'Expansion #1']);
     for (const e of EXPANSIONS.filter((x) => x.number > 0)) {
       const has = UNIT_KEYS.some((k) => UNIT_STATS[k].expansion === e.id);
       expect(tabs.includes(e.name)).toBe(has);

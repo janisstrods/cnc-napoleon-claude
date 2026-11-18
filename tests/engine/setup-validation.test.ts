@@ -123,7 +123,7 @@ describe('setup rejects impossible data and names the scenario', () => {
   it('artillery on a sand quarry', () => fails(withUnits([{ side: 'top', key: 'BR/FA', r: 4, c: 0 }], { terrain: [{ r: 4, c: 0, t: 'sandQuarry' }] }), /sandQuarry.*impassable to artillery.*\(test\)$/));
   it('infantry on a sand quarry is fine', () => expect(() => createGame(withUnits([{ side: 'top', key: 'BR/LN', r: 4, c: 0 }], { terrain: [{ r: 4, c: 0, t: 'sandQuarry' }] }), 1)).not.toThrow());
   it('an unknown unit key', () => fails(withUnits([{ side: 'top', key: 'BR/XX' as never, r: 1, c: 1 }]), /unknown unit key.*\(test\)$/));
-  it('a unit key with no row', () => fails(withUnits([{ side: 'top', key: 'SP/SWI' as never, r: 1, c: 1 }]), /unknown unit key SP\/SWI.*\(test\)$/));
+  it('a unit key with no row', () => fails(withUnits([{ side: 'top', key: 'PT/GR' as never, r: 1, c: 1 }]), /unknown unit key PT\/GR.*\(test\)$/));
   it('a unit off the board', () => fails(withUnits([{ side: 'top', key: 'BR/LN', r: 1, c: 12 }]), /off the board.*\(test\)$/));
   it('a leader off the board', () => fails({ ...base, leaders: [{ side: 'top', name: 'X', r: 9, c: 0 }] }, /off the board.*\(test\)$/));
   it('two units on one hex', () => fails(withUnits([{ side: 'top', key: 'BR/LN', r: 1, c: 1 }, { side: 'top', key: 'BR/LT', r: 1, c: 1 }]), /two units.*\(test\)$/));
@@ -149,10 +149,10 @@ describe('setup rejects impossible data and names the scenario', () => {
   it('an objective with an unknown side', () => fails(withObjectives([{ kind: 'tempHex', side: 'left', hex: [2, 2] }]), /unknown side left.*\(test\)$/));
   it('a side rule with a side that is not a Side', () => fails(withSideRules([{ kind: 'flagIgnoreOn', side: 'middle', terrain: 'fortress', flags: 1 }]), /unknown side middle.*\(test\)$/));
   it('an impetuousCavalry key that is not a cavalry row', () => fails(withSideRules([{ kind: 'impetuousCavalry', side: 'top', keys: ['BR/LN'] }]), /not a cavalry row.*\(test\)$/));
-  it('an impetuousCavalry key with no row', () => fails(withSideRules([{ kind: 'impetuousCavalry', side: 'top', keys: ['FR/LNC'] }]), /unknown unit key FR\/LNC.*\(test\)$/));
+  it('an impetuousCavalry key with no row', () => fails(withSideRules([{ kind: 'impetuousCavalry', side: 'top', keys: ['PT/GR'] }]), /unknown unit key PT\/GR.*\(test\)$/));
   it('an impetuousCavalry cavalry row is fine', () => expect(() => createGame(withSideRules([{ kind: 'impetuousCavalry', side: 'top', keys: ['BR/HC', 'BR/LC'] }]), 1)).not.toThrow());
   it('a flagIgnoreOn side rule resolves', () => expect(createGame(withSideRules([{ kind: 'flagIgnoreOn', side: 'top', terrain: 'fortress', flags: 1 }]), 1).scenario.sideRules).toEqual([{ kind: 'flagIgnoreOn', side: 'top', terrain: 'fortress', flags: 1 }]));
-  it('an override of an unknown key', () => fails({ ...base, unitOverrides: [{ key: 'FR/LNC' as never, set: { blocks: 3 } }] }, /unitOverrides: unknown unit key.*\(test\)$/));
+  it('an override of an unknown key', () => fails({ ...base, unitOverrides: [{ key: 'PT/GR' as never, set: { blocks: 3 } }] }, /unitOverrides: unknown unit key.*\(test\)$/));
   it('blocks below 1', () => fails({ ...base, units: [{ side: 'top', key: 'BR/LN', r: 1, c: 1, blocks: 0 }] }, /blocks 0 is outside 1\.\.4.*\(test\)$/));
   it('blocks above the row', () => fails({ ...base, units: [{ side: 'top', key: 'BR/FA', r: 1, c: 1, blocks: 4 }] }, /blocks 4 is outside 1\.\.3.*\(test\)$/));
   it('cards below 1', () => fails({ ...base, top: { ...base.top, cards: 0 } }, /whole number of cards.*\(test\)$/));

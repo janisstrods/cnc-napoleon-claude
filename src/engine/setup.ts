@@ -11,23 +11,39 @@ import { UNIT_STATS, type UnitStats } from './units';
 export interface SideSetup { army: string; nation: Nation; commander: string; cards: number }
 export interface UnitSetup { side: Side; key: RowKey; r: number; c: number; square?: SquareSlot; blocks?: number }  // blocks: starting strength (1..row blocks), which is also maxBlocks
 export interface LeaderSetup { side: Side; name: string; r: number; c: number }
-export type TerrainName = 'plain' | 'hill' | 'forest' | 'rugged' | 'town' | 'windmill' | 'fortress' | 'river' | 'fieldworks' | 'sandQuarry';
-export interface TerrainSetup { r: number; c: number; t: TerrainName; on?: 'plain' | 'hill'; sides?: HexDir[]; crossing?: 'bridge' | 'ford'; art?: string }
+export type TerrainName = 'plain' | 'hill' | 'forest' | 'rugged' | 'town' | 'windmill' | 'fortress' | 'river' | 'fieldworks' | 'sandQuarry'
+  | 'walledFarm';
 export type RiverRule = 'impassable' | 'fordable' | 'fordableNoStop' | 'brook';
+/** A terrain entry. A river hex may carry a `crossing` and a `river` rule of its own (overriding `ScenarioSetup.rivers`; 104, S24). */
+export interface TerrainSetup {
+  r: number; c: number; t: TerrainName; on?: 'plain' | 'hill'; sides?: HexDir[]; crossing?: 'bridge' | 'ford'; river?: RiverRule; art?: string;
+}
 export type ObjectiveSetup =
   | { kind: 'tempHex'; side: Side; hex: [number, number]; timing?: 'turnStart'; banners?: number; text?: string }
   | { kind: 'tempGroup'; side: Side; hexes: [number, number][]; timing?: 'turnStart'; banners: number; text?: string }
   | { kind: 'exit'; side: Side; hex: [number, number]; banners?: number; leadersScore?: boolean; retreatOff?: boolean; text?: string }
-  | { kind: 'killWeight'; side: Side; enemyArm: Arm; first: number; later: number };
-export type SideRuleSetup = SideRuleDef;
+  | { kind: 'killWeight'; side: Side; enemyArm: Arm; first: number; later: number }
+  | { kind: 'tempAny'; side: Side; hexes: [number, number][]; timing?: 'turnStart'; banners?: number; text?: string }
+  | { kind: 'majority'; side: Side; hexes: [number, number][]; banners?: number; startHeld?: boolean; text?: string }
+  | { kind: 'exitEdge'; side: Side; row: 0 | 8; free?: number; banners?: number; text?: string }
+  | { kind: 'suddenDeath'; side: Side; keys: RowKey[]; text?: string };
+/** A side rule as written in the data: `SideRuleDef` with `breakOnLosses.start` left out (createGame counts it). */
+export type SideRuleSetup =
+  | Exclude<SideRuleDef, { kind: 'breakOnLosses' }>
+  | { kind: 'breakOnLosses'; side: Side; keys: readonly RowKey[]; losses: number };
 export interface UnitOverride { key: RowKey; set: Partial<Pick<UnitStats, 'blocks' | 'move' | 'retreat' | 'flagIgnore' | 'sabreHits'>> }
 export interface ScenarioSetup {
   id: string; name: string; top: SideSetup; bottom: SideSetup; first: Side; banners: number;
   terrain: TerrainSetup[]; rivers?: RiverRule; units: UnitSetup[]; leaders: LeaderSetup[];
   objectives?: ObjectiveSetup[]; sideRules?: SideRuleSetup[]; unitOverrides?: UnitOverride[];
+  /** The first player is decided by revealed cards (116, RR §15.8); `first` is then the side that wins a tie. */
+  moveFirst?: 'reveal';
 }
 
-const TERRAIN_NAMES_SETUP: readonly TerrainName[] = ['plain', 'hill', 'forest', 'rugged', 'town', 'windmill', 'fortress', 'river', 'fieldworks', 'sandQuarry'];
+const TERRAIN_NAMES_SETUP: readonly TerrainName[] = ['plain', 'hill', 'forest', 'rugged', 'town', 'windmill', 'fortress', 'river', 'fieldworks', 'sandQuarry',
+  'walledFarm'];
+/** Counters in the box (GUERRILLA_COUNTERS in scenarioRules, a later layer). */
+const BOX_COUNTERS = 6;
 const RIVER_RULES: readonly RiverRule[] = ['impassable', 'fordable', 'fordableNoStop', 'brook'];
 
 const at = (r: number, c: number): string => `(${r},${c})`;
@@ -36,11 +52,12 @@ const at = (r: number, c: number): string => `(${r},${c})`;
 export function newTurn(number: number): TurnState {
   return {
     number, card: null, effective: null, mirrored: false, phase: 'card', command: 0, ordered: {}, mods: { ...NO_MODS },
-    firstStrikes: { top: 0, bottom: 0 }, reshuffle: false, scout: false, retreatEnds: [],
+    firstStrikes: { top: 0, bottom: 0 }, reshuffle: false, scout: false, retreatEnds: [], guerrilla: 'none',
   };
 }
 
-// A battle with two different river rules (battle 104's two rivers) needs a per-river rule; it is deferred to Plan 7.
+// A battle with two different water rules (104's Trueba and Shallow Stream) gives the hexes of one of them a per-hex
+// `river` rule that overrides the battle's `rivers` (S24).
 /** What a river hex (or a crossing on one) becomes under a river rule (RR §14, §14.13). */
 function riverTerrain(rule: RiverRule, crossing: TerrainSetup['crossing']): TerrainType {
   if (crossing === 'bridge') return 'bridge';
@@ -67,6 +84,8 @@ export function boardFromTerrain(list: readonly TerrainSetup[], rivers: RiverRul
     if (!TERRAIN_NAMES_SETUP.includes(e.t)) throw new Error(`unknown terrain ${String(e.t)} at ${where}`);
     if (e.crossing !== undefined && e.t !== 'river') throw new Error(`crossing on ${e.t} at ${where}: only a river hex has one`);
     if (e.crossing !== undefined && e.crossing !== 'bridge' && e.crossing !== 'ford') throw new Error(`unknown crossing ${String(e.crossing)} at ${where}`);
+    if (e.river !== undefined && e.t !== 'river') throw new Error(`river override on a non-river hex at ${where}`);
+    if (e.river !== undefined && !RIVER_RULES.includes(e.river)) throw new Error(`unknown river rule ${String(e.river)} at ${where}`);
     const h = hexId(e.r, e.c);
     if (e.t === 'fieldworks') {
       if (e.on !== 'plain' && e.on !== 'hill') throw new Error(`fieldworks at ${where} needs on: 'plain' or 'hill'`);
@@ -80,7 +99,7 @@ export function boardFromTerrain(list: readonly TerrainSetup[], rivers: RiverRul
       terrain[h] = e.on;
       works[h] = mask;
     } else if (e.t === 'river') {
-      terrain[h] = riverTerrain(rivers, e.crossing);
+      terrain[h] = riverTerrain(e.river ?? rivers, e.crossing);
     } else {
       terrain[h] = e.t;
     }
@@ -95,6 +114,12 @@ function validateHexes(hexes: unknown, where: string, min = 1): HexId[] {
     if (!onBoard(r, c)) throw new Error(`${where}: hex ${JSON.stringify(p)} is off the board`);
     return hexId(r, c);
   });
+}
+
+const otherSide = (side: Side): Side => (side === 'top' ? 'bottom' : 'top');
+function bannersOf(n: number | undefined, kind: string): number {
+  if (n !== undefined && !(Number.isInteger(n) && n >= 1)) throw new Error(`${kind} banners must be a whole number, at least 1`);
+  return n ?? 1;
 }
 
 function resolveObjective(o: ObjectiveSetup, setup: ScenarioSetup): ObjectiveDef {
@@ -123,12 +148,41 @@ function resolveObjective(o: ObjectiveSetup, setup: ScenarioSetup): ObjectiveDef
       if (!(ARMS as readonly string[]).includes(o.enemyArm)) throw new Error(`killWeight enemyArm ${String(o.enemyArm)} is not an arm`);
       if (!Number.isFinite(o.first) || !Number.isFinite(o.later)) throw new Error('killWeight first and later must be numbers');
       return { kind: 'killWeight', side: o.side, enemyArm: o.enemyArm, first: o.first, later: o.later };
+    case 'tempAny': {
+      const hexes = validateHexes(o.hexes, 'tempAny objective', 2);
+      return { kind: 'tempAny', side: o.side, hexes, timing: 'turnStart', banners: bannersOf(o.banners, 'tempAny'), text: o.text ?? `${army} holds an objective.` };
+    }
+    case 'majority': {
+      const hexes = validateHexes(o.hexes, 'majority objective', 2);
+      const startHeld = o.startHeld ?? false;
+      if (startHeld) {
+        const on = (side: Side): number => setup.units.filter((u) => u.side === side && onBoard(u.r, u.c) && hexes.includes(hexId(u.r, u.c))).length;
+        if (on(o.side) <= on(otherSide(o.side))) throw new Error(`majority objective starts held by ${o.side} without a majority`);
+      }
+      return {
+        kind: 'majority', side: o.side, hexes, banners: bannersOf(o.banners, 'majority'), startHeld,
+        text: o.text ?? `${army} holds most of the objective group.`,
+      };
+    }
+    case 'exitEdge': {
+      if (o.row !== 0 && o.row !== ROWS - 1) throw new Error(`exitEdge row must be 0 or 8, not ${String(o.row)}`);
+      const free = o.free ?? 0;
+      if (!(Number.isInteger(free) && free >= 0)) throw new Error(`exitEdge free must be a whole number, at least 0`);
+      return { kind: 'exitEdge', side: o.side, row: o.row, free, banners: bannersOf(o.banners, 'exitEdge'), text: o.text ?? `${army} {unit} exits the battlefield.` };
+    }
+    case 'suddenDeath': {
+      if (!Array.isArray(o.keys) || o.keys.length < 1) throw new Error('suddenDeath needs at least one unit key');
+      for (const k of o.keys) if (!isRowKey(k)) throw new Error(`suddenDeath: unknown unit key ${String(k)}`);
+      const need = setup.units.filter((u) => u.side !== o.side && o.keys.includes(u.key)).length;
+      if (need === 0) throw new Error(`suddenDeath: no enemy unit of ${o.keys.join(', ')}`);
+      return { kind: 'suddenDeath', side: o.side, keys: [...o.keys], need, text: o.text ?? `${army} wins by sudden death.` };
+    }
     default:
       throw new Error(`unknown objective kind ${String((o as { kind?: unknown }).kind)}`);
   }
 }
 
-function resolveSideRule(r: SideRuleSetup): SideRuleDef {
+function resolveSideRule(r: SideRuleSetup, setup: ScenarioSetup): SideRuleDef {
   if (!(SIDES as readonly string[]).includes(r.side)) throw new Error(`side rule with unknown side ${String(r.side)}`);
   if (r.kind === 'flagIgnoreOn') {
     if (!(TERRAIN_TYPES as readonly string[]).includes(r.terrain)) throw new Error(`flagIgnoreOn: unknown terrain ${String(r.terrain)}`);
@@ -140,6 +194,28 @@ function resolveSideRule(r: SideRuleSetup): SideRuleDef {
       if (UNIT_STATS[k].arm !== 'cavalry') throw new Error(`impetuousCavalry: ${k} is not a cavalry row`);
     }
     return { kind: 'impetuousCavalry', side: r.side, keys: [...r.keys] };
+  }
+  switch (r.kind) {
+    case 'guerrilla':
+      if (!(Number.isInteger(r.counters) && r.counters >= 0 && r.counters <= BOX_COUNTERS)) throw new Error(`guerrilla counters must be 0..${BOX_COUNTERS}, not ${String(r.counters)}`);
+      return { kind: 'guerrilla', side: r.side, counters: r.counters };
+    case 'breakOnLosses': {
+      if (!Array.isArray(r.keys) || r.keys.length < 1) throw new Error('breakOnLosses needs at least one unit key');
+      for (const k of r.keys) if (!isRowKey(k)) throw new Error(`breakOnLosses: unknown unit key ${String(k)}`);
+      if (!(Number.isInteger(r.losses) && r.losses >= 1)) throw new Error(`breakOnLosses losses must be a whole number, at least 1`);
+      const start = setup.units.filter((u) => u.side === r.side && r.keys.includes(u.key)).length;
+      return { kind: 'breakOnLosses', side: r.side, keys: [...r.keys], losses: r.losses, start };
+    }
+    case 'handShrink': {
+      const cards = setup[r.side].cards;
+      if (!(Number.isInteger(r.floor) && r.floor >= 1 && r.floor <= cards)) throw new Error(`handShrink floor must be 1..cards (${cards}), not ${String(r.floor)}`);
+      return { kind: 'handShrink', side: r.side, floor: r.floor };
+    }
+    case 'squareCap':
+      if (!(Number.isInteger(r.units) && r.units >= 1 && r.units <= 4)) throw new Error(`squareCap units must be 1..4, not ${String(r.units)}`);
+      return { kind: 'squareCap', side: r.side, units: r.units };
+    case 'cavalryChargeFolly':
+      return { kind: 'cavalryChargeFolly', side: r.side };
   }
   throw new Error(`unknown side rule kind ${String((r as { kind?: unknown }).kind)}`);
 }
@@ -158,7 +234,9 @@ function buildGame(setup: ScenarioSetup, seed: number): GameState {
     unitStats[o.key] = { ...(unitStats[o.key] ?? UNIT_STATS[o.key]), ...o.set };   // repeated overrides of a key merge
   }
   const rngHolder = { rng: seed >>> 0, rngCalls: 0 };
-  const sideRules = (setup.sideRules ?? []).map(resolveSideRule);
+  const sideRules = (setup.sideRules ?? []).map((r) => resolveSideRule(r, setup));
+  if (sideRules.filter((r) => r.kind === 'guerrilla').length > 1) throw new Error('two guerrilla rules');
+  if (setup.moveFirst !== undefined && setup.moveFirst !== 'reveal') throw new Error(`moveFirst must be 'reveal', not ${String(setup.moveFirst)}`);
   const objectives = (setup.objectives ?? []).map((o) => resolveObjective(o, setup));
   const kw = new Set<string>();
   for (const o of objectives) {
@@ -176,9 +254,16 @@ function buildGame(setup: ScenarioSetup, seed: number): GameState {
     players: { top: player('top'), bottom: player('bottom') },
     deck: [], discard: [], first: setup.first, active: setup.first, turn: newTurn(1), lastCard: { top: null, bottom: null },
     bannersToWin: setup.banners, rng: rngHolder.rng, rngCalls: 0, winner: null, winReason: '',
-    scenario: { objectives, sideRules, unitStats, leadersAtStart: { top: 0, bottom: 0 } },
-    special: { objState: objectives.map((): ObjectiveState => ({ held: false, count: 0 })), turnsDone: { top: 0, bottom: 0 }, leadersEliminated: { top: 0, bottom: 0 } },
+    scenario: { objectives, sideRules, unitStats, leadersAtStart: { top: 0, bottom: 0 }, moveFirst: setup.moveFirst === 'reveal' },
+    special: {
+      objState: objectives.map((o): ObjectiveState => ({ held: o.kind === 'majority' && o.startHeld, count: 0 })),
+      turnsDone: { top: 0, bottom: 0 }, leadersEliminated: { top: 0, bottom: 0 },
+      squared: { top: [], bottom: [] },
+      handSize: { top: setup.top.cards, bottom: setup.bottom.cards },
+      moveFirst: setup.moveFirst === 'reveal' ? { done: false, picks: { top: null, bottom: null }, committed: { top: null, bottom: null } } : null,
+    },
   };
+  for (const r of sideRules) if (r.kind === 'guerrilla') s.players[r.side].resources.guerrilla = r.counters;
   if (!SIDES.includes(setup.first)) throw new Error(`unknown first side ${String(setup.first)}`);
 
   // units
@@ -209,7 +294,10 @@ function buildGame(setup: ScenarioSetup, seed: number): GameState {
     }
     const blocks = u.blocks ?? max;
     const unit: Unit = { id: `u${i + 1}`, side: u.side, key: u.key, hex: h, blocks, maxBlocks: blocks };
-    if (u.square !== undefined) unit.square = u.square;
+    if (u.square !== undefined) {
+      unit.square = u.square;
+      s.special.squared[u.side].push(unit.id);
+    }
     occupied.set(h, unit);
     s.units.push(unit);
   });
@@ -275,9 +363,14 @@ export function cloneState(s: GameState): GameState {
     turn: { ...s.turn, ordered, mods: { ...s.turn.mods }, firstStrikes: { ...s.turn.firstStrikes }, retreatEnds: [...s.turn.retreatEnds] },
     lastCard: { ...s.lastCard },
     special: {
-      objState: s.special.objState.map((o) => ({ ...o })),
+      objState: s.special.objState.map((o) => (o.holders ? { ...o, holders: [...o.holders] } : { ...o })),
       turnsDone: { ...s.special.turnsDone },
       leadersEliminated: { ...s.special.leadersEliminated },
+      squared: { top: [...s.special.squared.top], bottom: [...s.special.squared.bottom] },
+      handSize: { ...s.special.handSize },
+      moveFirst: s.special.moveFirst === null ? null : {
+        done: s.special.moveFirst.done, picks: { ...s.special.moveFirst.picks }, committed: { ...s.special.moveFirst.committed },
+      },
     },
   };
 }

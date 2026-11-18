@@ -28,7 +28,7 @@ function nameOf(id: string, ...states: GameState[]): string {
 const VERB: Record<Exclude<RollPurpose, 'elan' | 'rally'>, string> = {
   fire: 'fires on', melee: 'attacks', battleBack: 'battles back against', firstStrike: 'strikes first at', bonus: 'attacks again, into',
   squareFirst: 'in square, strikes first at', retireReform: 'retires and reforms against', leaderCheck: 'threatens',
-  escape: 'tries to catch',
+  escape: 'tries to catch', guerrilla: 'rolls against the Guerrilla Action of',
 };
 
 /** Title of a roll in the dice tray. */
@@ -47,6 +47,7 @@ export function rollTitle(p: RollPurpose, by: string | null, against: string | n
     case 'escape': return `${t || a} tries to escape`;
     case 'elan': return 'Élan';
     case 'rally': return 'Rally';
+    case 'guerrilla': return 'Guerrilla Action';
   }
 }
 
@@ -58,6 +59,7 @@ export function rollSummary(p: RollPurpose, faces: DieFace[], scoring: boolean[]
     return parts.join(', ') || 'No dice';
   }
   if (p === 'escape') return faces.includes('sabre') ? 'The leader is hit!' : 'The leader is safe';
+  if (p === 'guerrilla') return faces.includes('sabre') ? 'A sabre: the card stands' : 'No sabre: the card is cancelled';
   if (p === 'leaderCheck') return `${plural(faces.filter((f) => f === 'sabre').length, 'sabre')} rolled`;
   const hits = scoring.filter(Boolean).length;
   const flags = faces.filter((f) => f === 'flag').length;
@@ -169,5 +171,14 @@ export function eventLog(e: GameEvent, before: GameState, after: GameState, huma
       return line(e.text, 'info', e.side);
     case 'victory':
       return line(`Victory: ${e.winner === 'draw' ? 'Draw' : army(e.winner)} — ${e.reason}.`, 'victory');
+    case 'guerrilla': {
+      const counters = `${plural(e.held, 'counter')} held, ${e.pool} in the pool`;
+      if (e.what === 'gained') return line(`The ${army(e.side)} army takes a Guerrilla counter (${counters}).`, 'info', e.side);
+      return line(e.what === 'cancelled' ? `Guerrilla Action cancels the card (${counters}).` : `Guerrilla Action fails: the card stands (${counters}).`, 'result', e.side);
+    }
+    case 'moveFirst': {
+      const pick = (side: Side) => (e.picks[side] === null ? 'no card' : `${CARD_DEFS[cardKind(e.picks[side])].title} (${e.values[side]})`);
+      return line(`Opening cards revealed: ${army('top')} ${pick('top')}, ${army('bottom')} ${pick('bottom')}. The ${army(e.first)} army moves first.`, 'card', e.first);
+    }
   }
 }

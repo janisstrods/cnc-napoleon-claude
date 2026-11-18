@@ -51,18 +51,20 @@ describe('unitSummary', () => {
 });
 
 describe('the rules reference', () => {
-  it('the Units tab lists all 34 rows, one card each, named from the table', () => {
-    expect(UNIT_KEYS).toHaveLength(35 - 1);
+  it('the Units tab lists every base row, one card each, named from the table', () => {
+    expect(UNIT_KEYS).toHaveLength(46);
+    const base = UNIT_KEYS.filter((k) => UNIT_STATS[k].expansion === 'base');   // the Units tab is the base game; Expansion #1's twelve rows are on that box's tab
     const html = renderToStaticMarkup(createElement(Units));
-    expect(html.split('class="unit-card"').length - 1).toBe(34);
-    for (const k of UNIT_KEYS) expect(html, k).toContain(`${UNIT_STATS[k].name}`);
+    expect(html.split('class="unit-card"').length - 1).toBe(base.length);
+    expect(base).toHaveLength(34);
+    for (const k of base) expect(html, k).toContain(`${UNIT_STATS[k].name}`);
     expect(html).toContain('<svg');
   });
 
-  it('opens on the basics, with a tab for each general topic and none for a box', () => {
+  it('opens on the basics, with a tab for each general topic and one for Expansion #1', () => {
     const html = renderToStaticMarkup(createElement(RulesReference));
     const tabs = [...html.matchAll(/<nav class="rules-tabs">([\s\S]*?)<\/nav>/g)][0][1];
-    expect([...tabs.matchAll(/<button[^>]*>([^<]*)<\/button>/g)].map((m) => m[1])).toEqual(['Basics', 'Units', 'Combat', 'Squares &amp; Combined Arms', 'Terrain', 'Cards']);
+    expect([...tabs.matchAll(/<button[^>]*>([^<]*)<\/button>/g)].map((m) => m[1])).toEqual(['Basics', 'Units', 'Combat', 'Squares &amp; Combined Arms', 'Terrain', 'Cards', 'Expansion #1']);
     expect(html).toContain('Victory Banners');
     expect(html).not.toMatch(/Greece|Barbarians|Roman|legion/i);
   });
