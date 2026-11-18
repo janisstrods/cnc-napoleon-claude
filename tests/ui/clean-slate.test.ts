@@ -34,13 +34,28 @@ describe('clean slate', () => {
   it('a saved game of a battle that no longer exists is dropped', () => {
     const store = stubStorage();
     const key = storageKey('autosave-v1');
-    const save = (id: string) => JSON.stringify({ version: 1, engine: ENGINE_VERSION, config: { scenarioId: id, difficulty: 'colonel', seed: 1 }, answers: [] });
+    const save = (id: string) => JSON.stringify({ version: 1, engine: ENGINE_VERSION, config: { scenarioId: id, humanSide: 'bottom', difficulty: 'colonel', seed: 1 }, answers: [] });
     store.set(key, save('000'));
     expect(loadSaved()?.config.scenarioId).toBe('000'); // control: a save of an existing battle is kept
     store.set(key, save('999'));
     expect(loadSaved()).toBeNull();
     expect(store.has(key)).toBe(false);
     clearSaved();
+  });
+
+  it('a save with a bad humanSide or seed is dropped as corrupt', () => {
+    const store = stubStorage();
+    const key = storageKey('autosave-v1');
+    const base = { scenarioId: '001', humanSide: 'bottom', difficulty: 'colonel', seed: 5 };
+    const put = (config: object) => store.set(key, JSON.stringify({ version: 1, engine: ENGINE_VERSION, config, answers: [] }));
+    put(base);
+    expect(loadSaved()).not.toBeNull(); // control
+    const { humanSide: _h, seed: _s, ...rest } = base;
+    for (const bad of [{ ...base, humanSide: 'left' }, { ...rest, seed: 5 }, { ...base, seed: 'abc' }, { ...rest, humanSide: 'top' }, { ...base, seed: 1.5 }]) {
+      put(bad);
+      expect(loadSaved(), JSON.stringify(bad)).toBeNull();
+      expect(store.has(key)).toBe(false);
+    }
   });
 
   it('the picker never shows the hidden Drill; Start is enabled with the first base battle shown', () => {

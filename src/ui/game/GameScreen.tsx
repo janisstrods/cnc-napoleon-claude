@@ -409,7 +409,11 @@ export function GameScreen({ controller, onExit, onRematch }: {
       <RulesDialog open={showRules} title="Rules Reference" scenario={controller.scenario} onClose={() => setShowRules(false)} />
 
       <Modal open={confirmExit} title="Leave the battle?" onClose={() => setConfirmExit(false)}>
-        <p className="modal-p">Your battle is saved automatically — you can continue it from the main menu.</p>
+        <p className="modal-p">
+          {controller.decided
+            ? 'This battle is decided and its result is already in your Triumphs; there is nothing left to continue.'
+            : 'Your battle is saved automatically — you can continue it from the main menu.'}
+        </p>
         <div className="modal-buttons">
           <Button onClick={onExit}>Return to menu</Button>
           <Button variant="secondary" data-autofocus onClick={() => setConfirmExit(false)}>Keep fighting</Button>

@@ -14,8 +14,8 @@ There is nothing to install. Your saved game, battle record and medals stay in y
 
 This edition is no substitute for the real thing. If you enjoy it, buy the game from its publisher:
 
-- [Commands & Colors: Napoleonics](https://www.gmtgames.com/p-1251-commands-colors-napoleonics-6th-printing.aspx)
-- [Expansion 1: The Spanish Army](https://www.gmtgames.com/p-1266-commands-colors-napoleonics-expansion-1-the-spanish-army-5th-printing.aspx)
+- [Buy the board game from GMT Games](https://www.gmtgames.com/p-1251-commands-colors-napoleonics-6th-printing.aspx)
+- [Buy Expansion 1, the Spanish Army, from GMT Games](https://www.gmtgames.com/p-1266-commands-colors-napoleonics-expansion-1-the-spanish-army-5th-printing.aspx)
 
 ## Playing
 

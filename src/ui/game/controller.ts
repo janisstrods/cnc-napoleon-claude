@@ -1,6 +1,6 @@
 // Game session controller: owns the engine driver, runs the AI, and turns engine events into paced animations.
 import {
-  CARD_LIST, GameDriver, OFF_BOARD, bannerTotal, battleTargets, cloneState, createGame, freshSeed, other, pieceById, randomAnswer,
+  CARD_LIST, GameDriver, OFF_BOARD, SIDES, bannerTotal, battleTargets, cloneState, createGame, freshSeed, other, pieceById, randomAnswer,
   type Answer, type CardKind, type Decision, type DieFace, type GameEvent, type GameState, type HexId, type Leader, type QueuedEvent,
   type RollPurpose, type Side, type UndoStep, type Unit,
 } from '../../engine';
@@ -123,6 +123,7 @@ export function loadSaved(): SavedGame | null {
     const s = JSON.parse(raw) as SavedGame;
     const ok = !!s && s.version === 1 && s.engine === ENGINE_VERSION && typeof s.config?.scenarioId === 'string' &&
       (DIFFICULTIES as readonly string[]).includes(s.config.difficulty) &&
+      (SIDES as readonly string[]).includes(s.config.humanSide) && Number.isSafeInteger(s.config.seed) &&
       Array.isArray(s.answers) && SCENARIOS.some((x) => x.id === s.config.scenarioId);
     if (!ok) {
       clearSaved();
@@ -333,8 +334,24 @@ export class GameController {
       version: 1, engine: ENGINE_VERSION, config: this.config, answers: this.driver.answers, savedAt: Date.now(),
       check: { n: this.driver.answers.length, rngCalls: this.driver.state.rngCalls },
     };
-    if (this.driver.state.winner) clearSaved();
-    else storage.set(SAVE_KEY, JSON.stringify(s));
+    if (this.driver.state.winner) {
+      // the battle is decided: it counts now, whatever happens to the closing animations
+      this.recordResult();
+      clearSaved();
+    } else storage.set(SAVE_KEY, JSON.stringify(s));
+  }
+
+  /** The battle is decided (its result is recorded and the save is gone), whether or not the end is shown yet. */
+  get decided(): boolean {
+    return !!this.driver.state.winner;
+  }
+
+  /** Put the decided battle into the player's record, once (a stacked `?cards=` dev game earns nothing). */
+  private recordResult() {
+    const winner = this.driver.state.winner;
+    if (this.recorded || !winner) return;
+    const { scenarioId, humanSide, difficulty, devCards } = this.config;
+    this.recorded = { newMedal: devCards?.length ? undefined : recordFinished(scenarioId, humanSide, difficulty, outcomeFor(humanSide, winner)) ?? undefined };
   }
 
   // ---------------------------------------------------------------- human input
@@ -406,9 +423,8 @@ export class GameController {
         if (st.winner || !this.driver.pending) {
           if (!st.winner) throw new Error('the battle ended without a winner');
           const winner = st.winner;
-          const { scenarioId, humanSide, difficulty } = this.config;
-          this.recorded ??= { newMedal: recordFinished(scenarioId, humanSide, difficulty, outcomeFor(humanSide, winner)) ?? undefined };
-          const over = { winner, reason: st.winReason, newMedal: this.recorded.newMedal };
+          this.recordResult();
+          const over = { winner, reason: st.winReason, newMedal: this.recorded?.newMedal };
           this.set({ over, pending: null, display: cloneState(st), aiThinking: false });
           if (winner === this.config.humanSide) sfx.victory();
           else sfx.defeat();

@@ -15,10 +15,10 @@ The original SVGs are kept in `src/ui/kit/icons/`. Their glyph paths are extract
 
 | Icon | Author | Used for | Licence | Link |
 | --- | --- | --- | --- | --- |
-| Crossed swords | Lorc | Cold Steel | CC BY 3.0 | https://game-icons.net/1x1/lorc/crossed-swords.html |
-| Laurel crown | Lorc | Grand Manoeuvre | CC BY 3.0 | https://game-icons.net/1x1/lorc/laurel-crown.html |
+| Crossed swords | Lorc | Give Them the Cold Steel | CC BY 3.0 | https://game-icons.net/1x1/lorc/crossed-swords.html |
+| Laurel crown | Lorc | La Grande Manoeuvre | CC BY 3.0 | https://game-icons.net/1x1/lorc/laurel-crown.html |
 | Shield echoes | Lorc | Fire and Hold | CC BY 3.0 | https://game-icons.net/1x1/lorc/shield-echoes.html |
-| Shield reflect | Lorc | Counter Attack | CC BY 3.0 | https://game-icons.net/1x1/lorc/shield-reflect.html |
+| Shield reflect | Lorc | Counter-Attack | CC BY 3.0 | https://game-icons.net/1x1/lorc/shield-reflect.html |
 | Striking arrows | Lorc | Bombard | CC BY 3.0 | https://game-icons.net/1x1/lorc/striking-arrows.html |
 | Run | Lorc | Force March | CC BY 3.0 | https://game-icons.net/1x1/lorc/run.html |
 | Sword wound | Lorc | First Strike | CC BY 3.0 | https://game-icons.net/1x1/lorc/sword-wound.html |
