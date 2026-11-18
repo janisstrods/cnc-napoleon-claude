@@ -37,21 +37,24 @@ export function moveFirstValue(s: GameState, side: Side, card: number): number {
 export function* moveFirstStep(s: GameState, ctx: FlowCtx): Gen {
   const mf = s.special.moveFirst;
   if (!mf || mf.done) return;
+  // the picks stay local until the reveal, so the state never holds the first pick while the second is made (S44)
+  const picks: Record<Side, number | null> = { top: null, bottom: null };
   for (const side of SIDES) {
     const options = moveFirstOptions(s, side);
     if (options.length === 0) continue;
     const a = (yield* ask(s, ctx, { kind: 'moveFirst', side, options })) as { card: number };
-    mf.picks[side] = a.card;
+    picks[side] = a.card;
   }
   const values = {} as Record<Side, number>;
   for (const side of SIDES) {
-    const c = mf.picks[side];
+    const c = picks[side];
     values[side] = c === null ? NO_PICK_VALUE : moveFirstValue(s, side, c);
   }
   const first: Side = values.top === values.bottom ? s.first : values.top < values.bottom ? 'top' : 'bottom';
   s.first = first;
   s.active = first;
-  mf.committed = { ...mf.picks };
+  mf.picks = { ...picks };
+  mf.committed = { ...picks };
   mf.done = true;
   ctx.emit({ t: 'moveFirst', picks: { ...mf.picks }, values, first });
 }

@@ -1,7 +1,8 @@
 // Rules: RR §15.8, §16.16 (design/rules-reference.md)
 import { afterEach, describe, expect, it } from 'vitest';
-import { CARD_LIST, GameDriver, createGame, forceDice, formSquare, type CardKind, type GameState, type Side } from '../../src/engine';
+import { CARD_LIST, GameDriver, createGame, forceDice, formSquare, randomAnswer, type CardKind, type GameState, type Side } from '../../src/engine';
 import { SCENARIOS } from '../../src/scenarios';
+import { mulberry32 } from '../support/rng';
 import { build, ev, must, type Pos } from './helpers';
 
 afterEach(() => forceDice([]));
@@ -215,27 +216,49 @@ describe('Move First by revealed cards (S38, S43, S44)', () => {
     expect(d.pending).toMatchObject({ kind: 'playCard', side: 'bottom' });
   });
 
-  it('battle 116 reveals, binds and plays through', () => {
+  it('while the bottom pick is pending, the top pick is not in the state (S44)', () => {
+    const { d, t } = game(['scoutC', 'rally', 'rally', 'rally', 'rally'], ['attackC', 'rally', 'rally', 'rally', 'rally']);
+    pick(d, t[0]);
+    expect(d.pending).toMatchObject({ kind: 'moveFirst', side: 'bottom' });
+    expect(d.state.special.moveFirst!.picks).toEqual({ top: null, bottom: null });
+  });
+
+  it('with nobody asked, the first card can still be taken back (no reveal barrier)', () => {
+    const none: CardKind[] = ['rally', 'rally', 'rally', 'rally'];
+    const { d } = game(none, none, 'top');
+    const card = d.state.players.top.hand.find((c) => CARD_LIST[c] === 'leadership')!;   // a card that rolls nothing
+    pick(d, card);
+    expect(d.undoStep()).toBe('card');
+    expect(d.undo().pending).toMatchObject({ kind: 'playCard', side: 'top' });
+  });
+
+  it('battle 116: random legal play to the end, bound opening cards, replay reproduces it', () => {
     const info = SCENARIOS.find((x) => x.id === '116')!;
     expect(info.setup.moveFirst).toBe('reveal');
-    const s = createGame(info.setup, 7);
-    const d = new GameDriver(s);
-    expect(d.pending).toMatchObject({ kind: 'moveFirst', side: 'top' });
-    const topOpts = (d.pending as { options: number[] }).options;
-    pick(d, topOpts[0]);
-    expect(d.pending).toMatchObject({ kind: 'moveFirst', side: 'bottom' });
-    pick(d, (d.pending as { options: number[] }).options[0]);
-    const first = d.state.active;
-    expect(d.pending).toMatchObject({ kind: 'playCard', side: first });
-    expect(d.state.special.moveFirst!.committed[first]).not.toBeNull();
-    const other: Side = first === 'top' ? 'bottom' : 'top';
-    const hand = d.state.players[first].hand;
-    const wrong = hand.find((c) => c !== d.state.special.moveFirst!.committed[first])!;
-    expect(d.answer({ kind: 'playCard', card: wrong })).toBe(false);
-    expect(d.answer({ kind: 'playCard', card: d.state.special.moveFirst!.committed[first]! })).toBe(true);
-    const c2 = d.state.special.moveFirst!.committed[other];
-    if (c2 !== null) expect(d.state.players[other].hand).toContain(c2);
-    const r = GameDriver.replay(d.initial, d.answers);
-    expect(r.state).toEqual(d.state);
+    for (const seed of [1, 2, 3, 4, 5]) {
+      const d = new GameDriver(createGame(info.setup, seed));
+      const rnd = mulberry32(seed);
+      let steps = 0;
+      let boundSeen = 0;
+      while (d.pending && steps < 6000) {
+        const p = d.pending;
+        if (p.kind === 'playCard') {
+          const c = d.state.special.moveFirst!.committed[p.side];
+          if (c !== null && d.state.special.turnsDone[p.side] === 0) {
+            boundSeen++;
+            const wrong = d.state.players[p.side].hand.find((x) => x !== c);
+            if (wrong !== undefined) {
+              expect(d.answer({ kind: 'playCard', card: wrong })).toBe(false);
+              d.lastError = null;
+            }
+          }
+        }
+        must(d, randomAnswer(d.state, d.pending, rnd));
+        steps++;
+      }
+      expect(d.state.winner).toBeTruthy();
+      expect(boundSeen).toBeGreaterThan(0);
+      expect(GameDriver.replay(d.initial, d.answers).state).toEqual(d.state);
+    }
   });
 });

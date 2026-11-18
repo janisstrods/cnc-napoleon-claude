@@ -37,6 +37,7 @@ export class GameDriver {
   private scoutAt = -1;
   /** Index of the answer that completed the Move First reveal (-1: none); undo never goes back past it (S44). */
   private revealAt = -1;
+  private answering = false;
 
   constructor(initial: GameState, opts: DriverOptions = {}) {
     this.initial = cloneState(initial);
@@ -45,7 +46,7 @@ export class GameDriver {
     this.ctx = {
       emit: (e) => {
         if (e.t === 'scoutDrew') this.scoutAt = this.answers.length;
-        if (e.t === 'moveFirst') this.revealAt = this.answers.length;
+        if (e.t === 'moveFirst' && this.answering) this.revealAt = this.answers.length;   // not when nobody was asked (built in the constructor)
         this.queue.push({ e, state: this.snapshots ? cloneState(this.state) : undefined });
       },
       invalid: (m) => { this.lastError = m; },
@@ -65,7 +66,9 @@ export class GameDriver {
     this.lastError = null;
     const before = this.state.rngCalls;
     const { side, kind } = this.pending;
+    this.answering = true;
     const r = this.gen.next(a);
+    this.answering = false;
     this.pending = r.done ? null : r.value;
     if (this.lastError) return false;
     this.answers.push(a);
