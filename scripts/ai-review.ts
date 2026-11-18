@@ -5,7 +5,7 @@
 //   --level: the reviewed general (captain, colonel, marshal or 0, 1, 2). --side: which side it plays (default bottom); the other side
 //   is the opponent, a general at level --opp (default: the same level) or uniformly random answers. `both`: the general plays both sides.
 //   Board cells read `<b|t><unit code><blocks>` (bottom or top side); `*` marks an attached leader, a lone leader shows as `<b|t>*Nam`.
-import { CARD_DEFS, CARD_LIST, GameDriver, codeOf, createGame, hexLabel, randomAnswer, type GameEvent, type GameState, type Side } from '../src/engine';
+import { CARD_DEFS, CARD_LIST, GameDriver, bannerTotal, cloneState, codeOf, createGame, hexLabel, randomAnswer, type GameEvent, type GameState, type Side } from '../src/engine';
 import { scenarioById } from '../src/scenarios';
 import { personalityFor, type AiOptions } from '../src/ai';
 import { evalTerms } from '../src/ai/evaluate';
@@ -17,7 +17,7 @@ const level = levelArg('level', 'colonel');
 const oppText = arg('opp', level);
 const randomOpp = oppText === 'random';
 const oppLevel = randomOpp ? level : parseLevel(oppText);
-const maxTurns = Number(arg('turns', '12'));
+const maxTurns = Number(arg('turns', '10'));
 const seed = Number(arg('seed', '1'));
 const scale = Number(arg('scale', '1'));
 const deterministic = flag('deterministic');
@@ -94,9 +94,8 @@ const reviewed = (side: Side) => aiSide === 'both' || aiSide === side;
 const rnd = lcg(seed);
 console.log(`${info.id} ${info.name}: top=${info.setup.top.army} (${opts.top.personality.name}) bottom=${info.setup.bottom.army} (${opts.bottom.personality.name}); ` +
   `reviewing ${aiSide} at ${level}, opponent ${randomOpp ? 'random' : oppLevel}${deterministic ? ', deterministic' : ''}`);
-console.log(board(d.state));
 let lastTurn = 0;
-let before = d.state;
+let before = cloneState(d.state);
 playAiGame(d, opts, {
   maxTurn: maxTurns,
   before: (dec) => {
@@ -104,7 +103,7 @@ playAiGame(d, opts, {
     if (dec.kind === 'playCard' && s.turn.number !== lastTurn) {
       lastTurn = s.turn.number;
       console.log(board(s));
-      console.log(`\n=== Turn ${s.turn.number}: ${s.players[dec.side].army} (${dec.side}) banners ${s.players.bottom.banners}b-${s.players.top.banners}t; hand: ${s.players[dec.side].hand.map((c) => CARD_LIST[c]).join(', ')}`);
+      console.log(`\n=== Turn ${s.turn.number}: ${s.players[dec.side].army} (${dec.side}) banners b${bannerTotal(s, 'bottom')}-t${bannerTotal(s, 'top')} (permanent b${s.players.bottom.banners}-t${s.players.top.banners}); hand: ${s.players[dec.side].hand.map((c) => CARD_LIST[c]).join(', ')}`);
     }
     if (dec.kind === 'playCard' && reviewed(dec.side)) {
       const terms = Object.entries(evalTerms(s, dec.side, weightsFor(opts[dec.side].personality))).filter(([, v]) => Number.isFinite(v) && v !== 0)
@@ -124,7 +123,7 @@ playAiGame(d, opts, {
       }
       if (ai.say) console.log(`  SAY (${dec.side}) ${ai.say}`);
     }
-    before = d.state;
+    before = cloneState(d.state);
   },
   rejected: (dec) => console.log(`REJECTED ${dec.kind}: ${d.lastError}`),
   fallback: rnd,
@@ -136,4 +135,4 @@ playAiGame(d, opts, {
   },
 });
 console.log(board(d.state));
-console.log(`\nResult: winner=${d.state.winner} ${d.state.winReason} banners b${d.state.players.bottom.banners}-t${d.state.players.top.banners}`);
+console.log(`\nResult: winner=${d.state.winner} ${d.state.winReason} banners b${bannerTotal(d.state, 'bottom')}-t${bannerTotal(d.state, 'top')}`);

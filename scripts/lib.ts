@@ -1,7 +1,7 @@
 // Shared plumbing for the dev scripts (scripts/ai-match.ts): command-line flags, the scripts' fallback generator, the
 // tournament job list, and the AI-vs-AI game loop.
 import {
-  GameDriver, OFF_BOARD, bannerTotal, distance, randomAnswer, statsOf, type Answer, type Decision, type GameEvent, type GameState, type Side, type Unit,
+  GameDriver, OFF_BOARD, bannerTotal, battleTargets, distance, randomAnswer, statsOf, type Answer, type Decision, type GameEvent, type GameState, type Side, type Unit,
 } from '../src/engine';
 import { SCENARIOS, scenarioById } from '../src/scenarios';
 import { DIFFICULTIES, chooseAnswer, newMemory, type AiMemory, type AiOptions, type Difficulty } from '../src/ai';
@@ -16,7 +16,13 @@ export function arg(name: string, def: string): string {
 export const flag = (name: string) => process.argv.includes(`--${name}`);
 
 /** `--shard i/n`: this run plays the jobs i, i + n, i + 2n... (default 0/1, every job). */
-export const shardArg = (): [number, number] => arg('shard', '0/1').split('/').map(Number) as [number, number];
+export function shardArg(): [number, number] {
+  const text = arg('shard', '0/1');
+  const m = /^(\d+)\/(\d+)$/.exec(text);
+  const [i, n] = m ? [Number(m[1]), Number(m[2])] : [-1, 0];
+  if (!(n >= 1 && i >= 0 && i < n)) throw new Error(`--shard must be i/n with 0 <= i < n, not "${text}"`);
+  return [i, n];
+}
 
 /** The scripts' small seeded generator of floats in [0, 1) (random players, rejected-answer fallbacks). */
 export function lcg(seed: number): () => number {
@@ -27,16 +33,19 @@ export function lcg(seed: number): () => number {
 /** One game of a tournament: a battle, the side side A plays, and the game's number. */
 export interface Job { sc: string; aSide: Side; g: number }
 
-/** Every battle `games` times, A as bottom and then as top, as `--shard` shares them out (ai-match). */
+/** Every battle `games` times, A as bottom and then as top, as `--shard` shares them out by pair (a game's two jobs stay together). */
 export function shardJobs(scenarios: string[], games: number): Job[] {
   const [shard, shards] = shardArg();
   const jobs: Job[] = [];
-  for (const sc of scenarios) for (let g = 0; g < games; g++) for (const aSide of ['bottom', 'top'] as Side[]) jobs.push({ sc, aSide, g });
-  return jobs.filter((_, i) => i % shards === shard);
+  let pair = 0;
+  for (const sc of scenarios) for (let g = 0; g < games; g++, pair++) {
+    if (pair % shards === shard) for (const aSide of ['bottom', 'top'] as Side[]) jobs.push({ sc, aSide, g });
+  }
+  return jobs;
 }
 
-/** A job's game seed (`--seedOffset` shifts the games to fresh seeds). */
-export const jobSeed = (job: Job, seedOffset: number) => 1000 * Number(job.sc) + 17 * (job.g + seedOffset) + (job.aSide === 'top' ? 7 : 0);
+/** A job's game seed, the same for both sides of a pair (`--seedOffset` shifts the games to fresh seeds); the AIs' own seeds add the side. */
+export const jobSeed = (job: Job, seedOffset: number) => 1000 * Number(job.sc) + 17 * (job.g + seedOffset);
 
 export interface PlayHooks {
   /** The last turn played (default: no limit). */
@@ -130,8 +139,8 @@ export interface Counters {
   combinedArms: number;
   /** Artillery fire events by distance 1..5 (index 0 is distance 1). */
   gunShotsByRange: number[];
-  /** Infantry at 2 blocks or fewer declaring melee (an attack or a bonus melee) on full-strength infantry. */
-  wornAttacks: number;
+  /** Melees declared by infantry (an attack or a bonus melee), and of them those by infantry at 2 blocks or fewer on full-strength infantry. */
+  infantryMelees: number; wornAttacks: number;
   leadersLost: number;
   exits: number;
   /** Turns (at the card decision) that began with the active side holding a temporary-objective banner. */
@@ -140,7 +149,7 @@ export interface Counters {
 
 export const zeroCounters = (): Counters => ({
   squareOffers: 0, squaresFormed: 0, rrOffers: 0, rrUsed: 0, fsOffers: 0, fsPlayed: 0, combinedArms: 0, gunShotsByRange: [0, 0, 0, 0, 0],
-  wornAttacks: 0, leadersLost: 0, exits: 0, heldTurns: 0,
+  infantryMelees: 0, wornAttacks: 0, leadersLost: 0, exits: 0, heldTurns: 0,
 });
 
 /** Add `b` into `a`. */
@@ -159,8 +168,26 @@ export function snapshotUnits(s: GameState): Map<string, Unit> {
   return new Map(s.units.map((u) => [u.id, { ...u }]));
 }
 
+/** A melee declared by unit `id` on the unit at `hex`: counted for infantry, and as worn at 2 blocks or fewer against full-strength infantry. */
+function countMelee(c: Counters, s: GameState, id: string, hex: number): void {
+  const a = s.units.find((u) => u.id === id);
+  const t = s.units.find((u) => u.hex === hex && u.side !== a?.side);
+  if (!a || !t || statsOf(s, a).arm !== 'infantry') return;
+  c.infantryMelees++;
+  if (a.blocks <= 2 && statsOf(s, t).arm === 'infantry' && t.blocks >= t.maxBlocks) c.wornAttacks++;
+}
+
 /** Count one decision and its answer (before the answer is applied). */
-export function countDecision(c: Counters, _s: GameState, dec: Decision, ans: Answer): void {
+export function countDecision(c: Counters, s: GameState, dec: Decision, ans: Answer): void {
+  if (dec.kind === 'battle' && ans.kind === 'attack') {
+    // a melee, not a shot: the engine's own target list says which
+    if (battleTargets(s, ans.unit).find((x) => x.hex === ans.target)?.kind === 'melee') countMelee(c, s, ans.unit, ans.target);
+    return;
+  }
+  if (dec.kind === 'bonusMelee') {
+    if (ans.kind === 'hex' && ans.hex !== null) countMelee(c, s, dec.unit, ans.hex);
+    return;
+  }
   if (dec.kind !== 'defend') return;
   const choice = ans.kind === 'defend' ? ans.choice : null;
   if (dec.options.includes('formSquare')) { c.squareOffers++; if (choice === 'formSquare') c.squaresFormed++; }
@@ -187,8 +214,7 @@ export function countEvents(c: Counters, s: GameState, known: Map<string, Unit>,
       if (e.purpose === 'fire' && sa.arm === 'artillery') {
         const r = distance(a.hex, t.hex);
         if (r >= 1 && r <= 5) c.gunShotsByRange[r - 1]++;
-      } else if ((e.purpose === 'melee' || e.purpose === 'bonus') && sa.arm === 'infantry' && a.blocks <= 2 &&
-        statsOf(s, t).arm === 'infantry' && t.blocks >= t.maxBlocks) c.wornAttacks++;
+      }
     }
   }
 }
@@ -201,8 +227,8 @@ export interface GameRow {
   sc: string; aSide: Side; seed: number; winner: string; banners: [number, number]; turns: number; reason: string;
   a: Difficulty; b: Difficulty;
   rejects: number; fallbacks: number;
-  /** Nodes of work the two sides' decisions were charged (AiMemory.last.sims summed over every decision). */
-  nodes: number;
+  /** The `sims` of every AI decision summed (AiMemory.last.sims: nodes charged for a card decision, rollouts or nodes for a battle one). */
+  sims: number;
   timing: { A: { avg: number; max: number }; B: { avg: number; max: number } };
   c: Counters;
 }
@@ -211,11 +237,20 @@ const pct = (x: number) => `${Math.round(100 * x)} %`;
 const avgOf = (x: number[]) => (x.length ? x.reduce((a, b) => a + b, 0) / x.length : 0);
 
 /** The markdown report of a set of games: a table per battle, then the counter totals. Banners are bottom-top. */
-export function balanceReport(rows: GameRow[], flagAt = 0.85): string {
+export function balanceReport(all0: GameRow[], flagAt = 0.85): string {
   const out: string[] = [];
+  const seen = new Set<string>();
+  const rows = all0.filter((r) => {
+    const k = `${r.sc}/${r.aSide}/${r.seed}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+  const dup = all0.length - rows.length;
+  if (dup) out.push(`WARNING: ${dup} duplicate row${dup === 1 ? '' : 's'} (same battle, side and seed in more than one file) dropped.\n`);
   const by = new Map<string, GameRow[]>();
   for (const r of rows) by.set(r.sc, [...(by.get(r.sc) ?? []), r]);
-  out.push('| Battle | Games | Bottom wins | Top wins | Bottom win rate (95 % Wilson) | Banners (bottom-top, avg) | Turns (avg, max) | Nodes (avg) | Flag |');
+  out.push('| Battle | Games | Bottom wins | Top wins | Bottom win rate (95 % Wilson) | Banners (bottom-top, avg) | Turns (avg, max) | Sims (avg) | Flag |');
   out.push('|---|---|---|---|---|---|---|---|---|');
   let flagged = 0;
   const all = zeroCounters();
@@ -232,19 +267,22 @@ export function balanceReport(rows: GameRow[], flagAt = 0.85): string {
     const [lo, hi] = wilson(bw, n);
     out.push(`| ${sc.id} ${sc.name} | ${n} | ${bw} (${sc.setup.bottom.army}) | ${tw} (${sc.setup.top.army}) | ${pct(bw / n)} [${pct(lo)}, ${pct(hi)}] | ` +
       `${avgOf(rs.map((r) => r.banners[0])).toFixed(1)}-${avgOf(rs.map((r) => r.banners[1])).toFixed(1)} | ` +
-      `${Math.round(avgOf(rs.map((r) => r.turns)))}, ${Math.max(...rs.map((r) => r.turns))} | ${Math.round(avgOf(rs.map((r) => r.nodes)))} | ${flag} |`);
+      `${Math.round(avgOf(rs.map((r) => r.turns)))}, ${Math.max(...rs.map((r) => r.turns))} | ${Math.round(avgOf(rs.map((r) => r.sims)))} | ${flag} |`);
   }
   const aWins = rows.filter((r) => r.winner === r.aSide).length;
   const bWins = rows.filter((r) => r.winner !== 'none' && r.winner !== 'draw' && r.winner !== r.aSide).length;
+  const [aLo, aHi] = wilson(aWins, rows.length);
   const levels = [...new Set(rows.map((r) => `${r.a}/${r.b}`))].join(', ');
   const aName = rows[0]?.a ?? '?';
   const ms = rows.flatMap((r) => [r.timing.A.avg, r.timing.B.avg]);
   const mx = rows.flatMap((r) => [r.timing.A.max, r.timing.B.max]);
   out.push('');
-  out.push(`Games ${rows.length}; flagged battles ${flagged}; levels A/B ${levels}; A (${aName}) won ${aWins} of ${rows.length}, B won ${bWins}; ` +
+  out.push(`Games ${rows.length}; flagged battles ${flagged}; levels A/B ${levels}; A (${aName}) won ${aWins} of ${rows.length} (${pct(aWins / Math.max(1, rows.length))}, 95 % Wilson [${pct(aLo)}, ${pct(aHi)}]), B won ${bWins}; ` +
     `rejects ${rows.reduce((n, r) => n + r.rejects, 0)}, fallbacks ${rows.reduce((n, r) => n + r.fallbacks, 0)}; ` +
     `card decision avg ${avgOf(ms).toFixed(0)} ms, max ${Math.max(0, ...mx).toFixed(0)} ms`);
-  const fmt = (k: keyof Counters) => (k === 'gunShotsByRange' ? `${k} ${all.gunShotsByRange.join('/')}` : `${k} ${all[k] as number}`);
+  const fmt = (k: keyof Counters) => (k === 'gunShotsByRange' ? `${k} ${all.gunShotsByRange.join('/')}`
+    : k === 'wornAttacks' ? `wornAttacks ${all.wornAttacks} of ${all.infantryMelees} infantry melees (${pct(all.wornAttacks / Math.max(1, all.infantryMelees))})`
+      : `${k} ${all[k] as number}`);
   out.push(`Counters: ${(Object.keys(all) as (keyof Counters)[]).map(fmt).join(', ')}`);
   return out.join('\n');
 }

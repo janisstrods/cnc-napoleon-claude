@@ -5,6 +5,7 @@
 //   balance and with --a 2 --b 1 they measure strength. --a/--b: captain, colonel, marshal or 0, 1, 2. --deterministic passes
 //   `deterministic: true` to both sides: no clock is read, the node budget alone limits the work, and the results do not depend on
 //   machine load. The JSON holds one row per game (`GameRow`, scripts/lib.ts); only its `timing` field depends on the machine.
+//   Both games of a pair share the game seed; the AIs' own seeds add the side. `sims`: AiMemory.last.sims summed over the AI decisions.
 //   Counters come from engine events and the decisions and answers, never from AI internals; nodes, decision times and fallbacks
 //   are the harness's own figures. `--persTop/--persBottom` force a temperament (default: the commander's own, personalityFor).
 //   Summarise the files with ai-balance-report.ts.
@@ -14,7 +15,7 @@ import { scenarioById } from '../src/scenarios';
 import { personalityById, personalityFor, type AiOptions, type Difficulty } from '../src/ai';
 import {
   addCounters, arg, countDecision, countEvents, countTurnStart, flag, jobSeed, lcg, levelArg, playAiGame, scenarioList, shardJobs, snapshotUnits,
-  visibleScenarioIds, zeroCounters, type GameRow,
+  visibleScenarioIds, wilson, zeroCounters, type GameRow,
 } from './lib';
 
 const A = levelArg('a', 'colonel');
@@ -44,7 +45,7 @@ for (const job of shardJobs(scen, games)) {
   const opt = { [job.aSide]: mk(job.aSide, A), [bSide]: mk(bSide, B) } as Record<Side, AiOptions>;
   const c = zeroCounters();
   let rejects = 0;
-  let nodes = 0;
+  let sims = 0;
   let known = snapshotUnits(d.state);
   const ms: Record<Side, number[]> = { top: [], bottom: [] };
   const mems = playAiGame(d, opt, {
@@ -56,7 +57,7 @@ for (const job of shardJobs(scen, games)) {
     planMs: (side, t) => ms[side].push(t),
     chosen: (dec, ans, ai) => {
       countDecision(c, d.state, dec, ans);
-      if (ai?.mem.last) nodes += ai.mem.last.sims;
+      if (ai?.mem.last) sims += ai.mem.last.sims;
     },
     rejected: (dec, ans) => {
       rejects++;
@@ -69,17 +70,18 @@ for (const job of shardJobs(scen, games)) {
   const row: GameRow = {
     sc: job.sc, aSide: job.aSide, seed, winner: w === null ? 'none' : String(w),
     banners: [bannerTotal(d.state, 'bottom'), bannerTotal(d.state, 'top')], turns: d.state.turn.number, reason: d.state.winReason,
-    a: A, b: B, rejects, fallbacks: mems.top.fallbacks + mems.bottom.fallbacks, nodes,
+    a: A, b: B, rejects, fallbacks: mems.top.fallbacks + mems.bottom.fallbacks, sims,
     timing: { A: { avg: avg(ms[job.aSide]), max: max(ms[job.aSide]) }, B: { avg: avg(ms[bSide]), max: max(ms[bSide]) } }, c,
   };
   results.push(row);
   const nz = Object.entries(c).filter(([, v]) => (Array.isArray(v) ? v.some(Boolean) : v)).map(([k, v]) => `${k}=${Array.isArray(v) ? v.join('/') : v}`).join(' ');
   console.log(`${job.sc} A(${A})=${job.aSide} winner=${row.winner}${w === job.aSide ? '(A)' : w === bSide ? '(B)' : ''} bottom-top ${row.banners[0]}-${row.banners[1]} ` +
-    `turns=${row.turns} nodes=${nodes} msA=${row.timing.A.avg.toFixed(0)} msB=${row.timing.B.avg.toFixed(0)}${rejects ? ` rejects=${rejects}` : ''}${row.fallbacks ? ` fallbacks=${row.fallbacks}` : ''} ${nz}`);
+    `turns=${row.turns} sims=${sims} msA=${row.timing.A.avg.toFixed(0)} msB=${row.timing.B.avg.toFixed(0)}${rejects ? ` rejects=${rejects}` : ''}${row.fallbacks ? ` fallbacks=${row.fallbacks}` : ''} ${nz}`);
 }
 if (jsonOut) writeFileSync(jsonOut, JSON.stringify(results));
 const aW = results.filter((x) => x.winner === x.aSide).length;
 const bW = results.filter((x) => x.winner !== 'none' && x.winner !== 'draw' && x.winner !== x.aSide).length;
 const total = results.reduce((t, r) => addCounters(t, r.c), zeroCounters());
-console.log(`RESULT A=${A} wins ${aW}, B=${B} wins ${bW}, games ${results.length}, rejects ${results.reduce((n, r) => n + r.rejects, 0)}, ` +
+const [lo, hi] = wilson(aW, results.length);
+console.log(`RESULT A=${A} wins ${aW} (${Math.round((100 * aW) / Math.max(1, results.length))} %, 95 % Wilson [${Math.round(100 * lo)} %, ${Math.round(100 * hi)} %]), B=${B} wins ${bW}, games ${results.length}, rejects ${results.reduce((n, r) => n + r.rejects, 0)}, ` +
   `fallbacks ${results.reduce((n, r) => n + r.fallbacks, 0)}, leadersLost ${total.leadersLost}`);
