@@ -1,7 +1,7 @@
 // The per-kind policies (src/ai/policies.ts): one test per row of the Task 7 table, each through the decision the engine asks.
 import { describe, expect, it, vi } from 'vitest';
 import {
-  CARD_DEFS, CARD_LIST, GameDriver, answerError, cardKind, distance, forceDice, leaderById, leaderRetreatOptions, retreatDistance, retreatOptions,
+  CARD_DEFS, CARD_LIST, DIE_SIDES, GameDriver, answerError, cardKind, distance, forceDice, leaderById, leaderRetreatOptions, retreatDistance, retreatOptions,
   shortSupplyHexes, shortSupplyTargets, statsOf, unitById, type CardKind, type Decision, type DieFace, type GameState, type Side,
 } from '../../src/engine';
 import { makeBudget } from '../../src/ai/budget';
@@ -15,7 +15,8 @@ import {
   pickLeaderRetreat, pickOrders, pickRetreat, pickScout, pickShortSupplyHex, pickShortSupplyTarget, policyFor, stayInSquare, type PolicyCtx,
 } from '../../src/ai/policies';
 import { Rng } from '../../src/ai/rand';
-import { rallyAssign } from '../../src/ai/cardsense';
+import { rallyAssign, rallyGain } from '../../src/ai/cardsense';
+import { bannerValue } from '../../src/ai/estimate';
 import { NEUTRAL_W, rowValue, unitValue, weightsFor } from '../../src/ai/values';
 import { blindClone, determinize, isDeterminised } from '../../src/ai/view';
 import { H, attack, build, giveCard, must, n, play, toBattle, type Pos } from '../rules/helpers';
@@ -428,6 +429,58 @@ describe('elan and rally', () => {
       const { ids } = rally([bot('BR/LN', [6, 6], { blocks: 3 }), bot('BR/LN', [6, 4], { blocks: 1 }), top('FR/LN', [4, 5])]);
       expect(ids[0]).toBe('u2');
     });
+    // the Rally key, written out independently: the rise in fighting value, plus for a threatened unit the banner its elimination
+    // would give times the drop in P(a 4-dice attack at 1/3 a die takes all its blocks)
+    const elimP = (b: number): number => {
+      let p = 0;
+      for (let k = Math.max(b, 0); k <= 4; k++) p += [1, 4, 6, 4, 1][k] * (1 / 3) ** k * (2 / 3) ** (4 - k);
+      return b <= 0 ? 1 : p;
+    };
+    const key = (s: GameState, id: string, b: number): number => {
+      const u = unitById(s, id)!;
+      const st = statsOf(s, u);
+      return rowValue(st, b + 1) - rowValue(st, b) + bannerValue(s, 'top', u) * (elimP(b) - elimP(b + 1));
+    };
+
+    it('rallyGain is the exact expectation of the key over the infantry faces (one threatened 1-block unit)', () => {
+      const s = build({ units: [bot('BR/LN', [6, 4], { blocks: 1 }), top('FR/LN', [4, 5])] });
+      const n = s.players.bottom.hand.length;
+      const p = DIE_SIDES.filter((f) => f === 'infantry').length / DIE_SIDES.length;
+      const choose = (a: number, b: number): number => (b === 0 ? 1 : (a * choose(a - 1, b - 1)) / b);
+      let expected = 0;
+      for (let i = 1; i <= n; i++) {
+        let v = 0;
+        for (let j = 0; j < Math.min(i, 3); j++) v += key(s, 'u1', 1 + j); // never above its 4 starting blocks
+        expected += choose(n, i) * p ** i * (1 - p) ** (n - i) * v;
+      }
+      expect(rallyGain(s, 'bottom', n)).toBeCloseTo(expected, 12);
+      // the banner term is in it: the fighting value alone gives less
+      const plain = rowValue(statsOf(s, unitById(s, 'u1')!), 2) - rowValue(statsOf(s, unitById(s, 'u1')!), 1);
+      expect(key(s, 'u1', 1)).toBeGreaterThan(plain);
+    });
+
+    it('three infantry faces: each goes where the next block gains most, counting the blocks earlier dice gave (threatened 1- and 3-block units)', () => {
+      forceDice(['infantry', 'infantry', 'infantry', 'sabre', 'sabre']);
+      const d = play(build({ units: [bot('BR/GR', [6, 6], { blocks: 3 }), bot('BR/LN', [6, 4], { blocks: 1 }), top('FR/LN', [4, 5])] }), 'rally');
+      forceDice([]);
+      const dec = pending(d, 'rally');
+      const s = d.state;
+      const greedy = (counted: boolean): string[] => {
+        const given = new Map<string, number>();
+        return [0, 1, 2].map(() => {
+          const at = (id: string): number => unitById(s, id)!.blocks + (counted ? (given.get(id) ?? 0) : 0);
+          const pick = ['u1', 'u2'].filter((id) => at(id) < unitById(s, id)!.maxBlocks).sort((x, y) => key(s, y, at(y)) - key(s, x, at(x)) || (x < y ? -1 : 1))[0];
+          given.set(pick, (given.get(pick) ?? 0) + 1);
+          return pick;
+        });
+      };
+      const expected = greedy(true);
+      expect(expected).not.toEqual(greedy(false)); // the case tells counting the earlier dice from not counting them
+      const a = assignRally(s, dec);
+      expect(answerError(s, dec, a)).toBeNull();
+      expect((a as { ids: (string | null)[] }).ids).toEqual([...expected, null, null]);
+    });
+
     it('with no enemy in reach only the fighting value counts: the stronger unit gains most (documented)', () => {
       const { d, ids } = rally([bot('BR/LN', [6, 6], { blocks: 3 }), bot('BR/LN', [6, 4], { blocks: 2 }), top('FR/LN', [0, 6])]);
       const gain = (id: string): number => rowValue(statsOf(d.state, unitById(d.state, id)!), unitById(d.state, id)!.blocks + 1) - unitValue(d.state, unitById(d.state, id)!);

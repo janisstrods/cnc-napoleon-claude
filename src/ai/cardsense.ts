@@ -112,11 +112,15 @@ function elimP(blocks: number): number {
   return p;
 }
 
-/** The own units an enemy could attack next turn (adjacent now, or within its reach): only those risk elimination. */
+/**
+ * The own wounded units an enemy could attack next turn (adjacent now, or within its reach): only those risk elimination, and only
+ * wounded units can be rallied (a unit at full strength is never asked about, so its reach walk is skipped).
+ */
 function threatenedUnits(s: GameState, me: Side): Set<string> {
   const occ = occOf(s);
   const out = new Set<string>();
   for (const u of occ.bySide[me]) {
+    if (u.blocks >= u.maxBlocks) continue;
     for (const e of occ.bySide[other(me)]) {
       const d = distance(e.hex, u.hex);
       if (d <= 1 || (d <= RALLY_FAR && reachOf(s, occ, e, u.hex) >= d)) {
