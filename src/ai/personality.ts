@@ -1,4 +1,6 @@
-// Commander personalities: plain data weights that tune the evaluation and the commentary voice.
+// Commander temperaments: plain data weights that tune the evaluation and the commentary voice. They come from the
+// commanders of the fifteen battles (Napoleon commands at 015; the drill scenario 000 adds no one), not from the Ancients tables.
+import type { Nation } from '../engine';
 
 export type Voice = 'bold' | 'methodical' | 'reckless' | 'cunning' | 'stoic';
 
@@ -21,88 +23,61 @@ export interface Personality {
   chatter: number;
 }
 
+const P = (
+  id: string, name: string, epithet: string, [aggression, caution, cunning, dash]: [number, number, number, number], voice: Voice, chatter: number,
+): Personality => ({ id, name, epithet, aggression, caution, cunning, dash, voice, chatter });
+
 export const PERSONALITIES: Personality[] = [
-  {
-    id: 'fox', name: 'The Fox', epithet: 'Cunning and daring: baits, outflanks and strikes where it hurts (Hannibal).',
-    aggression: 0.7, caution: 0.5, cunning: 0.95, dash: 0.85, voice: 'cunning', chatter: 0.7,
-  },
-  {
-    id: 'lion', name: 'The Lion', epithet: 'Bold and direct: seeks battle and presses every advantage (Marcellus, Nero).',
-    aggression: 0.82, caution: 0.4, cunning: 0.5, dash: 0.7, voice: 'bold', chatter: 0.65,
-  },
-  {
-    id: 'shield', name: 'The Shield', epithet: 'Methodical delayer: never gives away a cheap banner (Fabius).',
-    aggression: 0.3, caution: 0.88, cunning: 0.65, dash: 0.35, voice: 'methodical', chatter: 0.5,
-  },
-  {
-    id: 'bull', name: 'The Bull', epithet: 'Reckless and proud: charges headlong and trusts in numbers (Varro, Flaminius).',
-    aggression: 0.95, caution: 0.15, cunning: 0.2, dash: 0.6, voice: 'reckless', chatter: 0.8,
-  },
-  {
-    id: 'strategist', name: 'The Strategist', epithet: 'Calculating tactician: patient, then decisive (Scipio).',
-    aggression: 0.62, caution: 0.62, cunning: 0.85, dash: 0.65, voice: 'stoic', chatter: 0.55,
-  },
-  {
-    id: 'veteran', name: 'The Veteran', epithet: 'Steady professional: balanced and sound.',
-    aggression: 0.55, caution: 0.55, cunning: 0.55, dash: 0.5, voice: 'stoic', chatter: 0.5,
-  },
+  P('wellington', 'Wellington', 'Patient and exact: holds good ground, then strikes when the enemy is spent.', [0.45, 0.8, 0.85, 0.35], 'stoic', 0.4),
+  P('moore', 'Moore', 'Thorough and humane: drills his men hard and fights a measured battle.', [0.5, 0.65, 0.7, 0.45], 'methodical', 0.5),
+  P('hill', 'Hill', 'Dependable lieutenant: never rash, never absent when the line wavers.', [0.5, 0.7, 0.55, 0.4], 'stoic', 0.45),
+  P('picton', 'Picton', 'Fierce and impatient: leads from the front and wants the bayonet.', [0.85, 0.3, 0.35, 0.55], 'bold', 0.8),
+  P('beresford', 'Beresford', 'Cautious organiser: keeps the line tidy and spends men sparingly.', [0.4, 0.75, 0.4, 0.35], 'methodical', 0.4),
+  P('craufurd', 'Craufurd', 'Sharp-tempered skirmisher: quick to strike and quick to withdraw.', [0.75, 0.4, 0.7, 0.6], 'bold', 0.75),
+  P('bock', 'Bock', 'Hard-riding horseman: believes a charge settles most arguments.', [0.7, 0.45, 0.45, 0.95], 'bold', 0.55),
+  P('napoleon', 'Napoleon', 'Master of timing: feints, concentrates, then breaks the line at its weakest point.', [0.75, 0.5, 0.95, 0.75], 'cunning', 0.7),
+  P('ney', 'Ney', 'Reckless and brave: the first into the fight and the last out of it.', [0.92, 0.2, 0.3, 0.9], 'reckless', 0.85),
+  P('soult', 'Soult', 'Methodical campaigner: manoeuvres with care and counts the cost.', [0.6, 0.6, 0.7, 0.5], 'methodical', 0.5),
+  P('massena', 'Masséna', 'Shrewd and stubborn: patient in defence, ruthless when an opening shows.', [0.6, 0.55, 0.8, 0.5], 'cunning', 0.55),
+  P('junot', 'Junot', 'Headstrong and impetuous: throws the columns forward and hopes for the best.', [0.8, 0.3, 0.4, 0.7], 'reckless', 0.75),
+  P('marmont', 'Marmont', 'Ambitious and brisk: presses a fair advantage, sometimes too far.', [0.6, 0.45, 0.65, 0.6], 'bold', 0.6),
+  P('reynier', 'Reynier', 'Sound corps commander: steady, orthodox and hard to rattle.', [0.55, 0.55, 0.55, 0.5], 'stoic', 0.45),
+  P('veteran', 'The Veteran', 'Steady professional: balanced and sound.', [0.55, 0.55, 0.55, 0.5], 'stoic', 0.5),
 ];
+
+const VETERAN = PERSONALITIES[PERSONALITIES.length - 1];
 
 export function personalityById(id: string): Personality {
-  return PERSONALITIES.find((p) => p.id === id) ?? PERSONALITIES[5];
+  return PERSONALITIES.find((p) => p.id === id) ?? VETERAN;
 }
 
-/**
- * Expansion #3 commanders, matched before everything else; an army pattern (when given) must match too. Two names are
- * shared with earlier battles and told apart by the army: Metellus Scipio at Thapsus (318, Pompeian) is not Africanus,
- * and Attius Varus at Utica (311, Pompeian) is not Quinctilius Varus (220, Roman). "Gnaeus Pompey" (319) keeps the base
- * game's `gnaeus` rule (the Lion), so Pompey the Great is matched by his name alone. Unlisted ones (Herennius & Perpenna,
- * Divico, Marcius Rufus) take the army default.
- */
-const BY_NAME_X3: [RegExp, RegExp | null, string][] = [
-  [/scipio/i, /pompeian/i, 'veteran'],
-  [/\bvarus\b/i, /pompeian/i, 'shield'],
-  [/\bsulla\b|^pompey\b/i, null, 'strategist'],
-  [/sertorius|saburra/i, null, 'fox'],
-  [/labienus|\bcurio\b|pharnaces|ariovistus|pontius/i, null, 'bull'],
-  [/afranius/i, null, 'shield'],
-  [/fufidius|\blibo\b/i, null, 'veteran'],
-  [/\bantony\b|antonius/i, null, 'lion'],
-];
-
+/** Commander patterns, tried in order against the commander's name (matched case-insensitively). */
 const BY_NAME: [RegExp, string][] = [
-  // Expansion #2 commanders (first, like Expansion #1's). Unlisted ones take the army default below (Romans the Lion,
-  // the others the Veteran).
-  [/caesar|\bmarius\b|crassus|germanicus|scapula/i, 'strategist'],
-  [/spartacus/i, 'lion'],
-  [/crixus|oenomaus|boiorix|teutobod|aneroestes|britomartus|caepio|mummius|boduognatus/i, 'bull'],
-  [/arminius|vercingetorix|cassivellaunus|caratacus/i, 'fox'],
-  [/glaber|trebonius/i, 'shield'],
-  // Expansion #1 commanders (first: some names would otherwise match a base-game pattern)
-  [/alexander|pyrrhus|craterus|chandragupta|maurya|decius/i, 'lion'],
-  [/epaminondas|seleucus|flamininus|paull?us|callimachus/i, 'strategist'],
-  [/eumenes|philip ii\b|satraces/i, 'fox'],
-  [/ptolemy|perseus|pausanias|dentatus/i, 'shield'],
-  [/mardonius|cleombrot|onomarchus|antiochus|philip v\b|laevinus/i, 'bull'],
-  // Darius III and Porus play the Veteran: as the Shield and the Bull they lost the Alexander battles almost every time
-  // in AI self-play (design/exp1-ai-balance.md)
-  [/datis|hamilcar|gelon|agesilaus|antigonus|mithridates|neoptolemus|alcet|darius|porus/i, 'veteran'],
-  // base game (Himilco stays the Shield in 122 Cronium too: same name, and the Akragas Himilco is one)
-  [/hannibal|xanthippus|maharbal|mago/i, 'fox'],
-  [/varro|flaminius|sempronius|minucius|regulus/i, 'bull'],
-  [/fabius|himilco|hanno/i, 'shield'],
-  [/gnaeus/i, 'lion'],
-  [/scipio|laelius/i, 'strategist'],
-  [/gisgo/i, 'veteran'],
-  [/marcellus|nero|gracchus|timoleon|masinissa/i, 'lion'],
-  [/hasdrubal|daphn|dionysius|syphax/i, 'veteran'],
+  [/wellesley|wellington/i, 'wellington'],
+  [/moore/i, 'moore'],
+  [/\bhill\b/i, 'hill'],
+  [/picton/i, 'picton'],
+  [/beresford/i, 'beresford'],
+  [/crau(f)?urd|crauford/i, 'craufurd'],
+  [/\bbock\b/i, 'bock'],
+  [/napoleon/i, 'napoleon'],
+  [/\bney\b/i, 'ney'],
+  [/soult/i, 'soult'],
+  [/mass[eé]na/i, 'massena'],
+  [/junot/i, 'junot'],
+  [/marmont/i, 'marmont'],
+  [/reynier/i, 'reynier'],
 ];
 
-/** A fitting default personality for a historical commander. */
-export function personalityFor(commander: string, army: string): Personality {
-  for (const [re, armyRe, id] of BY_NAME_X3) if (re.test(commander) && (!armyRe || armyRe.test(army))) return personalityById(id);
+/** The default for a commander without a temperament of his own: the French take Reynier's, everyone else Hill's. */
+const NATION_DEFAULT: Readonly<Record<Nation, string>> = { FR: 'reynier', BR: 'hill', PT: 'hill', AL: 'hill', SP: 'hill' };
+
+/**
+ * A fitting default personality for a historical commander: his own temperament, else his nation's. Without a `nation`
+ * the army's name decides (a French army is French, anything else British). The Veteran is the last resort only.
+ */
+export function personalityFor(commander: string, army: string, nation?: Nation): Personality {
   for (const [re, id] of BY_NAME) if (re.test(commander)) return personalityById(id);
-  if (/roman/i.test(army)) return personalityById('lion');
-  if (/carthag/i.test(army)) return personalityById('fox');
-  return personalityById('veteran');
+  const n: Nation = nation ?? (/french/i.test(army) ? 'FR' : 'BR');
+  return personalityById(NATION_DEFAULT[n] ?? 'veteran');
 }
