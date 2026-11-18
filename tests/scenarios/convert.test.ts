@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { convertBattle, formatScenario, unsupportedFeatures, type BattleMeta, type RawBattle } from '../../scripts/scenarios/convert';
+import { META } from '../../scripts/scenarios/meta';
 import { catalogueEntry } from '../../src/scenarios/catalogue';
 
 const files = import.meta.glob<RawBattle>('../../design/data/*.json', { eager: true, import: 'default' });
@@ -41,6 +42,12 @@ describe('convertBattle', () => {
     expect(() => convertBattle(RAW['002'], meta({ leaderNames: undefined }), e('002'))).toThrow(/leader name "\(unnamed\)".*\(002\)/);
   });
 
+  it('a bare "unlabelled" leader name needs a leaderNames entry, like a bracketed one', () => {
+    const raw = synth({ leaders: [{ r: 2, c: 2, side: 'top', name: 'unlabelled' }, { r: 6, c: 2, side: 'bottom', name: 'B' }] });
+    expect(() => convertBattle(raw, meta({ leaderNames: undefined }), e('002'))).toThrow(/leader name "unlabelled".*\(002\)/);
+    expect(convertBattle(raw, meta({ leaderNames: { unlabelled: '' } }), e('002')).leaders[0].name).toBe('');
+  });
+
   it('squares attach to the unit on the hex; a square on an empty hex throws', () => {
     const squares = [{ r: 3, c: 8, slot: 1 as const }, { r: 3, c: 9, slot: 2 as const }];
     const j = convertBattle(RAW['012'], meta({ squares, leaderNames: undefined }), e('012'));
@@ -77,7 +84,7 @@ describe('convertBattle', () => {
     expect(convertBattle(river, meta({ rivers: 'brook' }), e('002')).rivers).toBe('brook');
   });
 
-  it('no Spanish battle has an unsupported unit type; synthetic unsupported features are named (Task 11 restores the positive conversions)', () => {
+  it('no Spanish battle has an unsupported unit type; synthetic unsupported features are named', () => {
     const spanish = Object.keys(RAW).filter((id) => id.startsWith('1'));
     expect(spanish.flatMap((id) => unsupportedFeatures(RAW[id])).some((f) => f.startsWith('unit type'))).toBe(false);   // every Spanish row exists since Plan 7C Task 3
     expect(unsupportedFeatures(synth({ terrain: [{ r: 1, c: 1, t: 'marsh' }] }))).toContain('terrain marsh ×1');   // walledFarm is supported (Plan 7C Task 2)
@@ -128,5 +135,52 @@ describe('convertBattle (Task 2 carry)', () => {
     const j = convertBattle(RAW['001'], m, e('001'));
     expect(j.top).toEqual(m.top); expect(j.top).not.toBe(m.top);
     expect(j.objectives).toEqual(m.objectives); expect(j.objectives).not.toBe(m.objectives);
+  });
+});
+
+describe('convertBattle (Expansion #1 features, Plan 7C Task 11)', () => {
+  const IDS = Array.from({ length: 18 }, (_, i) => String(101 + i));
+
+  it('101–118 convert with exactly the supported features: nothing unsupported, every id catalogued as exp1', () => {
+    for (const id of IDS) {
+      expect(unsupportedFeatures(RAW[id]), id).toEqual([]);
+      expect(e(id).box, id).toBe('exp1');
+    }
+  });
+
+  it('riverRules sets the per-hex rule by art label; an unknown label in riverRules throws', () => {
+    const raw = synth({ terrain: [{ r: 4, c: 0, t: 'river', art: 'Big River' }, { r: 4, c: 1, t: 'river', art: 'Little Stream' }, { r: 4, c: 2, t: 'river' }] });
+    const j = convertBattle(raw, meta({ rivers: 'impassable', riverRules: { 'Little Stream': 'fordable' } }), e('002'));
+    expect(j.terrain.map((t) => t.river)).toEqual([undefined, 'fordable', undefined]);
+    expect('river' in j.terrain[0]).toBe(false);
+    expect(() => convertBattle(raw, meta({ rivers: 'impassable', riverRules: { 'No Such River': 'fordable' } }), e('002'))).toThrow(/riverRules.*No Such River.*\(002\)/);
+    // 104 for real: the Trueba stays impassable, the Shallow Stream and its source are fordable
+    const j104 = convertBattle(RAW['104'], META['104'], e('104'));
+    expect(j104.terrain.filter((t) => t.river === 'fordable').map((t) => [t.r, t.c])).toEqual([[5, 10], [6, 11], [7, 11], [8, 12]]);
+  });
+
+  it('tempAny and majority hexes are claimed against the map; exitEdge and suddenDeath claim none', () => {
+    const raw = synth({ objectives: [{ r: 8, c: 2, note: 'a' }, { r: 8, c: 3, note: 'b' }] });
+    const claim = (objectives: BattleMeta['objectives']) => meta({ objectives });
+    expect(convertBattle(raw, claim([{ kind: 'tempAny', side: 'top', hexes: [[8, 2], [8, 3]] }]), e('002')).objectives).toHaveLength(1);
+    expect(convertBattle(raw, claim([{ kind: 'majority', side: 'top', hexes: [[8, 2], [8, 3]], startHeld: false }]), e('002')).objectives).toHaveLength(1);
+    // two majority records over the same hexes claim them once
+    expect(convertBattle(raw, claim([{ kind: 'majority', side: 'top', hexes: [[8, 2], [8, 3]] }, { kind: 'majority', side: 'bottom', hexes: [[8, 2], [8, 3]] }]), e('002')).objectives).toHaveLength(2);
+    expect(() => convertBattle(raw, claim([{ kind: 'tempAny', side: 'top', hexes: [[8, 2], [8, 4]] }]), e('002'))).toThrow(/8,3.*unclaimed.*8,4.*not on the map/s);
+    const plain = synth();
+    const none = claim([{ kind: 'exitEdge', side: 'top', row: 0, free: 3 }, { kind: 'suddenDeath', side: 'bottom', keys: ['BR/LN'] }]);
+    expect(convertBattle(plain, none, e('002')).objectives).toHaveLength(2);
+  });
+
+  it('hidden and moveFirst pass through to the file', () => {
+    const plain = convertBattle(synth(), meta(), e('002'));
+    expect('hidden' in plain).toBe(false);
+    expect('moveFirst' in plain).toBe(false);
+    const j = convertBattle(synth(), meta({ hidden: true, moveFirst: 'reveal' }), e('002'));
+    expect(j.hidden).toBe(true);
+    expect(j.moveFirst).toBe('reveal');
+    const parsed = JSON.parse(formatScenario(j));
+    expect(parsed.hidden).toBe(true);
+    expect(parsed.moveFirst).toBe('reveal');
   });
 });

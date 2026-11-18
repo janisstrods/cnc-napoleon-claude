@@ -37,6 +37,9 @@ export function UnitBadge({ unitKey, blocks, maxBlocks, guard }: { unitKey: ArtK
     );
   }
   const long = code.length > 2;
+  // The code's fixed width: five pips stand closer to the code, so it is narrowed there to keep at least 1 unit clear of the
+  // first pip (tests/art/nap/token.test.ts); with up to four pips the widths are the original ones.
+  const textLength = maxBlocks > 4 ? (long ? 11.5 : 12) : long ? 13 : 12.5;
   return (
     <g data-badge data-arm={arm} data-rim={guard ? 'gold' : undefined}>
       <rect x={-23.4} y={24.4} width={46.8} height={12.8} rx={3.4} fill="#17110c" fillOpacity={0.93} stroke={guard ? '#e9bf4f' : '#6b5638'} strokeWidth={guard ? 1.2 : 0.7} />
@@ -49,7 +52,7 @@ export function UnitBadge({ unitKey, blocks, maxBlocks, guard }: { unitKey: ArtK
         fontSize={long ? 8 : 9.4}
         fill={CREAM}
         // a fixed width whatever font loads, so the code never runs into the pips
-        textLength={long ? 13 : 12.5}
+        textLength={textLength}
         lengthAdjust="spacingAndGlyphs"
       >
         {code}

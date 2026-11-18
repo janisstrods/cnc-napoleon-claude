@@ -201,13 +201,13 @@ body {
 .dice-panel-die .kit-die { flex: none; }
 .dice-panel-text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
 .dice-panel-wait { max-width: 300px; font-size: 13px; line-height: 1.2; color: rgba(240, 227, 194, .7); font-style: italic; }
-.prompt-dice { display: flex; gap: 5px; flex: none; }
+.prompt-dice { display: flex; gap: 5px; flex: none; order: -1; }
 .order-show-dice { display: flex; gap: 14px; padding: 12px 18px; background: rgba(20, 12, 6, .7); border: 1px solid rgba(226, 189, 114, .55); border-radius: 12px; }
 
 /* ---------- prompt */
 .prompt-bar {
   flex: 1;
-  min-width: 0;
+  min-width: 340px;
   min-height: 66px;
   box-sizing: border-box;
   align-self: flex-end;
@@ -224,7 +224,7 @@ body {
 }
 .prompt-bar.tone-danger { border-color: #e0745c; box-shadow: 0 0 0 2px rgba(224, 116, 92, .25), 0 8px 22px rgba(0, 0, 0, .55); }
 .prompt-bar.tone-warn .prompt-sub { color: #f2b56b; }
-.prompt-text { flex: 1 1 220px; min-width: 180px; }
+.prompt-main { flex: 1 1 220px; min-width: 180px; }
 .prompt-title { font-family: var(--kit-font-title); font-size: 15px; color: var(--kit-bronze-light); letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .prompt-sub { font-size: 13.5px; color: rgba(240, 227, 194, .85); line-height: 1.2; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
 .prompt-err { font-size: 13px; color: #ff9a80; margin-top: 2px; }
@@ -369,6 +369,8 @@ body {
 
 @media (max-width: 1180px) {
   .game-root { grid-template-columns: 1fr 260px; }
+  /* the hand folds tighter, so the prompt bar keeps room for its text and buttons */
+  .hand-cards .hand-slot + .hand-slot { margin-left: min(-16px, calc((340px - var(--n, 5) * 104px) / (var(--n, 5) - 1))); }
 }
 @media (min-width: 1880px), (min-width: 1700px) and (min-aspect-ratio: 17/9) {
   .game-root { grid-template-columns: 1fr 400px; }
@@ -428,14 +430,35 @@ body {
 /* ---------- squares (Plan 4 Task 6) */
 .square-track { display: flex; align-items: center; justify-content: flex-end; gap: 3px; margin-top: 5px; }
 .sq-label { font-family: var(--kit-font-title); font-size: 11px; letter-spacing: .06em; color: rgba(240, 227, 194, .65); margin-right: 4px; }
-.sq-slot { position: relative; width: 24px; height: 34px; border: 1px dashed rgba(226, 189, 114, .4); border-radius: 3px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: rgba(0, 0, 0, .18); }
+.sq-slot { position: relative; box-sizing: border-box; width: 24px; height: 34px; border: 1px dashed rgba(226, 189, 114, .4); border-radius: 3px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: rgba(0, 0, 0, .18); }
 .sq-slot.is-held { border-style: solid; border-color: rgba(226, 189, 114, .75); }
 .sq-num { position: absolute; top: 0; left: 2px; z-index: 2; font-family: var(--kit-font-title); font-size: 10px; line-height: 1.1; color: rgba(240, 227, 194, .85); text-shadow: 0 0 2px #000, 0 0 2px #000; }
 .sq-slot:not(.is-held) .sq-num { color: rgba(240, 227, 194, .45); text-shadow: none; }
-.sq-card.kit-card { font-size: 2.6px; pointer-events: none; }
+.sq-card.kit-card { font-size: 1.6px; pointer-events: none; }
+.sq-slot.is-owner.is-held { width: 44px; height: 63px; overflow: visible; }
+.sq-slot.is-owner.is-held .sq-card.kit-card { font-size: 2.93px; }
+.sq-zoom { display: none; position: absolute; right: calc(100% + 8px); bottom: 0; z-index: 20; pointer-events: none; filter: drop-shadow(0 8px 16px rgba(0, 0, 0, .6)); }
+.sq-slot.is-owner:hover .sq-zoom, .sq-slot.is-owner:focus-visible .sq-zoom { display: block; }
+.sq-slot.is-owner:focus-visible { outline: 2px solid #f6d77c; outline-offset: 2px; }
+.square-track { flex-wrap: wrap; }
+.sq-label { flex: 1 0 100%; text-align: right; margin: 0 0 1px; }
 .square-counter circle { fill: #2a2318; stroke: #e2bd72; stroke-width: 2; }
 .square-counter text { fill: #f6e7b6; font-family: var(--kit-font-title); font-size: 14px; font-weight: 700; pointer-events: none; }
 .square-counter { pointer-events: none; }
 .prompt-hint { min-height: 3.6em; font-size: 12.5px; font-style: italic; color: #f2d79a; line-height: 1.2; margin-top: 2px; }
 .tip-square { color: #e2bd72; }
 .army-cmd.army-hand { white-space: normal; font-style: normal; font-size: 12.5px; }
+
+/* ---------- theme and accessibility (Plan 4 Task 10) */
+.prompt-bar:focus { outline: none; }
+.prompt-bar:focus-visible { box-shadow: 0 0 0 2px #f6d77c, 0 8px 22px rgba(0, 0, 0, .55); }
+.prompt-bar--idle { min-width: 0; position: absolute; width: 1px; height: 1px; min-height: 0; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; box-shadow: none; background: none; }
+
+.prompt-hint--compact { min-height: 0; font-style: normal; font-weight: 600; }
+.prompt-pick { display: flex; align-items: center; gap: 6px; flex: 0 1 auto; min-width: 0; }
+.prompt-pick label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: rgba(240, 227, 194, .85); }
+.prompt-pick select { max-width: 280px; font: inherit; font-size: 13px; padding: 4px 6px; background: #f3e8cb; color: var(--kit-ink); border: 1px solid var(--kit-bronze); border-radius: 4px; }
+.gun-toggles { display: flex; flex-wrap: wrap; gap: 6px; flex: 0 1 auto; min-width: 0; }
+.gun-toggle.kit-btn { padding: 4px 10px; font-size: 12.5px; white-space: nowrap; }
+.prompt-pick select:focus-visible, .speed select:focus-visible { outline: 2px solid #f6d77c; outline-offset: 2px; }
+.hand-slot:focus-within, .kit-card:focus-visible { outline: 2px solid #f6d77c; outline-offset: 2px; }

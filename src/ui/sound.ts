@@ -2,7 +2,9 @@
 import { storage, storageKey } from './storage';
 
 let ctx: AudioContext | null = null;
-let muted = storage.get(storageKey('muted')) === '1';
+/** The silent-browser flag (`ccn-muted`): browser checks set it to '1' before playing. */
+export const MUTED_KEY = storageKey('muted');
+let muted = storage.get(MUTED_KEY) === '1';
 
 function ac(): AudioContext | null {
   if (muted) return null;
@@ -21,7 +23,7 @@ export function isMuted() {
 
 export function setMuted(m: boolean) {
   muted = m;
-  storage.set(storageKey('muted'), m ? '1' : '0');
+  storage.set(MUTED_KEY, m ? '1' : '0');
 }
 
 function noiseBuffer(a: AudioContext, seconds: number): AudioBuffer {

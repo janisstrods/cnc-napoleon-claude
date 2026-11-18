@@ -2,14 +2,17 @@
 // knowledge (hedged below where sources differ).
 //
 // The flag is a readability device in the manner of the Ancients army standard, not a claim that generals carried flags: it
-// lets a player tell the four generals apart on a 65 px hex. Its `colours` are, for the stripe kinds, in stripe order (top to
+// lets a player tell the five generals apart on a 65 px hex. Its `colours` are, for the stripe kinds, in stripe order (top to
 // bottom, or hoist to fly); for 'union' they are [cross, saltire and border, field].
 import { CLOTH, METAL } from '../nations';
 import type { ArtNation } from '../keys';
 import type { Dress, LeaderSpec } from '../uniform';
 
-// Local swatch: the British dark-blue facing (also used by the heavy dragoons in specs/cavalry.ts).
+// Local swatches: the British dark-blue facing (also used by the heavy dragoons in specs/cavalry.ts), the Spanish blue and
+// the Spanish cockade red.
 const DARK_BLUE = '#1f2a55';
+const SP_BLUE = '#1e2a52'; // the Spanish dark blue (as in the Spanish unit specs)
+const SP_COCKADE = '#961820'; // the Spanish red cockade (as in the Spanish unit specs)
 
 const gen = (d: Pick<Dress, 'coat' | 'facings' | 'sash'>): Dress => ({
   cut: 'tails', trousers: CLOTH.white, belts: CLOTH.white, lace: METAL.gold, shoulders: { kind: 'epaulettes', colour: METAL.gold }, ...d,
@@ -50,5 +53,14 @@ export const LEADER_SPECS: Record<ArtNation, LeaderSpec> = {
     head: { kind: 'bicorne', cords: METAL.gold, pompoms: [CLOTH.orange] },
     horse: 'black',
     flag: { kind: 'horizontal', colours: [CLOTH.scarlet, CLOTH.white, CLOTH.dutchBlue] },
+  },
+  // Spanish general: dark blue coat with scarlet facings and gold embroidery, the red sash of a Spanish general officer, and a
+  // bicorne athwart with white feather edging and the red cockade. Dun horse. Flag: red and yellow, the yellow stripe twice the
+  // width of the red (listed twice), after the 1785 ensign (a readability device, as for every nation).
+  SP: {
+    dress: gen({ coat: SP_BLUE, facings: CLOTH.scarlet, sash: CLOTH.scarlet }),
+    head: { kind: 'bicorne', cords: METAL.gold, plume: { colour: CLOTH.white }, pompoms: [SP_COCKADE] },
+    horse: 'dun',
+    flag: { kind: 'horizontal', colours: [CLOTH.scarlet, CLOTH.yellow, CLOTH.yellow, CLOTH.scarlet] },
   },
 };

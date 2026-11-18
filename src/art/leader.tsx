@@ -1,5 +1,5 @@
 // Placeholder leader tokens: a disc in the nation's colour with a name ribbon (a lone leader) or without (one attached to a
-// unit). Art nations are drawn by NapLeaderToken; this placeholder remains for the rest (SP).
+// unit). Art nations (every nation since Plan 7C Task 13) are drawn by NapLeaderToken; this placeholder remains for any other.
 import { memo } from 'react';
 import type { Nation } from '../engine/codes';
 import { blockColors } from './palettes';

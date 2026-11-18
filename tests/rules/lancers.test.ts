@@ -66,7 +66,21 @@ describe('Lancers re-roll flags (S12)', () => {
     const fs = ev(e);
     expect(faces(fs, 'firstStrike')).toEqual([['flag', 'flag', 'cavalry', 'artillery'], ['cavalry', 'sabre']]);
     expect(rerolls(fs, 'firstStrike')).toEqual([false, true]);
-    expect(u(e, 'u1')).toBeUndefined(); // the first roll's cavalry + the re-roll's cavalry and sabre: 3 hits eliminate the 3-block attacker (2 without the re-roll)
+    expect(u(e, 'u1')).toBeUndefined(); // the first roll's cavalry + the re-roll's cavalry and sabre: 3 hits eliminate the 3-block attacker (1 without the re-roll)
+    forceDice([]);
+  });
+
+  it('a First Strike re-roll adds its flags to the first roll\'s (S12)', () => {
+    const s = build({ units: [bot('BR/LC', [5, 6]), top('FR/LNC', [4, 6])] });
+    const d = toBattle(s, 'attackC', ['u1']);
+    giveCard(d.state, 'top', 'firstStrike');
+    ev(d);
+    must(d, { kind: 'attack', unit: 'u1', target: H(4, 6) });
+    forceDice([...n('flag', 2), 'artillery', 'artillery', /* re-roll */ 'flag', 'artillery', ...PAD]);
+    must(d, { kind: 'defend', choice: 'firstStrike' });
+    const fs = ev(d);
+    expect(rerolls(fs, 'firstStrike')).toEqual([false, true]);
+    expect(fs.find((e) => e.t === 'flags')).toMatchObject({ flags: 3 }); // 2 + 1
     forceDice([]);
   });
 
@@ -77,6 +91,7 @@ describe('Lancers re-roll flags (S12)', () => {
     expect(faces(es, 'melee')).toEqual([first, ['infantry', 'infantry']]);
     expect(rerolls(es, 'melee')).toEqual([false, true]);
     expect(rollEvs(es, 'melee')[0].from).toEqual(['u1', 'u3']);
+    expect(rollEvs(es, 'melee')[1].from).toEqual(['u1', 'u3']); // the re-roll names the same pieces
     expect(u(d, 'u2')!.blocks).toBe(1); // 1 + 2 infantry hits = 3 of 4 blocks
   });
 

@@ -1,6 +1,6 @@
 /* Commands & Colours: Napoleonics UI kit - design tokens (mirrors theme.ts). */
 :root {
-  --kit-font-title: 'Cinzel', 'Trajan Pro', 'Times New Roman', serif;
+  --kit-font-title: 'IM Fell English SC', 'Times New Roman', serif;
   --kit-font-body: 'EB Garamond', Garamond, 'Times New Roman', serif;
 
   --kit-wood: #2a1a10;
@@ -9,17 +9,17 @@
   --kit-leather: #3a2216;
   --kit-leather-dark: #22130b;
   --kit-leather-light: #5a3622;
-  --kit-parchment: #f0e3c2;
+  --kit-parchment: #efe3c4;
   --kit-parchment-light: #f8efd7;
   --kit-parchment-dark: #d9c393;
-  --kit-ink: #2b1d12;
+  --kit-ink: #261d17;
   --kit-ink-soft: #5a4630;
   --kit-bronze: #b0823a;
   --kit-bronze-light: #e2bd72;
   --kit-bronze-dark: #6e4b1c;
   --kit-gold: #e8c45a;
-  --kit-crimson: #8e1b1b;
-  --kit-royal: #22457f;
+  --kit-crimson: #a3262a;
+  --kit-royal: #1f3f8a;
   --kit-purple: #55235f;
   --kit-olive: #6b6a2a;
   --kit-felt: #1d3127;
