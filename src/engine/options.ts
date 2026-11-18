@@ -1,11 +1,11 @@
 // The options of the turn being played, as pure queries of the state, with the move and battle validators that
-// `answerError` (decisions.ts) dispatches to. Skeleton: fire targets from `fireTargets`, melee targets are the adjacent
-// enemy units, a target only with dice >= 1 (→ T6a).
+// `answerError` (decisions.ts) dispatches to. Fire targets come from `fireTargets`; melee targets are the adjacent enemy
+// units and lone leaders; a target is offered only with dice >= 1.
 import { cardForbidsBattle } from './cards';
 import { fireDice, meleeDice } from './dice';
 import { neighbours } from './hex';
 import { canBattleAfterMove, leaderMoves, unitMoves, type MoveTarget } from './movement';
-import { unitAt, unitById } from './query';
+import { leaderAt, unitAt, unitById } from './query';
 import { fireTargets } from './sight';
 import type { Answer, GameState, HexId, Unit } from './types';
 
@@ -43,8 +43,9 @@ export function battleTargets(s: GameState, id: string): BattleTarget[] {
   if (!(m.noMelee && op.cardMods)) {
     for (const hex of neighbours(u.hex)) {
       const t: Unit | undefined = unitAt(s, hex);
-      if (!t || t.side === u.side) continue;
-      const dice = meleeDice(s, u, t, { role: 'attack', moved: op.moved });
+      const target = t ?? leaderAt(s, hex);  // a lone enemy leader may be attacked in melee, never fired at (R6, R21)
+      if (!target || target.side === u.side) continue;
+      const dice = meleeDice(s, u, target, { role: 'attack', moved: op.moved });
       if (dice >= 1) out.push({ hex, kind: 'melee', dice });
     }
   }

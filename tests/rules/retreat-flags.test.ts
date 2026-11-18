@@ -73,6 +73,7 @@ describe('retreat paths (§1, §10.1)', () => {
     const o2 = retreatOptions(own, own.units[0], 2);
     expect(o2.some((x) => x.end === H(3, 5))).toBe(false);
     expect(o2.some((x) => x.path[0] === H(3, 5) && x.path.length === 2 && x.losses === 0)).toBe(true);
+    expect(retreatOptions(own, own.units[0], 1).map((x) => x.end)).toEqual([H(3, 6)]);  // 1 hex: the lone leader's hex is no end
   });
   it('a square never moves: each retreat hex costs a block, ML 3 per flag (§10.1, R33)', () => {
     const lt = fireAt({ units: [top('FR/LT', [4, 6], { square: 1 })] }, flags(1));

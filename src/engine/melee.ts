@@ -22,7 +22,11 @@ export function* meleeAttack(s: GameState, ctx: FlowCtx, attackerId: string, tar
   const defender = unitAt(s, targetHex);
   if (!defender) {
     const l = leaderAt(s, targetHex)!;
-    return yield* loneLeaderMelee(s, ctx, attacker, l, { attacker: attackerId, target: l.id, targetHex, role, artillery: [], reaction: null, declaredMoved: op.moved });
+    const lm: MeleeCtx = { attacker: attackerId, target: l.id, targetHex, role, artillery: [], reaction: null, declaredMoved: op.moved };
+    const vacated = yield* loneLeaderMelee(s, ctx, attacker, l, lm);
+    if (s.winner) return false;
+    if (vacated) yield* afterMelee(s, ctx, lm, targetHex);
+    return vacated;
   }
   const m: MeleeCtx = { attacker: attackerId, target: defender.id, targetHex, role, artillery: [], reaction: null, declaredMoved: op.moved };
   m.artillery = yield* combinedArmsStep(s, ctx, m);
