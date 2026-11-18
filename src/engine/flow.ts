@@ -3,6 +3,7 @@
 import { drawCard, takeCard } from './cards';
 import { ask } from './decisions';
 import { guerrillaScoutStep } from './guerrilla';
+import { moveFirstStep } from './moveFirst';
 import { turnStartObjectives } from './objectives';
 import { battlePhase, cardStep, movePhase } from './phases';
 import { other } from './query';
@@ -106,6 +107,7 @@ export function nextTurn(s: GameState): void {
 }
 
 export function* gameFlow(s: GameState, ctx: FlowCtx): Gen {
+  yield* moveFirstStep(s, ctx);   // Move First by revealed cards, once before turn 1 (RR §15.8)
   while (!s.winner) {
     if (s.turn.phase === 'done') nextTurn(s);
     yield* turnFlow(s, ctx);

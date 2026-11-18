@@ -28,8 +28,12 @@ const choosesOneOf = (a: Answer, n: number): boolean => a.kind === 'choose' && N
 export function answerError(s: GameState, d: Decision, a: Answer | null | undefined, found?: Found): string | null {
   if (!a) return 'No answer.';
   switch (d.kind) {
-    case 'playCard':
-      return a.kind === 'playCard' && s.players[d.side].hand.includes(a.card) ? null : 'Play a card from your hand.';
+    case 'playCard': {
+      if (a.kind !== 'playCard' || !s.players[d.side].hand.includes(a.card)) return 'Play a card from your hand.';
+      // the opening card a side picked to move first is the only card it may play on its first turn (RR §15.8, S38)
+      const committed = s.special.moveFirst?.committed[d.side] ?? null;
+      return committed !== null && s.special.turnsDone[d.side] === 0 && a.card !== committed ? 'Play your opening card: it was revealed to decide who moves first.' : null;
+    }
     case 'orders':
       if (a.kind !== 'orders') return 'Choose the units to order.';
       if (a.single && !d.single) return 'That card has no single option.';
