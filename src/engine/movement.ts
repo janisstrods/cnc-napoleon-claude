@@ -136,40 +136,42 @@ export function relocate(s: GameState, u: Unit, hex: HexId): void {
   if (l) l.hex = hex;
 }
 
-/** Piece `pieceId` makes move `target`, one of its options. */
+/**
+ * Piece `pieceId` makes move `target`, one of its options. The `move` event is emitted once the piece (and an attached
+ * leader) stands on its end hex, before an exit or attachment: a driver snapshots the state at each event, and the UI
+ * shows that snapshot when the walk ends.
+ */
 export function applyMove(s: GameState, ctx: FlowCtx, pieceId: string, target: MoveTarget): void {
   const op = s.turn.ordered[pieceId];
   const left = target.path.length - 1;
   op.moved = left;
   op.moveDone = true;
   op.stopEntered = target.stops;
-  ctx.emit({ t: 'move', id: pieceId, path: target.path });
+  const exits = target.hex === OFF_BOARD;
+  // stand on the exit hex when exitPiece runs (T13 reads it)
+  const end = exits ? target.path[target.path.length - 2] : target.hex;
   if (op.isLeader) {
     const l = leaderById(s, pieceId)!;
     // Leadership orders a unit only while its leader stays (RR §6.2, §12.2): once he leaves, it is no longer ordered.
     const home = s.turn.effective === 'leadership' ? unitAt(s, l.hex) : undefined;
     if (home && home.side === l.side && s.turn.ordered[home.id]?.cardMods) delete s.turn.ordered[home.id];
-    if (target.hex === OFF_BOARD) {
-      l.hex = target.path[target.path.length - 2];  // stand on the exit hex when exitPiece runs (T13 reads it)
-      exitPiece(s, ctx, pieceId);
-    } else {
-      l.hex = target.hex;
-      if (target.attach) {
-        ctx.emit({ t: 'attach', leader: l.id, unit: target.attach });
-        const uo = s.turn.ordered[target.attach];
-        if (uo) uo.attachedThisTurn = true;
-      }
+    l.hex = end;
+    ctx.emit({ t: 'move', id: pieceId, path: target.path });
+    if (exits) exitPiece(s, ctx, pieceId);
+    else if (target.attach) {
+      ctx.emit({ t: 'attach', leader: l.id, unit: target.attach });
+      const uo = s.turn.ordered[target.attach];
+      if (uo) uo.attachedThisTurn = true;
     }
   } else {
     const u = unitById(s, pieceId)!;
     const ldr = attachedLeader(s, u);
     const lo = ldr ? s.turn.ordered[ldr.id] : undefined;
     if (lo) lo.moveDone = true;
-    if (target.hex === OFF_BOARD) {
-      relocate(s, u, target.path[target.path.length - 2]);  // stand on the exit hex when exitPiece runs (T13 reads it)
-      exitPiece(s, ctx, pieceId);
-    } else {
-      relocate(s, u, target.hex);
+    relocate(s, u, end);
+    ctx.emit({ t: 'move', id: pieceId, path: target.path });
+    if (exits) exitPiece(s, ctx, pieceId);
+    else {
       op.noBattle = noBattleAfterEntering(s, target.hex, statsOf(s, u));
       if (target.attach) {
         ctx.emit({ t: 'attach', leader: target.attach, unit: u.id });

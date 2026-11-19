@@ -3,6 +3,7 @@
  * suits what it brought (no fixed order, never reused). Bump for every publish, together with package.json's version.
  */
 export const RELEASES = [
+  { number: '1.0.1', name: 'Corunna', notes: 'Smoother marching: a unit the computer moves stays where it marched, instead of jumping back until the next unit moves (most visible with Force March)' },
   { number: '1.0.0', name: 'Talavera', notes: 'The base game (battles 001–015) and Expansion #1, The Spanish Army (battles 101–118), against a computer general at three levels, with original miniatures, the history of every battle, Triumphs medals and the rules in the game' },
 ] as const;
 
