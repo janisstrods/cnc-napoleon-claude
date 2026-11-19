@@ -72,7 +72,9 @@ function lines(t: TerrainType): TipLine[] {
   }
   if (!st.squareAllowed && !st.impassable) out.push(combat('No square can be formed here'));
   if (st.cancelsCavalryCharge) out.push(combat('Cancels the card dice of a cavalry charge into or out of it'));
-  out.push(sight(st.blocksSight ? 'Blocks line of sight' : 'Does not block line of sight'));
+  // A hill blocks through its own rule (sight.ts), not `blocksSight` (RR §8.3).
+  out.push(sight(st.hill ? 'Blocks line of sight beyond it, except across one connected hill'
+    : st.blocksSight ? 'Blocks line of sight' : 'Does not block line of sight'));
   return out;
 }
 

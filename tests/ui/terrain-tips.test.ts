@@ -93,6 +93,8 @@ describe('terrain tooltips: each terrain row', () => {
     expect(lines(tipOf('river'))).toContain('combat: No melee into it');
     expect(lines(tipOf('rugged'))).toContain('move: Impassable');
     expect(lines(tipOf('hill')).some((l) => l.startsWith('combat: Melee up onto it'))).toBe(true);
+    expect(lines(tipOf('hill'))).toContain('sight: Blocks line of sight beyond it, except across one connected hill');
+    expect(lines(tipOf('hill'))).not.toContain('sight: Does not block line of sight');
   });
 });
 
